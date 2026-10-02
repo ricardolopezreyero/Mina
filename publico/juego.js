@@ -1739,6 +1739,8 @@ function vacio(q, zona, r) {         // el fondo de un túnel o de una cueva
 function tile(tipo, zona, vr) {
   const key = tipo * 1000 + zona * 100 + vr; let c = tiles.get(key);
   if (c) return c;
+  // Las celdas dibujadas se guardan para no repintarlas, pero no para siempre: al pasar de 280 se sueltan las de zonas lejanas.
+  if (tiles.size > 280) for (const k of tiles.keys()) if (Math.abs((Math.floor(k / 100) % 10) - zona) > 1) tiles.delete(k);
   c = document.createElement('canvas'); c.width = c.height = T;
   const q = c.getContext('2d'), r = azarDe(key * 7919 + 13), u = T / 16;
   if (tipo === 0) {                                 // fondo de túnel y de cueva
@@ -2333,7 +2335,9 @@ function dibujar() {
     g.beginPath(); g.ellipse(px, py, t * 1.5, t * 0.75, 0, 0, 7); g.moveTo(px - d * t * 1.2, py); g.lineTo(px - d * t * 2.4, py - t * 0.8 + cola); g.lineTo(px - d * t * 2.4, py + t * 0.8 + cola); g.fill();
     g.fillStyle = '#12222e'; g.beginPath(); g.arc(px + d * t * 0.8, py - t * 0.15, t * 0.17, 0, 7); g.fill();
   }
-  if (S && y1 >= MURAL.y && y0 <= MURAL.y + MURAL.al) { g.globalAlpha = 0.8; g.drawImage(mural(), ox + MURAL.x * T, oy + MURAL.y * T); g.globalAlpha = 1; }      // el mural de los que vendrán
+  if (S && y1 >= MURAL.y && y0 <= MURAL.y + MURAL.al) { g.globalAlpha = 0.8; g.drawImage(mural(), ox + MURAL.x * T, oy + MURAL.y * T); g.globalAlpha = 1; }
+  else if (muralC && (y0 > MURAL.y + 200 || y1 < MURAL.y - 200)) { muralC = null; muralF = ''; }      // lejos del mural, su lienzo se suelta
+  if (camY > 120 && sprites.has('cielo')) { sprites.delete('cielo'); sprites.delete('aurora'); }                // bajo tierra no hacen falta las estrellas      // el mural de los que vendrán
   if (y1 >= 2800 && y0 <= 2826) {                  // las antorchas de la Ciudad Perdida
     const res = sprite('res');
     for (const b of [0, 1, 2, 6, 7]) {
@@ -2494,7 +2498,7 @@ const DT = 1 / 120;
 const PAUSA = {};
 const NITIDEZ = [1, 0.75, 0.5];          // escalones de nitidez: se baja solo si la máquina no alcanza el refresco de su pantalla
 const RITMOS = [30, 48, 50, 60, 72, 75, 90, 100, 120, 144, 165, 240];
-const rit = { hz: 60, fps: 60, niv: NITIDEZ.length - 1, sonda: true, d: [], lento: 0, bien: 0, veto: 0, sube: 0 };
+const rit = { hz: 60, fps: 60, niv: NITIDEZ.length - 1, sonda: true, d: [], lento: 0, bien: 0, veto: 0, sube: 0, peor: 0, lentos: 0, n: 0, t0: 0, ult: null };
 const ant = { x: INICIO_X, y: INICIO_Y };
 let ult = 0, acum = 0, tHud = 0, tPos = 0, tBip = 0, cicloId = 0;
 
@@ -2520,7 +2524,12 @@ function ciclo(t, id) {
   if (op.fps && t - ult < 1000 / op.fps - 2) return;      // tope de cuadros elegido por el jugador
   let d = (t - ult) / 1000; ult = t;
   if (!(d > 0)) return;
-  if (d < 0.2) medirRitmo(d * 1000);
+  if (d < 0.2) {
+    medirRitmo(d * 1000);
+    // Cuenta de cuadros lentos por minuto: los que tardaron más del doble de lo que dura un refresco de esta pantalla.
+    const ms = d * 1000; rit.n++; if (ms > rit.peor) rit.peor = ms; if (ms > 2000 / rit.hz + 2) rit.lentos++;
+    if (t - rit.t0 > 60000) { if (rit.t0) rit.ult = { peor: rit.peor, lentos: rit.lentos, n: rit.n }; rit.t0 = t; rit.peor = rit.lentos = rit.n = 0; }
+  }
   if (d > 0.1) d = 0.1;
   reloj += d; acum += d;
   let n = 0;
@@ -2536,7 +2545,7 @@ function ciclo(t, id) {
   sonarLazos(false); gotear(d);                            // el sonido sigue a la maquinita cuadro por cuadro
   if ((tPos += d) >= (red.lenta ? 0.125 : 0.066)) { tPos = 0; enviarPos(); }
   if (Math.abs(yo.y - R_HONGOS.cy) < 14) cantarHongos();
-  if (jardin.m.length) mariposas(d, Math.abs(yo.y - R_JARDIN.cy) < 14 && enRincon(R_JARDIN, Math.floor(yo.x), Math.floor(yo.y), true));
+  if (jardin.m.length && Math.abs(camY + filas / 2 - R_JARDIN.cy) < 60) mariposas(d, Math.abs(yo.y - R_JARDIN.cy) < 14 && enRincon(R_JARDIN, Math.floor(yo.x), Math.floor(yo.y), true));      // solo se mueven cuando se pueden ver
   if ((tHud += d) > 0.12) { tHud = 0; cadaTanto(); }
   // la veta madre se busca con el oído
   if ((tBip -= d) < 0 && yo.y > 0) {
@@ -2663,7 +2672,7 @@ function animar(d) {
     const i = (Math.random() * calor.length / 4 | 0) * 4;
     parts.push({ x: calor[i + 2] + 0.25 + Math.random() * 0.5, y: calor[i + 3] + 0.25, vx: (Math.random() - 0.5) * 0.5, vy: -0.7 - Math.random() * 0.8, t: 0.8 + Math.random() * 0.6, col: Math.random() < 0.5 ? '#ffb347' : '#ffe27a', gr: -0.4 });
   }
-  if (parts.length) parts = parts.filter((q) => q.t > 0);
+  if (parts.length) { let n = 0; for (let i = 0; i < parts.length; i++) if (parts[i].t > 0) parts[n++] = parts[i]; parts.length = n; }      // se compacta en su lugar: sin arreglos nuevos en cada cuadro
   for (const f of flot) { f.t -= d; f.y -= d * 0.7; }
   if (flot.length) flot = flot.filter((f) => f.t > 0);
   for (const s of senales) s.t -= d;
@@ -2672,13 +2681,38 @@ function animar(d) {
   if (S && S.vida / vidaMax() < 0.3 && Math.random() < d * 12) parts.push({ x: vis.x, y: vis.y - 0.3, vx: (Math.random() - 0.5) * 0.6, vy: -1.5 - Math.random(), t: 0.9, col: '#55504d', g: 2 });
   // cámara: sigue a la maquinita; la rueda o el trackpad la separan y cualquier flecha la regresa
   if (!vistaLibre) { const k = Math.pow(0.0005, d); panX *= k; panY *= k; }
-  const minX = 0, maxX = Math.max(0, W - cols), minY = TECHO - filas, maxY = H + 2 - filas;
+  const minX = 0, maxX = Math.max(0, W - cols);
+  let minY = TECHO - filas, maxY = H + 2 - filas;
+  if (vistaLibre && S) {               // con la rueda solo se mira lo ya explorado: hasta el récord de profundidad y, hacia arriba, hasta la mayor altura alcanzada
+    const rec = soloVer ? (otros.get(veo)?.rec || 0) : S.rec, alt = soloVer ? 1e9 : Math.max(S.alt, 40);
+    maxY = Math.min(maxY, Math.max(vis.y, rec / 2 - HH) - filas * 0.5); minY = Math.max(minY, Math.min(vis.y, -alt / 2 - HH) - filas * 0.5);
+  }
   let cx = vis.x - cols / 2 + panX, cy = vis.y - filas * 0.5 + panY;
   if (cols >= W) cx = (W - cols) / 2; else if (cx < minX) { panX += minX - cx; cx = minX; } else if (cx > maxX) { panX += maxX - cx; cx = maxX; }
   if (cy < minY) { panY += minY - cy; cy = minY; } else if (cy > maxY) { panY += maxY - cy; cy = maxY; }
   const s = 1 - Math.pow(0.00004, d);
   camX += (cx - camX) * s; camY += (cy - camY) * s;
   if (!vistaLibre) camY = Math.max(cy - filas * 0.3, Math.min(cy + filas * 0.3, camY));
+  pintarRegla();
+}
+// La regla de la izquierda, mientras se mira con la rueda: de la superficie a tu récord, con la marca de dónde va la vista,
+// el punto donde está tu maquinita y los lugares que ya descubriste. Un clic en ella lleva la vista a esa profundidad.
+let reglaF = '', reglaVis = false;
+function pintarRegla() {
+  const ver = !!(vistaLibre && listo && !menu && S);
+  if (ver !== reglaVis) { reglaVis = ver; document.body.classList.toggle('libre', ver); }
+  if (!ver) return;
+  const rec = Math.max(20, soloVer ? (otros.get(veo)?.rec || 0) : S.rec), via = $('#reglaVia'), h = via.clientHeight || 1;
+  const f = rec + '|' + (soloVer ? '' : S.lug.join(''));
+  if (f !== reglaF) {
+    reglaF = f;
+    $('#reglaAb').textContent = (soloVer ? '' : 'tu récord · ') + rec.toLocaleString('es-MX') + ' m';
+    $('#reglaLug').innerHTML = soloVer ? '' : LUGARES.map((L, i) => (S.lug[i] && L.m <= rec ? `<span style="top:${(L.m / rec * 100).toFixed(2)}%" title="${L.n} · ${L.m.toLocaleString('es-MX')} m">${L.ic}</span>` : '')).join('');
+  }
+  const m = (camY + filas / 2 + HH) * 2, k = Math.max(0, Math.min(1, m / rec));
+  $('#reglaVer').style.transform = `translateY(${(k * h).toFixed(1)}px)`;
+  poner($('#reglaTx'), m < -3 ? '↑ ' + fmtAlto(Math.round(-m)) : Math.max(0, Math.round(m)).toLocaleString('es-MX') + ' m' + (m > 0 ? ' · ' + ZONA_N[zonaDe(Math.max(1, m))].replace(/^(La|El|Las) /, '') : ''));
+  $('#reglaYo').style.transform = `translateY(${(Math.max(0, Math.min(1, (vis.y + HH) * 2 / rec)) * h).toFixed(1)}px)`;
 }
 function arrancar() {
   if (corriendo || !listo || menu || pausa) return;   // con la pestaña oculta el navegador ya no llama al ciclo
@@ -2767,7 +2801,7 @@ function cadaTanto() {
   let e = null;
   if (yo.suelo && yo.y < 0) e = EDIF.find((b) => yo.x > b.x + 0.2 && yo.x < b.x + 2.8) || null;
   pistaDe = e;
-  pista(crucero ? 'Subiendo sola · barra espaciadora o ↓ para soltar' : yo.planea && yo.y < -40 ? '↓ caer en picada · ↑ frenar' : yo.picada ? 'En picada · suelta ↓ para planear' : yo.y < -25 && teclas.arr ? 'Barra espaciadora: seguir subiendo sin sostener la tecla' : vistaLibre ? 'Vista libre · pulsa una flecha para volver a tu maquinita' : e ? '↓  Entrar a ' + e.n + ' · ' + e.h.toLowerCase() : '', !e);      // solo la invitación a entrar a un edificio va destacada
+  pista(crucero ? 'Subiendo sola · barra espaciadora o ↓ para soltar' : yo.planea && yo.y < -40 ? '↓ caer en picada · ↑ frenar' : yo.picada ? 'En picada · suelta ↓ para planear' : yo.y < -25 && teclas.arr ? 'Barra espaciadora: seguir subiendo sin sostener la tecla' : vistaLibre ? 'Vista libre · ' + donde(camY + filas / 2) + ' · pulsa una flecha para volver a tu maquinita' : e ? '↓  Entrar a ' + e.n + ' · ' + e.h.toLowerCase() : '', !e);      // solo la invitación a entrar a un edificio va destacada
   // los lugares: al entrar por primera vez se celebra y queda apuntado en El Elevador
   const lg = yo.y >= 165 ? lugarDe(Math.floor(yo.x), Math.floor(yo.y), true) : -1;
   if (lg >= 0 && !S.lug[lg]) {
@@ -3031,6 +3065,7 @@ let fotoFirma = leer('mina_foto', {}), fotoT = 0;
 function subirFotos(ya) {
   if (!conectado || !S || !ws || ws.readyState !== 1 || !mundoId) return;
   const ahora = Date.now(); if (ahora - fotoT < (ya ? 13000 : 150000)) return;
+  if (!ya && corriendo && !(yo.suelo && yo.y < 0 && Math.abs(yo.vx) < 0.5)) return;      // dibujar las imágenes de liga espera a que la maquinita esté quieta en el pueblo
   if (fotoFirma.id !== mundoId) fotoFirma = { id: mundoId };
   const hondo = Math.max(S.rec, ...[...otros.values()].map((o) => o.rec || 0));
   const firmas = { 2: [cfg.nombre, miNombre, [...otros.values()].map((o) => o.n + o.m).join(','), Math.floor(hondo / 50), nHallados(), Math.floor(cavadasMundo / 400)].join('|'),
@@ -3354,6 +3389,11 @@ $('#caja').addEventListener('change', (e) => {
   if (r !== 'no' && menu && menu !== 'inicio') pintarMenu();
 });
 $('#objetos').addEventListener('click', (e) => { const el = e.target.closest('[data-u]'); if (el) { audio(); usar(+el.dataset.u); } });
+$('#reglaVia').addEventListener('click', (e) => {          // un clic en la regla lleva la vista a esa profundidad
+  if (!listo || !S) return;
+  const r = e.currentTarget.getBoundingClientRect(), rec = Math.max(20, soloVer ? (otros.get(veo)?.rec || 0) : S.rec), fila = Math.max(0, Math.min(1, (e.clientY - r.top) / r.height)) * rec / 2 - HH;
+  panY += fila - (camY + filas / 2); camY = fila - filas / 2; vistaLibre = true;
+});
 $('#verOtra').addEventListener('click', () => { audio(); verOtra(1); });
 $('#verTop').addEventListener('click', () => { audio(); abrir('top'); });
 $('#bGrua').addEventListener('click', (e) => { audio(); e.currentTarget.blur(); if (listo && !menu && !pausa) grua(); });
@@ -3405,7 +3445,8 @@ function menuPrincipal() {
       <label class="op"><span>Acercamiento</span><select data-a="op" data-k="zoom">${[[0, 'Cerca'], [1, 'Normal'], [2, 'Lejos']].map(([v, t]) => `<option value="${v}" ${op.zoom == v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>` +
       chk('nombres', 'Mostrar los nombres de las maquinitas') +
       `<label class="op"><span>Cuadros por segundo</span><select data-a="op" data-k="fps">${[[0, 'Lo máximo de tu pantalla'], [60, '60'], [30, '30 (ahorra batería)']].map(([v, t]) => `<option value="${v}" ${op.fps == v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
-      <p class="nota">Tu pantalla refresca a <b>${rit.hz} Hz</b> y el juego está mostrando <b>${Math.round(Math.min(rit.fps, rit.hz))} cuadros por segundo</b>, con nitidez al ${Math.round(NITIDEZ[rit.niv] * 100)} %. Señal con el mundo: ${red.rtt ? Math.round(red.rtt) + ' ms' : 'midiendo…'}. El juego se ajusta solo: si tu equipo no alcanza el refresco de su pantalla, baja la nitidez antes que la fluidez.</p>`;
+      <p class="nota">Tu pantalla refresca a <b>${rit.hz} Hz</b> y el juego está mostrando <b>${Math.round(Math.min(rit.fps, rit.hz))} cuadros por segundo</b>, con nitidez al ${Math.round(NITIDEZ[rit.niv] * 100)} %. Señal con el mundo: ${red.rtt ? Math.round(red.rtt) + ' ms' : 'midiendo…'}. El juego se ajusta solo: si tu equipo no alcanza el refresco de su pantalla, baja la nitidez antes que la fluidez.</p>
+      <p class="nota">${rit.ult ? `En el último minuto de juego: <b>${rit.ult.lentos} de ${rit.ult.n.toLocaleString('es-MX')}</b> cuadros salieron lentos (${(rit.ult.lentos / Math.max(1, rit.ult.n) * 100).toFixed(2)} %) y el más lento tardó <b>${Math.round(rit.ult.peor)} ms</b> (lo ideal en tu pantalla: ${Math.round(1000 / rit.hz)} ms).` : 'Juega un minuto y aquí sale cuántos cuadros lentos hubo.'} En memoria hay ${tiles.size} celdas dibujadas (${(tiles.size * T * T * 4 / 1e6).toFixed(0)} MB).</p>`;
   } else if (pestana === 8) {
     const o3 = [[0, 'Apagado'], [1, 'Normal'], [2, 'Fuerte']];
     h += `<div class="fila"><div class="t"><b>Invita a tu gente</b><small>${mundoId ? location.origin + '/m/' + mundoId : 'Tu mundo se está creando…'}</small></div><button class="s" data-a="menu" data-v="inv">Ver código QR</button><button data-a="invitar">Copiar la liga</button></div>
@@ -3455,7 +3496,7 @@ function menuPrincipal() {
       <p><b>Hacia arriba:</b> el cielo también se explora, y subir es todo un viaje: halcones y águilas, el atardecer, un avión, la noche con sus constelaciones, la aurora al entrar al espacio (100 km), un cometa, la estación, la Luna que crece y el planeta que se achica hasta que, cerca de los 1,000 km, el Sol vuelve a salir. Son unos 15 minutos de vuelo. Entre más alto, menos combustible se gasta; con un tanque «Cisterna» alcanza. Pasando los 50 m de altura, la barra espaciadora deja a la maquinita subiendo sola.</p>
       <p><b>Lava y gas:</b> la lava (desde 410 m) se ve y se rodea. Las bolsas de gas (desde 650 m) se notan por unas burbujitas verdes y por el aviso «Huele a gas». Pon el ratón encima de cualquiera y te dice cuánto casco te quita. Vuélalas con dinamita o lleva casco y radiador suficientes: arriba, en las metas, dice hasta qué profundidad aguantas.</p>
       <p><b>Sonido:</b> la bocina de arriba a la derecha lo apaga, lo baja y lo sube; «♪ Sonidos» deja elegir qué se oye: música, taladro, hélice, motor (viene apagado) y lo demás, cada uno con su interruptor.</p>
-      <p><b>Mirar alrededor:</b> la rueda del mouse o dos dedos en el trackpad mueven la vista; cualquier flecha la regresa a tu maquinita.</p>
+      <p><b>Mirar alrededor:</b> la rueda del mouse o dos dedos en el trackpad mueven la vista; cualquier flecha la regresa a tu maquinita. Mientras miras, a la izquierda sale una regla con la profundidad de lo que ves, dónde quedó tu maquinita y los lugares que ya descubriste; un clic en la regla te lleva ahí. Solo se puede mirar lo ya explorado: hasta tu récord de profundidad y hasta tu mayor altura.</p>
       <p><b>La colección:</b> hay 99 objetos enterrados (33 distintos, tres de cada uno), cada uno en su franja de profundidad. Se ven como medallones dorados. Son del mundo: los junta el equipo entero y se van encendiendo en Menú → Colección. Las explosiones no los destruyen.</p>
       <p><b>Pleitos:</b> en el aire las maquinitas rebotan y no pasa nada. Bajo tierra, si empujas tu taladro contra otra (← → a su lado, o ↓ encima de ella), le pegas: tu taladro contra su casco. Por la espalda o desde arriba pega 50 % más; taladro contra taladro pega la mitad y los dos salen rebotados. La que pierde vuelve a la superficie sin perder nada. En el pueblo no hay pleitos, y quien creó el mundo puede apagarlos.</p>
       <p><b>Mapa y archivo:</b> Menú → Mapa muestra todos los túneles abiertos. Menú → Mundo → Guardar archivo descarga el mundo completo; desde «Mis mundos» se abre como una copia idéntica.</p>
@@ -3578,6 +3619,7 @@ function quitarMundo(id) { mundos = mundos.filter((m) => m.id !== id); escribir(
 // La copia de este equipo: el mundo (semilla, túneles, colección) y la maquinita. Con ella el juego abre al instante,
 // sin esperar al servidor, y se puede seguir jugando sin internet; al volver la señal, lo de aquí se manda al mundo.
 let dugCambios = 0, copiaDug = -1, copiaEst = '';
+const ocio = window.requestIdleCallback ? (f) => requestIdleCallback(() => f(), { timeout: 3000 }) : (f) => setTimeout(f, 0);      // lo que no urge se hace entre cuadro y cuadro
 function guardarCopia() {
   if (!listo || !S || !mundoId || !miK || miI < 0 || !miNombre) return;
   if (yo.renace) { S.x = INICIO_X; S.y = INICIO_Y; } else { S.x = yo.x; S.y = yo.perf ? yo.perf.oy : yo.y; }
@@ -3690,7 +3732,7 @@ setInterval(componer, 220);               // la música sigue aunque haya un men
 setInterval(() => {                       // lo poco que corre aunque el juego esté detenido
   if (sucio && conectado) enviarEst();
   if (++latido % (document.hidden ? 25 : 5) === 0) latir();
-  if (latido % 4 === 0) guardarCopia();
+  if (latido % 4 === 0) ocio(guardarCopia);
   if (!document.hidden && listo && Date.now() - tablaM.pedido > (topAbierta() ? 4000 : 60000) && (topAbierta() || (!soloVer && conectado && (!tablaM.t || S.tot >= tablaM.corte)))) pedirTop();
   if (latido % 9 === 0 && !document.hidden) subirFotos(!!menu);
   const c = $('#cuenta');

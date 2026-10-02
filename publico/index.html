@@ -135,6 +135,19 @@ body.viendo #verBarra{display:flex}
 #objetos kbd{display:block;font:700 1.15em system-ui;color:var(--ac)}
 #objetos .n0{opacity:.4}
 #avisos{left:10px;top:calc(222px*var(--f));width:calc(260px*var(--f));font-size:.8em}
+body.libre #avisos{left:calc(150px*var(--f))}
+/* La regla de profundidad: solo sale mientras se mira con la rueda. */
+#regla{left:14px;top:calc(236px*var(--f));bottom:calc(250px*var(--f));width:calc(130px*var(--f));display:none;font-size:.86em;font-weight:700;min-height:90px}
+body.libre.jugando #regla,body.libre.viendo #regla{display:block;visibility:visible}
+#regla small{position:absolute;left:0;color:var(--su);white-space:nowrap;font-size:.92em}
+#reglaArr{top:-1.5em}#reglaAb{bottom:-1.6em}
+#reglaVia{position:absolute;left:6px;top:0;bottom:0;width:22px;cursor:pointer}
+#reglaVia::before{content:"";position:absolute;left:2px;top:0;bottom:0;width:6px;border-radius:2px;background:linear-gradient(#a9744f,#3d6f8f 12%,#6a4a8f 30%,#3a3f8f 60%,#2a1c16);border:1px solid #000a}
+#reglaLug span{position:absolute;left:14px;transform:translateY(-50%);font-size:.95em;opacity:.9;pointer-events:none}
+#reglaYo{position:absolute;left:0;top:-4px;width:10px;height:8px;border-radius:50%;background:var(--ac);border:1px solid #000}
+#reglaVer{position:absolute;left:-2px;top:-1px;width:14px;height:3px;background:#fff;border-radius:2px;box-shadow:0 0 0 1px #000a}
+#reglaVer b{position:absolute;left:34px;top:-.75em;white-space:nowrap;background:#000c;border:1px solid var(--borde);border-radius:6px;padding:2px 7px}
+@media (max-height:520px){#regla{top:calc(120px*var(--f));bottom:calc(120px*var(--f))}}
 #avisos div{background:#0008;border-radius:4px;padding:2px 7px;margin-top:3px;animation:entra .25s}
 @keyframes entra{from{opacity:0;transform:translateX(-12px)}}
 #tarjeta{margin-top:6px;text-align:left;font-size:.82em}
@@ -229,6 +242,7 @@ a{color:var(--az)}
 <div class="hud" id="ojo"></div>
 <div class="hud" id="pista"></div>
 <div class="hud" id="cuenta"></div>
+<div class="hud" id="regla"><small id="reglaArr">superficie</small><div id="reglaVia"><div id="reglaLug"></div><i id="reglaYo"></i><i id="reglaVer"><b id="reglaTx"></b></i></div><small id="reglaAb"></small></div>
 <div class="hud" id="aviso-red">📡 Sin señal · sigues jugando, se guarda al volver</div>
 <div id="palanca"><i></i></div>
 <div id="verBarra"><div id="verDatos"></div><button class="s" id="verOtra" title="Ver a otra maquinita de este mundo (← →)">Otra ▶</button><button class="s" id="verTop">🏆 Top 20</button><a class="boton" href="/">⛏️ Jugar yo</a></div>

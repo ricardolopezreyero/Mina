@@ -677,6 +677,36 @@ Quien mira ve el juego completo sin tablero, con una barra arriba: a quién ve, 
 
 **El mundo da la vuelta.** La columna que sigue a la última es la primera: si sales por la derecha entras por la izquierda y al revés, volando o perforando. `celda()` y `cavar()` envuelven la columna, así que también los choques, los túneles y las explosiones cruzan la orilla. `darVuelta()` corre después de cada paso de física: recorre a la maquinita 96 columnas, con todo y la perforación que llevaba a medias, y brinca la cámara. La primera vez sale una tarjeta que lo explica. La cámara no gira: al cruzar, la vista salta al otro lado.
 
+### 9.20 La regla de profundidad al mirar, y una revisión de fluidez y memoria
+
+**Mirar con la rueda.** Mientras se mueve la vista con la rueda o el trackpad:
+
+- A la izquierda sale una **regla**: va de la superficie a tu récord, con una marca blanca y su letrero («3,400 m · Cavernas») para lo que estás viendo, un punto amarillo donde quedó tu maquinita y los iconos de los lugares que ya descubriste. Un clic en la regla lleva la vista a esa profundidad.
+- El letrero de abajo también dice a qué profundidad va la vista.
+- **Solo se mira lo ya explorado:** la vista no baja más allá de tu récord de profundidad ni sube más allá de tu mayor altura (mínimo 40 m). Así no se adelantan las sorpresas de abajo ni las del cielo. Quien mira a otro jugador tiene como tope el récord de ese jugador.
+
+**Fluidez y memoria: lo que se midió** (ventana de 1400×800 a doble densidad, celdas de 88 px).
+
+| Qué | Medición |
+|---|---|
+| Calcular y mandar a dibujar un cuadro | 0.3 a 1.2 ms según el lugar (hay 8 a 16 ms por cuadro) |
+| Basura por cuadro | 0 a 3 KB |
+| Memoria del programa (sin imágenes) | 5.8 MB |
+| Guardar la copia local con un mundo muy cavado | 0.64 ms |
+| Dibujar una imagen de liga | 1.5 ms |
+| Fabricar una celda nueva | 0.01 a 0.06 ms; el primer cuadro en una zona nueva, 5 a 7 ms |
+
+El cálculo no es el cuello de botella. Lo que sí crecía sin tope era la memoria de imágenes guardadas, y eso es lo que se cambió:
+
+- **Celdas dibujadas:** al pasar de 280 se sueltan las de zonas lejanas. Un recorrido completo dejaba 449 (14 MB) y podía llegar a unas 1,000; ahora se queda entre 160 y 320.
+- **El mural** (7.6 MB) y **el cielo estrellado** se sueltan al alejarse y se vuelven a pintar al regresar.
+- **Las mariposas** del Jardín solo se mueven cuando se pueden ver (antes seguían calculándose a kilómetros).
+- **Las partículas** se limpian en su lugar, sin crear un arreglo nuevo en cada cuadro.
+- **Guardar la copia local** se hace cuando el navegador tiene un respiro, y **las imágenes de liga** se dibujan cuando la maquinita está quieta en el pueblo, no a media bajada.
+- **Medidor:** Menú → Opciones dice, del último minuto jugado, cuántos cuadros salieron lentos, cuánto tardó el peor y cuánta memoria ocupan las celdas. Sirve para saber con datos cómo va en cada equipo.
+
+**Lo que no se tocó, a propósito.** Juntar todas las celdas en una sola imagen grande (un «atlas») podría aligerar a la tarjeta de video, pero toca la parte más delicada del dibujo y aquí no hay forma de medir su efecto en una pantalla real. Si el medidor de Opciones muestra cuadros lentos en algún equipo, ese es el siguiente paso.
+
 ## 10. Revisión de código del 2 de octubre
 
 Se revisó todo el código buscando fallas y se corrigieron estas:
