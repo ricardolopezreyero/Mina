@@ -1,0 +1,21 @@
+// RLR · Mina — juego de minería infinito y compartido · mina.capitaltorreon.com — Ricardo López Reyero
+// Probar en local: npx wrangler dev   ·   Publicar: npx wrangler deploy
+{
+  "name": "mina",
+  "account_id": "93695b987a7460c681c06ca4df901ef4",
+  "main": "src/mundo.js",
+  "compatibility_date": "2026-09-01",
+  "assets": {
+    "directory": "./publico",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*", "/ws/*"]
+  },
+  "durable_objects": {
+    "bindings": [{ "name": "MUNDO", "class_name": "Mundo" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Mundo"] }],
+  "routes": [{ "pattern": "mina.capitaltorreon.com", "custom_domain": true }],
+  "workers_dev": false,
+  "preview_urls": false
+}

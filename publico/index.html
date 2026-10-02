@@ -1,0 +1,122 @@
+<!doctype html>
+<!-- Mina · juego de minería infinito y compartido · Ricardo López Reyero (RLR) -->
+<html lang="es" data-k="eye" data-rev="181218">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mina · excava con tus amigos</title>
+<meta name="description" content="Baja, llena la bodega, sube, vende y mejora tu maquinita. Un mundo compartido en tiempo real: manda la liga y excaven juntos.">
+<meta name="author" content="Ricardo López Reyero">
+<meta name="build" content="eye"><meta name="rev" content="181218">
+<meta name="theme-color" content="#1b120e">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%237a4a30'/%3E%3Cpath d='M4 4h8v5l-4 4-4-4z' fill='%23ffd23f'/%3E%3C/svg%3E">
+<style>
+/* RLR · todo el estilo va aquí: una sola descarga, tipografía del sistema */
+:root{--f:1;--bg:#1b120e;--caja:#2a1c16;--borde:#5a3d2c;--tx:#f3e6d8;--su:#c9b29c;--ac:#ffd23f;--ok:#6fdc7a;--mal:#ff6b5a;--az:#6ec3ff}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--tx);
+  font:calc(14px*var(--f))/1.35 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-user-select:none;user-select:none}
+body.contraste{--caja:#000;--borde:#fff;--tx:#fff;--su:#fff;--ac:#ffe600}
+canvas{position:fixed;inset:0;width:100%;height:100%;display:block;image-rendering:pixelated}
+button{font:inherit;color:#1b120e;background:var(--ac);border:0;border-radius:6px;padding:.45em .9em;font-weight:700;cursor:pointer}
+button:hover{filter:brightness(1.1)}button:disabled{background:#6b5a4c;color:#2a1c16;cursor:not-allowed;filter:none}
+button.s{background:transparent;color:var(--tx);border:1px solid var(--borde)}
+button.mal{background:var(--mal)}
+input,select{font:inherit;background:#120b08;color:var(--tx);border:1px solid var(--borde);border-radius:6px;padding:.4em .6em}
+.hud{position:fixed;pointer-events:none;text-shadow:0 1px 2px #000;visibility:hidden}
+body.jugando .hud{visibility:visible}
+.hud>*{pointer-events:auto}
+#izq{left:10px;top:10px;width:calc(210px*var(--f))}
+.barra{height:calc(14px*var(--f));background:#0008;border:1px solid #000;border-radius:4px;overflow:hidden;position:relative;margin:2px 0 5px}
+.barra i{position:absolute;inset:0 auto 0 0;background:var(--ok);transition:width .15s}
+.barra b{position:absolute;inset:0;text-align:center;font-size:.72em;line-height:calc(14px*var(--f));font-weight:700}
+.barra.bajo i{background:var(--mal);animation:parp .5s infinite}
+@keyframes parp{50%{opacity:.4}}
+#datos{display:flex;gap:10px;font-weight:800;font-size:1.05em;flex-wrap:wrap}
+#datos span{background:#0007;border-radius:5px;padding:1px 7px}
+#din{color:var(--ac)}
+#metas{left:50%;top:8px;transform:translateX(-50%);width:min(430px,44vw);font-size:.8em}
+#metas .m{background:#0007;border-radius:5px;padding:2px 7px;margin-bottom:3px;position:relative;overflow:hidden}
+#metas .m i{position:absolute;inset:0 auto 0 0;background:#ffd23f33}
+#metas .m span{position:relative}
+#metas .m.ya{outline:1px solid var(--ac);color:var(--ac)}
+#der{right:10px;top:10px;text-align:right;width:calc(215px*var(--f))}
+#tabla{background:#0007;border-radius:6px;padding:4px 7px;margin-top:6px;font-size:.8em;text-align:left}
+#tabla div{display:flex;gap:5px;align-items:center;white-space:nowrap}
+#tabla div b{flex:1;overflow:hidden;text-overflow:ellipsis}
+#tabla i{width:9px;height:9px;border-radius:2px;display:inline-block;flex:none}
+#tabla .off{opacity:.5}
+#contratos{left:10px;bottom:10px;width:calc(270px*var(--f));font-size:.82em}
+#contratos .c{background:#0008;border-left:3px solid var(--ac);border-radius:4px;padding:3px 7px;margin-top:4px}
+#contratos .c small{color:var(--ac);font-weight:700}
+#objetos{right:10px;bottom:10px;display:flex;gap:4px}
+#objetos div{background:#0008;border:1px solid var(--borde);border-radius:6px;padding:3px 6px;text-align:center;min-width:44px;font-size:.78em;cursor:pointer}
+#objetos kbd{display:block;font:700 1.15em system-ui;color:var(--ac)}
+#objetos .n0{opacity:.4}
+#avisos{left:10px;top:calc(120px*var(--f));width:calc(260px*var(--f));font-size:.8em}
+#avisos div{background:#0008;border-radius:4px;padding:2px 7px;margin-top:3px;animation:entra .25s}
+@keyframes entra{from{opacity:0;transform:translateX(-12px)}}
+#tarjeta{left:50%;top:13%;transform:translateX(-50%);text-align:center;width:min(430px,82vw)}
+#tarjeta div{background:#120b08ee;border:2px solid var(--ac);border-radius:10px;padding:10px 16px;margin-bottom:8px;animation:pop .3s}
+#tarjeta div.msj{border-color:var(--az);text-align:left}
+#tarjeta h3{margin:0 0 2px;color:var(--ac);font-size:1.1em}#tarjeta .msj h3{color:var(--az)}
+#tarjeta p{margin:0;color:var(--su)}
+@keyframes pop{from{transform:scale(.7);opacity:0}}
+#pista{left:50%;bottom:16%;transform:translateX(-50%);background:#000a;border-radius:6px;padding:4px 12px;font-weight:700;display:none}
+#aviso-red{left:50%;top:40%;transform:translate(-50%,-50%);background:#000d;border:2px solid var(--mal);border-radius:10px;padding:14px 22px;font-weight:800;display:none}
+#cuenta{left:50%;top:14%;transform:translateX(-50%);font-size:2em;font-weight:900;color:var(--ac);display:none;text-align:center}
+#velo{position:fixed;inset:0;background:#000b;display:none;align-items:center;justify-content:center;padding:12px;z-index:5}
+#velo.on{display:flex}
+.caja{background:var(--caja);border:2px solid var(--borde);border-radius:12px;width:min(760px,100%);max-height:94vh;display:flex;flex-direction:column;box-shadow:0 12px 40px #000a}
+.caja header{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--borde)}
+.caja header h2{margin:0;font-size:1.2em;flex:1}
+.caja header .d{color:var(--ac);font-weight:800}
+.cuerpo{padding:10px 14px;overflow:auto;-webkit-user-select:text;user-select:text}
+.pest{display:flex;gap:4px;flex-wrap:wrap;padding:8px 14px 0}
+.pest button{background:transparent;color:var(--su);border:1px solid var(--borde);font-weight:600}
+.pest button.on{background:var(--ac);color:#1b120e}
+.fila{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #ffffff14}
+.fila .t{flex:1;min-width:0}.fila .t b{display:block}.fila .t small{color:var(--su);display:block}
+.fila .v{color:var(--ac);font-weight:800;white-space:nowrap}
+.fila.tengo{opacity:.55}.fila.act{background:#ffd23f14;border-radius:6px;padding:7px 8px}
+.nota{color:var(--su);font-size:.9em;margin:.4em 0}
+.grande{font-size:1.6em;font-weight:900;color:var(--ac)}
+.rej{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.rej>div{background:#0004;border:1px solid var(--borde);border-radius:8px;padding:7px 9px}
+.rej>div.no{opacity:.4}
+.rej b{display:block}.rej small{color:var(--su)}
+.maqs{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:8px 0}
+.maqs button{background:#0004;border:2px solid var(--borde);padding:6px;height:70px}
+.maqs button.on{border-color:var(--ac);background:#ffd23f22}
+.maqs canvas{position:static;width:56px;height:56px}
+label.op{display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:1px solid #ffffff14}
+label.op span{flex:1}
+h4{margin:12px 0 4px;color:var(--ac)}
+a{color:var(--az)}
+@media (max-width:760px){#metas{top:auto;bottom:calc(120px*var(--f));width:60vw}#avisos{display:none}}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div class="hud" id="izq">
+  <div>Combustible</div><div class="barra" id="bComb"><i></i><b></b></div>
+  <div>Casco</div><div class="barra" id="bCasco"><i></i><b></b></div>
+  <div id="datos"><span id="prof">0 m</span><span id="din">$0</span><span id="bod">0/7</span></div>
+</div>
+<div class="hud" id="metas"></div>
+<div class="hud" id="der"><button id="bMenu" class="s">☰ Menú (Esc)</button><div id="tabla"></div></div>
+<div class="hud" id="avisos"></div>
+<div class="hud" id="contratos"></div>
+<div class="hud" id="objetos"></div>
+<div class="hud" id="tarjeta"></div>
+<div class="hud" id="pista"></div>
+<div class="hud" id="cuenta"></div>
+<div class="hud" id="aviso-red">Reconectando con el mundo…</div>
+
+<div id="velo"><div class="caja" id="caja"></div></div>
+
+<script src="/juego.js" defer></script>
+<!-- RLR · Ricardo López Reyero -->
+</body>
+</html>
