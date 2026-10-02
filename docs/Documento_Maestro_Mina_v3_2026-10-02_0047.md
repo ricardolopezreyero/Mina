@@ -1,4 +1,4 @@
-# DOCUMENTO MAESTRO · «Mina» · v2
+# DOCUMENTO MAESTRO · «Mina» · v3
 
 **Ver en vivo: https://mina.capitaltorreon.com**
 
@@ -91,7 +91,7 @@ Cada celda se decide con un número al azar fijo, calculado con la semilla del m
 
 | Cosa | Valor |
 |---|---|
-| Paso de la física | Fijo, de 1/120 de segundo como máximo: se mueve igual a 30 que a 144 cuadros |
+| Paso de la física | Fijo, de 1/120 de segundo exacto |
 | Gravedad | 14 celdas/s² |
 | Velocidad de lado | 5 celdas/s con motor de fábrica, +1 por cada 30 caballos |
 | Velocidad de subida | 6 celdas/s, +1 por cada 20 caballos |
@@ -192,9 +192,9 @@ Mensajes por hora de juego de una persona: unos 5,000 si juega sola y unos 41,00
 
 | Tope (sección 9 del prompt) | Medido |
 |---|---|
-| Descarga inicial ≤ 150 KB comprimida | **31.5 KB** (página 2.9 + juego 28.6) |
+| Descarga inicial ≤ 150 KB comprimida | **44.2 KB** (página 3.0 + juego 41.2) |
 | 3 solicitudes o menos | **2** |
-| Trabajo por cuadro < 4 ms | **0.68 ms** de dibujo en un lienzo de 2048 × 1536; la física no llega a 0.01 ms |
+| Trabajo por cuadro < 4 ms | **0.35 a 0.62 ms** de dibujo en un lienzo de 2800 × 1600; la física no llega a 0.01 ms |
 | Guardado de una capa: 6 KB | 6,000 bytes |
 | Sin librerías, imágenes, audios ni fuentes | Cumple |
 | Procesador en 0 % sin actividad | El ciclo se detiene en menús y pausa; queda un reloj de 1 segundo |
@@ -220,7 +220,39 @@ Dos diferencias con el prompt, las dos a favor de la ligereza:
 
 ---
 
-## 7. Revisión de código del 2 de octubre
+## 7. El motor de tiempo y de dibujo (tercera iteración)
+
+**Meta:** que cada pantalla reciba el máximo de cuadros que puede mostrar y que todos vean excavar a los demás al mismo ritmo.
+
+| Parte | Cómo funciona |
+|---|---|
+| Física | Pasos fijos de 1/120 s. El resultado no depende de la pantalla (antes el daño por caída cambiaba con el refresco). |
+| Dibujo | Corre al ritmo de cada pantalla (60, 90, 120, 144…) y coloca la maquinita entre los dos últimos pasos de física. |
+| Refresco de la pantalla | Se mide solo: los primeros cuadros se dibujan ligeros para ver el ritmo real, y se sigue midiendo por si el jugador cambia de pantalla. |
+| Nitidez adaptable | Tres escalones (100 %, 75 %, 50 %). Si el equipo no alcanza el refresco de su pantalla, baja la nitidez antes que la fluidez; cuando sobra, la vuelve a subir. |
+| Tope a mano | Opciones → Cuadros por segundo: lo máximo, 60 o 30. Ahí mismo se ve el refresco medido, los cuadros reales y la señal. |
+| Demás jugadores | Cada posición se guarda con su hora de llegada y se dibuja unos 135 ms atrás, entre dos posiciones reales: movimiento continuo aunque los mensajes lleguen disparejos. Se envía 15 veces por segundo, o 8 si la conexión va lenta. |
+| Señal | Un eco cada 5 s mide el retraso y detecta conexiones muertas (3 ecos sin respuesta: se reconecta). |
+| Lo que hacen los demás | Sus perforaciones sueltan tierra y suenan según la distancia; sus explosiones tiemblan y truenan si están cerca. |
+| Perforar | Con la tecla apretada, al terminar una celda arranca la siguiente en el mismo paso, sin parones. |
+| Cámara | Sigue a la maquinita; la rueda o el trackpad la mueven para mirar alrededor y cualquier flecha la regresa. |
+
+Medido: dibujar un cuadro a 2800 × 1600 toma 0.35 ms en la superficie y 0.62 ms bajo tierra. En la prueba de dos jugadores, 138 posiciones seguidas del otro avanzaron sin un solo retroceso.
+
+**Sin probar con cuadros reales:** el panel de pruebas sigue oculto. El ritmo real a 120 Hz se confirma jugando; Opciones muestra los números.
+
+### Lo demás de esta iteración
+
+- **Gráficos**: tierra con textura y piedritas, bordes sombreados hacia los túneles, fondo de túnel con textura, cada mineral con su forma (rocas, pepitas, barras, cristales, gemas, diamantes, racimos) y destellos, lava que pulsa, luz propia de la maquinita que se oscurece con la profundidad, cielo con sol, nubes y cerros en tres planos, y los cinco edificios dibujados con detalle. Todo sigue pintado por código: la descarga creció a unos 44 KB.
+- **Grúa**: mientras subes aparece el precio; la tecla E te deja en la Gasolinera. Cuesta $0.75 por metro y por tonelada [N] (distancia en línea recta, peso de la maquinita más la carga), mínimo $10.
+- **Avisos**: compactos y en la columna derecha, bajo la tabla; el centro de la pantalla queda libre.
+- **Maquinita**: en Menú → Mundo se ve su estado completo y se copia su liga. La llave va después del `#`, así el navegador nunca la manda al servidor dentro de la dirección.
+- **Quién manda en el mundo**: quien lo crea recibe una llave de dueño; antes mandaba el primero en bautizarse.
+- **Teclas**: dejar apretada una tecla de objeto ya no la dispara treinta veces por segundo.
+
+---
+
+## 8. Revisión de código del 2 de octubre
 
 Se revisó todo el código buscando fallas y se corrigieron estas:
 
@@ -250,7 +282,7 @@ Prueba automática: un jugador simulado con teclas al azar durante 40 y 60 minut
 
 ---
 
-## 8. Decisiones que te tocan
+## 9. Decisiones que te tocan
 
 1. **Parado en la superficie no se gasta combustible.** Lo puse porque un jugador nuevo explotaba leyendo la bienvenida. El original sí gasta. Recomiendo dejarlo.
 2. **Se entra a los edificios con ↓**, no al pasar. Con cinco edificios seguidos, entrar al pasar estorbaba. Recomiendo dejarlo.

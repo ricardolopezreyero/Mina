@@ -14,10 +14,10 @@
 /* RLR · todo el estilo va aquí: una sola descarga, tipografía del sistema */
 :root{--f:1;--bg:#1b120e;--caja:#2a1c16;--borde:#5a3d2c;--tx:#f3e6d8;--su:#c9b29c;--ac:#ffd23f;--ok:#6fdc7a;--mal:#ff6b5a;--az:#6ec3ff}
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--tx);
+html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;background:var(--bg);color:var(--tx);
   font:calc(14px*var(--f))/1.35 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-user-select:none;user-select:none}
 body.contraste{--caja:#000;--borde:#fff;--tx:#fff;--su:#fff;--ac:#ffe600}
-canvas{position:fixed;inset:0;width:100%;height:100%;display:block;image-rendering:pixelated}
+canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
 button{font:inherit;color:#1b120e;background:var(--ac);border:0;border-radius:6px;padding:.45em .9em;font-weight:700;cursor:pointer}
 button:hover{filter:brightness(1.1)}button:disabled{background:#6b5a4c;color:#2a1c16;cursor:not-allowed;filter:none}
 button.s{background:transparent;color:var(--tx);border:1px solid var(--borde)}
@@ -40,7 +40,7 @@ body.jugando .hud{visibility:visible}
 #metas .m i{position:absolute;inset:0 auto 0 0;background:#ffd23f33}
 #metas .m span{position:relative}
 #metas .m.ya{outline:1px solid var(--ac);color:var(--ac)}
-#der{right:10px;top:10px;text-align:right;width:calc(215px*var(--f))}
+#der{right:10px;top:10px;text-align:right;width:calc(250px*var(--f))}
 #tabla{background:#0007;border-radius:6px;padding:4px 7px;margin-top:6px;font-size:.8em;text-align:left}
 #tabla div{display:flex;gap:5px;align-items:center;white-space:nowrap}
 #tabla div b{flex:1;overflow:hidden;text-overflow:ellipsis}
@@ -56,13 +56,15 @@ body.jugando .hud{visibility:visible}
 #avisos{left:10px;top:calc(120px*var(--f));width:calc(260px*var(--f));font-size:.8em}
 #avisos div{background:#0008;border-radius:4px;padding:2px 7px;margin-top:3px;animation:entra .25s}
 @keyframes entra{from{opacity:0;transform:translateX(-12px)}}
-#tarjeta{left:50%;top:13%;transform:translateX(-50%);text-align:center;width:min(430px,82vw)}
-#tarjeta div{background:#120b08ee;border:2px solid var(--ac);border-radius:10px;padding:10px 16px;margin-bottom:8px;animation:pop .3s}
-#tarjeta div.msj{border-color:var(--az);text-align:left}
-#tarjeta h3{margin:0 0 2px;color:var(--ac);font-size:1.1em}#tarjeta .msj h3{color:var(--az)}
-#tarjeta p{margin:0;color:var(--su)}
-@keyframes pop{from{transform:scale(.7);opacity:0}}
-#pista{left:50%;bottom:16%;transform:translateX(-50%);background:#000a;border-radius:6px;padding:4px 12px;font-weight:700;display:none}
+#tarjeta{margin-top:6px;text-align:left;font-size:.82em}
+#tarjeta div{background:#120b08e6;border-left:3px solid var(--ac);border-radius:6px;padding:4px 9px;margin-bottom:5px;animation:pop .25s}
+#tarjeta div.msj{border-left-color:var(--az)}
+#tarjeta h3{margin:0;color:var(--ac);font-size:1em;line-height:1.25}#tarjeta .msj h3{color:var(--az)}
+#tarjeta p{margin:1px 0 0;color:var(--su);line-height:1.25}
+@keyframes pop{from{transform:translateX(14px);opacity:0}}
+#grua{left:50%;bottom:calc(16% + 34px);transform:translateX(-50%);background:#000b;border:1px solid var(--ac);border-radius:6px;padding:3px 12px;display:none;white-space:nowrap}
+#grua b{color:var(--ac)}
+#pista{left:50%;bottom:16%;white-space:nowrap;transform:translateX(-50%);background:#000a;border-radius:6px;padding:4px 12px;font-weight:700;display:none}
 #aviso-red{left:50%;top:40%;transform:translate(-50%,-50%);background:#000d;border:2px solid var(--mal);border-radius:10px;padding:14px 22px;font-weight:800;display:none}
 #cuenta{left:50%;top:14%;transform:translateX(-50%);font-size:2em;font-weight:900;color:var(--ac);display:none;text-align:center}
 #velo{position:fixed;inset:0;background:#000b;display:none;align-items:center;justify-content:center;padding:12px;z-index:5}
@@ -71,7 +73,7 @@ body.jugando .hud{visibility:visible}
 .caja header{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--borde)}
 .caja header h2{margin:0;font-size:1.2em;flex:1}
 .caja header .d{color:var(--ac);font-weight:800}
-.cuerpo{padding:10px 14px;overflow:auto;-webkit-user-select:text;user-select:text}
+.cuerpo{padding:14px 14px 12px;overflow:auto;-webkit-user-select:text;user-select:text}
 .pest{display:flex;gap:4px;flex-wrap:wrap;padding:8px 14px 0}
 .pest button{background:transparent;color:var(--su);border:1px solid var(--borde);font-weight:600}
 .pest button.on{background:var(--ac);color:#1b120e}
@@ -89,6 +91,9 @@ body.jugando .hud{visibility:visible}
 .maqs button{background:#0004;border:2px solid var(--borde);padding:6px;height:70px}
 .maqs button.on{border-color:var(--ac);background:#ffd23f22}
 .maqs canvas{position:static;width:56px;height:56px}
+.maq{display:flex;gap:12px;align-items:center;background:#0004;border:1px solid var(--borde);border-radius:8px;padding:8px 10px}
+.maq canvas{position:static;width:80px;height:80px;flex:none}
+.maq small{display:block;color:var(--su);margin-top:2px}
 label.op{display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:1px solid #ffffff14}
 label.op span{flex:1}
 h4{margin:12px 0 4px;color:var(--ac)}
@@ -105,11 +110,11 @@ a{color:var(--az)}
   <div id="datos"><span id="prof">0 m</span><span id="din">$0</span><span id="bod">0/7</span></div>
 </div>
 <div class="hud" id="metas"></div>
-<div class="hud" id="der"><button id="bMenu" class="s">☰ Menú (Esc)</button><div id="tabla"></div></div>
+<div class="hud" id="der"><button id="bMenu" class="s">☰ Menú (Esc)</button><div id="tabla"></div><div id="tarjeta"></div></div>
 <div class="hud" id="avisos"></div>
 <div class="hud" id="contratos"></div>
 <div class="hud" id="objetos"></div>
-<div class="hud" id="tarjeta"></div>
+<div class="hud" id="grua"></div>
 <div class="hud" id="pista"></div>
 <div class="hud" id="cuenta"></div>
 <div class="hud" id="aviso-red">Reconectando con el mundo…</div>

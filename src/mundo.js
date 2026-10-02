@@ -86,11 +86,12 @@ export class Mundo extends DurableObject {
   async crear() {
     if (await this.ctx.storage.get("meta")) return false;
     const seed = crypto.getRandomValues(new Uint32Array(1))[0];
-    const meta = { seed, remin: 0, reminAt: 0, cfg: { ...CFG_BASE }, creado: Date.now(), visto: Date.now(), n: 0 };
+    const dueno = [...crypto.getRandomValues(new Uint8Array(16))].map((b) => b.toString(16).padStart(2, "0")).join("");
+    const meta = { seed, remin: 0, reminAt: 0, cfg: { ...CFG_BASE }, creado: Date.now(), visto: Date.now(), n: 0, dueno, creador: -1 };
     await this.ctx.storage.put({ meta, dug: new Uint8Array(BYTES) });
     await this.ctx.storage.setAlarm(Date.now() + DIA);   // si nadie llega a bautizarse, se borra en un día
     this.m = null;
-    return true;
+    return dueno;
   }
 
   async cargar() {
@@ -114,6 +115,9 @@ export class Mundo extends DurableObject {
     }
     return s;
   }
+
+  // Mundos anteriores a la llave de dueño: el creador es la primera maquinita.
+  creador() { const m = this.m; return m.dueno ? m.creador : 0; }
 
   publico(i, on) {
     const j = this.jug[i];
@@ -139,8 +143,8 @@ export class Mundo extends DurableObject {
   async programar() {
     const m = this.m;
     if (!m) return;
-    let cuando = this.jug.length ? m.visto + CADUCA : m.creado + DIA;
-    if (this.sucio.meta || this.sucio.dug || this.sucio.jug.size) cuando = Math.min(cuando, Date.now() + 8000);
+    let cuando = Math.max(Date.now() + 3600000, this.jug.length ? m.visto + CADUCA : m.creado + DIA);
+    if (this.sucio.meta || this.sucio.dug || this.sucio.jug.size) cuando = Math.min(cuando, Date.now() + 5000);
     if (m.reminAt) cuando = Math.min(cuando, m.reminAt);
     const actual = await this.ctx.storage.getAlarm();
     if (actual === null || cuando < actual || actual < Date.now()) await this.ctx.storage.setAlarm(cuando);
@@ -233,19 +237,19 @@ export class Mundo extends DurableObject {
         return;
       }
       case "cfg":
-        if (i !== 0) return;
+        if (i !== this.creador()) return;
         m.cfg = cfgLimpia(d.cfg, m.cfg);
         this.sucio.meta = true;
         this.difundir({ t: "cfg", cfg: m.cfg, i });
         break;
       case "remin":
-        if (m.reminAt || (!m.cfg.reminTodos && i !== 0)) return;
+        if (m.reminAt || (!m.cfg.reminTodos && i !== this.creador())) return;
         m.reminAt = Date.now() + 10000;
         await this.ctx.storage.put("meta", m);
         this.difundir({ t: "cuenta", s: 10, i });
         break;
       case "borrar":
-        if (i !== 0) return;
+        if (i !== this.creador()) return;
         this.difundir({ t: "borrado" });
         for (const s of this.ctx.getWebSockets()) { try { s.close(4001, "borrado"); } catch {} }
         await this.ctx.storage.deleteAlarm();
@@ -290,13 +294,14 @@ export class Mundo extends DurableObject {
 
     ws.serializeAttachment({ i });
     on.add(i);
+    if (m.dueno && m.creador !== i && d.d === m.dueno) m.creador = i;
     m.visto = Date.now();
     this.sucio.meta = true;
 
     let b = "";
     for (let x = 0; x < BYTES; x++) b += String.fromCharCode(this.dug[x]);
     manda(ws, {
-      t: "mundo", i, seed: m.seed, remin: m.remin, cfg: m.cfg, creador: i === 0 ? 1 : 0,
+      t: "mundo", i, seed: m.seed, remin: m.remin, cfg: m.cfg, creador: i === this.creador() ? 1 : 0,
       est: this.jug[i].est, cuenta: m.reminAt ? Math.max(0, Math.ceil((m.reminAt - Date.now()) / 1000)) : 0,
       jug: this.jug.map((j, x) => (j ? this.publico(x, on.has(x)) : null)).filter(Boolean),
       dug: btoa(b),
@@ -358,7 +363,8 @@ export default {
       if (!(await portero.permiso(quien))) return json({ error: "limite" }, 429);
       for (let n = 0; n < 5; n++) {
         const id = nuevoId();
-        if (await env.MUNDO.get(env.MUNDO.idFromName(id)).crear()) return json({ id });
+        const d = await env.MUNDO.get(env.MUNDO.idFromName(id)).crear();
+        if (d) return json({ id, d });
       }
       return json({ error: "reintenta" }, 503);
     }
