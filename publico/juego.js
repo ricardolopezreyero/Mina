@@ -273,12 +273,12 @@ const PZ = [
 
 /* ── Los 6 objetos ── */
 const OBJ = [
-  { n: 'Tanque de reserva', ic: '🛢️', p: 2000, k: 'F', ef: '+25 litros. Se usa cuando sea.', h: 'Un respiro embotellado. No se abre solo: acuérdate de él.' },
-  { n: 'Nanobots reparadores', ic: '🤖', p: 7500, k: 'R', ef: '+30 de vida. Se usan cuando sea.', h: 'Un enjambre que suelda el casco desde adentro mientras sigues trabajando.' },
-  { n: 'Dinamita', ic: '🧨', p: 2000, k: 'X', ef: 'Destruye 3 × 3 celdas a tu alrededor. Se usa donde sea: también volando.', h: 'Abre paso donde el taladro no entra. También borra lo valioso: mira antes de prender.' },
-  { n: 'Explosivo plástico', ic: '💣', p: 5000, k: 'C', ef: 'Destruye 5 × 5 celdas a tu alrededor. Se usa donde sea.', h: 'Lo mismo, pero sin sutilezas.' },
+  { n: 'Tanque de reserva', ic: '🛢️', p: 2000, k: 'R', ef: '+25 litros. Se usa cuando sea.', h: 'Un respiro embotellado. No se abre solo: acuérdate de él.' },
+  { n: 'Nanobots reparadores', ic: '🤖', p: 7500, k: 'N', ef: '+30 de vida. Se usan cuando sea.', h: 'Un enjambre que suelda el casco desde adentro mientras sigues trabajando.' },
+  { n: 'Dinamita', ic: '🧨', p: 2000, k: 'D', ef: 'Destruye 3 × 3 celdas a tu alrededor. Se usa donde sea: también volando.', h: 'Abre paso donde el taladro no entra. También borra lo valioso: mira antes de prender.' },
+  { n: 'Explosivo plástico', ic: '💣', p: 5000, k: 'P', ef: 'Destruye 5 × 5 celdas a tu alrededor. Se usa donde sea.', h: 'Lo mismo, pero sin sutilezas.' },
   { n: 'Teletransportador cuántico', ic: '🌀', p: 2000, k: 'Q', ef: 'Te lleva a la superficie; puede lanzarte por el aire.', h: 'Barato y brusco. Llegas, pero no siempre de pie.' },
-  { n: 'Transmisor de materia', ic: '🛸', p: 10000, k: 'M', ef: 'Te lleva a la superficie sin riesgo.', h: 'Caro y elegante. Apareces junto a la gasolinera sin un rasguño.' },
+  { n: 'Transmisor de materia', ic: '🛸', p: 10000, k: 'T', ef: 'Te lleva a la superficie sin riesgo.', h: 'Caro y elegante. Apareces junto a la gasolinera sin un rasguño.' },
 ];
 
 const CORTO = ['Reserva', 'Nanobots', 'Dinamita', 'Plástico', 'Cuántico', 'Transmisor'];
@@ -1121,7 +1121,7 @@ const TUTORIAL = [
   { tp: 'prof', a: 70, tx: 'Llega a 70 m de profundidad', pg: 200 },
   { tp: 'llena', tx: 'Regresa con la bodega llena y véndela', pg: 300 },
   { tp: 'prof', a: 140, tx: 'Llega a 140 m', pg: 400 },
-  { tp: 'expl', tx: 'Te regalamos una dinamita: úsala bajo tierra con la tecla X', pg: 500, regalo: 2 },
+  { tp: 'expl', tx: 'Te regalamos una dinamita: úsala bajo tierra con la tecla D', pg: 500, regalo: 2 },
   { tp: 'vende', a: 4, b: 1, pr: 0, tx: 'Vende una pieza de Platino (aparece desde 110 m)', pg: 750 },
 ];
 function mineralComun() { let b = 0; for (let i = 0; i < MIN.length; i++) if (MIN[i].c <= S.rec + 30) b = i; return b; }
@@ -1206,7 +1206,7 @@ function morir(causa) {
   const gas = causa === 'una bolsa de gas', sg = gasSeguro();
   const titulo = causa === 'combustible' ? '💥 Te quedaste sin combustible' : gas ? '💥 Te explotó una bolsa de gas' : causa === 'la lava' ? '💥 La lava fundió tu maquinita' : causa === 'una caída' ? '💥 Te estrellaste' : '💥 Tu maquinita explotó';
   const porque = gas ? `A ${ultGolpe.m} m el gas pegó ${ultGolpe.q} y tu casco aguanta ${tenia}. Con lo que traes aguantas el gas hasta ${sg < 650 ? 'ninguna profundidad' : sg + ' m'}: mejora casco y radiador en El Taller, o vuela con dinamita la tierra que burbujea. `
-    : causa === 'combustible' ? `Fue a ${dondeFue}. Regresa antes de que el medidor se ponga rojo, o lleva un tanque de reserva (tecla F). `
+    : causa === 'combustible' ? `Fue a ${dondeFue}. Regresa antes de que el medidor se ponga rojo, o lleva un tanque de reserva (tecla R). `
     : causa === 'la lava' ? `La lava pegó ${ultGolpe.q} y tu casco aguanta ${tenia}. Rodéala, vuélala con dinamita o compra radiador. ` : '';
   tarjeta(titulo, porque + 'La grúa de rescate te dejó en la superficie. ' + x, '', 14000, true);
   difundir(causa === 'combustible' ? 'se quedó sin combustible' : 'explotó (' + causa + ')');
@@ -1407,7 +1407,7 @@ function perforar(x, y) {
     if (tiempo - ultNo > 0.4) {
       son.piedra(); ultNo = tiempo;
       if (t === 2) { const D = PIEDRA[durezaDe((y + 1) * 2)], falta = PZ[0].niv[D[0]][0]; if (tiempo - tAvisoPiedra > 6) { tAvisoPiedra = tiempo; flota(x + 0.5, y - 0.1, 'Piedra ' + D[1] + ' · pide ' + falta, '#d9dde4'); }
-        if (!S.fl.piedra) { S.fl.piedra = 1; tarjeta('Piedra', `Tu taladro no entra. Rodéala, vuélala con dinamita (X) o consigue ${falta} en El Taller: con ese ya la perforas.`, '', 9000); } }
+        if (!S.fl.piedra) { S.fl.piedra = 1; tarjeta('Piedra', `Tu taladro no entra. Rodéala, vuélala con dinamita (D) o consigue ${falta} en El Taller: con ese ya la perforas.`, '', 9000); } }
     }
     return;
   }
@@ -1703,7 +1703,7 @@ function iniciarMundo(d, local) {
   document.body.classList.add('jugando');
   surtirContratos(); pintarHud(true); pintarTabla(); if (!local) ponerChat(d.chat); arrancar();
   { const f = new Date(), hoy = f.getDate() + '/' + (f.getMonth() + 1); if (primera && hoy === '11/7') tarjeta('⛏️ ¡Feliz Día del Minero!', 'Hoy, 11 de julio, México celebra a su gente de mina. Buen turno.', 'msj', 10000); if (primera && hoy === '4/12') tarjeta('🕯️ Día de Santa Bárbara', 'Hoy, 4 de diciembre, las minas festejan a su patrona.', 'msj', 10000); }
-  if (primera && !d.est) tarjeta('⛏️ Tu maquinita se llama ' + miNombre, (tactil ? 'Arrastra el dedo para moverte.' : 'Flechas o WASD para moverte.') + ' Primero: carga combustible en la Gasolinera (' + (tactil ? 'un toque' : '↓') + ' para entrar). El nombre se cambia en Menú → Mundo.', 'msj', 11000);
+  if (primera && !d.est) tarjeta('⛏️ Tu maquinita se llama ' + miNombre, (tactil ? 'Arrastra el dedo para moverte.' : 'Usa las flechas para moverte.') + ' Primero: carga combustible en la Gasolinera (' + (tactil ? 'un toque' : '↓') + ' para entrar). El nombre se cambia en Menú → Mundo.', 'msj', 11000);
   if (primera) { const n = leer('mina_nota', ''); if (n) { try { localStorage.removeItem('mina_nota'); } catch {} aviso(n); } }
 }
 
@@ -2761,7 +2761,7 @@ function nodoChat(m, ant) {
 }
 const chatAbajo = () => { const L = $('#chatLista'); return L.scrollHeight - L.scrollTop - L.clientHeight < 70; };
 const chatAlFondo = () => { const L = $('#chatLista'); L.scrollTop = L.scrollHeight; chat.nuevos = 0; $('#chatNuevos').style.display = 'none'; };
-function pintarChatBoton() { poner($('#bChat'), '💬 Chat' + (chat.sinLeer ? `<i>${chat.sinLeer > 99 ? '99+' : chat.sinLeer}</i>` : '')); const v = $('#verChat'); if (v) poner(v, '💬' + (chat.sinLeer ? `<i>${chat.sinLeer}</i>` : '')); }
+function pintarChatBoton() { poner($('#bChat'), '<kbd>C</kbd>💬 Chat' + (chat.sinLeer ? `<i>${chat.sinLeer > 99 ? '99+' : chat.sinLeer}</i>` : '')); const v = $('#verChat'); if (v) poner(v, '<kbd>C</kbd>💬' + (chat.sinLeer ? `<i>${chat.sinLeer}</i>` : '')); }
 // Un mensaje (o una nota chica: quién entró, quién descubrió qué) se agrega al final.
 function agregarChat(m) {
   const ant = chat.l[chat.l.length - 1], abajo = chatAbajo(), mio = !m.nota && !soloVer && m.i === miI;
@@ -3131,7 +3131,7 @@ function pintarViaje() {
   h += `<div class="l rec" title="${sig ? 'Sigue: ' + sig[1] + ' a los ' + sig[0].toLocaleString('es-MX') + ' m' : 'Llegaste al último rango'}"><span>Récord</span><b>${S.rec.toLocaleString('es-MX')} m · ${RANGOS[S.rango][1]}</b></div>`;
   poner($('#vjDatos'), h);
   const b = $('#bGrua'), c = lejos ? costoGrua() : 0;
-  poner(b, lejos ? `<span>🚁 Grúa a la Gasolinera · <b>${fmt(c)}</b>${S.d < c ? ' · no te alcanza' : ''}</span><kbd>E</kbd>` : '');
+  poner(b, lejos ? `<span>🚁 Grúa a la Gasolinera · <b>${fmt(c)}</b>${S.d < c ? ' · no te alcanza' : ''}</span><kbd>G</kbd>` : '');
   b.style.display = lejos ? 'flex' : 'none'; b.classList.toggle('no', S.d < c);
 }
 // El velocímetro, a la izquierda: aparece al volar o caer. La escala se aprieta al crecer para que quepa de 0 a 100,000 km/h.
@@ -3379,7 +3379,7 @@ function pintarMenu() {
   } else if (menu === 'ele') {
     const u = ultimoPunto(), fila = (ic, n, sub, m, v) => `<div class="fila"><div class="ic">${ic}</div><div class="t"><b>${n}</b><small>${sub}</small></div><div class="v">${fmt(costoEle(m))}</div><button data-a="bajar" data-v="${v}" ${S.d >= costoEle(m) ? '' : 'disabled'}>Bajar</button></div>`;
     const tope = Math.floor(S.rec / 10) * 10, def = Math.max(10, Math.min(tope, eleM || tope));
-    h = cab('🛗 El Elevador') + `<div class="cuerpo"><p class="nota">El malacate te baja en un instante: a un lugar que ya descubriste o a los metros que tú digas. Cobra $50 por metro. Para subir, la grúa (tecla E).</p><div class="dos"><div>
+    h = cab('🛗 El Elevador') + `<div class="cuerpo"><p class="nota">El malacate te baja en un instante: a un lugar que ya descubriste o a los metros que tú digas. Cobra $50 por metro. Para subir, la grúa (tecla G).</p><div class="dos"><div>
       <h4>A un lugar</h4>` +
       (u ? fila('📍', 'Donde te quedaste', `A ${Math.round((u.y + HH) * 2).toLocaleString('es-MX')} m: donde te recogió la grúa o el rescate.`, (u.y + HH) * 2, 'u') : '<div class="fila tengo"><div class="ic">📍</div><div class="t"><b>Donde te quedaste</b><small>Cuando la grúa te suba desde abajo, aquí aparecerá ese punto para regresar.</small></div></div>') +
       LUGARES.map((L, i) => [L, i]).sort((a, b) => a[0].m - b[0].m).map(([L, i]) => S.lug[i] ? fila(L.ic, L.n, L.tx, L.m, i) : `<div class="fila tengo"><div class="ic">❔</div><div class="t"><b>Lugar sin descubrir</b><small>Dicen que hay algo cerca de los ${L.m.toLocaleString('es-MX')} m.</small></div></div>`).join('') +
@@ -3731,12 +3731,13 @@ function menuPrincipal() {
   } else if (pestana === 10) {
     h += htmlTop();
   } else {
-    h += `<p><b>Moverte:</b> flechas o WASD. <b>↑</b> vuela. <b>↓</b> perfora hacia abajo. <b>← →</b> contra una pared, perfora de lado. Nunca se perfora hacia arriba.</p>
+    h += `<p><b>Moverte:</b> con las flechas. <b>↑</b> vuela. <b>↓</b> perfora hacia abajo. <b>← →</b> contra una pared, perfora de lado. Nunca se perfora hacia arriba.</p>
       <p><b>El ciclo:</b> baja, llena la bodega, sube, vende en La Báscula, carga combustible y mejora tu equipo en El Taller. En la superficie, párate frente a un edificio y pulsa ↓.</p>
-      <p><b>Objetos:</b> F tanque de reserva · R nanobots · X dinamita · C explosivo plástico · Q teletransportador · M transmisor. En El Almacén se compran de a 1, 5, 10, 50 o 100.</p>
+      <p><b>Las teclas son la inicial de lo que hacen:</b> <b>R</b> Reserva · <b>N</b> Nanobots · <b>D</b> Dinamita · <b>P</b> Plástico · <b>Q</b> Cuántico · <b>T</b> Transmisor · <b>C</b> Chat · <b>S</b> Señal · <b>A</b> Ayudar · <b>G</b> Grúa · <b>M</b> Menú.</p>
+      <p><b>Objetos:</b> R tanque de reserva · N nanobots · D dinamita · P explosivo plástico · Q teletransportador cuántico · T transmisor. En El Almacén se compran de a 1, 5, 10, 50 o 100.</p>
       <p><b>El Taller:</b> cada pieza tiene veintiséis mejoras, de $750 a $25 billones ($25 T). Siempre ves las que ya compraste y las diez que siguen.</p>
-      <p><b>Acompañado:</b> G deja una señal que todos ven · T le pasa 5 litros a la maquinita que tengas junto · P pausa tu maquinita.</p>
-      <p><b>Tu viaje:</b> abajo a la izquierda ves cuánto llevas, en cuánto se vende y si el combustible te alcanza para subir. Ahí mismo está la <b>grúa</b> (tecla E): te deja en la Gasolinera y cobra según lo lejos que estés y lo que peses.</p>
+      <p><b>Acompañado:</b> S deja una señal que todos ven · A ayuda a la maquinita que tengas junto: le pasa 5 litros · C abre el chat. Para descansar, abre el menú (M o Esc): con el menú abierto tu maquinita no gasta.</p>
+      <p><b>Tu viaje:</b> abajo a la izquierda ves cuánto llevas, en cuánto se vende y si el combustible te alcanza para subir. Ahí mismo está la <b>grúa</b> (tecla G): te deja en la Gasolinera y cobra según lo lejos que estés y lo que peses.</p>
       <p><b>De regreso:</b> sin tocar nada, la maquinita planea con sus rotorcitos. Con <b>↓</b> los guarda y cae en picada, tres veces más rápido; con <b>↑</b> frena. El velocímetro de la izquierda dice a cuánto vas, y si pasas de Mach 1 dentro del aire, truena.</p>
       <p><b>Hacia arriba:</b> el cielo también se explora, y subir es todo un viaje: halcones y águilas, el atardecer, un avión, la noche con sus constelaciones, la aurora al entrar al espacio (100 km), un cometa, la estación, la Luna que crece y el planeta que se achica hasta que, cerca de los 1,000 km, el Sol vuelve a salir. Son unos 15 minutos de vuelo. Entre más alto, menos combustible se gasta; con un tanque «Cisterna» alcanza. Pasando los 50 m de altura, la barra espaciadora deja a la maquinita subiendo sola.</p>
       <p><b>Lava y gas:</b> la lava (desde 410 m) se ve y se rodea. Las bolsas de gas (desde 650 m) se notan por unas burbujitas verdes y por el aviso «Huele a gas». Pon el ratón encima de cualquiera y te dice cuánto casco te quita. Vuélalas con dinamita o lleva casco y radiador suficientes: arriba, en las metas, dice hasta qué profundidad aguantas.</p>
@@ -3749,12 +3750,12 @@ function menuPrincipal() {
       <p><b>Diez kilómetros:</b> debajo de la Corteza siguen el Acuífero, las Cavernas, la Cristalera y la Zona de presión, con doce minerales nuevos y cuatro lugares por descubrir. Cada lugar que encuentres queda apuntado en <b>El Elevador</b> (el último edificio), que también te regresa al punto donde te recogió la grúa.</p>
       <p><b>Sin internet y como aplicación:</b> Mina se puede instalar (Menú → Opciones) y abre aunque no haya señal. Lo que caves y ganes sin internet se queda en tu equipo y se manda al mundo cuando la señal vuelve. En pantallas táctiles, arrastra el dedo para moverte y da un toque frente a un edificio para entrar.</p>
       <p><b>Tu nombre y tus ligas:</b> la maquinita nace bautizada para que empieces a jugar sin llenar nada; el nombre y el modelo se cambian en Menú → Mundo. Hay dos ligas: la del mundo (invita a excavar) y la tuya (presume tu maquinita); cada una lleva su imagen al mandarla por WhatsApp.</p>
-      <p><b>El chat:</b> pulsa <b>Enter</b> (o el botón 💬 Chat) y escribe. Se abre de izquierda a derecha con todo lo que se ha dicho en este mundo, que queda guardado. Con el chat cerrado, lo que alguien escriba sale abajo un momento. Enter con la caja vacía te regresa al juego con el chat a la vista; Esc lo cierra. Cada maquinita tiene su color, de los cien que hay, según el orden en que entró. El texto se puede seleccionar y copiar, y las ligas se abren con un clic.</p>
+      <p><b>El chat:</b> pulsa <b>C</b> (o el botón 💬 Chat) y escribe; otra vez C, o Esc, lo cierra. Se abre de izquierda a derecha con todo lo que se ha dicho en este mundo, que queda guardado. Con el chat cerrado, lo que alguien escriba sale abajo un momento. Enter con la caja vacía te regresa al juego con el chat a la vista; Esc lo cierra. Cada maquinita tiene su color, de los cien que hay, según el orden en que entró. El texto se puede seleccionar y copiar, y las ligas se abren con un clic.</p>
       <p><b>Top 33 y público:</b> Menú → Top 33 enseña las 33 maquinitas que más han ganado en todos los mundos y cuánto tiempo lleva jugando cada una, en vivo. A la que esté jugando se le puede ir a ver: quien mira entra con una liga propia, no puede jugar ni conoce la liga del mundo. Tu liga para que te vean está en Menú → Mundo, y ahí mismo quien creó el mundo puede cerrarlo al público.</p>
       <p><b>El mundo da la vuelta:</b> si sales por la orilla derecha entras por la izquierda, y al revés, perforando o volando. Todo está conectado.</p>
       <p><b>La Remineralizadora:</b> cuesta el 5 % de todo lo que has ganado en la vida de tu maquinita. Entre más llevas, más cuesta.</p>
       <p><b>Los mundos son para siempre:</b> cada mundo se guarda completo (su terreno celda por celda, sus túneles, sus reglas y su colección) y no se borra nunca, salvo que quien lo creó lo deseche para todos. Con su liga se vuelve a entrar mañana o en dos años, exactamente donde se dejó.</p>
-      <p><b>Explosivos:</b> se usan donde sea, también volando: si topas con piedra al subir, X te abre paso.</p>
+      <p><b>Explosivos:</b> se usan donde sea, también volando: si topas con piedra al subir, D te abre paso.</p>
       <p><b>Piedra:</b> se perfora si tu taladro alcanza. Hay cinco durezas, cada una de un color, según la zona; el Taller dice qué taladro pide cada una. Con el justo tarda 1.5 s; con uno mejor, hasta 0.6 s.</p>
       <p class="nota">Piedra desde 210 m. Lava desde 410 m: se ve, rodéala. Gas desde 650 m: pocas bolsas, y se notan por sus burbujas.</p>`;
   }
@@ -3767,11 +3768,14 @@ function aplicarOp() {
 }
 
 /* ════════ Teclado ════════ */
-const MAPA = { ArrowLeft: 'izq', a: 'izq', ArrowRight: 'der', d: 'der', ArrowUp: 'arr', w: 'arr', ArrowDown: 'aba', s: 'aba' };
+// Las teclas son la inicial, en español, de lo que hacen: Reserva, Nanobots, Dinamita, Plástico, Transmisor (y Q de cuántico),
+// Chat, Señal, Ayudar, Grúa, Menú. Para moverse, las flechas. Por eso ya no hay W A S D: esas letras tienen dueño.
+const MAPA = { ArrowLeft: 'izq', ArrowRight: 'der', ArrowUp: 'arr', ArrowDown: 'aba' };
 addEventListener('keydown', (e) => {
   if (e.target.tagName === 'INPUT' || e.metaKey || e.ctrlKey) return;
   audio(); nacer();
-  if (e.key === 'Enter' && listo && !menu) { e.preventDefault(); return abrirChat(true); }      // Enter abre el chat y deja el cursor listo para escribir
+  if ((e.key === 'c' || e.key === 'C') && listo && !menu && !e.repeat) { e.preventDefault(); return chat.abierto ? cerrarChat() : abrirChat(true); }      // C abre y cierra el chat, con el cursor listo para escribir
+  if (e.key === 'Enter' && listo && !menu) { e.preventDefault(); return abrirChat(true); }
   if (e.key === 'Escape' && chat.abierto && !menu) return cerrarChat();
   if (soloVer) {                                   // mirando: solo se cambia de maquinita o se cierra la tabla
     if (e.key === 'Escape' && menu === 'top') cerrar(); else if (!menu && e.key === 'ArrowRight') verOtra(1); else if (!menu && e.key === 'ArrowLeft') verOtra(-1);
@@ -3779,25 +3783,19 @@ addEventListener('keydown', (e) => {
   }
   const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
   if (e.repeat && !MAPA[k]) return;                 // dejar apretada una tecla no la dispara treinta veces por segundo
-  if (k === 'Escape') { if (menu && menu !== 'inicio') cerrar(); else if (listo && !menu) abrir('menu'); return; }
+  if (k === 'Escape' || k === 'm') { if (menu && menu !== 'inicio') cerrar(); else if (listo && !menu) abrir('menu'); return; }      // M o Esc: el menú (y con el menú abierto, la maquinita descansa)
   if (!listo || menu) return;
-  if (k === 'p') {
-    pausa = !pausa;
-    if (pausa) { detener(); pistaDe = PAUSA; pista('⏸  Pausa · tu maquinita no gasta · pulsa P para seguir'); ultPos = ''; enviarPos(); }
-    else { pista(''); arrancar(); }
-    return;
-  }
   if (pausa) return;
   if (MAPA[k]) {
     e.preventDefault();
     if (MAPA[k] === 'aba' && !e.repeat && pistaDe && pistaDe.id && yo.suelo && yo.y < 0) return abrir(pistaDe.id);
     teclas[MAPA[k]] = true; vistaLibre = false; return;
   }
-  const i = 'frxcqm'.indexOf(k);
+  const i = 'rndpqt'.indexOf(k);                  // Reserva, Nanobots, Dinamita, Plástico, cuántiQo, Transmisor
   if (i >= 0) return usar(i);
-  if (k === 'g') { enviar({ t: 'senal', x: yo.x, y: yo.y }); senales.push({ x: yo.x, y: yo.y, t: 10, n: miNombre }); son.senal(); }
-  if (k === 't') pasarCombustible();
-  if (k === 'e') grua();
+  if (k === 's') { enviar({ t: 'senal', x: yo.x, y: yo.y }); senales.push({ x: yo.x, y: yo.y, t: 10, n: miNombre }); son.senal(); }      // Señal
+  if (k === 'a') pasarCombustible();                // Ayudar: 5 litros a la maquinita de junto
+  if (k === 'g') grua();                            // Grúa
   if (k === ' ') { e.preventDefault(); if (crucero) crucero = false; else if (yo.y < -25) { crucero = true; son.clic(); } }
 });
 // La rueda o el trackpad mueven la vista para mirar alrededor; cualquier flecha la regresa a la maquinita.

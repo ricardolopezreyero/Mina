@@ -124,6 +124,7 @@ body.chat #chat{transform:none;visibility:visible;transition:transform .22s ease
 #chatVivo a{color:#9fd4ff}
 @keyframes chatSale{0%{opacity:0;transform:translateY(6px)}4%{opacity:1;transform:none}86%{opacity:1}100%{opacity:0}}
 body.chat #chatVivo{display:none}
+#botones kbd,#chat header kbd,#verBarra kbd{font:800 1em system-ui;color:var(--ac);margin-right:6px}
 #bChat i,#verChat i{font-style:normal;background:var(--mal);color:#fff;border-radius:99px;padding:0 6px;margin-left:5px;font-size:.8em}
 @media (min-width:761px){#izq,#viaje,#avisos,#regla{transition:left .22s ease}
   body.chat #izq,body.chat #viaje{left:calc(var(--cw) + 10px)}body.chat #avisos{left:calc(var(--cw) + 10px)}body.chat.libre #avisos{left:calc(var(--cw) + 150px*var(--f))}body.chat #regla{left:calc(var(--cw) + 14px)}}
@@ -269,7 +270,7 @@ a{color:var(--az)}
 </div>
 <div class="hud" id="metas"></div>
 <div class="hud" id="der">
-  <div id="botones"><button id="bSon" class="s" title="Apagar el sonido">🔊</button><button id="bMenos" class="s" title="Bajar el volumen">−</button><span id="bVol">70 %</span><button id="bMas" class="s" title="Subir el volumen">+</button><button id="bTipos" class="s" title="Elegir qué sonidos se oyen">♪ Sonidos</button><button id="bChat" class="s" title="Abrir el chat de este mundo (Enter)">💬 Chat</button><button id="bInv" class="s">👥 Invitar</button><button id="bMenu" class="s">☰ Menú (Esc)</button></div>
+  <div id="botones"><button id="bSon" class="s" title="Apagar el sonido">🔊</button><button id="bMenos" class="s" title="Bajar el volumen">−</button><span id="bVol">70 %</span><button id="bMas" class="s" title="Subir el volumen">+</button><button id="bTipos" class="s" title="Elegir qué sonidos se oyen">♪ Sonidos</button><button id="bChat" class="s" title="Abrir y cerrar el chat de este mundo (tecla C)"><kbd>C</kbd>💬 Chat</button><button id="bInv" class="s">👥 Invitar</button><button id="bMenu" class="s" title="Abrir el menú (tecla M o Esc)"><kbd>M</kbd>☰ Menú</button></div>
   <div id="panSon"></div><div id="tabla"></div><div id="tarjeta"></div>
 </div>
 <div class="hud" id="avisos"></div>
@@ -281,7 +282,7 @@ a{color:var(--az)}
 <div class="hud" id="regla"><small id="reglaArr">superficie</small><div id="reglaVia"><div id="reglaLug"></div><i id="reglaYo"></i><i id="reglaVer"><b id="reglaTx"></b></i></div><small id="reglaAb"></small></div>
 <div class="hud" id="aviso-red">📡 Sin señal · sigues jugando, se guarda al volver</div>
 <div id="palanca"><i></i></div>
-<aside id="chat"><header><b>💬 Chat</b><div id="chatQuien"></div><button class="s" id="chatX" title="Cerrar el chat (Esc)">✕</button></header>
+<aside id="chat"><header><b><kbd>C</kbd>💬 Chat</b><div id="chatQuien"></div><button class="s" id="chatX" title="Cerrar el chat (tecla C fuera de la caja, o Esc)">✕</button></header>
   <div id="chatLista"><div id="chatMsgs"></div></div><button id="chatNuevos" type="button"></button>
   <div id="chatEmo"><button type="button">👋</button><button type="button">👍</button><button type="button">😂</button><button type="button">⛏️</button><button type="button">💎</button><button type="button">🔥</button><button type="button">❤️</button><button type="button">😮</button><button type="button">🙏</button><button type="button">🎉</button></div>
   <form id="chatForm" autocomplete="off"><input id="chatIn" maxlength="300" enterkeyhint="send" placeholder="Escribe y pulsa Enter…"><button>Enviar</button></form></aside>

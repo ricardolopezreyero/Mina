@@ -814,6 +814,34 @@ Como en las partidas de StarCraft: lo que alguien escribe sale abajo un momento,
 
 **Límite.** Igual que el dinero, el tiempo lo reporta el navegador de cada jugador; el servidor le cree.
 
+### 9.25 Las teclas, en español
+
+Criterio de Ricardo: el juego es para gente que habla español, y cada tecla debe entenderse sin aprendérsela. Cada tecla es la inicial de lo que hace.
+
+| Tecla | Qué hace | Antes era |
+|---|---|---|
+| **R** | Reserva (tanque de reserva) | F |
+| **N** | Nanobots | R |
+| **D** | Dinamita | X |
+| **P** | Plástico (explosivo plástico) | C |
+| **Q** | Cuántico (teletransportador) | Q |
+| **T** | Transmisor | M |
+| **C** | Chat: abre y cierra, con el cursor listo | Enter (sigue funcionando) |
+| **S** | Señal | G |
+| **A** | Ayudar: pasa 5 litros a la maquinita de junto | T |
+| **G** | Grúa | E |
+| **M** | Menú (también Esc) | solo Esc |
+| Flechas | Moverse | flechas o W A S D |
+
+Las seis primeras y la C las pidió Ricardo; S, A, G y M se cambiaron con el mismo criterio.
+
+**Lo que se quitó por necesidad.**
+
+- **W A S D para moverse:** la D es Dinamita y la S es Señal, así que el movimiento queda solo en las flechas.
+- **La tecla de pausa:** la P ahora es Plástico. Para descansar se abre el menú (M o Esc): con el menú abierto la maquinita no gasta ni se mueve, igual que con la pausa.
+
+**Letras amarillas.** El botón del chat lleva una **C** amarilla a la izquierda de la burbuja, igual que las letras de los objetos de abajo; también el encabezado del chat. El botón del menú lleva su **M** y la grúa su **G**.
+
 ## 10. Revisión de código del 2 de octubre
 
 Se revisó todo el código buscando fallas y se corrigieron estas:

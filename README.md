@@ -8,15 +8,15 @@ Gratis y sin registro: entras y ya estás jugando, sin llenar nada. Se puede ins
 
 ## Cómo se juega
 
-- **Flechas o WASD** para moverte. **↑** vuela, **↓** perfora hacia abajo, **← →** contra una pared perfora de lado.
+- **Las flechas** para moverte. **↑** vuela, **↓** perfora hacia abajo, **← →** contra una pared perfora de lado.
 - En la superficie, párate frente a un edificio y pulsa **↓** para entrar.
-- **F R X C Q M** usan los objetos. **G** deja una señal, **T** pasa combustible, **P** pausa, **Esc** abre el menú.
+- Las teclas son la inicial, en español, de lo que hacen: **R** Reserva, **N** Nanobots, **D** Dinamita, **P** Plástico, **Q** Cuántico, **T** Transmisor, **C** Chat, **S** Señal, **A** Ayudar (pasa 5 litros), **G** Grúa, **M** Menú (también **Esc**).
 - **Barra espaciadora** (pasando los 50 m de altura): la maquinita sigue subiendo sola hasta el espacio.
 - De regreso planea sola con sus rotorcitos; con **↓** cae en picada y con **↑** frena. El velocímetro de la izquierda dice a cuánto vas.
-- Abajo a la izquierda está tu viaje: cuánto llevas, en cuánto se vende y si el combustible alcanza para subir. Ahí mismo, la **grúa** a la Gasolinera (tecla **E**).
+- Abajo a la izquierda está tu viaje: cuánto llevas, en cuánto se vende y si el combustible alcanza para subir. Ahí mismo, la **grúa** a la Gasolinera (tecla **G**).
 - La rueda o el trackpad mueven la vista; cualquier flecha la regresa.
 - El mundo baja hasta los **10,000 m**, con cuatro lugares por descubrir. **El Elevador** (último edificio) te regresa a ellos y al punto donde te recogió la grúa.
-- Los explosivos (**X** y **C**) se usan donde sea, también volando.
+- Los explosivos (**D** y **P**) se usan donde sea, también volando.
 - **Pleitos**: en el aire las maquinitas rebotan; bajo tierra se pelean a taladro contra casco. La que pierde vuelve arriba sin perder nada.
 - **Mapa y archivo**: Menú → Mapa muestra los túneles abiertos; Menú → Mundo guarda el mundo en un archivo que se puede volver a abrir.
 - **La colección**: 99 medallones enterrados (33 objetos, tres de cada uno). Los junta todo el equipo y se encienden en Menú → Colección.
@@ -26,7 +26,7 @@ Gratis y sin registro: entras y ya estás jugando, sin llenar nada. Se puede ins
 - **Los mundos son para siempre**: cada uno se guarda completo (terreno, túneles, reglas y colección) y no se borra nunca, salvo que quien lo creó lo deseche. Con su liga se vuelve a entrar cuando sea, exactamente donde se dejó.
 - **El mundo da la vuelta**: lo que sale por la orilla derecha entra por la izquierda, y al revés.
 - **El Taller** tiene 26 mejoras por pieza, hasta $25 billones. **La Remineralizadora** cuesta el 5 % de todo lo ganado.
-- **Chat del mundo** (tecla **Enter**): se abre de izquierda a derecha con todo lo dicho, que queda guardado. Cada maquinita tiene su color; el texto se puede copiar y las ligas se abren con un clic.
+- **Chat del mundo** (tecla **C**): se abre de izquierda a derecha con todo lo dicho, que queda guardado. Cada maquinita tiene su color; el texto se puede copiar y las ligas se abren con un clic.
 - **Top 33 mundial** (Menú → Top 33): las 33 maquinitas que más han ganado en todos los mundos y cuánto tiempo lleva jugando cada una, en vivo. A la que esté jugando se le puede ir a ver, con una liga de observador que no revela la del mundo.
 - **Sin internet** se sigue jugando; al volver la señal, todo se manda al mundo.
 - El sonido se maneja con la bocina de arriba a la derecha: música, taladro, hélice y motor tienen cada uno su interruptor (el motor viene apagado).
@@ -42,7 +42,7 @@ Gratis y sin registro: entras y ya estás jugando, sin llenar nada. Se puede ins
 | `wrangler.jsonc` | Configuración del Worker y del dominio |
 | `publico/sw.js`, `publico/manifest.webmanifest`, `publico/iconos/` | La aplicación instalable: lo que se guarda en el equipo para abrir sin internet, y sus iconos |
 | `diseno-fuente/` | El programa que dibuja el icono en todos sus tamaños |
-| `docs/Documento_Maestro_Mina_v29_2026-10-02_0953.md` | Qué está construido, con qué números y qué falta |
+| `docs/Documento_Maestro_Mina_v30_2026-10-02_0958.md` | Qué está construido, con qué números y qué falta |
 | `Prompt_Maestro_Mina_v4_2026-10-01_2336.md` | El diseño completo |
 | `sonidos-fuente/` | El pedido exacto de sonidos y música para ElevenLabs (aún sin generar) |
 
