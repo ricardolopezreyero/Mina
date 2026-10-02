@@ -3372,7 +3372,7 @@ function pintarViaje() {
   h += `<div class="l rec" title="${sig ? 'Sigue: ' + sig[1] + ' a los ' + sig[0].toLocaleString('es-MX') + ' m' : 'Llegaste al último rango'}"><span>Récord</span><b>${S.rec.toLocaleString('es-MX')} m · ${RANGOS[S.rango][1]}</b></div>`;
   poner($('#vjDatos'), h);
   const b = $('#bGrua'), c = lejos ? costoGrua() : 0;
-  poner(b, lejos ? `<span>🚁 Grúa a la Gasolinera · <b>${fmt(c)}</b>${S.d < c ? ' · no te alcanza' : ''}</span><kbd>G</kbd>` : '');
+  poner(b, lejos ? `<span>🚁 Grúa · <b>${fmt(c)}</b>${S.d < c ? ' · no alcanza' : ''}</span><kbd>G</kbd>` : '');      // en un solo renglón, para que quepan los números
   b.style.display = lejos ? 'flex' : 'none'; b.classList.toggle('no', S.d < c);
 }
 // El velocímetro, a la izquierda: aparece al volar o caer. La escala se aprieta al crecer para que quepa de 0 a 100,000 km/h.
