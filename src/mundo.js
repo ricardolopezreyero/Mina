@@ -83,6 +83,15 @@ export class Maquina extends DurableObject {
     return { n: m.n, mo: m.mo, est: m.est };
   }
 
+  // Rebautizar: el nombre y el modelo son de la maquinita, no del mundo.
+  async renombrar(n, mo) {
+    const m = await this.ctx.storage.get("m");
+    if (!m) return false;
+    m.n = n; m.mo = mo;
+    await this.ctx.storage.put("m", m);
+    return true;
+  }
+
   // Nunca se pisa un estado nuevo con uno viejo, ni se acepta el de un mundo donde ya no está.
   async guardar(est, mundo) {
     const m = await this.ctx.storage.get("m");
@@ -106,6 +115,7 @@ export class Mundo extends DurableObject {
     this.sucio = { meta: false, dug: false, jug: new Set(), maq: new Set() };
     this.maqT = new Map();    // cuándo se guardó por última vez cada maquinita en su propio objeto
     this.creados = new Map(); // portero: mundos creados hoy por visitante (solo en memoria)
+    this.fotoT = new Map();   // cuándo subió cada quien su última imagen de liga
     ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair("p", "q"));
   }
 
@@ -157,7 +167,21 @@ export class Mundo extends DurableObject {
   }
 
   // Para la vista previa de la liga: cómo se llama el mundo y cuántas maquinitas tiene.
-  async nombre() { const m = await this.cargar(); return m ? { n: m.cfg.nombre || "", j: this.jug.filter(Boolean).length } : null; }
+  // Con «j» (el número de una maquinita) devuelve también su ficha: la liga de un jugador presume lo suyo.
+  async ficha(j) {
+    const m = await this.cargar();
+    if (!m) return null;
+    const p = Number.isInteger(j) && this.jug[j] ? this.jug[j] : null;
+    let rec = 0; for (const x of this.jug) if (x && (x.rec || 0) > rec) rec = x.rec;
+    return { n: m.cfg.nombre || "", j: this.jug.filter(Boolean).length, og: m.og || 0, rec, col: (m.col || []).length,
+      p: p ? { n: p.n, rec: p.rec || 0, tot: p.tot || 0, og: p.og || 0 } : null };
+  }
+
+  // La imagen de la liga (JPEG que dibujó el juego): la del mundo, o la de una maquinita.
+  async imagen(j) {
+    if (!(await this.cargar())) return null;
+    return (await this.ctx.storage.get(j === null ? "og:m" : "og:j:" + j)) || null;
+  }
 
   // Mundos anteriores a la llave de dueño: el creador es la primera maquinita.
   creador() { const m = this.m; return m.dueno ? m.creador : 0; }
@@ -246,7 +270,20 @@ export class Mundo extends DurableObject {
 
     // Posición: 6 bytes binarios → se reenvía con el número de maquinita (7 bytes)
     if (typeof msg !== "string") {
-      if (!att || msg.byteLength !== 8) return;
+      if (!att) return;
+      // Imagen de la liga: 2 = la del mundo, 3 = la de esta maquinita. Solo JPEG, con tope de peso y de frecuencia.
+      if (msg.byteLength > 8) {
+        const f = new Uint8Array(msg), yo = m && this.jug[att.i];
+        if (!yo || (f[0] !== 2 && f[0] !== 3) || f.length < 2000 || f.length > 300000 || f[1] !== 0xff || f[2] !== 0xd8 || f[3] !== 0xff) return;
+        const llave = att.i + ":" + f[0], ahora = Date.now();
+        if (ahora - (this.fotoT.get(llave) || 0) < 12000) return;
+        this.fotoT.set(llave, ahora);
+        await this.ctx.storage.put(f[0] === 2 ? "og:m" : "og:j:" + att.i, f.slice(1));
+        if (f[0] === 2) { m.og = (m.og || 0) + 1; this.sucio.meta = true; } else { yo.og = (yo.og || 0) + 1; this.sucio.jug.add(att.i); }
+        await this.programar();
+        return;
+      }
+      if (msg.byteLength !== 8) return;
       const e = new Uint8Array(msg), s = new Uint8Array(9);
       s[0] = 1; s[1] = att.i; s.set(e.subarray(1), 2);
       this.pos.set(att.i, s);
@@ -297,6 +334,15 @@ export class Mundo extends DurableObject {
         const otro = this.socketDe(entero(d.a, 0, MAX_MAQUINITAS, -1));
         if (otro && otro !== ws) manda(otro, { t: "golpe", i, q: entero(d.q, 1, 1000, 20), k: entero(d.k, 0, 3, 0), v: d.v ? 1 : 0 });
         return;
+      }
+      case "nombre": {           // rebautizar la maquinita o cambiarle el modelo
+        const n = limpio(d.n, 14), mo = entero(d.m, 0, 7, yo.m);
+        if (n.length < 2 || (n === yo.n && mo === yo.m)) return;
+        try { if (!(await this.maquina(yo.k).renombrar(n, mo))) return; } catch { return; }
+        yo.n = n; yo.m = mo;
+        this.sucio.jug.add(i);
+        this.difundir({ t: "nom", i, n, m: mo });
+        break;
       }
       case "aviso":
         this.difundir({ t: "aviso", i, x: limpio(d.x, 90) }, ws);
@@ -485,25 +531,45 @@ export default {
       return json({ error: "reintenta" }, 503);
     }
 
-    // La liga de un mundo lleva su nombre en la vista previa (WhatsApp, iMessage…): se nota quién invita.
+    // La imagen de la liga: /og/m/ID.jpg es la del mundo; /og/m/ID/3.jpg, la de la maquinita 3. Si aún no hay, va la de todos.
+    const og = u.pathname.match(/^\/og\/m\/([2-9A-HJ-NP-Z]{8})(?:\/(\d{1,2}))?\.jpg$/i);
+    if (og && request.method === "GET") {
+      let f = null;
+      try { f = await env.MUNDO.get(env.MUNDO.idFromName(og[1].toUpperCase())).imagen(og[2] === undefined ? null : Number(og[2])); } catch {}
+      if (!f) return env.ASSETS.fetch(new Request(new URL("/mina.jpg", request.url), request));
+      return new Response(f, { headers: { "content-type": "image/jpeg", "cache-control": "public, max-age=300" } });
+    }
+
+    // La liga de un mundo lleva su nombre, sus hitos y su imagen en la vista previa (WhatsApp, iMessage…): se nota quién invita.
+    // Con ?j=3 presume a la maquinita 3 de ese mundo.
     const liga = u.pathname.match(/^\/m\/([2-9A-HJ-NP-Z]{8})\/?$/i);
     if (liga && request.method === "GET") {
       const pagina = await env.ASSETS.fetch(new Request(new URL("/", request.url), request));
+      const id = liga[1].toUpperCase(), j = /^\d{1,2}$/.test(u.searchParams.get("j") || "") ? Number(u.searchParams.get("j")) : -1;
       let info = null;
-      try { info = await env.MUNDO.get(env.MUNDO.idFromName(liga[1].toUpperCase())).nombre(); } catch {}
-      if (!info || !info.n) return pagina;
-      const titulo = info.n + " · entra a excavar conmigo en Mina";
-      const texto = (info.j > 1 ? "Ya somos " + info.j + " maquinitas en este mundo. " : "") + "Bautiza la tuya y baja: un mundo compartido en tiempo real, gratis y sin registro.";
+      try { info = await env.MUNDO.get(env.MUNDO.idFromName(id)).ficha(j); } catch {}
+      if (!info) return pagina;
+      const miles = (n) => Math.round(n).toLocaleString("es-MX"), p = info.p;
+      const dinero = (n) => (n >= 1e9 ? (n / 1e9).toFixed(1) + " mil M" : n >= 1e6 ? (n / 1e6).toFixed(1) + " M" : miles(n));
+      const mundo = info.n || "Un mundo de Mina";
+      const titulo = p ? (p.rec ? p.n + " · " + miles(p.rec) + " m bajo tierra en Mina" : p.n + " te invita a excavar en Mina") : mundo + " · entra a excavar conmigo en Mina";
+      const hitos = [info.j > 1 ? info.j + " maquinitas" : "", info.rec ? "ya vamos en " + miles(info.rec) + " m" : "", info.col ? info.col + " de 99 objetos de la colección" : ""].filter(Boolean).join(" · ");
+      const texto = p ? (p.tot ? "Lleva $" + dinero(p.tot) + " ganados en " + mundo : "Acaba de abrir " + mundo) + ". Entra y alcánzala: gratis, sin registro, en el mismo mundo."
+        : (hitos ? hitos[0].toUpperCase() + hitos.slice(1) + ". " : "") + "Entras y ya estás jugando: un mundo compartido en tiempo real, gratis y sin registro.";
+      const base = u.origin + "/og/m/" + id, imagen = p && p.og ? base + "/" + j + ".jpg?v=" + p.og : info.og ? base + ".jpg?v=" + info.og : u.origin + "/mina.jpg";
+      const pon = (v) => ({ element(e) { e.setAttribute("content", v); } });
       return new HTMLRewriter()
-        .on('meta[property="og:title"]', { element(e) { e.setAttribute("content", titulo); } })
-        .on('meta[property="og:description"]', { element(e) { e.setAttribute("content", texto); } })
+        .on('meta[property="og:title"]', pon(titulo))
+        .on('meta[property="og:description"]', pon(texto))
+        .on('meta[property="og:image"]', pon(imagen))
+        .on('meta[property="og:url"]', pon(u.origin + "/m/" + id + (p ? "?j=" + j : "")))
         .transform(pagina);
     }
 
     const ws = u.pathname.match(/^\/ws\/([2-9A-HJ-NP-Z]{8})$/);
     if (ws) return env.MUNDO.get(env.MUNDO.idFromName(ws[1])).fetch(request);
 
-    if (u.pathname.startsWith("/api/") || u.pathname.startsWith("/ws/")) return json({ error: "no" }, 404);
+    if (u.pathname.startsWith("/api/") || u.pathname.startsWith("/ws/") || u.pathname.startsWith("/og/")) return json({ error: "no" }, 404);
     return env.ASSETS.fetch(request);
   },
 };

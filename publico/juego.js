@@ -498,7 +498,7 @@ function celda(x, y) {
   return t;
 }
 const hueca = (x, y) => { const t = celda(x, y); return t === 0 || t === 6; };
-function ponerCavada(i) { dug[i >> 3] |= 1 << (i & 7); mapa[i] = vacia(Math.floor(i / W)); }
+function ponerCavada(i) { dugCambios++; dug[i >> 3] |= 1 << (i & 7); mapa[i] = vacia(Math.floor(i / W)); }
 function cavar(lista) {            // marca aquí y avisa al mundo
   const c = [];
   for (const [x, y] of lista) {
@@ -1270,7 +1270,7 @@ function alCerrar(e) {
   conectado = false;
   if (e.code >= 4000 && e.code <= 4002) return;
   tCaido = tCaido || Date.now();
-  setTimeout(() => { if (!conectado && listo) { $('#aviso-red').style.display = 'block'; detener(); } }, 3000);
+  setTimeout(() => { if (!conectado && listo) $('#aviso-red').style.display = 'block'; }, 3000);      // sin señal se sigue jugando: todo queda en este equipo y se manda al volver
   setTimeout(conectar, reintento); reintento = Math.min(8000, reintento * 2);
 }
 // Una conexión puede morir sin avisar: si el mundo deja de contestar el eco, se tira y se vuelve a conectar.
@@ -1303,12 +1303,24 @@ const duenos = leer('mina_duenos', {});
 const nombreDe = (i) => (i === miI ? miNombre : otros.get(i)?.n || 'Alguien');
 function recibir(d) {
   switch (d.t) {
-    case 'nuevo':
-      if ($('#nom') && !llaveAntes) return;        // ya está escribiendo su nombre: no se le borra
-      pantallaBautizo(d);
-      if (llaveAntes) { miK = llaveAntes; llaveAntes = ''; const n = $('#caja .nota'); if (n) n.textContent = 'Ese código no es de una maquinita de este mundo. Revísalo o bautiza una nueva.'; }
+    case 'nuevo': {            // el mundo no conoce esta maquinita: nace aquí mismo, ya bautizada, sin preguntar nada
+      const antes = leer('mina_maq_antes', null);
+      if (antes && antes.k && antes.k !== miK) {       // …salvo que haya pegado un código que no era de ninguna: regresa a la suya
+        escribir('mina_maq', antes); localStorage.removeItem('mina_maq_antes'); escribir('mina_nota', 'Ese código no es de ninguna maquinita. Sigues con la tuya.');
+        return location.reload();
+      }
+      bautizo = bautizo || (maqLocal && maqLocal.n ? { n: maqLocal.n, m: maqLocal.m | 0 } : nombreNuevo());
+      return hola(bautizo);
+    }
+    case 'nom': {              // alguien rebautizó su maquinita o le cambió el modelo
+      if (d.i === miI) {
+        const viejo = miNombre; miNombre = d.n; miModelo = d.m; guardarMundo(); dugCambios++;
+        if (soyCreador && cfg.nombre === 'Mundo de ' + viejo) { cfg = { ...cfg, nombre: 'Mundo de ' + d.n }; enviar({ t: 'cfg', cfg }); }
+      } else { const o = otros.get(d.i); if (o) { o.n = d.n; o.m = d.m; } }
+      pintarTabla(); if (menu === 'menu' && document.activeElement?.tagName !== 'INPUT') pintarMenu();
       return;
-    case 'noexiste': quitarMundo(mundoId); return pantallaFinal('Este mundo no existe', 'Puede que lo hayan borrado o que la liga esté incompleta.');
+    }
+    case 'noexiste': quitarMundo(mundoId); if (deCasa) return location.replace('/'); return pantallaFinal('Este mundo no existe', 'Puede que lo hayan borrado o que la liga esté incompleta.');
     case 'cerrado': return pantallaFinal('Este mundo cerró la puerta', 'Quien lo creó ya no admite maquinitas nuevas.');
     case 'lleno': return pantallaFinal('Este mundo está lleno', 'Hay un tope de 10 jugadores a la vez.');
     case 'otra': detener(); return pantallaFinal('Tu maquinita se abrió en otro lado', 'Está en otra pestaña o en otro dispositivo, con todo lo que trae. Aquí puedes volver a tomarla cuando quieras.');
@@ -1323,7 +1335,7 @@ function recibir(d) {
       son.entra(); ultPos = ''; enviarPos(); return pintarTabla();   // que el recién llegado me vea aunque yo esté quieto
     case 'sale': { const o = otros.get(d.i); if (o) { o.on = 0; o.x = undefined; o.b = []; aviso(o.n + ' salió'); } return pintarTabla(); }
     case 'j': { const o = otros.get(d.i); if (o) { o.rec = d.rec; o.tot = d.tot; } return pintarTabla(); }
-    case 'col': if (d.k >= 0 && d.k < NCOL) { hallados[d.k] = 1; pintarHud(true); if (menu === 'menu') pintarMenu(); } return;
+    case 'col': if (d.k >= 0 && d.k < NCOL) { hallados[d.k] = 1; dugCambios++; pintarHud(true); if (menu === 'menu') pintarMenu(); } return;
     case 'golpe': {            // otra maquinita me alcanzó con su taladro: pega según su taladro y la clase de golpe; lo que aguanto es mi casco
       if (!S) return;
       if (d.v) {               // …o me avisa que le gané
@@ -1345,7 +1357,7 @@ function recibir(d) {
     case 'fuel': if (S.fuel <= 0 && d.q > 0) tarjeta('Saliste de la reserva', nombreDe(d.i) + ' te pasó combustible.'); S.fuel = Math.min(tanque(), S.fuel + d.q); son.combustible(); sucio = true; return aviso(nombreDe(d.i) + ' te pasó ' + d.q + ' litros');
     case 'regalo': S.d += d.q; son.compra(); sucio = true; return tarjeta('🎁 ' + nombreDe(d.i) + ' te regaló ' + fmt(d.q));
     case 'devuelve': sucio = true; if (d.d) S.d += d.d; if (d.fuel) S.fuel = Math.min(tanque(), S.fuel + d.fuel); return aviso('No se pudo entregar: esa maquinita no está conectada.');
-    case 'cfg': cfg = d.cfg; tiles.clear(); if (listo) guardarMundo(); if (d.i !== miI) aviso(nombreDe(d.i) + ' cambió las reglas del mundo'); if (menu) pintarMenu(); return;
+    case 'cfg': cfg = d.cfg; dugCambios++; tiles.clear(); if (listo) guardarMundo(); if (d.i !== miI) aviso(nombreDe(d.i) + ' cambió las reglas del mundo'); if (menu) pintarMenu(); return;
     case 'cuenta':
       cuentaFin = Date.now() + d.s * 1000; son.alarma();
       if (d.i === miI) { S.d -= Math.min(S.d, costoRemin()); S.reminGratis = 0; S.st.remin++; sucio = true; pintarHud(true); }   // se cobra hasta que el mundo confirma
@@ -1373,7 +1385,7 @@ function noFueMia(lista) {             // otra maquinita llegó antes a esas cel
     aviso('Otra maquinita llegó antes a esa pieza.'); sucio = true;
   }
 }
-function iniciarMundo(d) {
+function iniciarMundo(d, local) {
   const otraTierra = !!S && (d.remin !== remin || d.seed !== seed);
   // Al reconectar no se pierde ni una celda. Lo que este navegador ya había cavado y el mundo no tiene (se cortó la señal,
   // o el mundo se reinició antes de guardar) se conserva aquí y se le vuelve a mandar. Solo una remineralización cierra túneles.
@@ -1393,11 +1405,19 @@ function iniciarMundo(d) {
     if (S.mu && S.mu !== mundoId) { S.x = INICIO_X; S.y = INICIO_Y; }     // viene de otro mundo: llega a la superficie de este
     yo.x = S.x; yo.y = S.y; yo.vx = yo.vy = 0;
     if (solida(Math.floor(yo.x), Math.floor(yo.y))) { yo.x = INICIO_X; yo.y = INICIO_Y; }   // el mundo cambió mientras no estaba
-  } else sucio = true;                 // al reconectar manda lo que pasó mientras tanto
+  } else {
+    // Si esta maquinita avanzó más en otro equipo, manda lo que el mundo sabe de ella; si no, lo de aquí es lo más nuevo.
+    if (d.est && (d.est.v | 0) > (S.v | 0)) {
+      S = sanear(d.est); if (S.mu && S.mu !== mundoId) { S.x = INICIO_X; S.y = INICIO_Y; }
+      yo.x = S.x; yo.y = S.y; yo.vx = yo.vy = 0; yo.perf = null;
+      if (solida(Math.floor(yo.x), Math.floor(yo.y))) { yo.x = INICIO_X; yo.y = INICIO_Y; }
+    }
+    sucio = true;                      // al reconectar manda lo que pasó mientras tanto
+  }
   if (d.cuenta) cuentaFin = Date.now() + d.cuenta * 1000;
   if (soyCreador && (!cfg.nombre || (cfg.modo === 'clasico' && !cfg.verGas))) { cfg.nombre = cfg.nombre || 'Mundo de ' + miNombre; if (cfg.modo === 'clasico') cfg.verGas = 2; enviar({ t: 'cfg', cfg }); }
-  guardarMundo();
-  conectado = true; tCaido = 0; listo = true; bautizo = null; llaveAntes = '';
+  if (!local) { guardarMundo(); bautizo = null; llaveAntes = ''; try { localStorage.removeItem('mina_maq_antes'); } catch {} }
+  conectado = !local; tCaido = 0; listo = true; dugCambios++;
   // lo que el mundo no tenía se le manda de nuevo (ya incluye lo cavado sin conexión)
   pendientes = [];
   for (let i = 0; i < faltan.length; i += 30) enviar({ t: 'cava', c: faltan.slice(i, i + 30) });
@@ -1408,7 +1428,8 @@ function iniciarMundo(d) {
   document.body.classList.add('jugando');
   surtirContratos(); pintarHud(true); pintarTabla(); arrancar();
   { const f = new Date(), hoy = f.getDate() + '/' + (f.getMonth() + 1); if (primera && hoy === '11/7') tarjeta('⛏️ ¡Feliz Día del Minero!', 'Hoy, 11 de julio, México celebra a su gente de mina. Buen turno.', 'msj', 10000); if (primera && hoy === '4/12') tarjeta('🕯️ Día de Santa Bárbara', 'Hoy, 4 de diciembre, las minas festejan a su patrona.', 'msj', 10000); }
-  if (!d.est) tarjeta('¡Bienvenido, ' + miNombre + '!', 'Flechas o WASD para moverte. Primero: carga combustible en la Gasolinera (↓ para entrar).', 'msj', 9000);
+  if (primera && !d.est) tarjeta('⛏️ Tu maquinita se llama ' + miNombre, (tactil ? 'Arrastra el dedo para moverte.' : 'Flechas o WASD para moverte.') + ' Primero: carga combustible en la Gasolinera (' + (tactil ? 'un toque' : '↓') + ' para entrar). El nombre se cambia en Menú → Mundo.', 'msj', 11000);
+  if (primera) { const n = leer('mina_nota', ''); if (n) { try { localStorage.removeItem('mina_nota'); } catch {} aviso(n); } }
 }
 
 /* ════════ Dibujo ════════ RLR */
@@ -2424,7 +2445,7 @@ function animar(d) {
   if (!vistaLibre) camY = Math.max(cy - filas * 0.3, Math.min(cy + filas * 0.3, camY));
 }
 function arrancar() {
-  if (corriendo || !listo || menu || pausa || !conectado) return;   // con la pestaña oculta el navegador ya no llama al ciclo
+  if (corriendo || !listo || menu || pausa) return;   // con la pestaña oculta el navegador ya no llama al ciclo
   corriendo = true; ult = performance.now(); acum = 0; ant.x = yo.x; ant.y = yo.y;
   const id = ++cicloId; requestAnimationFrame((x) => ciclo(x, id));
   if (pistaDe === PAUSA) pistaDe = undefined;
@@ -2721,6 +2742,69 @@ function fotoRecord() {
   texto(location.host, L - 216, piso + 452, 26, '#f3e6d8', 700, 'center');
   return c;
 }
+// Las imágenes de la liga (1200×630: lo que enseña WhatsApp al mandarla). La del mundo lleva sus hitos y a su gente;
+// la de la maquinita, lo suyo. Las dibuja el juego y el mundo las guarda.
+function fotoLiga(deMundo) {
+  const c = document.createElement('canvas'), A = 1200, B = 630; c.width = A; c.height = B;
+  const q = c.getContext('2d'), piso = 322;
+  const gente = [{ n: miNombre, m: miModelo, rec: S.rec }, ...[...otros.values()].map((o) => ({ n: o.n, m: o.m, rec: o.rec || 0 }))].sort((a, b) => b.rec - a.rec);
+  const hondo = deMundo ? gente[0].rec : S.rec, zona = zonaDe(Math.max(60, hondo));
+  const gr = q.createLinearGradient(0, 0, 0, piso); gr.addColorStop(0, '#22407a'); gr.addColorStop(0.5, '#5f83bd'); gr.addColorStop(0.86, '#f0a868'); gr.addColorStop(1, '#fbd590');
+  q.fillStyle = gr; q.fillRect(0, 0, A, piso);
+  const sol = q.createRadialGradient(960, 150, 14, 960, 150, 300); sol.addColorStop(0, '#fff8d8'); sol.addColorStop(0.2, '#ffe9a8cc'); sol.addColorStop(1, '#ffe9a800'); q.fillStyle = sol; q.fillRect(560, 0, 640, piso);
+  for (const [col, alt, f] of [['#c79a78', 96, 0.006], ['#a8734f', 66, 0.011], ['#86573b', 40, 0.019]]) { q.fillStyle = col; q.beginPath(); q.moveTo(0, piso); for (let x = 0; x <= A; x += 30) q.lineTo(x, piso - alt * (0.55 + 0.3 * Math.sin(x * f) + 0.15 * Math.sin(x * f * 2.7 + 1))); q.lineTo(A, piso); q.fill(); }
+  const lado = 104; let mejor = 0; for (let i = 0; i < MIN.length; i++) if (S.st.rec[i]) mejor = i;
+  for (let y = 0; y < 3; y++) for (let x = 0; x < 12; x++) {
+    const r = azar(x + 500, y + 700, 5), tipo = r < 0.2 ? 10 + Math.max(0, mejor - Math.floor(r * 30)) : 1;
+    q.drawImage(tile(1, zona, ((x + y) & 3) * 16 + h16(x, y)), x * lado, piso + y * lado, lado, lado); if (tipo !== 1) q.drawImage(tile(tipo, zona, 0), x * lado, piso + y * lado, lado, lado);
+  }
+  q.fillStyle = '#5c9e3a'; q.fillRect(0, piso, A, 12); q.fillStyle = '#7cc24e'; q.fillRect(0, piso, A, 5);
+  const som = q.createLinearGradient(0, piso + 12, 0, B); som.addColorStop(0, '#00000052'); som.addColorStop(1, '#000000a0'); q.fillStyle = som; q.fillRect(0, piso + 12, A, B);
+  q.textBaseline = 'alphabetic'; q.lineJoin = 'round';
+  const texto = (t, x, y, tam, col = '#fff', peso = 900, al = 'left') => { q.font = `${peso} ${tam}px system-ui,-apple-system,"Segoe UI",Roboto,sans-serif`; q.textAlign = al; q.lineWidth = tam * 0.17; q.strokeStyle = '#000c'; q.strokeText(t, x, y); q.fillStyle = col; q.fillText(t, x, y); };
+  const miles = (n) => Math.round(n).toLocaleString('es-MX'), mundo = cfg.nombre || 'Mundo de ' + miNombre;
+  texto('MINA', 46, 112, 104, '#ffd23f');
+  let cifras, llamado;
+  if (deMundo) {
+    texto(mundo, 50, 172, 48);
+    const n = Math.min(5, gente.length), tam = [300, 232, 200, 172, 150][n - 1], paso = tam * 1.27, x0 = A - 70 - tam / 2 - (n - 1) * paso;
+    gente.slice(0, n).forEach((j, k) => { const x = x0 + k * paso; dibMaq(q, x, piso - tam * 0.395, tam, j.m, k % 2 ? -1 : 1, false, 0, '', '', 0.4); if (n > 1) texto(j.n, x, piso + 52, 29, '#fff', 800, 'center'); });
+    cifras = [[miles(hondo) + ' m', 'lo más hondo'], [(cavadasMundo * 2 / 1000).toFixed(1) + ' km', 'de túneles'], [nHallados() + ' / 99', 'de la colección']];
+    llamado = gente.length > 1 ? `Somos ${gente.length} maquinitas · entra y juega` : 'Entra a excavar conmigo';
+  } else {
+    texto(miNombre, 50, 176, 60); texto(RANGOS[S.rango][1] + ' · ' + mundo, 50, 222, 30, '#f3e6d8', 700);
+    dibMaq(q, 950, piso - 300 * 0.395, 300, miModelo, -1, false, 0, '', '', 0.4);
+    cifras = [[miles(S.rec) + ' m', 'bajo tierra'], [fmt(S.tot), 'ganados'], S.alt >= 1000 ? [fmtAlto(S.alt), 'de altura'] : [S.log.length + '', S.log.length === 1 ? 'logro' : 'logros']];
+    llamado = '¿Me alcanzas? Entra a mi mundo';
+  }
+  const y1 = piso + (deMundo && gente.length > 1 ? 156 : 134);
+  cifras.forEach(([a, b], i) => { texto(a, 50 + i * 400, y1, 84, '#ffd23f'); texto(b, 53 + i * 400, y1 + 44, 33, '#f3e6d8', 700); });
+  q.font = '900 34px system-ui,-apple-system,"Segoe UI",Roboto,sans-serif'; const an = q.measureText('▶  ' + llamado).width + 56;
+  q.fillStyle = '#ffd23f'; q.beginPath(); q.roundRect(46, B - 86, an, 60, 30); q.fill(); q.lineWidth = 4; q.strokeStyle = '#2a1a14'; q.stroke();
+  q.fillStyle = '#1b120e'; q.textAlign = 'left'; q.fillText('▶  ' + llamado, 74, B - 44);
+  texto('Gratis · sin registro · ' + location.host, A - 46, B - 44, 26, '#f3e6d8', 700, 'right');
+  return c;
+}
+// Se suben solas cuando algo que enseñan cambió (un récord, alguien nuevo, otro objeto de la colección), sin estorbar el juego.
+let fotoFirma = leer('mina_foto', {}), fotoT = 0;
+function subirFotos(ya) {
+  if (!conectado || !S || !ws || ws.readyState !== 1 || !mundoId) return;
+  const ahora = Date.now(); if (ahora - fotoT < (ya ? 13000 : 150000)) return;
+  if (fotoFirma.id !== mundoId) fotoFirma = { id: mundoId };
+  const hondo = Math.max(S.rec, ...[...otros.values()].map((o) => o.rec || 0));
+  const firmas = { 2: [cfg.nombre, miNombre, [...otros.values()].map((o) => o.n + o.m).join(','), Math.floor(hondo / 50), nHallados(), Math.floor(cavadasMundo / 400)].join('|'),
+    3: [miNombre, miModelo, cfg.nombre, S.rec, Math.floor(Math.log10(1 + S.tot) * 10), S.rango, S.log.length].join('|') };
+  for (const tipo of [2, 3]) {
+    if (fotoFirma[tipo] === firmas[tipo]) continue;
+    fotoFirma[tipo] = firmas[tipo]; fotoT = ahora; escribir('mina_foto', fotoFirma);
+    const manda = (calidad) => fotoLiga(tipo === 2).toBlob(async (b) => {
+      if (!b) return; if (b.size > 290000) return calidad > 0.6 ? manda(0.55) : 0;
+      const u = new Uint8Array(b.size + 1); u[0] = tipo; u.set(new Uint8Array(await b.arrayBuffer()), 1);
+      if (ws && ws.readyState === 1) ws.send(u);
+    }, 'image/jpeg', calidad);
+    manda(0.86);
+  }
+}
 function pintarQR(lienzoQR, texto, lado = 8) {
   const R = qr(texto); if (!R) return false;
   const n = R.length, m = 4, q = lienzoQR.getContext('2d');
@@ -2795,11 +2879,13 @@ function pintarMenu() {
     h = cab('👥 Invita a tu gente') + `<div class="cuerpo" style="text-align:center"><p>Quien abra esta liga entra a <b>${esc(cfg.nombre || 'este mundo')}</b> con su propia maquinita. Caben 10 a la vez.</p>
       <a href="${liga}" target="_blank" rel="noopener" title="Abrir la liga"><canvas id="qrLienzo" class="qr" data-t="${liga}"></canvas></a>
       <p><code>${liga}</code></p>
-      <p><button data-a="invitar">Copiar la liga</button> ${navigator.share ? '<button class="s" data-a="compartir">Compartir…</button>' : ''} <button class="s" data-a="menu" data-v="foto">📸 Foto para presumir</button></p>
-      <p class="nota">Con el teléfono: apunta la cámara al código y se abre el mundo.</p></div>`;
+      <p><button data-a="invitar">Copiar la liga del mundo</button> <button class="s" data-a="presumir">Copiar mi liga (presume tu maquinita)</button> ${navigator.share ? '<button class="s" data-a="compartir">Compartir…</button>' : ''} <button class="s" data-a="menu" data-v="foto">📸 Foto para presumir</button></p>
+      <p class="nota">Con el teléfono: apunta la cámara al código y se abre el mundo. Quien entra ya está jugando: no hay registro ni nada que llenar.</p>
+      <p class="nota" style="margin-top:14px">Así se ve la liga del mundo cuando la mandas por WhatsApp. Se actualiza sola con cada récord.</p><div id="ligaAqui" data-m="1"></div>
+      <p class="nota" style="margin-top:14px">Y así se ve tu liga, la que presume a tu maquinita.</p><div id="ligaAqui2"></div></div>`;
   } else if (menu === 'foto') {
     h = cab('📸 Presume tu maquinita') + `<div class="cuerpo" style="text-align:center"><div id="fotoAqui"></div>
-      <p><button data-a="compartirFoto">${navigator.canShare ? 'Compartir la foto' : 'Descargar la foto'}</button> <button class="s" data-a="invitar">Copiar la liga del mundo</button></p>
+      <p><button data-a="compartirFoto">${navigator.canShare ? 'Compartir la foto' : 'Descargar la foto'}</button> <button class="s" data-a="presumir">Copiar mi liga</button> <button class="s" data-a="invitar">Copiar la liga del mundo</button></p>
       <p class="nota">La foto lleva tu maquinita, tus récords y el código QR de este mundo: quien lo escanee entra a excavar contigo.</p></div>`;
   } else if (menu === 'qrmaq') {
     const liga = location.origin + '/m/' + mundoId + '#maquinita=' + miK;
@@ -2817,6 +2903,8 @@ function pintarMenu() {
   const cm = $('#miMaq'); if (cm) dibMaq(cm.getContext('2d'), 80, 86, 132, miModelo, 1, false, 0, '', '');
   const ql = $('#qrLienzo'); if (ql) pintarQR(ql, ql.dataset.t, 8);
   const fa = $('#fotoAqui'); if (fa) { const f = fotoRecord(); f.className = 'foto'; fa.appendChild(f); }
+  for (const id of ['#ligaAqui', '#ligaAqui2']) { const la = $(id); if (la) { const f = fotoLiga(!!la.dataset.m); f.className = 'foto'; f.style.width = 'min(100%,520px)'; f.style.height = 'auto'; la.appendChild(f); subirFotos(true); } }
+  c.querySelectorAll('#modelos canvas').forEach((x, i) => dibMaq(x.getContext('2d'), 56, 60, 100, i, 1, false, 0, '', ''));
 }
 // El mapa: 3 px por celda a lo ancho y 1 px por cada 2 celdas a lo alto (10 km caben en 2,500 px).
 function pintarMapa(cv) {
@@ -2937,7 +3025,7 @@ const acciones = {
   pest(v) { pestana = +v; },
   menu(v) { menu = v; },
   async compartirFoto() {
-    const blob = await new Promise((r) => fotoRecord().toBlob(r, 'image/png')), liga = location.origin + '/m/' + mundoId;
+    const blob = await new Promise((r) => fotoRecord().toBlob(r, 'image/png')), liga = location.origin + '/m/' + mundoId + '?j=' + miI;
     const f = new File([blob], 'mina-' + miNombre.replace(/[^\w]+/g, '-') + '.png', { type: 'image/png' });
     if (navigator.canShare?.({ files: [f] })) { try { await navigator.share({ files: [f], title: 'Mina', text: `Llevo ${S.rec} m bajo tierra en Mina. Entra a mi mundo: ${liga}` }); return 'no'; } catch {} }
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = f.name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
@@ -2953,7 +3041,23 @@ const acciones = {
     if (navigator.clipboard?.writeText) navigator.clipboard.writeText(liga).then(hecho, aMano); else aMano();
     return 'no';
   },
+  nombreMaq(v, el) { const n = el.value.trim(); if (n.length >= 2 && n !== miNombre && conectado) enviar({ t: 'nombre', n, m: miModelo }); return 'no'; },
+  modeloMaq(v) { if (!conectado || +v === miModelo) return 'no'; enviar({ t: 'nombre', n: miNombre, m: +v }); return 'no'; },
+  // Traer aquí una maquinita de otro equipo: se guarda la llave de la actual por si el código no existe.
+  usarCodigo() {
+    const c = ($('#cod')?.value || '').trim(); if (!/^[0-9a-zA-Z]{16,64}$/.test(c) || c === miK) return 'no';
+    enviarEst(); escribir('mina_maq_antes', maqLocal); escribir('mina_maq', { k: c }); try { localStorage.removeItem('mina_est'); } catch {}
+    location.reload(); return 'no';
+  },
+  instalar() { if (instalar) { instalar.prompt(); instalar = null; } },
+  presumir(v, el) {
+    const liga = location.origin + '/m/' + mundoId + '?j=' + miI; subirFotos(true);
+    const hecho = () => { el.textContent = '¡Liga copiada!'; }, aMano = () => window.prompt('Copia tu liga:', liga);
+    if (navigator.clipboard?.writeText) navigator.clipboard.writeText(liga).then(hecho, aMano); else aMano();
+    return 'no';
+  },
   invitar(v, el) {
+    subirFotos(true);
     const liga = location.origin + '/m/' + mundoId;
     const hecho = () => { el.textContent = '¡Liga copiada!'; }, aMano = () => window.prompt('Copia la liga de tu mundo:', liga);
     if (navigator.clipboard?.writeText) navigator.clipboard.writeText(liga).then(hecho, aMano); else aMano();
@@ -2974,7 +3078,7 @@ const acciones = {
     a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); aviso('Mundo guardado en tu carpeta de descargas.');
     return 'no';
   },
-  mundos() { enviarEst(); location.href = '/'; },
+  mundos() { enviarEst(); guardarCopia(); location.href = '/?mundos'; },
   desechar() { desechar(mundoId, soyCreador); },
 };
 $('#caja').addEventListener('click', (e) => {
@@ -3039,7 +3143,9 @@ function menuPrincipal() {
       .map(([a, b]) => `<div class="fila"><div class="t">${a}</div><div class="v">${b}</div></div>`).join('');
   } else if (pestana === 7) {
     const chk = (k, t) => `<label class="op"><span>${t}</span><input type="checkbox" data-a="op" data-k="${k}" ${op[k] ? 'checked' : ''}></label>`;
-    h += `<p class="nota">El sonido se maneja con la bocina de arriba a la derecha: apagar, bajar, subir y elegir qué tipos se oyen.</p>
+    const enApp = matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches || navigator.standalone, iOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+    h += `<div class="fila"><div class="ic">📲</div><div class="t"><b>Mina como aplicación</b><small>${enApp ? 'Ya la estás usando como aplicación.' : instalar ? 'Se instala en un toque y queda con su icono, como cualquier otra.' : iOS ? 'En iPhone o iPad: toca Compartir y luego «Agregar a inicio».' : 'En Chrome o Edge: el icono de instalar que sale en la barra de la dirección, o menú → «Instalar Mina». En Safari de Mac: Archivo → «Agregar al Dock».'} Sigue funcionando sin internet: lo que caves y ganes se queda en tu equipo y se manda al mundo cuando vuelve la señal.</small></div>${instalar && !enApp ? '<button data-a="instalar">Instalar</button>' : ''}</div>
+      <p class="nota">El sonido se maneja con la bocina de arriba a la derecha: apagar, bajar, subir y elegir qué tipos se oyen.</p>
       <label class="op"><span>Tamaño del texto</span><button class="s" data-a="texto" data-v="-0.1">A−</button><button class="s" data-a="texto" data-v="0.1">A+</button></label>` +
       chk('contraste', 'Alto contraste') + chk('dalton', 'Marcas para daltónicos (cada mineral con su símbolo)') + chk('temblor', 'Temblor de pantalla') +
       `<label class="op"><span>Partículas</span><select data-a="op" data-k="part">${[[2, 'Todas'], [1, 'Pocas'], [0, 'Ninguna']].map(([v, t]) => `<option value="${v}" ${op.part == v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
@@ -3049,7 +3155,7 @@ function menuPrincipal() {
       <p class="nota">Tu pantalla refresca a <b>${rit.hz} Hz</b> y el juego está mostrando <b>${Math.round(Math.min(rit.fps, rit.hz))} cuadros por segundo</b>, con nitidez al ${Math.round(NITIDEZ[rit.niv] * 100)} %. Señal con el mundo: ${red.rtt ? Math.round(red.rtt) + ' ms' : 'midiendo…'}. El juego se ajusta solo: si tu equipo no alcanza el refresco de su pantalla, baja la nitidez antes que la fluidez.</p>`;
   } else if (pestana === 8) {
     const o3 = [[0, 'Apagado'], [1, 'Normal'], [2, 'Fuerte']];
-    h += `<div class="fila"><div class="t"><b>Invita a tu gente</b><small>${location.origin}/m/${mundoId}</small></div><button class="s" data-a="menu" data-v="inv">Ver código QR</button><button data-a="invitar">Copiar la liga</button></div>
+    h += `<div class="fila"><div class="t"><b>Invita a tu gente</b><small>${mundoId ? location.origin + '/m/' + mundoId : 'Tu mundo se está creando…'}</small></div><button class="s" data-a="menu" data-v="inv">Ver código QR</button><button data-a="invitar">Copiar la liga</button></div>
       <h4>Dificultad del mundo ${soyCreador ? '' : '<small style="color:var(--su)">· solo la cambia quien creó el mundo</small>'}</h4>
       <label class="op"><span>Modo</span><select data-a="modo" ${soyCreador ? '' : 'disabled'}>${[['paseo', 'Paseo · nada mata'], ['clasico', 'Clásico'], ['rudo', 'Rudo'], ['medida', 'A la medida']].map(([v, t]) => `<option value="${v}" ${cfg.modo === v ? 'selected' : ''} ${v === 'medida' ? 'disabled' : ''}>${t}</option>`).join('')}</select></label>
       <label class="op"><span>Quedarse sin combustible</span>${sel('comb', [[0, 'Reserva (no explota)'], [1, 'Explota']])}</label>
@@ -3074,6 +3180,9 @@ function menuPrincipal() {
         <small>Combustible ${S.fuel.toFixed(1)} / ${tanque()} L · casco ${Math.ceil(S.vida)} / ${vidaMax()} · bodega ${nCarga()} / ${bodega()}</small>
         <small>${PZ.map((z, i) => z.n + ': <b style="display:inline">' + z.niv[S.eq[i]][0] + '</b>').join(' · ')}</small>
         <small>Objetos: ${OBJ.map((o, i) => S.obj[i] ? CORTO[i] + ' ×' + S.obj[i] : '').filter(Boolean).join(' · ') || 'ninguno'}</small></div></div>
+      <label class="op"><span>Nombre de tu maquinita</span><input data-a="nombreMaq" maxlength="14" value="${esc(miNombre)}" autocomplete="off"></label>
+      <div class="maqs" id="modelos">${MODELOS.map((m, i) => `<button class="${i === miModelo ? 'on' : ''}" data-a="modeloMaq" data-v="${i}" title="Cambiar a este modelo"><canvas width="112" height="112"></canvas></button>`).join('')}</div>
+      <details><summary class="nota">Ya tengo una maquinita en otro equipo y quiero usarla aquí</summary><p><input id="cod" placeholder="Pega aquí el código de tu maquinita" style="width:70%"> <button class="s" data-a="usarCodigo">Usar código</button></p></details>
       <p class="nota"><b>Tu maquinita es tuya.</b> Entra contigo a cualquier mundo con todo lo que trae, y no se pierde aunque un mundo se borre. Para seguir con ella en otra computadora o en el teléfono, abre allá su liga o su código QR. <b>No los compartas:</b> quien los abra maneja tu maquinita.</p>
       <div class="fila"><div class="t"><small>Código: <code>${esc(miK)}</code></small></div><button class="s" data-a="menu" data-v="qrmaq">Ver su código QR</button><button data-a="ligaMaq">Copiar su liga</button></div>
       <div class="fila"><div class="t"><b>Guardar este mundo en un archivo</b><small>Semilla, reglas, todos los túneles y la colección. Desde «Mis mundos» puedes abrirlo cuando quieras como un mundo nuevo, idéntico.</small></div><button data-a="guardarArchivo">💾 Guardar archivo</button></div>
@@ -3095,6 +3204,8 @@ function menuPrincipal() {
       <p><b>Mapa y archivo:</b> Menú → Mapa muestra todos los túneles abiertos. Menú → Mundo → Guardar archivo descarga el mundo completo; desde «Mis mundos» se abre como una copia idéntica.</p>
       <p><b>Ojo de minero:</b> la roca avisa. Junto al oro hay vetillas de cuarzo blanco; junto al cobre, manchas verdes de malaquita; junto al hierro, óxido; junto al diamante, tierra azul. Las capas de roca bajan hacia la derecha y dos fallas las cortan. Una de cada catorce piedras es una geoda: búscale el brillo morado. Cuando la flama de tu lámpara se pone azul, hay grisú al lado.</p>
       <p><b>Diez kilómetros:</b> debajo de la Corteza siguen el Acuífero, las Cavernas, la Cristalera y la Zona de presión, con doce minerales nuevos y cuatro lugares por descubrir. Cada lugar que encuentres queda apuntado en <b>El Elevador</b> (el último edificio), que también te regresa al punto donde te recogió la grúa.</p>
+      <p><b>Sin internet y como aplicación:</b> Mina se puede instalar (Menú → Opciones) y abre aunque no haya señal. Lo que caves y ganes sin internet se queda en tu equipo y se manda al mundo cuando la señal vuelve. En pantallas táctiles, arrastra el dedo para moverte y da un toque frente a un edificio para entrar.</p>
+      <p><b>Tu nombre y tus ligas:</b> la maquinita nace bautizada para que empieces a jugar sin llenar nada; el nombre y el modelo se cambian en Menú → Mundo. Hay dos ligas: la del mundo (invita a excavar) y la tuya (presume tu maquinita); cada una lleva su imagen al mandarla por WhatsApp.</p>
       <p><b>Explosivos:</b> se usan donde sea, también volando: si topas con piedra al subir, X te abre paso.</p>
       <p><b>Piedra:</b> se perfora si tu taladro alcanza. Hay cinco durezas, cada una de un color, según la zona; el Taller dice qué taladro pide cada una. Con el justo tarda 1.5 s; con uno mejor, hasta 0.6 s.</p>
       <p class="nota">Piedra desde 210 m. Lava desde 410 m: se ve, rodéala. Gas desde 650 m: pocas bolsas, y se notan por sus burbujas.</p>`;
@@ -3102,7 +3213,7 @@ function menuPrincipal() {
   return h + '</div>';
 }
 function aplicarOp() {
-  document.documentElement.style.setProperty('--f', op.texto);
+  document.documentElement.style.setProperty('--f', op.texto * (Math.min(innerWidth, innerHeight) < 520 ? 0.8 : 1));      // en un teléfono todo el tablero va más chico
   document.body.classList.toggle('contraste', !!op.contraste);
   medir();
 }
@@ -3111,7 +3222,7 @@ function aplicarOp() {
 const MAPA = { ArrowLeft: 'izq', a: 'izq', ArrowRight: 'der', d: 'der', ArrowUp: 'arr', w: 'arr', ArrowDown: 'aba', s: 'aba' };
 addEventListener('keydown', (e) => {
   if (e.target.tagName === 'INPUT' || e.metaKey || e.ctrlKey) return;
-  audio();
+  audio(); nacer();
   const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
   if (e.repeat && !MAPA[k]) return;                 // dejar apretada una tecla no la dispara treinta veces por segundo
   if (k === 'Escape') { if (menu && menu !== 'inicio') cerrar(); else if (listo && !menu) abrir('menu'); return; }
@@ -3144,6 +3255,43 @@ addEventListener('wheel', (e) => {
 }, { passive: false });
 addEventListener('keyup', (e) => { const k = e.key.length === 1 ? e.key.toLowerCase() : e.key; if (MAPA[k]) teclas[MAPA[k]] = false; });
 addEventListener('blur', () => { for (const k in teclas) teclas[k] = false; });
+
+/* ════════ Dedo ════════ RLR */
+// En pantallas táctiles la palanca aparece donde se pone el dedo: arrastrar mueve, soltar detiene.
+// Un toque corto frente a un edificio entra en él. Los objetos, la grúa y el menú se tocan en su lugar de siempre.
+let tactil = matchMedia('(pointer: coarse)').matches;
+const pal = $('#palanca'), dedo = { id: -1, x: 0, y: 0, t: 0, mov: false };
+addEventListener('pointerdown', () => nacer(), true);
+lienzo.addEventListener('pointerdown', (e) => {
+  if (e.pointerType !== 'touch') return;
+  tactil = true; audio();
+  if (!listo || menu || dedo.id !== -1) return;
+  if (pausa) { pausa = false; pista(''); arrancar(); }
+  dedo.id = e.pointerId; dedo.x = e.clientX; dedo.y = e.clientY; dedo.t = performance.now(); dedo.mov = false; vistaLibre = false;
+  try { lienzo.setPointerCapture(e.pointerId); } catch {}
+  pal.style.left = e.clientX + 'px'; pal.style.top = e.clientY + 'px'; pal.firstChild.style.transform = ''; pal.style.display = 'block';
+});
+lienzo.addEventListener('pointermove', (e) => {
+  if (e.pointerId !== dedo.id) return;
+  const dx = e.clientX - dedo.x, dy = e.clientY - dedo.y, r = Math.hypot(dx, dy), k = r > 40 ? 40 / r : 1, zona = 14;
+  pal.firstChild.style.transform = `translate(${dx * k}px,${dy * k}px)`;
+  if (r > zona) dedo.mov = true;
+  teclas.izq = dx < -zona && -dx > Math.abs(dy) * 0.45; teclas.der = dx > zona && dx > Math.abs(dy) * 0.45;
+  teclas.arr = dy < -zona && -dy > Math.abs(dx) * 0.45; teclas.aba = dy > zona && dy > Math.abs(dx) * 1.1;
+});
+const soltarDedo = (e) => {
+  if (e.pointerId !== dedo.id) return;
+  dedo.id = -1; pal.style.display = 'none'; teclas.izq = teclas.der = teclas.arr = teclas.aba = false;
+  if (!dedo.mov && performance.now() - dedo.t < 320 && listo && !menu && pistaDe && pistaDe.id && yo.suelo && yo.y < 0) abrir(pistaDe.id);
+};
+lienzo.addEventListener('pointerup', soltarDedo); lienzo.addEventListener('pointercancel', soltarDedo);
+
+/* ════════ La aplicación ════════ RLR */
+// El trabajador de servicio guarda el juego en el equipo: instalado o no, abre aunque no haya internet.
+let instalar = null;
+addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); instalar = e; if (menu === 'menu' && pestana === 7) pintarMenu(); });
+addEventListener('appinstalled', () => { instalar = null; tarjeta('📲 Mina quedó instalada', 'Ábrela desde su icono. Funciona aunque no haya internet.', 'msj', 8000); });
+if ('serviceWorker' in navigator && !location.search.includes('foto')) addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
 function pasarCombustible() {
   let cerca = null;
   for (const o of otros.values()) if (o.on && o.x !== undefined && Math.hypot(o.x - yo.x, o.y - yo.y) < 1.6) cerca = o;
@@ -3161,12 +3309,56 @@ function guardarMundo() {
   mundos.unshift({ id: mundoId, k: miK, nombre: cfg.nombre || 'Mundo ' + mundoId, maq: miNombre, modelo: miModelo, creador: soyCreador ? 1 : 0, ult: Date.now() });
   escribir('mina_mundos', mundos);
 }
-function quitarMundo(id) { mundos = mundos.filter((m) => m.id !== id); escribir('mina_mundos', mundos); }
+function quitarMundo(id) { mundos = mundos.filter((m) => m.id !== id); escribir('mina_mundos', mundos); try { localStorage.removeItem('mina_copia_' + id); } catch {} }
+// La copia de este equipo: el mundo (semilla, túneles, colección) y la maquinita. Con ella el juego abre al instante,
+// sin esperar al servidor, y se puede seguir jugando sin internet; al volver la señal, lo de aquí se manda al mundo.
+let dugCambios = 0, copiaDug = -1, copiaEst = '';
+function guardarCopia() {
+  if (!listo || !S || !mundoId || !miK || miI < 0 || !miNombre) return;
+  if (yo.renace) { S.x = INICIO_X; S.y = INICIO_Y; } else { S.x = yo.x; S.y = yo.perf ? yo.perf.oy : yo.y; }
+  S.mu = mundoId;
+  const e = JSON.stringify({ k: miK, e: S });
+  if (e !== copiaEst) { copiaEst = e; try { localStorage.setItem('mina_est', e); } catch {} }
+  if (copiaDug !== dugCambios) {
+    copiaDug = dugCambios; escribir('mina_copia_' + mundoId, { ...archivoDelMundo(), k: miK, i: miI, n: miNombre, m: miModelo, creador: soyCreador ? 1 : 0 });
+    for (const m of mundos.slice(4)) { try { localStorage.removeItem('mina_copia_' + m.id); } catch {} }      // solo los cuatro mundos más recientes
+  }
+}
+function abrirCopia(id) {
+  const c = leer('mina_copia_' + id, null), e = leer('mina_est', null);
+  if (!c || c.k !== miK || !e || e.k !== miK || !e.e || !Number.isFinite(c.seed) || typeof c.dug !== 'string' || !c.n || !c.cfg) return false;
+  try { atob(c.dug); } catch { return false; }
+  iniciarMundo({ seed: c.seed, remin: c.remin | 0, cfg: c.cfg, i: c.i | 0, creador: c.creador ? 1 : 0, dug: c.dug, col: Array.isArray(c.col) ? c.col : [], est: e.e, jug: [{ i: c.i | 0, n: c.n, m: c.m | 0 }], cuenta: 0 }, true);
+  return true;
+}
+// Nadie llena nada para empezar: la maquinita nace con nombre de mina y modelo al azar. Se cambian en Menú → Mundo.
+const NOMBRES = ['La Chispa', 'El Topo', 'La Güera', 'Don Pepita', 'La Barretera', 'El Tepetate', 'La Valenciana', 'El Gambusino', 'La Veta', 'El Malacate', 'La Bonanza', 'El Socavón', 'La Pepita', 'El Barretero', 'La Rayadora', 'El Tiro', 'La Carbonera', 'El Jale'];
+function nombreNuevo() { const r = crypto.getRandomValues(new Uint8Array(2)); return { n: NOMBRES[r[0] % NOMBRES.length], m: r[1] % MODELOS.length }; }
+// El inicio para quien llega por primera vez: el mundo nace aquí mismo y ya se puede jugar. En cuanto mueve algo,
+// el mundo se registra con esa misma semilla y recibe su liga; lo que ya cavó viaja con él.
+let porNacer = false, naciendo = false, esperaNacer = 2000, deCasa = false;
+function mundoAlInstante() {
+  miK = (maqLocal && maqLocal.k) || llave();
+  const e = leer('mina_est', null), b = maqLocal && maqLocal.n ? { n: maqLocal.n, m: maqLocal.m | 0 } : nombreNuevo();
+  bautizo = b; maqLocal = { k: miK, n: b.n, m: b.m }; escribir('mina_maq', maqLocal);
+  mundoId = ''; porNacer = true;
+  iniciarMundo({ seed: crypto.getRandomValues(new Uint32Array(1))[0], remin: 0, cfg: { ...cfg }, i: 0, creador: 1, dug: '', col: [], est: e && e.k === miK ? e.e : null, jug: [{ i: 0, n: b.n, m: b.m }], cuenta: 0 }, true);
+}
+async function nacer() {
+  if (!porNacer || naciendo) return; naciendo = true;
+  try {
+    const r = await fetch('/api/mundo', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ archivo: archivoDelMundo() }) }), d = await r.json();
+    if (!d.id) throw 0;
+    porNacer = false; if (d.d) { duenos[d.id] = d.d; escribir('mina_duenos', duenos); }
+    mundoId = d.id; history.replaceState(null, '', '/m/' + d.id); conectar();
+  } catch { setTimeout(() => { naciendo = false; nacer(); }, esperaNacer); esperaNacer = Math.min(30000, esperaNacer * 2); return; }
+  naciendo = false;
+}
 function llave() { return [...crypto.getRandomValues(new Uint8Array(16))].map((b) => b.toString(16).padStart(2, '0')).join(''); }
 function inicio(h) { menu = 'inicio'; detener(); $('#velo').classList.add('on'); $('#caja').innerHTML = h; }
 function pantallaFinal(t, x) {
   inicio(`<header><h2>${t}</h2></header><div class="cuerpo"><p>${x}</p><p><button id="bIr">Ir a mis mundos</button></p></div>`);
-  $('#bIr').onclick = () => (location.href = '/');
+  $('#bIr').onclick = () => (location.href = '/?mundos');
 }
 function pantallaMundos() {
   inicio(`<header><h2>⛏️ Mina · Mis mundos</h2></header><div class="cuerpo">` +
@@ -3196,7 +3388,7 @@ function pantallaCrear() {
 function desechar(id, creador, k) {
   if (!confirm('¿Desechar este mundo? Sale de tu lista.')) return;
   const paraTodos = creador && confirm('Tú creaste este mundo. ¿Borrarlo también para todos los demás?\n\nAceptar = borrarlo para todos · Cancelar = solo quitarlo de mi lista');
-  const fin = () => { quitarMundo(id); location.href = '/'; };
+  const fin = () => { quitarMundo(id); location.href = '/?mundos'; };
   if (!paraTodos) return fin();
   if (id === mundoId && conectado) { enviar({ t: 'borrar' }); return setTimeout(fin, 400); }
   const s = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws/' + id);
@@ -3213,42 +3405,28 @@ async function crearMundo(archivo) {
     history.replaceState(null, '', '/m/' + d.id); entrar(d.id);
   } catch { pantallaFinal('No se pudo crear el mundo', 'Revisa tu conexión e inténtalo otra vez.'); }
 }
-function pantallaBautizo(d) {
-  let modelo = Math.floor(Math.random() * 8);
-  inicio(`<header><h2>⛏️ ${esc(d.nombre || 'Mundo nuevo')}</h2></header><div class="cuerpo">
-    <p class="nota">${d.hay ? `Ya ${d.hay === 1 ? 'juega 1 maquinita' : 'juegan ' + d.hay + ' maquinitas'} en este mundo. ` : ''}Escoge tu maquinita y bautízala. Es tuya: entra contigo a cualquier mundo con todo lo que le vayas poniendo, y su nombre lo verán todos.</p>
-    <div class="maqs">${MODELOS.map((m, i) => `<button data-m="${i}"><canvas width="112" height="112"></canvas></button>`).join('')}</div>
-    <p><input id="nom" maxlength="14" placeholder="Nombre de tu maquinita" style="width:100%;font-size:1.2em" autocomplete="off"></p>
-    <p><button id="bEntrar" disabled>Bautizar y entrar</button></p>
-    <details><summary class="nota">Ya tengo una maquinita en este mundo (otro dispositivo)</summary><p><input id="cod" placeholder="Pega aquí el código de tu maquinita" style="width:100%"> <button class="s" id="bCod">Usar código</button></p></details></div>`);
-  const bs = [...$('#caja').querySelectorAll('[data-m]')];
-  const marca = () => bs.forEach((b, i) => {
-    b.classList.toggle('on', i === modelo);
-    const q = b.firstChild.getContext('2d'); q.clearRect(0, 0, 112, 112); dibMaq(q, 56, 60, 100, i, 1, false, 0, '', '');
-  });
-  bs.forEach((b, i) => (b.onclick = () => { modelo = i; marca(); })); marca();
-  const nom = $('#nom'), be = $('#bEntrar');
-  nom.oninput = () => (be.disabled = nom.value.trim().length < 2);
-  const entra = () => { if (nom.value.trim().length < 2) return; audio(); bautizo = { n: nom.value.trim(), m: modelo }; hola(bautizo); };
-  be.onclick = entra; nom.onkeydown = (e) => { if (e.key === 'Enter') entra(); };
-  $('#bCod').onclick = () => { const c = $('#cod').value.trim(); if (c.length >= 16 && c !== miK) { llaveAntes = miK; miK = c; hola(); } };
-  nom.focus();
-}
 function entrar(id) {
   mundoId = id;
   const m = mundos.find((x) => x.id === id);
   miK = ligaMaquinita || (maqLocal && maqLocal.k) || (m && m.k) || (mundos[0] && mundos[0].k) || llave();
-  inicio('<header><h2>Entrando al mundo…</h2></header><div class="cuerpo"><p class="nota">' + esc(id) + '</p></div>');
+  if (!ligaMaquinita && !(maqLocal && maqLocal.n)) bautizo = nombreNuevo();      // llega por una liga y no tiene maquinita: nace bautizada
+  // Si este equipo ya conoce el mundo, abre al instante con su copia; el servidor se pone al corriente en cuanto contesta.
+  if (!abrirCopia(id)) {
+    inicio('<header><h2>Entrando al mundo…</h2></header><div class="cuerpo"><p class="nota" id="entrando">' + esc(id) + '</p></div>');
+    setTimeout(() => { const n = $('#entrando'); if (n && !listo) n.textContent = 'No hay señal con el mundo y este equipo todavía no tiene copia de él. Sigo intentando: en cuanto conteste, entras.'; }, 6000);
+  }
   conectar();
 }
 
 addEventListener('resize', medir);
-document.addEventListener('visibilitychange', () => { if (document.hidden) { for (const k in teclas) teclas[k] = false; if (sucio) enviarEst(); } });
-addEventListener('pagehide', () => enviarEst());
+document.addEventListener('visibilitychange', () => { if (document.hidden) { for (const k in teclas) teclas[k] = false; if (sucio) enviarEst(); guardarCopia(); } });
+addEventListener('pagehide', () => { enviarEst(); guardarCopia(); });
 setInterval(componer, 220);               // la música sigue aunque haya un menú abierto
 setInterval(() => {                       // lo poco que corre aunque el juego esté detenido
   if (sucio && conectado) enviarEst();
   if (++latido % (document.hidden ? 25 : 5) === 0) latir();
+  if (latido % 4 === 0) guardarCopia();
+  if (latido % 9 === 0 && !document.hidden) subirFotos(!!menu);
   const c = $('#cuenta');
   if (cuentaFin) { const s = Math.ceil((cuentaFin - Date.now()) / 1000); c.style.display = 'block'; c.textContent = s > 0 ? `🌋 Remineralizando en ${s}…` : '🌋'; if (s < -3) cuentaFin = 0; }
   else c.style.display = 'none';
@@ -3264,22 +3442,24 @@ aplicarOp(); sonidoUI();
   if (location.search.includes('foto')) escenaDeMuestra();
   else if (r) entrar(r[1].toUpperCase());
   else if (location.pathname.length > 1) pantallaFinal('Esta liga está incompleta', 'La liga de un mundo termina en 8 letras y números. Pídela otra vez o entra a tus mundos.');
-  else if (!mundos.length) crearMundo();
-  else pantallaMundos();
+  else if (location.search.includes('mundos')) pantallaMundos();
+  else if (mundos.length) { deCasa = true; history.replaceState(null, '', '/m/' + mundos[0].id); entrar(mundos[0].id); }      // el inicio es jugar: abre el último mundo
+  else mundoAlInstante();
 }
 function escenaDeMuestra() {
   seed = 20261002; remin = 0; nuevaSemilla();
   S = sanear(null); S.eq = [3, 3, 3, 3, 3, 3]; S.rec = 96; S.st.rec[0] = S.st.rec[1] = S.st.rec[2] = S.st.rec[3] = 1; miNombre = 'Ricardo'; miModelo = 0; mundoId = 'MUESTRA2';
+  // El título va sobre cielo limpio, a la izquierda; el pueblo queda a la derecha y las maquinitas se ven grandes.
   const cava = (a, b, c, d) => { for (let x = a; x <= c; x++) for (let y = b; y <= d; y++) ponerCavada(y * W + x); };
-  cava(44, 0, 44, 6); cava(45, 6, 49, 6); cava(49, 7, 49, 9); cava(40, 4, 43, 4);
-  yo.x = 49.5; yo.y = 9.6; yo.dir = 1; yo.perf = { tx: 49, ty: 10, t: 0.1, dur: 0.3, tipo: 1, ox: 49.5, oy: 9.6, idx: 0 }; vis.x = yo.x; vis.y = yo.y;
-  otros.set(1, { i: 1, n: 'Sofi', m: 7, on: 1, x: 41.2, y: 4.6, fl: 0 }); otros.set(2, { i: 2, n: 'Luis', m: 2, on: 1, x: 52.5, y: -2.2, fl: 3 });
-  flot = [{ x: 47.5, y: 5.6, txt: '+ Oro · $250', col: '#ffd23f', t: 1.2 }];
-  rit.niv = 0; rit.sonda = false; listo = true; medir();
-  camX = Math.max(0, 48.5 - cols / 2); camY = 1.4 - filas / 2; reloj = 2.2; dibujar();
+  cava(33, 0, 33, 2); cava(29, 2, 32, 2); cava(34, 2, 36, 2); cava(36, 3, 36, 4); cava(37, 4, 40, 4); cava(40, 5, 40, 5);
+  yo.x = 40.5; yo.y = 5.6; yo.dir = 1; yo.perf = { tx: 40, ty: 6, t: 0.1, dur: 0.3, tipo: 1, ox: 40.5, oy: 5.6, idx: 0 }; vis.x = yo.x; vis.y = yo.y;
+  otros.set(1, { i: 1, n: 'Sofi', m: 7, on: 1, x: 30.4, y: 2.6, fl: 0 }); otros.set(2, { i: 2, n: 'Luis', m: 2, on: 1, x: 43.4, y: -0.4, fl: 1 });
+  flot = [{ x: 38.4, y: 3.5, txt: '+ Oro · $250', col: '#ffd23f', t: 1.2 }];
+  op.zoom = 0; rit.niv = 0; rit.sonda = false; listo = true; medir();
+  camX = 27.2; camY = -filas * 0.5; reloj = 2.2; dibujar();
   const d = document.createElement('div');
-  d.style.cssText = 'position:fixed;left:4%;top:5%;font:900 min(12vw,140px)/0.9 system-ui;color:#ffd23f;-webkit-text-stroke:6px #2a1a14;paint-order:stroke fill;text-shadow:0 8px 0 #0006';
-  d.innerHTML = 'MINA<div style="font:800 min(3.4vw,40px)/1.25 system-ui;color:#fff;-webkit-text-stroke:5px #2a1a14;paint-order:stroke fill;margin-top:14px;text-shadow:none">Excava con tus amigos, en el mismo mundo.<br>Gratis, en tu navegador.</div>';
+  d.style.cssText = 'position:fixed;left:3.6%;top:2.6%;font:900 min(13vw,156px)/0.9 system-ui;color:#ffd23f;-webkit-text-stroke:7px #2a1a14;paint-order:stroke fill;text-shadow:0 8px 0 #0006';
+  d.innerHTML = 'MINA<div style="font:800 min(3.5vw,42px)/1.22 system-ui;color:#fff;-webkit-text-stroke:6px #2a1a14;paint-order:stroke fill;margin-top:16px;text-shadow:none">Entras y ya estás jugando.<br>Excava con tus amigos.</div>';
   document.body.appendChild(d);
 }
 // Para pruebas: window.__mina

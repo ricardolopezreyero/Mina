@@ -3,20 +3,30 @@
 <html lang="es" data-k="eye" data-rev="181218">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Mina · excava con tus amigos</title>
 <meta name="description" content="Baja, llena la bodega, sube, vende y mejora tu maquinita. Un mundo compartido en tiempo real: manda la liga y excaven juntos.">
 <meta name="author" content="Ricardo López Reyero">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Mina">
+<meta property="og:url" content="https://mina.capitaltorreon.com/">
+<meta property="og:locale" content="es_MX">
 <meta property="og:title" content="Mina · excava con tus amigos">
-<meta property="og:description" content="Un mundo compartido en tiempo real: bautiza tu maquinita, baja, vende, mejora y vuelve a bajar. Gratis y sin registro.">
+<meta property="og:description" content="Entras y ya estás jugando: baja, vende, mejora tu maquinita y vuelve a bajar. Un mundo compartido en tiempo real, gratis y sin registro.">
 <meta property="og:image" content="https://mina.capitaltorreon.com/mina.jpg">
-<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:alt" content="Una maquinita amarilla perforando bajo tierra en Mina">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="build" content="eye"><meta name="rev" content="181218">
 <meta name="theme-color" content="#1b120e">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%237a4a30'/%3E%3Cpath d='M4 4h8v5l-4 4-4-4z' fill='%23ffd23f'/%3E%3C/svg%3E">
+<link rel="icon" type="image/png" sizes="32x32" href="/iconos/icono-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/iconos/icono-192.png">
+<link rel="apple-touch-icon" href="/iconos/icono-180.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Mina">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <style>
 /* RLR · todo el estilo va aquí: una sola descarga, tipografía del sistema */
 :root{--f:1;--bg:#1b120e;--caja:#2a1c16;--borde:#5a3d2c;--tx:#f3e6d8;--su:#c9b29c;--ac:#ffd23f;--ok:#6fdc7a;--mal:#ff6b5a;--az:#6ec3ff}
@@ -25,6 +35,10 @@ html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;backgrou
   font:calc(14px*var(--f))/1.35 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-user-select:none;user-select:none}
 body.contraste{--caja:#000;--borde:#fff;--tx:#fff;--su:#fff;--ac:#ffe600}
 canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
+#c{touch-action:none}
+/* La palanca aparece donde se pone el dedo: arrastrar mueve la maquinita, soltar la detiene. */
+#palanca{position:fixed;z-index:4;width:112px;height:112px;margin:-56px 0 0 -56px;border-radius:50%;border:2px solid #fff5;background:#0003;pointer-events:none;display:none}
+#palanca i{position:absolute;left:50%;top:50%;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;background:#ffd23fcc;border:2px solid #2a1a14}
 button{font:inherit;color:#1b120e;background:var(--ac);border:0;border-radius:6px;padding:.45em .9em;font-weight:700;cursor:pointer}
 button:hover{filter:brightness(1.1)}button:disabled{background:#6b5a4c;color:#2a1c16;cursor:not-allowed;filter:none}
 button.s{background:transparent;color:var(--tx);border:1px solid var(--borde)}
@@ -121,7 +135,7 @@ body.jugando .hud{visibility:visible}
 .foto{position:static;display:inline-block;width:min(420px,78vw);height:auto;border-radius:10px;border:2px solid var(--borde)}
 #pista{left:50%;bottom:16%;white-space:nowrap;transform:translateX(-50%);background:#000a;border-radius:6px;padding:4px 12px;font-weight:700;display:none}
 #pista.dis{bottom:calc(50px*var(--f));font-weight:500;font-size:.8em;background:#0005;padding:2px 10px;color:var(--su)}
-#aviso-red{left:50%;top:40%;transform:translate(-50%,-50%);background:#000d;border:2px solid var(--mal);border-radius:10px;padding:14px 22px;font-weight:800;display:none}
+#aviso-red{left:50%;top:8px;transform:translateX(-50%);background:#000b;border:1px solid var(--borde);border-radius:99px;padding:3px 12px;font-size:.78em;font-weight:700;color:var(--su);display:none;white-space:nowrap}
 #cuenta{left:50%;top:14%;transform:translateX(-50%);font-size:2em;font-weight:900;color:var(--ac);display:none;text-align:center}
 #velo{position:fixed;inset:0;background:#000b;display:none;align-items:center;justify-content:center;padding:12px;z-index:5}
 #velo.on{display:flex}
@@ -203,7 +217,8 @@ a{color:var(--az)}
 <div class="hud" id="ojo"></div>
 <div class="hud" id="pista"></div>
 <div class="hud" id="cuenta"></div>
-<div class="hud" id="aviso-red">Reconectando con el mundo…</div>
+<div class="hud" id="aviso-red">📡 Sin señal · sigues jugando, se guarda al volver</div>
+<div id="palanca"><i></i></div>
 
 <div id="velo"><div class="caja" id="caja"></div></div>
 

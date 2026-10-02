@@ -9,7 +9,7 @@
     "directory": "./publico",
     "binding": "ASSETS",
     "not_found_handling": "single-page-application",
-    "run_worker_first": ["/api/*", "/ws/*", "/m/*"]
+    "run_worker_first": ["/api/*", "/ws/*", "/m/*", "/og/*"]
   },
   "durable_objects": {
     "bindings": [{ "name": "MUNDO", "class_name": "Mundo" }, { "name": "MAQUINA", "class_name": "Maquina" }]

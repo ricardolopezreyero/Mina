@@ -1,0 +1,24 @@
+{
+  "name": "Mina · excava con tus amigos",
+  "short_name": "Mina",
+  "description": "Baja, llena la bodega, sube, vende y mejora tu maquinita. Un mundo compartido en tiempo real. Sigue funcionando sin internet.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "lang": "es-MX",
+  "dir": "ltr",
+  "display": "standalone",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "any",
+  "background_color": "#1b120e",
+  "theme_color": "#1b120e",
+  "categories": ["games", "entertainment"],
+  "icons": [
+    { "src": "/iconos/icono-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/iconos/icono-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/iconos/icono-mascara-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "screenshots": [
+    { "src": "/mina.jpg", "sizes": "1200x630", "type": "image/jpeg", "form_factor": "wide", "label": "Mina: excava con tus amigos en el mismo mundo" }
+  ]
+}

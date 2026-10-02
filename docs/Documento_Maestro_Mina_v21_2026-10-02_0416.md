@@ -598,6 +598,35 @@ Cambio de fondo: la piedra, la lava, los minerales y los tesoros ahora se dibuja
 
 ---
 
+### 9.16 Entrar es jugar: icono, aplicación, imágenes de liga y cero clics
+
+**Entrada instantánea.** Nadie llena nada para empezar.
+
+- **Visitante nuevo en el inicio:** el mundo nace en su propio navegador (semilla local) y ya puede moverse; medido en local, el juego está corriendo a los 63 ms de abrir la página. En cuanto toca una tecla o la pantalla, el mundo se registra en el servidor con esa misma semilla (`POST /api/mundo` con el archivo del mundo), recibe su liga y lo que ya cavó viaja con él. Así no se crean mundos vacíos por visitas que no juegan.
+- **La maquinita nace bautizada:** nombre de mina al azar (La Chispa, El Topo, La Bonanza, El Malacate…) y modelo al azar. El nombre y el modelo se cambian en Menú → Mundo (mensaje `nombre`; el mundo avisa a todos con `nom`). Si el mundo se llamaba «Mundo de <nombre viejo>», se renombra solo. La pantalla de bautizo ya no existe.
+- **Quien llega por una liga** entra directo, con su maquinita ya bautizada.
+- **Quien regresa** al inicio entra a su último mundo sin tocar nada. La lista de mundos vive en `/?mundos` (Menú → Mundo → Mis mundos).
+
+**La copia de este equipo.** Cada 4 segundos, y al salir, el navegador guarda el mundo (`mina_copia_<ID>`: semilla, túneles, colección, reglas) y la maquinita (`mina_est`), los dos marcados con la llave de la maquinita. Con esa copia el juego abre al instante sin esperar al servidor; cuando el servidor contesta, se concilia: las celdas de aquí que el mundo no tenía se le mandan, y si la maquinita avanzó más en otro equipo (versión mayor) manda la del mundo. Se guardan los cuatro mundos más recientes.
+
+**Sin internet.** Perder la señal ya no detiene el juego: sale un aviso discreto («Sin señal · sigues jugando, se guarda al volver») y todo sigue. Al volver se manda lo cavado, lo encontrado y el estado. Probado con el servidor apagado: la aplicación abre, arranca con la copia y se puede cavar.
+
+**Aplicación instalable.** `manifest.webmanifest`, iconos (32, 180, 192, 512 y 512 enmascarable; se generan con `diseno-fuente/Icono_Mina_v1_*.py`) y `sw.js`, que guarda la página, el juego y los iconos. Con señal siempre pide lo más nuevo (así llega cada versión) y solo usa lo guardado si la red tarda más de 2.5 s o no hay. Menú → Opciones explica cómo instalarla en cada equipo y trae el botón cuando el navegador lo permite.
+
+**Controles táctiles (primera versión).** La palanca aparece donde se pone el dedo: arrastrar mueve, soltar detiene; un toque frente a un edificio entra. En teléfonos el tablero se dibuja 20 % más chico.
+
+**Imágenes de liga (1200×630).**
+
+| Liga | Imagen | Cómo se hace |
+|---|---|---|
+| El inicio | `mina.jpg`, igual para todos | Escena fija (`/?foto=1`) fotografiada con Chrome sin ventana |
+| El mundo `/m/ID` | Nombre del mundo, hasta 5 maquinitas con su nombre, lo más hondo, km de túneles, colección | La dibuja el juego (`fotoLiga(true)`) y la sube al mundo |
+| El jugador `/m/ID?j=N` | Su maquinita, rango, metros, dinero ganado, logros o altura | `fotoLiga(false)` |
+
+El juego las vuelve a subir solo cuando algo que enseñan cambió (un récord, alguien nuevo, otro objeto), como mucho cada 2.5 minutos, o al abrir Invitar. Viajan por el mismo WebSocket (primer byte 2 = mundo, 3 = jugador), solo JPEG, hasta 300 KB, y el mundo las sirve en `/og/m/ID.jpg` y `/og/m/ID/N.jpg`; si aún no hay, sale la del inicio. La liga lleva además título y texto con los hitos. Menú → Invitar enseña cómo se ven las dos.
+
+**Límites que conviene saber.** WhatsApp guarda la vista previa de una liga la primera vez que la ve; una liga ya mandada puede seguir enseñando la imagen vieja. La imagen la dibuja el navegador de un jugador del mundo: quien esté dentro del mundo puede subir otra imagen JPEG en su lugar. Los controles táctiles no se han probado en un teléfono real.
+
 ## 10. Revisión de código del 2 de octubre
 
 Se revisó todo el código buscando fallas y se corrigieron estas:
