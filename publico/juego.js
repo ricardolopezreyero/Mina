@@ -36,9 +36,9 @@ const HALL = [
   { n: 'Reliquia sagrada', v: 50000 },
 ];
 
-/* ── Las 6 piezas del equipo: nombre, precio, valor e historia ── */
+/* ── Las 6 piezas del equipo: nombre, precio, valor e historia. Dieciséis mejoras por pieza, de $750 a $2,500 millones ── */
 const PZ = [
-  { n: 'Taladro', u: 'de potencia', que: 'Con qué muerdes la tierra: menos tiempo y menos combustible por celda.', niv: [
+  { n: 'Taladro', ic: '🔩', u: 'de potencia', que: 'Con qué muerdes la tierra: menos tiempo y menos combustible por celda.', niv: [
     ['Broca de fábrica', 0, 20, 'Venía con el equipo. Muerde tierra suelta y se queja con todo lo demás.'],
     ['Broca Platera', 750, 28, 'Punta bañada en plata: corta limpio y casi no se calienta. El primer lujo de todo minero.'],
     ['Broca Dorada', 2000, 40, 'Su aleación de oro disipa el calor; ya no hay que parar a enfriar. Se nota desde la primera celda.'],
@@ -46,8 +46,18 @@ const PZ = [
     ['Colmillo de Rubí', 20000, 70, 'Un solo cristal afilado que perfora en espiral y avienta la tierra hacia atrás.'],
     ['Punta de Diamante', 100000, 95, 'Lo más duro que se conocía, hasta que alguien bajó más.'],
     ['Lanza de Amazonita', 500000, 120, 'Vibra al ritmo de la roca y la deshace antes de tocarla.'],
+    ['Broca de Obsidiana Viva', 2000000, 140, 'Vidrio volcánico que se afila solo: entre más perfora, más corta.'],
+    ['Taladro Sónico', 5000000, 160, 'No toca la roca: le canta en la nota exacta y la roca se rinde.'],
+    ['Barrena de Plasma', 10000000, 185, 'Un hilo de sol en la punta. La tierra no se rompe: se aparta.'],
+    ['Colmillo de Neutronio', 25000000, 210, 'Una cucharada pesa lo que un cerro. Nada de lo que hay abajo le hace cosquillas.'],
+    ['Taladro de Gravedad', 50000000, 240, 'Dobla el suelo hacia adentro y lo deja caer por su propio peso.'],
+    ['Aguja de Antimateria', 100000000, 275, 'Lo que toca deja de existir. Úsese lejos de la Gasolinera.'],
+    ['Broca Cuántica', 250000000, 315, 'Perfora la celda antes de que decidas perforarla.'],
+    ['Lanza de Estrella', 500000000, 360, 'Forjada con el núcleo de una estrella apagada. Todavía está tibia.'],
+    ['Devoradora de Mundos', 1000000000, 410, 'Los mineros viejos dicen que no hay que encenderla viendo hacia arriba.'],
+    ['La Última Broca', 2500000000, 470, 'Después de esta no hay otra. Eso dijeron también de la anterior.'],
   ] },
-  { n: 'Casco', u: 'de vida', que: 'Cuánto castigo aguantas: más margen para caídas, lava y gas.', niv: [
+  { n: 'Casco', ic: '🛡️', u: 'de vida', que: 'Cuánto castigo aguantas: más margen para caídas, lava y gas.', niv: [
     ['Lámina de fábrica', 0, 10, 'Aguanta un tropezón. No dos.'],
     ['Blindaje de Hierro', 750, 17, 'Placas remachadas a mano. Perdona una mala caída.'],
     ['Coraza de Cobre', 2000, 30, 'Más gruesa y más flexible: se abolla, pero no se rompe.'],
@@ -55,8 +65,18 @@ const PZ = [
     ['Bóveda de Platino', 20000, 80, 'No se oxida, no se derrite y casi no se entera de las caídas.'],
     ['Caparazón de Einstenio', 100000, 120, 'El mínimo para sobrevivir a una bolsa de gas. Sin él, la zona honda es una ruleta.'],
     ['Escudo de Energía', 500000, 180, 'Ya no es metal: es un campo que envuelve al equipo.'],
+    ['Coraza de Obsidiana', 2000000, 250, 'Negra, lisa y fría. La lava la reconoce como pariente y la deja pasar.'],
+    ['Blindaje Reactivo', 5000000, 340, 'Cada golpe lo endurece. A la tercera explosión ya es otro casco.'],
+    ['Campo Deflector', 10000000, 450, 'Desvía el golpe antes de que llegue. Se siente como un empujón amable.'],
+    ['Armadura de Neutronio', 25000000, 600, 'Tan densa que las bolsas de gas le rebotan.'],
+    ['Doble Escudo de Energía', 50000000, 800, 'Dos campos, uno dentro del otro. Si cae el primero, el segundo ni se entera.'],
+    ['Escudo de Plasma', 100000000, 1050, 'Una burbuja de fuego frío. La lava se evapora antes de tocarte.'],
+    ['Escudo Gravitacional', 250000000, 1400, 'Curva el espacio alrededor del equipo: los golpes dan la vuelta.'],
+    ['Escudo de Fase', 500000000, 1850, 'Por un instante la maquinita no está ahí. El golpe pasa de largo.'],
+    ['Escudo Estelar', 1000000000, 2400, 'El mismo campo que protege a una estrella de sí misma.'],
+    ['Égida', 2500000000, 3200, 'El escudo del que hablan los mitos. Resulta que sí existía.'],
   ] },
-  { n: 'Motor', u: 'caballos', que: 'Cuánto peso subes y qué tan rápido: regresas cargado sin arrastrarte.', niv: [
+  { n: 'Motor', ic: '⚙️', u: 'caballos', que: 'Cuánto peso subes y qué tan rápido: regresas cargado sin arrastrarte.', niv: [
     ['Motor de fábrica', 0, 150, 'Sube. Despacio, pero sube.'],
     ['«Mulita» V4 1.6', 750, 160, 'Terca y confiable. Levanta media bodega sin protestar.'],
     ['«Coyote» V4 turbo', 2000, 170, 'El turbo silba al despegar. Regresas antes y gastas menos en el camino.'],
@@ -64,8 +84,18 @@ const PZ = [
     ['«Bisonte» V8 supercargado', 20000, 190, 'Para cuando la bodega pesa más que el propio equipo.'],
     ['«Mamut» V12', 100000, 200, 'Sube con diamantes como si fueran grava.'],
     ['«Titán» V16', 500000, 210, 'El único que despega con treinta amazonitas a bordo. Apenas.'],
+    ['«Coloso» V20', 2000000, 250, 'Veinte cilindros. El piso de la Gasolinera tiembla cuando lo enciendes.'],
+    ['«Trueno» de doble turbina', 5000000, 300, 'Se oye después de que ya pasaste.'],
+    ['«Ciclón» eléctrico', 10000000, 370, 'Silencioso y con toda la fuerza desde el primer instante.'],
+    ['«Cometa» de hidrógeno', 25000000, 460, 'Deja una estela de vapor. Sube cargado como si bajara vacío.'],
+    ['«Volcán» de fusión', 50000000, 580, 'Un sol chiquito bajo el cofre. La bodega llena ya no es tema.'],
+    ['«Pegaso» iónico', 100000000, 740, 'Empuja con luz. Los viajes al espacio se vuelven paseo.'],
+    ['«Dragón» de plasma', 250000000, 950, 'Ruge azul. Levanta lo que la bodega más grande pueda cargar.'],
+    ['«Atlas» antigravedad', 500000000, 1250, 'No levanta el peso: lo convence de que no pesa.'],
+    ['«Fénix» de antimateria', 1000000000, 1650, 'Un gramo de combustible, un año de trabajo.'],
+    ['«Infinito»', 2500000000, 2200, 'Nadie sabe cómo funciona. Funciona.'],
   ] },
-  { n: 'Tanque', u: 'litros', que: 'Cuánto tiempo puedes estar abajo: viajes más largos y más hondos.', niv: [
+  { n: 'Tanque', ic: '⛽', u: 'litros', que: 'Cuánto tiempo puedes estar abajo: viajes más largos y más hondos.', niv: [
     ['Bidón de fábrica', 0, 10, 'Treinta segundos perforando. No le quites el ojo al medidor.'],
     ['«Cantimplora»', 750, 15, 'Medio viaje más de aire. La compra más barata que salva vidas.'],
     ['«Barril»', 2000, 25, 'El que los veteranos recomiendan comprar primero.'],
@@ -73,8 +103,18 @@ const PZ = [
     ['«Pipa»', 20000, 60, 'Alcanza para llegar a la zona de lava y volver.'],
     ['«Leviatán»', 100000, 100, 'Un viaje al fondo, ida y vuelta, sin rezar.'],
     ['«Océano» de compresión líquida', 500000, 150, 'Comprime el combustible hasta volverlo casi sólido. Te cansas tú antes que el tanque.'],
+    ['«Mar» presurizado', 2000000, 200, 'Doscientos litros donde antes cabían diez.'],
+    ['«Abismo»', 5000000, 260, 'El medidor tarda tanto en bajar que se te olvida que existe.'],
+    ['«Glaciar» criogénico', 10000000, 330, 'Combustible congelado en bloques. Se derrite conforme lo pides.'],
+    ['«Nube» de gas denso', 25000000, 420, 'Pesa menos lleno que el anterior vacío.'],
+    ['«Manantial»', 50000000, 520, 'Recupera el vapor del escape y lo vuelve a quemar.'],
+    ['«Galaxia»', 100000000, 650, 'Ida y vuelta a la Luna con lo que sobra de la mañana.'],
+    ['«Pozo sin Fondo»', 250000000, 800, 'Le echas y le echas. Tarda en llenarse; tarda más en vaciarse.'],
+    ['«Agujero Blanco»', 500000000, 1000, 'Mil litros. La Gasolinera te manda felicitación en Navidad.'],
+    ['«Eterno»', 1000000000, 1250, 'Los mineros lo heredan a sus nietos todavía a medio tanque.'],
+    ['«Big Bang»', 2500000000, 1600, 'Todo el combustible del principio del universo, en un tanque.'],
   ] },
-  { n: 'Radiador', u: '% menos daño de lava y gas', que: 'Cuánto calor te quitas de encima.', niv: [
+  { n: 'Radiador', ic: '❄️', u: '% menos daño de lava y gas', que: 'Cuánto calor te quitas de encima.', niv: [
     ['Sin radiador', 0, 0, 'El calor entra completo.'],
     ['Abanico', 750, 5, 'Un ventilador. Es poco, pero es algo.'],
     ['Doble Abanico', 2000, 10, 'Dos aspas girando en contra. Le quita el filo a la lava.'],
@@ -82,8 +122,18 @@ const PZ = [
     ['Doble Turbina', 20000, 40, 'Saca el calor más rápido de lo que entra. Casi.'],
     ['Circuito Criogénico', 100000, 60, 'Lo que hace falta para aguantar el gas del fondo.'],
     ['«Corazón de Hielo»', 500000, 80, 'La lava se vuelve una molestia y el gas, un susto.'],
+    ['«Escarcha»', 2000000, 83, 'Una capa de hielo fino sobre el casco que nunca se derrite.'],
+    ['«Ventisca»', 5000000, 86, 'Sopla nieve hacia afuera. La lava se apaga a un metro de ti.'],
+    ['«Iceberg»', 10000000, 88, 'Nueve décimas partes del frío van escondidas adentro.'],
+    ['«Nitrógeno Líquido»', 25000000, 90, 'Baña el casco en un frío que humea. Del calor solo pasa una décima parte.'],
+    ['«Polo Sur»', 50000000, 92, 'Lleva puesto un invierno entero.'],
+    ['«Helio Superfluido»', 100000000, 94, 'Un líquido que sube por las paredes y se lleva el calor con él.'],
+    ['«Cero Absoluto»', 250000000, 95, 'Más frío no se puede. Eso creían.'],
+    ['«Bajo Cero Absoluto»', 500000000, 96, 'Los físicos dicen que es imposible. El Taller lo vende igual.'],
+    ['«Noche del Espacio»', 1000000000, 97, 'El frío que hay entre las estrellas, enlatado.'],
+    ['«Corazón de Cometa»', 2500000000, 98, 'Hielo con más años que el Sol. La lava le hace los mandados.'],
   ] },
-  { n: 'Bodega', u: 'espacios', que: 'Cuánto te llevas por viaje: más dinero por cada bajada.', niv: [
+  { n: 'Bodega', ic: '📦', u: 'espacios', que: 'Cuánto te llevas por viaje: más dinero por cada bajada.', niv: [
     ['Canasta', 0, 7, 'Siete piezas y a subir.'],
     ['Cajón', 750, 15, 'El doble de carga: cada viaje ya paga algo.'],
     ['Vagoneta', 2000, 25, 'Deja de doler pasar junto a una veta sin poder cargarla.'],
@@ -91,17 +141,27 @@ const PZ = [
     ['Contenedor', 20000, 70, 'Empieza a pesar: pídele más al motor.'],
     ['Bodega Leviatán', 100000, 120, 'Vacías una veta entera de una sola pasada.'],
     ['Bodega Colosal', 500000, 175, 'Cabe más de lo que el motor levanta. El límite ya no es el espacio: es el peso.'],
+    ['Bodega Titánica', 2000000, 220, 'Hay eco adentro.'],
+    ['Bodega de Doble Fondo', 5000000, 270, 'Por fuera parece igual. Por dentro, nadie le encuentra el final.'],
+    ['Tren de Vagonetas', 10000000, 330, 'Seis carros enganchados que te siguen como patitos.'],
+    ['Bodega Plegable', 25000000, 400, 'Se dobla sobre sí misma. No preguntes dónde queda lo que guardas.'],
+    ['Silo Compresor', 50000000, 480, 'Aprieta el mineral hasta que cabe el doble.'],
+    ['Bodega de Bolsillo', 100000000, 570, 'Un cuarto entero que cabe en la palma de la mano.'],
+    ['Almacén Dimensional', 250000000, 670, 'La carga viaja por otra dimensión y te alcanza en la Báscula.'],
+    ['Bodega Agujero Negro', 500000000, 780, 'Todo cabe. Sacarlo era otra historia, pero la Báscula ya aprendió.'],
+    ['Arca', 1000000000, 900, 'Cabe una veta madre con todo y sus alrededores.'],
+    ['Bodega Sin Fin', 2500000000, 1050, 'El letrero dice «cupo limitado». Nadie ha encontrado el límite.'],
   ] },
 ];
 
 /* ── Los 6 objetos ── */
 const OBJ = [
-  { n: 'Tanque de reserva', p: 2000, k: 'F', ef: '+25 litros. Se usa cuando sea.', h: 'Un respiro embotellado. No se abre solo: acuérdate de él.' },
-  { n: 'Nanobots reparadores', p: 7500, k: 'R', ef: '+30 de vida. Se usan cuando sea.', h: 'Un enjambre que suelda el casco desde adentro mientras sigues trabajando.' },
-  { n: 'Dinamita', p: 2000, k: 'X', ef: 'Destruye 3 × 3 celdas. Tocando suelo.', h: 'Abre paso donde el taladro no entra. También borra lo valioso: mira antes de prender.' },
-  { n: 'Explosivo plástico', p: 5000, k: 'C', ef: 'Destruye 5 × 5 celdas. Tocando suelo.', h: 'Lo mismo, pero sin sutilezas.' },
-  { n: 'Teletransportador cuántico', p: 2000, k: 'Q', ef: 'Te lleva a la superficie; puede lanzarte por el aire.', h: 'Barato y brusco. Llegas, pero no siempre de pie.' },
-  { n: 'Transmisor de materia', p: 10000, k: 'M', ef: 'Te lleva a la superficie sin riesgo.', h: 'Caro y elegante. Apareces junto a la gasolinera sin un rasguño.' },
+  { n: 'Tanque de reserva', ic: '🛢️', p: 2000, k: 'F', ef: '+25 litros. Se usa cuando sea.', h: 'Un respiro embotellado. No se abre solo: acuérdate de él.' },
+  { n: 'Nanobots reparadores', ic: '🤖', p: 7500, k: 'R', ef: '+30 de vida. Se usan cuando sea.', h: 'Un enjambre que suelda el casco desde adentro mientras sigues trabajando.' },
+  { n: 'Dinamita', ic: '🧨', p: 2000, k: 'X', ef: 'Destruye 3 × 3 celdas. Tocando suelo.', h: 'Abre paso donde el taladro no entra. También borra lo valioso: mira antes de prender.' },
+  { n: 'Explosivo plástico', ic: '💣', p: 5000, k: 'C', ef: 'Destruye 5 × 5 celdas. Tocando suelo.', h: 'Lo mismo, pero sin sutilezas.' },
+  { n: 'Teletransportador cuántico', ic: '🌀', p: 2000, k: 'Q', ef: 'Te lleva a la superficie; puede lanzarte por el aire.', h: 'Barato y brusco. Llegas, pero no siempre de pie.' },
+  { n: 'Transmisor de materia', ic: '🛸', p: 10000, k: 'M', ef: 'Te lleva a la superficie sin riesgo.', h: 'Caro y elegante. Apareces junto a la gasolinera sin un rasguño.' },
 ];
 
 const CORTO = ['Reserva', 'Nanobots', 'Dinamita', 'Plástico', 'Cuántico', 'Transmisor'];
@@ -134,7 +194,10 @@ const ALTURAS = [
   { m: 1000,    de: 'Doña Chela, la Compañía', x: '¿A dónde vas? La mina está para abajo… aunque la vista ha de estar bonita. Toma, para el combustible.', q: 500 },
   { m: 3000,    de: 'Doña Chela, la Compañía', x: 'Tres mil metros. Desde ahí la Gasolinera ha de verse como un botón.', q: 2000 },
   { m: 12000,   de: 'Torre de control', x: 'Maquinita sin identificar: vuela usted más alto que los aviones. Buen viaje.', q: 10000 },
+  { m: 30000,   de: 'Doña Chela, la Compañía', x: 'Ya se te hizo de noche allá arriba, ¿verdad? Dicen que desde ahí se ven todas las estrellas. Me cuentas cuando bajes.', q: 30000 },
   { m: 100000,  de: 'Doña Chela, la Compañía', x: 'Cruzaste la línea del espacio. Nadie de la Compañía había llegado ahí. Eres astronauta.', q: 250000 },
+  { m: 400000,  de: 'Estación orbital «Lupita»', x: 'Aquí la estación. Te estamos viendo por la ventana: una maquinita con orugas, en órbita. Nadie nos lo va a creer.', q: 1000000 },
+  { m: 650000,  de: 'Doña Chela, la Compañía', x: 'Dicen que donde andas ya está amaneciendo, y aquí apenas va a dar la medianoche. Qué cosa.', q: 2000000 },
   { m: 1000000, de: 'Señal muy lejana', x: 'Mil kilómetros. La Luna llena toda la ventana. Muy pocos llegan hasta aquí.', q: 5000000 },
 ];
 const fmtAlto = (m) => (m < 1000 ? m + ' m' : m < 100000 ? (m / 1000).toFixed(1) + ' km' : Math.round(m / 1000).toLocaleString('es-MX') + ' km');
@@ -183,12 +246,12 @@ function sanear(e) {
   const b = nuevoEstado(), num = (v, d, min = 0, max = Infinity) => (Number.isFinite(v) ? Math.max(min, Math.min(max, v)) : d);
   const lista = (a, n, max) => Array.from({ length: n }, (_, i) => Math.floor(num(a && a[i], 0, 0, max)));
   const s = { ...b, ...(e && typeof e === 'object' ? e : {}) };
-  s.eq = lista(s.eq, 6, 6); s.carga = lista(s.carga, 10, 999); s.obj = lista(s.obj, 6, 9999);
+  s.eq = lista(s.eq, 6, 99).map((e, i) => Math.min(e, PZ[i].niv.length - 1)); s.carga = lista(s.carga, 10, 999); s.obj = lista(s.obj, 6, 9999);
   s.d = num(s.d, 20); s.tot = num(s.tot, 0); s.rec = Math.floor(num(s.rec, 0, 0, H * 2));
   s.msj = Math.floor(num(s.msj, 0, 0, MSJ.length)); s.rango = Math.floor(num(s.rango, 0, 0, RANGOS.length - 1));
   s.resc = Math.floor(num(s.resc, 0)); s.mejor = Math.floor(num(s.mejor, -1, -1, 9)); s.reminGratis = s.reminGratis ? 1 : 0;
   s.x = num(s.x, INICIO_X, HW, W - HW); s.y = num(s.y, INICIO_Y, TECHO, H);
-  s.alt = Math.floor(num(s.alt, 0, 0, -TECHO * 2)); s.msjA = Math.floor(num(s.msjA, 0, 0, ALTURAS.length)); s.v = Math.floor(num(s.v, 0)); s.mu = typeof s.mu === 'string' ? s.mu : '';
+  s.alt = Math.floor(num(s.alt, 0, 0, -TECHO * 2)); s.msjA = ALTURAS.filter((x) => x.m <= s.alt).length; s.v = Math.floor(num(s.v, 0)); s.mu = typeof s.mu === 'string' ? s.mu : '';
   s.st = { ...b.st, ...(s.st && typeof s.st === 'object' ? s.st : {}) };
   s.st.rec = lista(s.st.rec, 10, 1e9); s.st.vend = lista(s.st.vend, 10, 1e9); s.st.hall = lista(s.st.hall, 4, 1e9);
   for (const k of ['viajes', 'cavadas', 'muertes', 'expl', 'remin', 'comb', 'mejorViaje', 'gruas', 'amigos']) s.st[k] = num(s.st[k], 0);
@@ -206,6 +269,7 @@ function sanear(e) {
 /* ── Lo que da cada pieza ── */
 const nv = (p) => PZ[p].niv[S.eq[p]][2];
 const pot = () => nv(0), vidaMax = () => nv(1), hp = () => nv(2), tanque = () => nv(3), rad = () => nv(4) / 100, bodega = () => nv(5);
+const brio = () => { const c = hp(); return Math.min(c - 150, 60) + 2.5 * Math.sqrt(Math.max(0, c - 210)); };     // lo que el motor aporta a la velocidad
 const nCarga = () => S.carga.reduce((a, b) => a + b, 0);
 const valorCarga = () => S.carga.reduce((a, b, i) => a + b * MIN[i].v, 0);
 const kgCarga = () => S.carga.reduce((a, b, i) => a + b * MIN[i].kg, 0);
@@ -222,7 +286,8 @@ function fmt(n) {
   n = Math.floor(n);
   if (!Number.isFinite(n)) return '$0';
   if (n < 1e6) return '$' + n.toLocaleString('es-MX');
-  const u = [[1e24, 'ad'], [1e21, 'ac'], [1e18, 'ab'], [1e15, 'aa'], [1e12, 'T'], [1e9, 'B'], [1e6, 'M']];
+  if (n < 1e12) return '$' + (n / 1e6).toLocaleString('es-MX', { maximumFractionDigits: n < 1e8 ? 2 : n < 1e9 ? 1 : 0 }) + ' M';
+  const u = [[1e24, 'ad'], [1e21, 'ac'], [1e18, 'ab'], [1e15, 'aa'], [1e12, 'T']];
   for (const [v, s] of u) if (n >= v) return '$' + (n / v).toFixed(2).replace(/\.?0+$/, '') + ' ' + s;
 }
 
@@ -266,7 +331,7 @@ function gen(x, y) {
   if (r < p) return 10 + mineralEn(y, azar(x, y, 3));
   if (m >= 210) { p += 0.02 + 0.13 * (m - 210) / 790; if (r < p) return 2; }
   if (m >= 410) { p += 0.01 + 0.04 * (m - 410) / 590; if (r < p) return 3; }
-  if (m >= 650) { p += m < 680 ? 0.01 : 0.08 + 0.37 * Math.min(1, (m - 680) / 280); if (r < p) return 4; }
+  if (m >= 650) { p += 0.01 + 0.05 * Math.min(1, Math.max(0, m - 680) / 280); if (r < p) return 4; }     // de 1 % a 6 % de las celdas (eran hasta 45 %)
   return 1;
 }
 function celda(x, y) {
@@ -445,7 +510,7 @@ function sonarLazos(quieto) {
   const t = AC.currentTime;
   const pon = (p, v, c = 0.03) => { if (p._v === undefined || Math.abs(p._v - v) > Math.abs(v) * 0.01 + 1e-5) { p._v = v; p.setTargetAtTime(v, t, c); } };
   if (quieto || !S) { for (const k in lazo) pon(lazo[k].g.gain, 0, 0.04); return; }
-  const alto = Math.max(0, -(yo.y + HH)), km = alto / 500, vel = Math.abs(yo.vx), cae = Math.max(0, yo.vy), sube = Math.max(0, -yo.vy), p = yo.perf, v = yo.vuela, niv = S.eq[0];
+  const alto = Math.max(0, -(yo.y + HH)), km = alto / 500, vel = Math.abs(yo.vx), cae = Math.max(0, yo.vy), sube = Math.max(0, -yo.vy), p = yo.perf, v = yo.vuela, niv = Math.min(8, S.eq[0]);
   // taladro: suena exactamente mientras perfora; el tono sube mientras muerde cada celda y se aclara contra el mineral
   pon(lazo.taladro.g.gain, p ? 0.145 : 0, p ? 0.012 : 0.035);
   if (p) { const e = Math.min(1, p.t / p.dur), duro = p.tipo >= 10, f = (92 + niv * 8) * (0.88 + 0.3 * e) * (duro ? 1.12 : 1); pon(lazo.taladro.o1.frequency, f, 0.02); pon(lazo.taladro.o2.frequency, f * 1.007, 0.02); pon(lazo.taladro.fG.frequency, 420 + 260 * e + (duro ? 520 : 0), 0.03); pon(lazo.taladro.l1.frequency, 23 + niv * 2 + 6 * e); }
@@ -576,7 +641,8 @@ const LOGROS = [
   { id: 'midas', n: 'Midas', d: 'Vende 10 piezas de Oro en un viaje.', ok: () => S.fl.midas },
   { id: 'r500', n: 'Medio kilómetro', d: 'Llega a 500 m.', ok: () => S.rec >= 500 },
   { id: 'fondo', n: 'Tocar fondo', d: 'Llega al fondo de la Corteza.', ok: () => S.rec >= 1000 },
-  { id: 'equipo', n: 'Equipo completo', d: 'Las seis piezas en su nivel más alto.', ok: () => S.eq.every((e) => e === 6) },
+  { id: 'equipo', n: 'Equipo completo', d: 'Las seis piezas en la mejora de medio millón, o mejor.', ok: () => S.eq.every((e) => e >= 6) },
+  { id: 'leyenda', n: 'Equipo de leyenda', d: 'Las seis piezas en su última mejora.', ok: () => S.eq.every((e, i) => e === PZ[i].niv.length - 1) },
   { id: 'dinamitero', n: 'Dinamitero', d: 'Usa 10 explosivos.', ok: () => S.st.expl >= 10 },
   { id: 'lava', n: 'Baño de lava', d: 'Sobrevive a la lava.', ok: () => S.fl.lava },
   { id: 'gas', n: 'Sobreviviente', d: 'Sobrevive a una bolsa de gas.', ok: () => S.fl.gas },
@@ -722,7 +788,7 @@ function fisica(dt) {
   const izq = teclas.izq, der = teclas.der, arr = teclas.arr || crucero, aba = teclas.aba;
   const caballos = hp(), pesoMax = caballos * 29.5, peso = 1980 + kgCarga();
   const alto = Math.max(0, -(yo.y + HH));        // celdas sobre el suelo
-  const vmax = (5 + (caballos - 150) / 30) * k;
+  const vmax = (5 + brio() / 30) * k;
   if (izq && !der) { yo.vx -= 22 * dt; yo.dir = -1; } else if (der && !izq) { yo.vx += 22 * dt; yo.dir = 1; }
   else yo.vx *= Math.pow(yo.suelo ? 0.0004 : 0.25, dt);
   yo.vx = Math.max(-vmax, Math.min(vmax, yo.vx));
@@ -733,7 +799,7 @@ function fisica(dt) {
   }
   yo.vy += G * dt;
   // Al espacio (100 km) se llega en unos 10 minutos y a los 1,000 km en unos 15: la velocidad crece con la altura.
-  const vsube = (6 + (caballos - 150) / 20) * k + alto / 140;
+  const vsube = (6 + brio() / 20) * k + alto / 140;
   yo.vy = Math.max(-vsube, Math.min(36 + alto / 40, yo.vy));
   // parado en la superficie no gasta: nadie explota por leer un letrero
   const quieto = yo.suelo && yo.y < 0 && !yo.vuela && Math.abs(yo.vx) < 0.5;
@@ -811,9 +877,10 @@ function seguirPerforando(p) {
   else if (solida(p.tx, p.ty + 1)) { if (izq && !der) { yo.dir = -1; perforar(p.tx - 1, p.ty); } else if (der && !izq) { yo.dir = 1; perforar(p.tx + 1, p.ty); } }
 }
 // Hasta qué profundidad aguanta una bolsa de gas lo que traes puesto (el gas empieza a los 650 m).
-function gasSeguro() { return cfg.gas ? Math.floor(410 + 2.05 * vidaMax() / ((1 - rad()) * MULT[cfg.gas])) : 9999; }
+const GAS_K = 3.4;        // cada cuántos metros bajo los 410 sube un punto el golpe del gas (era 2.05: pegaba 65 % más)
+function gasSeguro() { return cfg.gas ? Math.floor(410 + GAS_K * vidaMax() / ((1 - rad()) * MULT[cfg.gas])) : 9999; }
 const danoLava = () => [41, 58].map((q) => Math.round(q * (1 - rad()) * MULT[cfg.lava]));
-const danoGas = (y) => Math.round(Math.max(0, ((y + 1) * 2 - 410) / 2.05) * (1 - rad()) * MULT[cfg.gas]);
+const danoGas = (y) => Math.round(Math.max(0, ((y + 1) * 2 - 410) / GAS_K) * (1 - rad()) * MULT[cfg.gas]);
 const pistaGas = () => cfg.verGas === 2 || (cfg.modo === 'clasico' && !cfg.verGas);     // el gas se insinúa con burbujas
 function gastar(l) {
   if (!S || S.fuel <= 0) return;
@@ -828,16 +895,16 @@ function aterrizar(v) {
   danar(d * MULT[cfg.caida], 'una caída');
   if (h >= 46 && !yo.renace && cfg.caida) S.fl.caida = 1;
 }
-let ultNo = 0;
+let ultNo = 0, tMuerde = 0;
 function perforar(x, y) {
   const t = celda(x, y);
   if (t === 0) return;
   if (t === 2 || t === 5) { if (tiempo - ultNo > 0.4) { son.piedra(); ultNo = tiempo; if (t === 2 && !S.fl.piedra) { S.fl.piedra = 1; tarjeta('Piedra', 'El taladro no entra. Rodéala o vuélala con dinamita (X).'); } } return; }
   const m = (y + 1) * 2;
-  let dur = 0.6 * (20 / pot()) * (1 + 4 * m / 1000);
+  let dur = Math.max(0.07, 0.6 * (20 / pot()) * (1 + 4 * m / 1000));
   if (t === 3 && !cfg.lava) dur *= 3;
   yo.perf = { tx: x, ty: y, t: 0, dur, tipo: t, ox: yo.x, oy: yo.y, idx: y * W + x };
-  cavar([[x, y]]); son.muerde(t >= 10);
+  cavar([[x, y]]); if (tiempo - tMuerde > 0.11) { tMuerde = tiempo; son.muerde(t >= 10); }
   S.st.cavadas++;
 }
 function llegar(p) {
@@ -1335,8 +1402,23 @@ function dibMaq(q, px, py, t, modelo, dir, vuela, perfDir, nombre, estado, mundo
 }
 
 /* ── El cuadro completo ── */
-const CIELOS = [[0, '#22407a', '#5f83bd', '#f0a868', '#fbd590'], [3, '#1f3f80', '#5a86c4', '#f2b47a', '#fde0a6'], [12, '#0a1f55', '#2f5fb0', '#7fb0ea', '#cfe6ff'], [40, '#01030c', '#0a1a4a', '#2a5cb8', '#9cc8ff'], [100, '#000004', '#000008', '#04102e', '#3f7fe0'], [1000, '#000002', '#000003', '#00000a', '#1b3f8a']];
+// Subir es un viaje con su orden: tarde dorada, atardecer, hora azul, noche de estrellas, estrellas fugaces,
+// aurora al cruzar al espacio, la estación en órbita, la Luna que crece y, al final, el Sol que vuelve a salir
+// por la orilla del planeta. Cada fila: kilómetros de altura y cuatro colores, de arriba al horizonte.
+const CIELOS = [
+  [0, '#22407a', '#5f83bd', '#f0a868', '#fbd590'],       // tarde dorada
+  [1.5, '#1d3774', '#6a74b4', '#f08f5e', '#ffc66e'],     // atardecer
+  [5, '#141d52', '#553f86', '#d8585a', '#ff9450'],       // el Sol toca el horizonte
+  [10, '#080e30', '#1c2462', '#553a80', '#c2567a'],      // hora azul
+  [25, '#02030f', '#060b28', '#0d1742', '#2b3a7c'],      // noche
+  [100, '#000004', '#000008', '#020818', '#0b1d4a'],     // espacio
+  [450, '#000003', '#000005', '#00040e', '#071634'],
+  [700, '#000003', '#000006', '#030a1e', '#16356e'],     // amanece sobre el planeta
+  [1000, '#000002', '#000004', '#020716', '#1b3f8a'],
+];
 const tope = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+const suave = (a, b, x) => { const t = tope((x - a) / (b - a)); return t * t * (3 - 2 * t); };
+const azar01 = (x) => { const v = Math.sin(x * 127.1 + 311.7) * 43758.5453; return v - Math.floor(v); };
 function entre(a, b, k) {          // color entre dos colores
   const x = parseInt(a.slice(1), 16), y = parseInt(b.slice(1), 16), c = (s) => Math.round(((x >> s) & 255) + (((y >> s) & 255) - ((x >> s) & 255)) * k);
   return `rgb(${c(16)},${c(8)},${c(0)})`;
@@ -1353,6 +1435,23 @@ function luna() {
   q.restore();
   return lunaC;
 }
+// El cielo estrellado se pinta una sola vez: estrellas de tres tamaños y la franja de la Vía Láctea.
+function estrellas(w, h) {
+  let c = sprites.get('cielo'); if (c && c.width === w && c.height === h) return c;
+  c = document.createElement('canvas'); c.width = w; c.height = h;
+  const q = c.getContext('2d'), r = azarDe(4211), u = Math.max(1, RES);
+  q.save(); q.translate(w * 0.5, h * 0.42); q.rotate(-0.5);
+  const via = q.createLinearGradient(0, -h * 0.2, 0, h * 0.2); via.addColorStop(0, 'rgba(150,160,255,0)'); via.addColorStop(0.5, 'rgba(170,175,255,0.13)'); via.addColorStop(1, 'rgba(150,160,255,0)');
+  q.fillStyle = via; q.fillRect(-w, -h * 0.2, w * 2, h * 0.4);
+  q.fillStyle = '#fff'; for (let i = 0; i < 520; i++) { q.globalAlpha = 0.15 + r() * 0.45; q.fillRect((r() - 0.5) * w * 1.6, (r() + r() + r() - 1.5) * h * 0.09, u, u); }
+  q.restore();
+  for (let i = 0; i < 420; i++) {
+    const x = r() * w, y = r() * h, t = r();
+    q.globalAlpha = 0.35 + r() * 0.65; q.fillStyle = t > 0.93 ? '#ffd9b0' : t > 0.86 ? '#b9d2ff' : '#fff';
+    if (t > 0.975) { q.beginPath(); q.arc(x, y, u * 1.5, 0, 7); q.fill(); } else q.fillRect(x, y, t > 0.8 ? u * 1.6 : u, t > 0.8 ? u * 1.6 : u);
+  }
+  return sprites.set('cielo', c), c;
+}
 function cielo(w, h, oy) {
   const alto = Math.max(0, -(vis.y + HH)), km = alto * 2 / 1000, fondo = Math.min(oy, h);
   let i = 0; while (i < CIELOS.length - 2 && km > CIELOS[i + 1][0]) i++;
@@ -1360,55 +1459,143 @@ function cielo(w, h, oy) {
   const gr = g.createLinearGradient(0, fondo - 15 * T, 0, fondo);
   gr.addColorStop(0, entre(A[1], B[1], k)); gr.addColorStop(0.45, entre(A[2], B[2], k)); gr.addColorStop(0.82, entre(A[3], B[3], k)); gr.addColorStop(1, entre(A[4], B[4], k));
   g.fillStyle = gr; g.fillRect(0, 0, w, fondo);
-  // estrellas: aparecen al oscurecer
-  const est = tope((km - 12) / 50);
-  if (est > 0) {
-    g.fillStyle = '#fff';
-    for (let n = 0; n < 170; n++) {
-      const x = ((n * 7919) % 1000) / 1000 * w, y = ((n * 104729) % 997) / 997 * fondo, b = 0.5 + 0.5 * Math.sin(reloj * (1 + n % 5) * 0.7 + n);
-      g.globalAlpha = est * (0.35 + 0.65 * b) * (n % 7 ? 0.7 : 1); const s = Math.max(1, Math.round(RES * (n % 11 ? 1 : 2))); g.fillRect(x, y, s, s);
-    }
-    g.globalAlpha = 1;
-  }
-  // el sol: cálido y difuso abajo, blanco y nítido en el espacio
-  const esp = tope(km / 100), sx = w * 0.7 - camX * T * 0.03, sy = Math.min(oy - 7 * T, h * 0.3), rs = T * (5 - 3.2 * esp);
-  const sol = g.createRadialGradient(sx, sy, T * 0.3, sx, sy, rs), tono = entre('#ffe9a8', '#ffffff', tope(km / 20));
-  sol.addColorStop(0, '#ffffff'); sol.addColorStop(0.14 + 0.1 * esp, tono); sol.addColorStop(1, 'rgba(255,240,200,0)');
-  g.globalAlpha = 0.95; g.fillStyle = sol; g.fillRect(sx - rs, sy - rs, rs * 2, rs * 2); g.globalAlpha = 1;
-  if (esp > 0.3) { g.strokeStyle = `rgba(255,255,255,${(esp - 0.3) * 0.6})`; g.lineWidth = Math.max(1, RES); g.beginPath(); for (const [a, b] of [[1, 0], [0, 1], [0.7, 0.7], [0.7, -0.7]]) { g.moveTo(sx - a * T * 3, sy - b * T * 3); g.lineTo(sx + a * T * 3, sy + b * T * 3); } g.stroke(); }
-  // la Luna: asoma al llegar al espacio y crece hasta llenar la vista a los 1,000 km
-  const la = tope((km - 25) / 60);
-  if (la > 0) { const cre = Math.pow(tope((km - 100) / 900), 0.7), r = h * (0.035 + 0.3 * cre); g.globalAlpha = la; g.drawImage(luna(), w * (0.26 + 0.1 * cre) - r, h * (0.28 + 0.1 * cre) - r, r * 2, r * 2); g.globalAlpha = 1; }
-  // nubes: cada una flota a su altura; al subir se van quedando abajo
-  const na = 0.34 * (1 - tope(km / 14));
-  if (na > 0.01) {
-    g.fillStyle = '#ffffff'; g.globalAlpha = na;
-    for (let n = 0; n < 10; n++) {
-      const y = h * 0.42 - (100 + n * 380 + (n * n * 17) % 90 - alto) * T * 0.05; if (y < -T * 3 || y > fondo + T) continue;
-      const x = (((n * 0.37 + reloj * 0.0035 * (1 + (n % 3) * 0.5)) % 1.3) - 0.15) * w - camX * T * 0.06, s = T * (0.8 + (n % 3) * 0.4);
-      g.beginPath(); g.ellipse(x, y, s * 1.6, s * 0.45, 0, 0, 7); g.ellipse(x - s * 0.8, y + s * 0.12, s, s * 0.35, 0, 0, 7); g.ellipse(x + s * 0.9, y + s * 0.15, s * 1.1, s * 0.32, 0, 0, 7); g.fill();
-    }
-    g.globalAlpha = 1;
-  }
-  // el paisaje lejano: cerros cuando estás cerca; desde muy alto, la curva del planeta
+  // dónde queda el horizonte en la pantalla: el suelo si está a la vista; si no, la orilla del planeta
   const lejos = oy > h, s = tope(Math.log10(Math.max(km, 3) / 3) / Math.log10(1000 / 3));
   const base = lejos ? h - h * 0.06 * tope((oy - h) / (h * 0.5)) - h * 0.24 * s : oy;
+  const R = w * 60 * Math.pow(0.0125, s), cyP = base + R, orilla = (x) => cyP - Math.sqrt(Math.max(0, R * R - (x - w / 2) * (x - w / 2)));
+  const noche = suave(4, 12, km) * (1 - suave(450, 800, km)), aire = tope(1 - km / 90), sube = -yo.vy;
+  // 1 · estrellas: asoman en la hora azul; en el aire titilan, en el espacio no
+  const est = suave(7, 28, km);
+  if (est > 0.01) {
+    g.globalAlpha = est; g.drawImage(estrellas(w, h), 0, 0);
+    g.fillStyle = '#fff';
+    for (let n = 0; n < 46; n++) { const b = 0.5 + 0.5 * Math.sin(reloj * (1.3 + n % 5) + n * 2.4); g.globalAlpha = est * (1 - (0.75 * aire + 0.15) * b); const t = Math.max(1, Math.round(RES * (n % 9 ? 1.4 : 2.4))); g.fillRect(azar01(n * 1.7) * w, azar01(n * 5.9) * fondo, t, t); }
+    g.globalAlpha = 1;
+  }
+  // 2 · estrellas fugaces: se queman justo donde vas pasando, entre los 30 y los 200 km
+  const fug = suave(25, 45, km) * (1 - suave(140, 220, km));
+  if (fug > 0.02) {
+    const c = reloj / 2.7, n = Math.floor(c), f = (c - n) / 0.24;
+    if (f < 1) {
+      const a = azar01(n * 7.13), dx = (a > 0.5 ? -1 : 1) * w * 0.17, dy = h * 0.1, x = w * (0.12 + 0.76 * a) + dx * f, y = fondo * (0.06 + 0.5 * azar01(n * 3.7)) + dy * f;
+      const ln = g.createLinearGradient(x, y, x - dx * 0.55, y - dy * 0.55); ln.addColorStop(0, `rgba(255,255,255,${fug * (1 - f * f)})`); ln.addColorStop(1, 'rgba(255,255,255,0)');
+      g.strokeStyle = ln; g.lineWidth = Math.max(1.5, RES * 1.6); g.lineCap = 'round'; g.beginPath(); g.moveTo(x, y); g.lineTo(x - dx * 0.55, y - dy * 0.55); g.stroke();
+    }
+  }
+  // 3 · el Sol de la tarde: baja, enrojece y se mete tras el horizonte
+  const e = km < 9 ? 1 - Math.pow(tope(Math.log(1 + km) / Math.log(10)), 1.4) : -0.5 * tope((km - 9) / 4);
+  const disco = (x, y, r, centro, tinte, a) => { const sol = g.createRadialGradient(x, y, r * 0.05, x, y, r); sol.addColorStop(0, centro); sol.addColorStop(0.16, tinte); sol.addColorStop(1, 'rgba(255,220,170,0)'); g.globalAlpha = a; g.fillStyle = sol; g.fillRect(x - r, y - r, r * 2, r * 2); g.globalAlpha = 1; };
+  if (e > -0.5) {
+    const baja = 1 - Math.max(0, e), sx = w * (0.7 + 0.1 * baja) - camX * T * 0.03, alta = Math.min(oy - 7 * T, h * 0.3), sy = base + (alta - base) * e - (e < 0 ? e * T * 4 : 0);
+    const brasa = suave(0.55, 0, e) * (1 - suave(9, 15, km));                // el resplandor del ocaso sobre el horizonte
+    if (brasa > 0.01) { const rr = w * 0.5, gl = g.createRadialGradient(sx, base, 0, sx, base, rr); gl.addColorStop(0, `rgba(255,130,60,${0.5 * brasa})`); gl.addColorStop(1, 'rgba(255,90,60,0)'); g.fillStyle = gl; g.fillRect(sx - rr, base - rr, rr * 2, rr); }
+    disco(sx, sy, T * (5 + 2.5 * baja), entre('#ffffff', '#ffe2b0', baja), entre('#ffe9a8', '#ff6a2a', Math.pow(baja, 1.5)), 0.95);
+  }
+  // 4 · aurora: cortinas verdes y violetas al cruzar la línea del espacio
+  const aur = suave(70, 110, km) * (1 - suave(260, 430, km));
+  if (aur > 0.01) {
+    let c = sprites.get('aurora');
+    if (!c) { c = document.createElement('canvas'); c.width = 64; c.height = 256; const q = c.getContext('2d'), v = q.createLinearGradient(0, 0, 0, 256); v.addColorStop(0, 'rgba(150,90,255,0)'); v.addColorStop(0.35, 'rgba(120,130,255,0.35)'); v.addColorStop(0.75, 'rgba(70,255,150,0.8)'); v.addColorStop(1, 'rgba(70,255,150,0)'); q.fillStyle = v; q.fillRect(0, 0, 64, 256); q.globalCompositeOperation = 'destination-in'; const m = q.createLinearGradient(0, 0, 64, 0); m.addColorStop(0, 'rgba(0,0,0,0)'); m.addColorStop(0.5, '#000'); m.addColorStop(1, 'rgba(0,0,0,0)'); q.fillStyle = m; q.fillRect(0, 0, 64, 256); sprites.set('aurora', c); }
+    g.globalCompositeOperation = 'lighter';
+    for (let n = 0; n < 16; n++) {
+      const x = w * (n / 15) + Math.sin(reloj * 0.35 + n * 1.9) * w * 0.03, an = w * (0.13 + 0.05 * Math.sin(reloj * 0.6 + n)), al = h * (0.36 + 0.14 * Math.sin(reloj * 0.45 + n * 0.8));
+      g.globalAlpha = aur * (0.3 + 0.25 * Math.sin(reloj * 0.8 + n * 2.3)); g.drawImage(c, x - an / 2, orilla(x) - al * 0.92, an, al);
+    }
+    g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1;
+  }
+  // 5 · la Luna: sale al anochecer y crece hasta llenar la vista a los 1,000 km
+  const la = suave(10, 30, km);
+  if (la > 0) { const cre = Math.pow(tope((km - 100) / 900), 0.7), r = h * (0.035 + 0.3 * cre); g.globalAlpha = la; g.drawImage(luna(), w * (0.26 + 0.1 * cre) - r, h * (0.28 + 0.1 * cre) - r, r * 2, r * 2); g.globalAlpha = 1; }
+  // 6 · el Sol vuelve a salir por la orilla del planeta, blanco y nítido como se ve en el espacio
+  const alba = suave(380, 520, km);
+  if (alba > 0.01) {
+    const sal = suave(430, 900, km), sx = w * 0.82, sy = orilla(sx) + T * 1.6 - sal * h * 0.3, rr = w * 0.4;
+    const gl = g.createRadialGradient(sx, orilla(sx), 0, sx, orilla(sx), rr); gl.addColorStop(0, `rgba(255,190,120,${0.6 * alba * (1 - sal * 0.5)})`); gl.addColorStop(0.5, `rgba(120,160,255,${0.2 * alba})`); gl.addColorStop(1, 'rgba(120,160,255,0)');
+    g.fillStyle = gl; g.fillRect(sx - rr, orilla(sx) - rr, rr * 2, rr * 2);
+    disco(sx, sy, T * 3.2, '#ffffff', '#ffffff', 1);
+    g.strokeStyle = `rgba(255,255,255,${0.5 * sal})`; g.lineWidth = Math.max(1, RES); g.beginPath(); for (const [a, b] of [[1, 0], [0, 1], [0.7, 0.7], [0.7, -0.7]]) { g.moveTo(sx - a * T * 3.4, sy - b * T * 3.4); g.lineTo(sx + a * T * 3.4, sy + b * T * 3.4); } g.stroke();
+  }
+  // 7 · nubes: tres capas; las de cerca pasan casi a tu velocidad, así se siente que subes
+  const tinte = km < 5 ? entre('#ffffff', '#ffc9a4', suave(0.8, 5, km)) : entre('#ffc9a4', '#6f6590', suave(5, 11, km));
+  const capa = (p, tam, hueco, a0, id) => {
+    const paso = hueco * T, corre = alto * T * p, hy = h * 0.62;
+    g.fillStyle = tinte;
+    for (let n = Math.max(1, Math.floor((corre - (h - hy) - paso) / paso)); n * paso - corre < hy + paso; n++) {
+      const dens = suave(0.04, 0.3, n * paso / (T * p) / 500) * (1 - suave(9, 17, n * paso / (T * p) / 500)); if (dens < 0.02) continue;
+      for (let j = 0; j < (id === 2 ? 2 : 3); j++) {
+        const r = azar01(n * 12.9898 + j * 78.233 + id * 37.719); if (r > dens * 0.8) continue;
+        const t = T * tam * (0.7 + azar01(n * 5.3 + j * 2.1 + id) * 0.8);
+        const x = (((r * 7.31 + j * 0.37 + reloj * 0.006 * (1 + id) * (j === 1 ? -0.6 : 1)) % 1) + 1) % 1 * (w + t * 6) - t * 3 - camX * T * 0.04 * (id + 1);
+        const y = hy - (n * paso - corre) + (azar01(n * 3.1 + j * 1.3) - 0.5) * paso * 0.6;
+        g.globalAlpha = a0 * dens;
+        g.beginPath(); g.ellipse(x, y, t * 1.6, t * 0.42, 0, 0, 7); g.ellipse(x - t * 0.8, y + t * 0.12, t, t * 0.34, 0, 0, 7); g.ellipse(x + t * 0.9, y + t * 0.15, t * 1.1, t * 0.3, 0, 0, 7); g.ellipse(x + t * 0.15, y - t * 0.24, t * 0.8, t * 0.36, 0, 0, 7); g.fill();
+      }
+    }
+    g.globalAlpha = 1;
+  };
+  if (km < 18) { capa(0.1, 0.8, 5, 0.34, 0); capa(0.3, 1.3, 6, 0.42, 1); }
+  // 8 · el paisaje lejano: cerros cuando estás cerca; desde muy alto, la curva del planeta
+  const dia = 1 - noche * 0.8;
   if (lejos) {
-    const R = w * 60 * Math.pow(0.0125, s), cy = base + R, pl = g.createRadialGradient(w / 2, cy, R * 0.6, w / 2, cy, R);
-    pl.addColorStop(0, '#5a3a26'); pl.addColorStop(0.9, '#8a5c3e'); pl.addColorStop(1, '#b9835a');
-    g.fillStyle = pl; g.beginPath(); g.arc(w / 2, cy, R, 0, 7); g.fill();
-    const aire = tope((km - 6) / 30);
-    for (let n = 0; n < 4 && aire > 0; n++) { g.strokeStyle = `rgba(130,195,255,${aire * (0.42 - n * 0.1)})`; g.lineWidth = T * (0.12 + n * 0.16); g.beginPath(); g.arc(w / 2, cy, R + g.lineWidth / 2, Math.PI, Math.PI * 2); g.stroke(); }
+    const pl = g.createRadialGradient(w / 2, cyP, R * 0.6, w / 2, cyP, R);
+    pl.addColorStop(0, entre('#120b08', '#5a3a26', dia)); pl.addColorStop(0.9, entre('#1c120d', '#8a5c3e', dia)); pl.addColorStop(1, entre('#2a1b14', '#b9835a', dia));
+    g.fillStyle = pl; g.beginPath(); g.arc(w / 2, cyP, R, 0, 7); g.fill();
+    const azul = tope((km - 6) / 30) * (0.55 + 0.45 * dia + 0.5 * alba);
+    for (let n = 0; n < 4 && azul > 0; n++) { g.strokeStyle = `rgba(130,195,255,${Math.min(0.6, azul * (0.42 - n * 0.1))})`; g.lineWidth = T * (0.12 + n * 0.16); g.beginPath(); g.arc(w / 2, cyP, R + g.lineWidth / 2, Math.PI, Math.PI * 2); g.stroke(); }
+    const pueblo = noche * suave(1.5, 6, km) * (1 - suave(250, 500, km));          // de noche, las luces de la Gasolinera allá abajo
+    if (pueblo > 0.02) { const px = w / 2, py = base + T * (0.5 + 0.4 * (1 - s)), rr = T * (2.2 - 1.4 * s), lz = g.createRadialGradient(px, py, 0, px, py, rr); lz.addColorStop(0, `rgba(255,210,120,${0.85 * pueblo})`); lz.addColorStop(0.25, `rgba(255,170,80,${0.35 * pueblo})`); lz.addColorStop(1, 'rgba(255,170,80,0)'); g.fillStyle = lz; g.fillRect(px - rr, py - rr, rr * 2, rr * 2); }
   }
   const ca = 1 - tope((km - 2) / 6);
   if (ca > 0) {
     g.globalAlpha = ca;
+    const sombra = suave(0.5, 6, km) * 0.75;
     for (const [col, alt, f, kk] of [['#c79a78', 2.6, 0.004, 0.12], ['#a8734f', 1.9, 0.0065, 0.25], ['#86573b', 1.2, 0.011, 0.45]]) {
-      g.fillStyle = col; g.beginPath(); g.moveTo(0, base + T * 3);
+      g.fillStyle = entre(col, '#2b1a2a', sombra); g.beginPath(); g.moveTo(0, base + T * 3);
       for (let x = 0; x <= w + 60; x += 60) { const m = (x + camX * T * kk) / RES; g.lineTo(x, base - T * alt * (lejos ? 0.5 : 1) * (0.55 + 0.3 * Math.sin(m * f) + 0.15 * Math.sin(m * f * 2.7 + 1))); }
       g.lineTo(w + 60, base + T * 3); g.fill();
     }
     g.globalAlpha = 1;
+  }
+  if (km < 18) capa(0.75, 2, 9, 0.5, 2);
+  // 9 · lo que te cruzas en el camino. Cada cosa vive a su altura y pasa por la pantalla mientras la rebasas.
+  const cruza = (kmAhi, ancho) => { const d = Math.log(Math.max(km, 1e-4) / kmAhi) / ancho; return d > -1 && d < 1 ? h * (0.5 + d * 0.62) : null; };
+  let y = cruza(0.45, 0.8);
+  if (y !== null) {                                   // una parvada
+    const x0 = ((reloj * 0.03) % 1.3 - 0.15) * w, t = T * 0.22, al = Math.sin(reloj * 9) * t * 0.6;
+    g.strokeStyle = entre('#2a1a22', '#120b12', suave(1, 5, km)); g.lineWidth = Math.max(1.5, T * 0.05); g.lineCap = 'round'; g.beginPath();
+    for (const [a, b] of [[0, 0], [-1.6, 0.9], [-1.5, -1], [-3.2, 1.9], [-3.1, -2], [-4.8, 2.8], [-4.6, -3.1]]) { const x = x0 + a * T * 0.7, yy = y + b * T * 0.55; g.moveTo(x - t, yy - al); g.lineTo(x, yy); g.lineTo(x + t, yy - al); }
+    g.stroke();
+  }
+  y = cruza(11, 0.3);
+  if (y !== null) {                                   // un avión con su estela
+    const x = ((reloj * 0.045) % 1.7 - 0.35) * w, l = w * 0.45, st = g.createLinearGradient(x, 0, x - l, 0); st.addColorStop(0, 'rgba(255,225,205,0.8)'); st.addColorStop(1, 'rgba(255,225,205,0)');
+    g.fillStyle = st; g.fillRect(x - l, y - T * 0.07, l, T * 0.14);
+    g.fillStyle = '#1a1420'; g.beginPath(); g.ellipse(x + T * 0.3, y, T * 0.55, T * 0.09, 0, 0, 7); g.fill(); g.beginPath(); g.moveTo(x + T * 0.45, y); g.lineTo(x + T * 0.05, y - T * 0.5); g.lineTo(x - T * 0.1, y - T * 0.5); g.lineTo(x + T * 0.15, y); g.lineTo(x - T * 0.1, y + T * 0.5); g.lineTo(x + T * 0.05, y + T * 0.5); g.fill();
+  }
+  y = cruza(31, 0.28);
+  if (y !== null) {                                   // un globo meteorológico
+    const x = w * 0.3 + Math.sin(reloj * 0.4) * T * 0.6;
+    g.strokeStyle = '#c9c5bc88'; g.lineWidth = Math.max(1, RES); g.beginPath(); g.moveTo(x, y + T * 0.7); g.lineTo(x + Math.sin(reloj) * T * 0.1, y + T * 1.9); g.stroke();
+    const gb = g.createRadialGradient(x - T * 0.25, y - T * 0.25, T * 0.05, x, y, T * 0.75); gb.addColorStop(0, '#ffffff'); gb.addColorStop(1, '#8e94b8'); g.fillStyle = gb; g.beginPath(); g.ellipse(x, y, T * 0.68, T * 0.75, 0, 0, 7); g.fill();
+    g.fillStyle = '#d8d2c4'; g.fillRect(x - T * 0.12 + Math.sin(reloj) * T * 0.1, y + T * 1.9, T * 0.24, T * 0.2);
+  }
+  y = cruza(408, 0.24);
+  if (y !== null) {                                   // la estación en órbita
+    const x = w * (0.88 - 0.5 * (y / h)), u = T * 0.16;
+    g.save(); g.translate(x, y); g.rotate(-0.18);
+    g.fillStyle = '#2b4f9e'; g.strokeStyle = '#9fb6e6'; g.lineWidth = Math.max(1, u * 0.12);
+    for (const a of [-1, 1]) for (const b of [-1, 1]) { g.fillRect(a * u * 4.2 - (a < 0 ? u * 4 : 0), b * u * 1.7 - u * 0.9, u * 4, u * 1.8); g.strokeRect(a * u * 4.2 - (a < 0 ? u * 4 : 0), b * u * 1.7 - u * 0.9, u * 4, u * 1.8); }
+    g.fillStyle = '#d9dde4'; g.fillRect(-u * 8.4, -u * 0.25, u * 16.8, u * 0.5); g.fillRect(-u * 2.6, -u * 0.9, u * 5.2, u * 1.8); g.fillStyle = '#f4f1ea'; g.fillRect(-u * 0.8, -u * 2.6, u * 1.6, u * 5.2);
+    if (Math.sin(reloj * 5) > 0.3) { g.fillStyle = '#ff5a4a'; g.beginPath(); g.arc(0, -u * 2.8, u * 0.35, 0, 7); g.fill(); }
+    g.restore();
+  }
+  // 10 · el aire que pasa: rayitas que corren más entre más rápido vas (en el espacio ya no hay aire)
+  const rafaga = aire * tope((Math.abs(sube) - 9) / 50) * 0.3;
+  if (rafaga > 0.01 && lejos) {
+    g.strokeStyle = '#fff'; g.lineWidth = Math.max(1, RES); g.globalAlpha = rafaga; g.beginPath();
+    const largo = T * Math.min(5, Math.abs(sube) * 0.07), dir = sube > 0 ? 1 : -1;
+    for (let n = 0; n < 18; n++) { const x = azar01(n * 9.7) * w, yy = ((azar01(n * 3.3) + dir * reloj * (0.9 + azar01(n) * 0.9)) % 1 + 1) % 1 * (h + largo) - largo; g.moveTo(x, yy); g.lineTo(x, yy + largo); }
+    g.stroke(); g.globalAlpha = 1;
   }
 }
 function dibujar() {
@@ -1744,14 +1931,14 @@ function pintarHud(forzar) {
   $('#prof').textContent = donde(yo.y); $('#din').textContent = fmt(S.d);
   pintarViaje();
   poner($('#metas'), metas().map((m) => `<div class="m${m.ya ? ' ya' : ''}${m.mal ? ' mal' : ''}"><i style="width:${Math.round(Math.min(100, m.p * 100))}%"></i><span>${esc(m.tx)}</span></div>`).join(''));
-  poner($('#objetos'), OBJ.map((o, i) => `<div data-u="${i}" class="${S.obj[i] ? '' : 'n0'}" title="${o.n}: ${o.ef}"><kbd>${o.k}</kbd>${CORTO[i]} ×${S.obj[i]}</div>`).join(''));
+  poner($('#objetos'), OBJ.map((o, i) => `<div data-u="${i}" class="${S.obj[i] ? '' : 'n0'}" title="${o.n}: ${o.ef}"><kbd>${o.k}</kbd>${o.ic} ${CORTO[i]} ×${S.obj[i]}</div>`).join(''));
   if (forzar) pintarTabla();
 }
 // Lo que cuesta volver volando a la superficie, a ojo: la subida derecha, con lo que pesas.
 function costoSubir() {
   const cab = hp(), empuje = 26 * (1 - (1980 + kgCarga()) / (cab * 29.5));
   if (empuje <= 0.4) return Infinity;
-  const v = 6 + (cab - 150) / 20;
+  const v = 6 + brio() / 20;
   return 17 / 60 * ((yo.y + HH) / v * 1.15 + v / empuje * 0.5 + 1);
 }
 // El viaje, abajo a la izquierda: cuánto llevas, en cuánto se vende, si te alcanza para subir, y la grúa.
@@ -1888,7 +2075,7 @@ function pintarQR(lienzoQR, texto, lado = 8) {
 }
 
 /* ════════ Menús ════════ RLR */
-let pestana = 0, pieza = 0;
+let pestana = 0, pieza = 0, cuantos = 1;
 function abrir(id) {
   if (!S) return;
   son.clic();
@@ -1913,18 +2100,20 @@ function pintarMenu() {
       `<p class="grande" id="totalVenta">${fmt(v.total)}</p><button data-a="vender">Vender toda la carga</button>` : '<p class="nota">La bodega está vacía. Baja, recoge mineral y vuelve.</p>') + '</div>';
   } else if (menu === 'tal') {
     const P = PZ[pieza];
-    h = cab('🔧 El Taller') + `<div class="pest">${PZ.map((p, i) => `<button data-a="pieza" data-v="${i}" class="${i === pieza ? 'on' : ''}">${p.n}</button>`).join('')}</div>
-      <div class="cuerpo"><p class="nota">${P.que}${(pieza === 1 || pieza === 4) && cfg.gas ? ` Con lo que traes, aguantas una bolsa de gas hasta <b>${gasSeguro() < 650 ? 'ninguna profundidad' : gasSeguro() >= 1000 ? 'el fondo' : gasSeguro() + ' m'}</b> (el gas empieza a los 650 m).` : ''}</p>` + P.niv.map((n, i) => {
+    const hasta = Math.min(P.niv.length, S.eq[pieza] + 11);          // todo lo que ya compraste y las diez que siguen
+    h = cab('🔧 El Taller') + `<div class="pest">${PZ.map((p, i) => `<button data-a="pieza" data-v="${i}" class="${i === pieza ? 'on' : ''}">${p.ic} ${p.n} <small>${S.eq[i]}/${p.niv.length - 1}</small></button>`).join('')}</div>
+      <div class="cuerpo"><p class="nota">${P.que}${(pieza === 1 || pieza === 4) && cfg.gas ? ` Con lo que traes, aguantas una bolsa de gas hasta <b>${gasSeguro() < 650 ? 'ninguna profundidad' : gasSeguro() >= 1000 ? 'el fondo' : gasSeguro() + ' m'}</b> (el gas empieza a los 650 m).` : ''}</p>` + P.niv.slice(0, hasta).map((n, i) => {
       const tengo = i <= S.eq[pieza], act = i === S.eq[pieza];
       return `<div class="fila ${act ? 'act' : tengo ? 'tengo' : ''}"><div class="t"><b>${n[0]}${act ? ' · lo que traes' : ''}</b><small>${n[3]}</small><small>${act || tengo ? n[2] + ' ' + P.u : `<b style="display:inline;color:var(--ok)">${nv(pieza)} → ${n[2]}</b> ${P.u}`}</small></div>
-        ${tengo ? '' : `<div class="v">${fmt(n[1])}</div><button data-a="mejorar" data-v="${i}" ${S.d < n[1] ? 'disabled' : ''}>Comprar</button>`}</div>`;
-    }).join('') + '</div>';
+        ${tengo ? '<div class="v ya">✓</div>' : `<div class="v">${fmt(n[1])}</div><button data-a="mejorar" data-v="${i}" ${S.d < n[1] ? 'disabled' : ''}>Comprar</button>`}</div>`;
+    }).join('') + (hasta < P.niv.length ? `<p class="nota">Hay ${P.niv.length - hasta} ${P.niv.length - hasta === 1 ? 'mejora' : 'mejoras'} más allá. Se van asomando conforme compras.</p>` : S.eq[pieza] === P.niv.length - 1 ? '<p class="nota">Tienes lo mejor que existe… en esta capa.</p>' : '') + '</div>';
   } else if (menu === 'alm') {
     const dano = vidaMax() - S.vida, costo = Math.ceil(dano * 15), puede = Math.min(costo, Math.floor(S.d));
-    h = cab('🧰 El Almacén') + `<div class="cuerpo"><div class="fila"><div class="t"><b>Reparar el casco</b><small>${Math.ceil(S.vida)} / ${vidaMax()} de vida · $15 por punto</small></div>
-      <div class="v">${dano > 0.01 ? fmt(costo) : ''}</div><button data-a="reparar" ${dano <= 0.01 || puede < 1 ? 'disabled' : ''}>${dano <= 0.01 ? 'Intacto' : puede < costo ? 'Reparar lo que alcance' : 'Reparar'}</button></div>` +
-      OBJ.map((o, i) => `<div class="fila"><div class="t"><b>${o.n} <small style="display:inline">· tecla ${o.k} · tienes ${S.obj[i]}</small></b><small>${o.h}</small><small>${o.ef}</small></div>
-      <div class="v">${fmt(o.p)}</div><button data-a="objeto" data-v="${i}" ${S.d < o.p ? 'disabled' : ''}>Comprar</button></div>`).join('') + '</div>';
+    h = cab('🧰 El Almacén') + `<div class="cuerpo"><div class="fila"><div class="ic">🛠️</div><div class="t"><b>Reparar el casco</b><small>${Math.ceil(S.vida)} / ${vidaMax()} de vida · $15 por punto</small></div>
+      <div class="v">${dano > 0.01 ? fmt(costo) : ''}</div><button data-a="reparar" ${dano <= 0.01 || puede < 1 ? 'disabled' : ''}>${dano <= 0.01 ? 'Intacto' : puede < costo ? 'Reparar lo que alcance' : 'Reparar'}</button></div>
+      <div class="cant"><span>Comprar de a</span>${[1, 5, 10, 50, 100].map((q) => `<button class="s${q === cuantos ? ' on' : ''}" data-a="cuantos" data-v="${q}">${q}</button>`).join('')}</div>` +
+      OBJ.map((o, i) => `<div class="fila"><div class="ic">${o.ic}</div><div class="t"><b>${o.n} <small style="display:inline">· tecla ${o.k} · tienes ${S.obj[i]}</small></b><small>${o.h}</small><small>${o.ef}</small></div>
+      <div class="v">${fmt(o.p * cuantos)}</div><button data-a="objeto" data-v="${i}" ${S.d < o.p * cuantos ? 'disabled' : ''}>Comprar${cuantos > 1 ? ' ' + cuantos : ''}</button></div>`).join('') + '</div>';
   } else if (menu === 'rem') {
     const c = costoRemin(), puedo = cfg.reminTodos || soyCreador;
     h = cab('🌋 La Remineralizadora') + `<div class="cuerpo"><p>Vuelve a llenar de mineral <b>todo el tablero</b>: tierra nueva, minerales nuevos, hallazgos nuevos y peligros en lugares nuevos.</p>
@@ -1950,7 +2139,10 @@ function pintarMenu() {
       <p class="nota"><b>No lo compartas ni lo enseñes en pantalla:</b> quien lo abra maneja tu maquinita. Para invitar gente usa el botón Invitar.</p></div>`;
   } else if (menu === 'menu') h = menuPrincipal();
   else return;
+  const sube = c.querySelector('.cuerpo')?.scrollTop || 0, misma = c._m === menu + pieza; c._m = menu + pieza;
   c.innerHTML = h;
+  const cu = c.querySelector('.cuerpo'), act = menu === 'tal' && c.querySelector('.fila.act');
+  if (cu) { if (misma) cu.scrollTop = sube; else if (act) cu.scrollTop = Math.max(0, act.offsetTop - cu.offsetTop - 70); }
   const cm = $('#miMaq'); if (cm) dibMaq(cm.getContext('2d'), 80, 86, 132, miModelo, 1, false, 0, '', '');
   const ql = $('#qrLienzo'); if (ql) pintarQR(ql, ql.dataset.t, 8);
   const fa = $('#fotoAqui'); if (fa) { const f = fotoRecord(); f.className = 'foto'; fa.appendChild(f); }
@@ -1998,7 +2190,8 @@ const acciones = {
     if (paga < 1) return;
     S.d -= paga; S.vida = paga >= costo ? vidaMax() : Math.min(vidaMax(), S.vida + paga / 15); son.compra();
   },
-  objeto(v) { const o = OBJ[+v]; if (S.d < o.p) return; S.d -= o.p; S.obj[+v]++; son.compra(); },
+  objeto(v) { const o = OBJ[+v], c = o.p * cuantos; if (S.d < c) return; S.d -= c; S.obj[+v] += cuantos; son.compra(); },
+  cuantos(v) { cuantos = +v; son.clic(); },
   remin() { if (!conectado || cuentaFin || S.d < costoRemin()) return; enviar({ t: 'remin' }); cerrar(); return 'no'; },
   pest(v) { pestana = +v; },
   menu(v) { menu = v; },
@@ -2061,7 +2254,7 @@ function menuPrincipal() {
   if (pestana === 0) {
     h += `<p class="nota">📦 ${nCarga()} de ${bodega()} espacios · ${kgCarga()} kg de carga (tu motor levanta ${Math.round(hp() * 29.5 - 1980)} kg). Tirar piezas libera espacio y peso.</p>` +
       (nCarga() ? S.carga.map((n, i) => n ? `<div class="fila"><div class="t"><b style="color:${MIN[i].col}">${MIN[i].n} × ${n}</b><small>${fmt(MIN[i].v)} · ${MIN[i].kg} kg la pieza</small></div><button class="s" data-a="tirar" data-v="${i}">Tirar una</button></div>` : '').join('') : '<p class="nota">Bodega vacía.</p>') +
-      '<h4>Tu equipo</h4>' + PZ.map((p, i) => `<div class="fila"><div class="t"><b>${p.n}: ${p.niv[S.eq[i]][0]}</b><small>${p.niv[S.eq[i]][2]} ${p.u}</small></div></div>`).join('');
+      '<h4>Tu equipo</h4>' + PZ.map((p, i) => `<div class="fila"><div class="ic">${p.ic}</div><div class="t"><b>${p.n}: ${p.niv[S.eq[i]][0]}</b><small>${p.niv[S.eq[i]][2]} ${p.u}</small></div></div>`).join('');
   } else if (pestana === 1) {
     h += `<p class="nota">${S.con.tut < TUTORIAL.length ? 'Primeros pasos: cumple cada uno y llega el siguiente.' : 'Trabajos de la Compañía. Al cumplir uno se paga solo y llega otro.'}</p>` +
       S.con.act.map((k) => `<div class="fila"><div class="t"><b>${esc(k.tx)}</b>${k.b > 1 ? `<small>Llevas ${k.pr | 0} de ${k.b}</small>` : ''}</div><div class="v">${fmt(k.pg)}</div></div>`).join('');
@@ -2118,14 +2311,15 @@ function menuPrincipal() {
   } else {
     h += `<p><b>Moverte:</b> flechas o WASD. <b>↑</b> vuela. <b>↓</b> perfora hacia abajo. <b>← →</b> contra una pared, perfora de lado. Nunca se perfora hacia arriba.</p>
       <p><b>El ciclo:</b> baja, llena la bodega, sube, vende en La Báscula, carga combustible y mejora tu equipo en El Taller. En la superficie, párate frente a un edificio y pulsa ↓.</p>
-      <p><b>Objetos:</b> F tanque de reserva · R nanobots · X dinamita · C explosivo plástico · Q teletransportador · M transmisor.</p>
+      <p><b>Objetos:</b> F tanque de reserva · R nanobots · X dinamita · C explosivo plástico · Q teletransportador · M transmisor. En El Almacén se compran de a 1, 5, 10, 50 o 100.</p>
+      <p><b>El Taller:</b> cada pieza tiene dieciséis mejoras, de $750 a $2,500 millones. Siempre ves las que ya compraste y las diez que siguen.</p>
       <p><b>Acompañado:</b> G deja una señal que todos ven · T le pasa 5 litros a la maquinita que tengas junto · P pausa tu maquinita.</p>
       <p><b>Tu viaje:</b> abajo a la izquierda ves cuánto llevas, en cuánto se vende y si el combustible te alcanza para subir. Ahí mismo está la <b>grúa</b> (tecla E): te deja en la Gasolinera y cobra según lo lejos que estés y lo que peses.</p>
-      <p><b>Hacia arriba:</b> el cielo también se explora. A 100 km empieza el espacio y a 1,000 km la Luna llena la vista: son unos 15 minutos de vuelo. Entre más alto, menos combustible se gasta; con un tanque «Cisterna» alcanza. Pasando los 50 m de altura, la barra espaciadora deja a la maquinita subiendo sola.</p>
+      <p><b>Hacia arriba:</b> el cielo también se explora, y subir es todo un viaje: atardece, anochece, salen las estrellas, cruzas la aurora al entrar al espacio (100 km), pasas junto a la estación, la Luna crece y a los 1,000 km el Sol vuelve a salir. Son unos 15 minutos de vuelo. Entre más alto, menos combustible se gasta; con un tanque «Cisterna» alcanza. Pasando los 50 m de altura, la barra espaciadora deja a la maquinita subiendo sola.</p>
       <p><b>Lava y gas:</b> la lava (desde 410 m) se ve y se rodea. Las bolsas de gas (desde 650 m) se notan por unas burbujitas verdes y por el aviso «Huele a gas». Pon el ratón encima de cualquiera y te dice cuánto casco te quita. Vuélalas con dinamita o lleva casco y radiador suficientes: arriba, en las metas, dice hasta qué profundidad aguantas.</p>
       <p><b>Sonido:</b> la bocina de arriba a la derecha lo apaga, lo baja y lo sube; «♪ Sonidos» deja elegir qué se oye: música, taladro, hélice, motor (viene apagado) y lo demás, cada uno con su interruptor.</p>
       <p><b>Mirar alrededor:</b> la rueda del mouse o dos dedos en el trackpad mueven la vista; cualquier flecha la regresa a tu maquinita.</p>
-      <p class="nota">Piedra desde 210 m: no se perfora. Lava desde 410 m: se ve, rodéala. Gas desde 650 m: no se ve.</p>`;
+      <p class="nota">Piedra desde 210 m: no se perfora. Lava desde 410 m: se ve, rodéala. Gas desde 650 m: pocas bolsas, y se notan por sus burbujas.</p>`;
   }
   return h + '</div>';
 }

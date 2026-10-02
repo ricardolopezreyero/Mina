@@ -1,4 +1,4 @@
-# DOCUMENTO MAESTRO · «Mina» · v7
+# DOCUMENTO MAESTRO · «Mina» · v8
 
 **Ver en vivo: https://mina.capitaltorreon.com**
 
@@ -347,6 +347,24 @@ Salió de otro video de Ricardo y de sus palabras: no le gustó el sonido de la 
 | Números a la vista | El ratón sobre lava o gas dice cuánto casco quita y cuánto traes. La primera vez que hay lava o gas cerca, una tarjeta lo explica con números. |
 
 Sigue pendiente lo mismo del sonido: **nadie lo ha oído**; lo grabado con ElevenLabs espera el permiso de Ricardo.
+
+### 9.3 Octava iteración: en qué gastar, comprar de a muchos, menos gas y la subida como viaje
+
+Lo pidió Ricardo con tres capturas: quería comprar 50 de un jalón, iconos, más nubes y toda una secuencia al subir, «bajarle dos rayitas» al gas («no queremos matar a la maquinita») y mucho más en qué gastar («ya tienes demasiado dinero»).
+
+| Cambio | Cómo quedó |
+|---|---|
+| 60 mejoras nuevas | Cada pieza pasó de 6 a **16 mejoras**, cada una con nombre e historia. Precios nuevos [N]: 2, 5, 10, 25, 50, 100, 250, 500, 1,000 y 2,500 millones. |
+| Lo que dan [N] | Taladro hasta 470 de potencia · Casco hasta 3,200 de vida · Motor hasta 2,200 caballos · Tanque hasta 1,600 L · Radiador hasta 98 % · Bodega hasta 1,050 espacios. |
+| Para que siga siendo manejable | La fuerza del motor crece completa (levanta 29.5 kg por caballo), pero la velocidad crece cada vez menos pasando los 210 caballos (`brio`). Ninguna celda se perfora en menos de 0.07 s. |
+| El Taller | Cada pestaña lleva icono y avance («🛡️ Casco 7/16»). Se ven todas las compras hechas y **las diez que siguen**; la lista abre en lo que traes puesto. |
+| El Almacén | «Comprar de a 1, 5, 10, 50 o 100». Cada cosa con su icono: 🛠️ reparar, 🛢️ reserva, 🤖 nanobots, 🧨 dinamita, 💣 plástico, 🌀 cuántico, 🛸 transmisor. Los iconos también van en la barra de objetos. |
+| Dinero | De un millón a un billón se escribe en millones: «$2,500 M» (antes «$2.5 B»). |
+| Gas | Las bolsas pasaron de hasta **45 %** de las celdas a entre **1 % y 6 %** (medido: 1.5 % a 700 m, 5.5 % a 960 m). El golpe bajó 40 % (un punto cada 3.4 m bajo los 410 m; antes cada 2.05). Aplica a todos los mundos, también a los ya creados. |
+| Nubes | Tres capas; la de cerca pasa a tres cuartos de tu velocidad. Hay nubes de los 100 m a los 17 km y se tiñen con el atardecer. Rayitas de aire cuando vas rápido (se acaban al salir del aire). |
+| La subida, en orden | Tarde dorada → el Sol baja, enrojece y se mete (9 km) → hora azul → noche con estrellas y Vía Láctea (25 km) → estrellas fugaces (30 a 200 km) → aurora al cruzar al espacio (70 a 430 km) → la Luna crece desde los 100 km → **el Sol vuelve a salir** por la orilla del planeta (430 a 900 km) y el planeta se ilumina otra vez. |
+| Lo que te cruzas | Una parvada (200 m a 1 km), un avión con su estela (8 a 15 km), un globo meteorológico (23 a 41 km), la estación en órbita (320 a 520 km). De noche se ven allá abajo las luces de la Gasolinera. |
+| Mensajes nuevos | A 30 km (Doña Chela, $30,000), 400 km (la estación «Lupita», $1 M) y 650 km (amanecer, $2 M). Los mensajes ya dados se cuentan por la altura récord, para no repetir bonos. |
 
 ---
 
