@@ -627,6 +627,25 @@ El juego las vuelve a subir solo cuando algo que enseñan cambió (un récord, a
 
 **Límites que conviene saber.** WhatsApp guarda la vista previa de una liga la primera vez que la ve; una liga ya mandada puede seguir enseñando la imagen vieja. La imagen la dibuja el navegador de un jugador del mundo: quien esté dentro del mundo puede subir otra imagen JPEG en su lugar. Los controles táctiles no se han probado en un teléfono real.
 
+### 9.17 El diseño de la tierra, de regreso; y tres sorpresas
+
+**Lo que se quitó (solo dibujo; nada de lo demás cambió).** Ricardo pidió regresar el aspecto de la tierra y de los túneles a como estaba antes de las iteraciones 21 y 22:
+
+- Fuera los ademes de madera, los rieles y las escaleras en los túneles cavados, y las estalactitas oscuras de las cuevas.
+- Fuera las vetillas blancas de cuarzo, las manchas de malaquita, óxido y tierra azul, las líneas de estratos y las dos fallas.
+- La tierra vuelve a su dibujo anterior: un café por zona, grano, dos vetas tenues y tres piedritas. Se conservan dieciséis acomodos por zona y un matiz apenas visible por capa (4 a 6 %, antes 13 a 18 %), sin láminas, bloques, guijarros, fisuras ni rarezas.
+- Se quedan: las geodas, la flama azul junto al grisú, el terrero, el nicho de Santa Bárbara y las plantitas de las cuevas naturales.
+
+**Tres sorpresas**, una en cada tercio del mundo, para quien se detiene:
+
+| Dónde | Qué pasa | Cómo está hecho |
+|---|---|---|
+| El Bosque de hongos (2,300 m) | Cada hongo gigante canta una nota del acorde que la música lleva en ese instante (el más grande, la más grave). Al tocar uno se enciende, suelta esporas y los otros cuatro le contestan, del más cercano al más lejano. Tocar los cinco seguidos (16 s) hace que el bosque toque una frase entera; la primera vez regala $1 M. | `cantarHongos`, `acordeAhora` (la música anota qué acorde programó), `HONGOS`, `hongo.luz` |
+| La Ciudad Perdida (5,580 m) | Sobre la pirámide hay un mural pintado «hace miles de años»: LOS QUE VENDRÁN. Retrata a las maquinitas de ese mundo, cada una con su modelo y su nombre, entre manos pintadas, sol y luna. Debajo, 33 círculos: los objetos de la colección que el equipo ya encontró van llenos. Si entra alguien nuevo o alguien se rebautiza, el mural cambia. | `mural()` (lienzo aparte, se repinta solo cuando cambia su firma), `MURAL` |
+| El Jardín de cristal (6,400 m) | Las mariposas de vidrio andan sueltas. Si te quedas quieto 1.4 s, se juntan encima de ti y escriben el nombre de tu maquinita; al moverte, se sueltan. | `poblarJardin` (el nombre se dibuja en un lienzo chico y cada punto es una mariposa), `mariposas` |
+
+Cada una avisa con una tarjeta la primera vez (`S.fl.hongos`, `S.fl.coro`, `S.fl.mural`, `S.fl.mariposas`). La Ayuda solo dice que hay tres lugares con sorpresa, sin decir cuáles.
+
 ## 10. Revisión de código del 2 de octubre
 
 Se revisó todo el código buscando fallas y se corrigieron estas:

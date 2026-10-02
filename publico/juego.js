@@ -725,7 +725,14 @@ const FRASES = [
   [[0, 3, 0], [3, 2, 0], [4, 3, 0], [5, 0, 1]],
   [[4, 1, 0], [5, 2, 0], [6, 3, 0], [7, 2, 0]],
 ];
-const musica = { t: 0, n: 0, quedan: 0, z: '', ult: -1 };
+const musica = { t: 0, n: 0, quedan: 0, z: '', ult: -1, acs: [] };
+// El acorde que está sonando en este momento (o el primero de la zona, si la música está callada).
+function acordeAhora() {
+  const a = AC ? AC.currentTime : 0; let m = null;
+  for (const c of musica.acs) if (c.t <= a + 0.05 && a - c.t < 12) m = c;
+  if (m) return m;
+  const z = ZONAS[zonaMusical()]; return { ac: z.ac[0], base: z.raiz * z.oct };
+}
 function zonaMusical() { const km = Math.max(0, -(yo.y + HH)) / 500; return km > 40 ? 'espacio' : km > 0.4 ? 'cielo' : yo.y < 2 ? 'superficie' : yo.y < 325 ? 'mina' : 'fondo'; }
 function componer(adelante = 0.8) {           // se llama varias veces por segundo y deja programado el acorde que sigue
   if (!AC || !S || op.mudo || !op.son.musica || (document.hidden && adelante < 1)) { musica.t = 0; return; }
@@ -736,6 +743,7 @@ function componer(adelante = 0.8) {           // se llama varias veces por segun
     if (zn !== musica.z) { musica.z = zn; musica.n = 0; musica.quedan = 10 + Math.floor(Math.random() * 6); }
     else if (musica.quedan <= 0) { musica.quedan = 10 + Math.floor(Math.random() * 6); musica.n = 0; musica.t += 16 + Math.random() * 18; continue; }     // la pieza termina y deja un rato solo la cueva
     const z = ZONAS[zn], ac = z.ac[musica.n % z.ac.length], c = musica.t - ahora, ultimo = musica.quedan === 1;
+    musica.acs.push({ t: musica.t, ac, base: z.raiz * z.oct }); if (musica.acs.length > 3) musica.acs.shift();
     piano(nota(z.raiz * (z.bajo || 0.5), ac[0]), z.cola * 1.7, 0.06, c);                                     // bajo
     for (let k = 1; k < 4; k++) colchon(nota(z.raiz, ac[k]), z.paso * 9.5, 0.011, 'musica', c);        // colchón
     let f = Math.floor(Math.random() * FRASES.length); if (f === musica.ult) f = (f + 1) % FRASES.length; musica.ult = f;
@@ -809,6 +817,107 @@ function onda(x, y, r, col = '#ffe2a8', d = 0.5) { if (op.part) ondas.push({ x, 
 function humo(x, y, n = 10) {
   if (!op.part) return;
   for (let i = 0; i < n && parts.length < 400; i++) parts.push({ x: x + (Math.random() - 0.5) * 1.4, y: y + (Math.random() - 0.5) * 1.4, vx: (Math.random() - 0.5) * 1.2, vy: -0.5 - Math.random() * 1.2, t: 0.9 + Math.random() * 0.9, col: Math.random() < 0.5 ? '#4a4441' : '#6b6360', g: 2 + (Math.random() * 2 | 0), gr: -0.6 });
+}
+
+/* ════════ Tres sorpresas para quien se detiene ════════ RLR */
+// ── 1. El Bosque de hongos canta. Cada hongo gigante da una nota del acorde que está sonando en la música en ese instante
+//    (el más grande, la más grave). Al tocar uno, los demás le contestan del más cercano al más lejano, cada vez más bajito.
+//    Tocar los cinco seguidos hace que el bosque entero toque una frase.
+const HONGOS = [[-10, 2.6, '120,255,220', 3, '#78ffdc'], [-5, 3.6, '255,140,220', 1, '#ff8cdc'], [0, 4.4, '120,255,220', 0, '#78ffdc'], [6, 3.2, '190,140,255', 2, '#be8cff'], [11, 2.4, '120,255,220', 4, '#78ffdc']];      // dónde, qué tan alto, su luz, qué nota del acorde, sus esporas
+const R_HONGOS = RINCONES.find((R) => R.t === 'hongos'), R_JARDIN = RINCONES.find((R) => R.t === 'jardin');
+const hongo = { luz: [-99, -99, -99, -99, -99], dentro: -1, serie: [] };
+const copaDe = (k) => { const [dx, tam] = HONGOS[k]; return [R_HONGOS.cx + dx + 0.5, Math.floor(pisoR(R_HONGOS, R_HONGOS.cx + dx)) + 1 - tam * 0.8, tam]; };
+function cantarHongos() {
+  let cual = -1;
+  for (let k = 0; k < 5; k++) { const [cx, cy, tam] = copaDe(k); if (Math.abs(yo.x - cx) < tam * 0.5 && Math.abs(yo.y - cy) < tam * 0.3 + 0.45) cual = k; }
+  if (cual === hongo.dentro) return;
+  hongo.dentro = cual; if (cual < 0) return;
+  const A = acordeAhora(), f = (k) => nota(A.base, HONGOS[k][3] < 4 ? A.ac[HONGOS[k][3]] : A.ac[0] + 12), [cx, cy] = copaDe(cual);
+  piano(f(cual), 3.4, 0.11, 0, 'ambiente'); campana(f(cual) * 2, 1.5, 0.02, 'ambiente');
+  hongo.luz[cual] = tiempo; chispas(cx, cy - 0.4, HONGOS[cual][4], 16, 2.2);
+  for (let k = 0; k < 5; k++) if (k !== cual) { const lejos = Math.abs(k - cual); piano(f(k), 2.6, 0.045 / lejos, 0.26 * lejos, 'ambiente'); hongo.luz[k] = tiempo + 0.26 * lejos; }
+  const ser = hongo.serie.filter((x) => tiempo - x[1] < 16 && x[0] !== cual); ser.push([cual, tiempo]); hongo.serie = ser;
+  if (ser.length === 5) {                            // los cinco seguidos: el bosque toca una frase entera
+    hongo.serie = [];
+    for (const [b, i, o] of FRASES[3].concat(FRASES[5])) piano(nota(A.base * (o ? 2 : 1), A.ac[i]), 4, 0.07, 0.9 + b * 0.42, 'ambiente');
+    for (let k = 0; k < 5; k++) { hongo.luz[k] = tiempo + 0.9 + k * 0.2; const [x, y] = copaDe(k); chispas(x, y - 0.4, HONGOS[k][4], 22, 3); }
+    flota(yo.x, yo.y - 1.2, '🎶 el bosque te contestó', '#78ffdc');
+    if (!S.fl.coro) { S.fl.coro = 1; S.d += 1e6; S.tot += 1e6; sucio = true; tarjeta('🎶 El bosque entero cantó · ' + fmt(1e6), 'Tocaste los cinco hongos seguidos. Cantan siempre con el acorde que lleve la música: nunca suena dos veces igual.', 'msj', 12000, true); difundir('hizo cantar al Bosque de hongos'); }
+  } else if (!S.fl.hongos) { S.fl.hongos = 1; sucio = true; tarjeta('🍄 Los hongos cantan', 'Cada uno da una nota del acorde que está sonando en la música, y los demás le contestan. Prueba a tocar los cinco seguidos.', 'msj', 11000); }
+}
+// ── 2. El Jardín de cristal te reconoce. Sus mariposas de vidrio andan sueltas; si te quedas quieto, se juntan encima de ti
+//    y escriben el nombre de tu maquinita. En cuanto te mueves, se sueltan.
+const jardin = { m: [], nom: null, quieto: 0, forma: false };
+function poblarJardin() {
+  if (jardin.nom === miNombre) return;
+  jardin.nom = miNombre;
+  const c = document.createElement('canvas'); c.width = 170; c.height = 14;
+  const q = c.getContext('2d', { willReadFrequently: true }); q.font = '900 11px system-ui,-apple-system,"Segoe UI",Roboto,sans-serif'; q.textAlign = 'center'; q.textBaseline = 'middle'; q.fillText(miNombre, 85, 7.5);
+  const im = q.getImageData(0, 0, 170, 14).data; let pts = [];
+  for (let y = 0; y < 14; y++) for (let x = 0; x < 170; x++) if (im[(y * 170 + x) * 4 + 3] > 120) pts.push([(x - 85) * 0.2, (y - 7) * 0.2]);
+  while (pts.length > 320) pts = pts.filter((_, i) => i % 2 === 0);
+  const R = R_JARDIN, r = azarDe(4242);
+  jardin.m = pts.map((p) => { const a = r() * 6.283, d = Math.sqrt(r()) * 0.82, hx = R.cx + 0.5 + Math.cos(a) * R.rx * d, hy = R.cy - Math.abs(Math.sin(a)) * R.ry * d * 0.8 + 1; return { x: hx, y: hy, vx: 0, vy: 0, hx, hy, p, f: r() * 6.283, c: Math.floor(r() * 3) }; });
+}
+function mariposas(d, dentro) {
+  if (!jardin.m.length) return;
+  const quieto = dentro && Math.hypot(yo.vx, yo.vy) < 0.35 && !yo.perf;
+  jardin.quieto = quieto ? jardin.quieto + d : 0;
+  const forma = jardin.quieto > 1.4;
+  if (forma && !jardin.forma) [0, 4, 7, 12, 16].forEach((sm, k) => campana(nota(1047, sm), 0.9, 0.02, 'ambiente', k * 0.09));       // se juntan con un arpegio de vidrio
+  jardin.forma = forma;
+  if (forma && jardin.quieto > 3.4 && !S.fl.mariposas) { S.fl.mariposas = 1; sucio = true; tarjeta('🦋 Las mariposas te reconocieron', 'Te quedaste quieto y escribieron el nombre de tu maquinita. Si lo cambias, lo escriben de nuevo.', 'msj', 12000, true); }
+  const k = forma ? 16 : 1.6, fr = Math.pow(forma ? 0.02 : 0.3, d);
+  for (const b of jardin.m) {
+    b.f += d * (forma ? 5 : 11);
+    const tx = forma ? yo.x + b.p[0] : b.hx + Math.sin(b.f * 0.21) * 1.6, ty = forma ? yo.y - 3 + b.p[1] : b.hy + Math.cos(b.f * 0.17) * 0.9;
+    b.vx = (b.vx + (tx - b.x) * k * d + (forma ? 0 : (Math.random() - 0.5) * 5 * d)) * fr; b.vy = (b.vy + (ty - b.y) * k * d + (forma ? 0 : (Math.random() - 0.5) * 5 * d)) * fr;
+    b.x += b.vx * d * (forma ? 6 : 1); b.y += b.vy * d * (forma ? 6 : 1);
+  }
+}
+// ── 3. El mural de la Ciudad Perdida. Lo pintaron hace miles de años y enseña a «los que vendrán»: las maquinitas de este
+//    mundo, cada una con su modelo y su nombre, y los objetos de la colección que el equipo ya encontró. Si llega alguien nuevo
+//    o alguien cambia de nombre, el mural ya lo sabía.
+const MURAL = { x: 35, y: 2791.6, an: 26, al: 9.4 };
+let muralC = null, muralF = '';
+function mural() {
+  const gente = [{ i: miI, n: miNombre, m: miModelo }, ...[...otros.values()].map((o) => ({ i: o.i, n: o.n, m: o.m }))].sort((a, b) => a.i - b.i).slice(0, 8);
+  const tipos = COLEC.map((_, k) => hallados[k * 3] + hallados[k * 3 + 1] + hallados[k * 3 + 2]).join('');
+  const firma = T + '|' + gente.map((j) => j.n + j.m).join(',') + '|' + tipos;
+  if (firma === muralF && muralC) return muralC;
+  muralF = firma;
+  const c = muralC = document.createElement('canvas'), A = MURAL.an * T, B = MURAL.al * T; c.width = Math.ceil(A); c.height = Math.ceil(B);
+  const q = c.getContext('2d'), u = T, r = azarDe(2815), ROJO = '#a8432a', OCRE = '#d9a04a', CAL = '#eadfc8';
+  q.lineCap = q.lineJoin = 'round';
+  const letras = (txt, x, y, tam, col, sep = 0.12) => { q.font = `800 ${tam}px system-ui,-apple-system,"Segoe UI",Roboto,sans-serif`; q.textBaseline = 'middle'; q.textAlign = 'left'; q.fillStyle = col; const an = [...txt].map((l) => q.measureText(l).width + tam * sep); let px = x - an.reduce((a, b) => a + b, 0) / 2; [...txt].forEach((l, k) => { q.fillText(l, px, y + (r() - 0.5) * tam * 0.08); px += an[k]; }); };
+  const mano = (x, y, t, col, gi) => { q.save(); q.translate(x, y); q.rotate(gi); q.fillStyle = col; q.beginPath(); q.ellipse(0, 0, t * 0.5, t * 0.55, 0, 0, 7); q.fill(); q.strokeStyle = col; q.lineWidth = t * 0.2; for (const [a, l] of [[-1.15, 0.85], [-0.45, 1.25], [0, 1.4], [0.42, 1.3], [0.85, 1.05]]) { q.beginPath(); q.moveTo(Math.sin(a) * t * 0.35, -Math.cos(a) * t * 0.35); q.lineTo(Math.sin(a) * t * l, -Math.cos(a) * t * l); q.stroke(); } q.restore(); };
+  // manos a los lados, como en las cuevas de verdad
+  for (const [x, y, gi, col] of [[1.3, 2.2, -0.3, ROJO], [2.6, 4.6, 0.2, OCRE], [1.4, 6.8, -0.1, ROJO], [24.7, 2.3, 0.3, ROJO], [23.5, 4.7, -0.25, OCRE], [24.6, 6.9, 0.15, ROJO]]) mano(x * u, y * u, u * 0.62, col, gi);
+  // el sol en espiral y la luna
+  q.strokeStyle = OCRE; q.lineWidth = u * 0.13; q.beginPath(); for (let a = 0; a < 16; a += 0.3) q.lineTo(5 * u + Math.cos(a) * a * u * 0.045, 1.5 * u + Math.sin(a) * a * u * 0.045); q.stroke();
+  for (let k = 0; k < 10; k++) { const a = k * 0.628; q.beginPath(); q.moveTo(5 * u + Math.cos(a) * u * 0.95, 1.5 * u + Math.sin(a) * u * 0.95); q.lineTo(5 * u + Math.cos(a) * u * 1.25, 1.5 * u + Math.sin(a) * u * 1.25); q.stroke(); }
+  q.fillStyle = CAL; q.beginPath(); q.arc(21 * u, 1.5 * u, u * 0.7, 0, 7); q.fill(); q.globalCompositeOperation = 'destination-out'; q.beginPath(); q.arc(21.35 * u, 1.35 * u, u * 0.6, 0, 7); q.fill(); q.globalCompositeOperation = 'source-over';
+  letras('LOS QUE VENDRÁN', 13 * u, 1.5 * u, u * 0.78, CAL, 0.22);
+  // las maquinitas del mundo, pintadas con tierra roja: cada una con su forma y su nombre
+  const n = gente.length, tam = Math.min(2.5, 17 / n), paso = Math.min(3.4, 19 / n), x0 = 13 - ((n - 1) * paso) / 2;
+  gente.forEach((j, k) => {
+    const t = Math.ceil(tam * u * 1.3), m = document.createElement('canvas'); m.width = m.height = t; const mq = m.getContext('2d');
+    dibMaq(mq, t / 2, t / 2, tam * u, j.m, k % 2 ? -1 : 1, false, 0, '', '', 0.4);
+    mq.globalCompositeOperation = 'source-atop'; mq.globalAlpha = 0.8; mq.fillStyle = k % 2 ? OCRE : ROJO; mq.fillRect(0, 0, t, t);
+    q.drawImage(m, (x0 + k * paso) * u - t / 2, 4.1 * u - t / 2);
+    letras(j.n.toUpperCase(), (x0 + k * paso) * u, (4.1 + tam * 0.62) * u, u * Math.min(0.42, (paso * 1.5) / Math.max(4, j.n.length)), CAL, 0.08);
+  });
+  // la tierra en zigzag, y debajo los 33 objetos de la colección: hueco el que falta, lleno el que ya apareció
+  q.strokeStyle = ROJO; q.lineWidth = u * 0.11; q.beginPath(); for (let x = 3.6; x <= 22.4; x += 0.5) q.lineTo(x * u, (6.55 + ((x * 2) & 1 ? 0.22 : 0)) * u); q.stroke();
+  COLEC.forEach((_, k) => { const x = (4.2 + k * 0.55) * u, y = 7.35 * u, v = +tipos[k]; q.strokeStyle = OCRE; q.lineWidth = u * 0.06; q.beginPath(); q.arc(x, y, u * 0.16, 0, 7); q.stroke(); if (v) { q.fillStyle = v === 3 ? CAL : OCRE; q.beginPath(); q.arc(x, y, u * (v === 3 ? 0.17 : 0.11), 0, 7); q.fill(); } });
+  // y al fondo de todo, el corazón: hasta allá van a llegar
+  q.fillStyle = ROJO; const hx = 13 * u, hy = 8.55 * u, ht = u * 0.42; q.beginPath(); q.moveTo(hx, hy + ht); q.bezierCurveTo(hx - ht * 2, hy - ht * 0.4, hx - ht * 0.8, hy - ht * 1.5, hx, hy - ht * 0.5); q.bezierCurveTo(hx + ht * 0.8, hy - ht * 1.5, hx + ht * 2, hy - ht * 0.4, hx, hy + ht); q.fill();
+  q.fillStyle = OCRE; for (let k = 0; k < 4; k++) q.fillRect(hx - u * 0.05, (7.72 + k * 0.1) * u, u * 0.1, u * 0.05);
+  // los siglos: la pintura se descascara
+  q.globalCompositeOperation = 'destination-out';
+  for (let i = 0; i < 900; i++) { q.globalAlpha = 0.25 + r() * 0.6; const t = u * (0.03 + r() * 0.1); q.fillRect(r() * A, r() * B, t * (1 + r() * 3), t); }
+  q.globalAlpha = 1; q.globalCompositeOperation = 'source-over';
+  return c;
 }
 
 /* ════════ Logros ════════ RLR */
@@ -1169,7 +1278,7 @@ function llegar(p) {
       S.carga[i]++; S.st.rec[i]++; son.mineral(i); chispas(x, y, MIN[i].col, 12, 5);
       flota(x, p.ty - 0.15, '+ ' + MIN[i].n + ' · ' + fmt(MIN[i].v), MIN[i].col);
       recientes.set(p.idx, [t, Date.now()]);
-      if (S.st.rec[i] === 1) { son.descubre(); tarjeta('¡Descubriste ' + MIN[i].n + '!', (i === 3 ? 'No es pirita: es oro de verdad. Fíjate en el cuarzo blanco que lo rodea: donde hay cuarzo, suele haber oro. ' : i === 1 ? 'La mancha verde de alrededor es malaquita: así se delata el cobre. ' : i === 8 ? 'Mira la tierra azul que lo envuelve: es kimberlita, la roca que sube los diamantes. ' : '') + 'Vale ' + fmt(MIN[i].v) + ' la pieza.'); difundir('descubrió ' + MIN[i].n); }
+      if (S.st.rec[i] === 1) { son.descubre(); tarjeta('¡Descubriste ' + MIN[i].n + '!', (i === 3 ? 'No es pirita: es oro de verdad. ' : '') + 'Vale ' + fmt(MIN[i].v) + ' la pieza.'); difundir('descubrió ' + MIN[i].n); }
       const [vx, vy] = veta(Math.floor(p.ty / 75));
       if (Math.abs(p.tx - vx) <= 1 && Math.abs(p.ty - vy) <= 1 && !S.fl.veta) { S.fl.veta = 1; tarjeta('✨ ¡Veta madre!', 'Un racimo entero del mejor mineral de la zona.'); }
       if (nCarga() === bodega()) { tarjeta('Bodega llena', 'Sube a vender: lo que perfores ahora se pierde.'); son.alarma(); }
@@ -1463,10 +1572,10 @@ function medir() {
 }
 
 /* ── Celdas ── */
-// ── La tierra. Cada celda sale de tres cosas: la zona (su color de base), el tipo de roca del lugar (cuatro, repartidos
-//    en capas que siguen el echado y se cortan en las fallas) y una de dieciséis variantes con sus propias manchas,
-//    grano, fisuras, piedritas y rarezas. Son 8 × 4 × 16 = 512 celdas distintas, y encima van los estratos y las pintas.
-const LITO = [['#000000', 0, 'tierra'], ['#e6c592', 0.15, 'arenisca'], ['#1c1524', 0.18, 'lutita'], ['#a86f55', 0.13, 'conglomerado']];
+// ── La tierra. El dibujo es el de siempre (un color de base por zona, grano, dos vetas tenues y tres piedritas) con dieciséis
+//    acomodos distintos. El tipo de roca del lugar solo le da un matiz apenas visible, en capas anchas, para que no se vea
+//    un tapete repetido sin volverse una colcha de cafés.
+const LITO = [['#000000', 0, 'tierra'], ['#e6c592', 0.05, 'arenisca'], ['#1c1524', 0.06, 'lutita'], ['#a86f55', 0.04, 'conglomerado']];
 const litos = new Uint8Array(W * H).fill(255), liso = (t) => t * t * (3 - 2 * t);
 const h16 = (x, y) => ((Math.imul(x, 73856093) ^ Math.imul(y, 19349663)) >>> 3) & 15;
 function litoDe(x, y) {
@@ -1476,36 +1585,16 @@ function litoDe(x, y) {
   return (litos[i] = n < 0.3 ? 3 : n < 0.44 ? 1 : n < 0.62 ? 0 : 2);
 }
 function tierra(q, zona, r, lito = 0) {
-  const u = T / 16, tin = LITO[lito], B = TIERRA[zona].map((c) => (tin[1] ? entre(c, tin[0], tin[1]) : c)), cl = Math.floor, luz = r() - 0.5;
+  const u = T / 16, tin = LITO[lito], B = TIERRA[zona].map((c) => (tin[1] ? entre(c, tin[0], tin[1]) : c));
   q.fillStyle = B[0]; q.fillRect(0, 0, T, T);
-  q.fillStyle = luz > 0 ? '#fff' : '#000'; q.globalAlpha = Math.abs(luz) * 0.06; q.fillRect(0, 0, T, T);                // cada celda, un poco más clara o más oscura
-  for (let i = 0; i < 3; i++) { q.globalAlpha = 0.1 + r() * 0.12; q.fillStyle = i % 2 ? B[2] : B[3]; q.beginPath(); q.ellipse(r() * T, r() * T, u * (3 + r() * 5), u * (2 + r() * 3), r() * 3, 0, 7); q.fill(); }      // manchas suaves
-  for (let i = 0, n = lito === 1 ? 16 : 26 + cl(r() * 14); i < n; i++) { q.fillStyle = B[1 + (i % 3)]; q.globalAlpha = 0.3 + r() * 0.5; q.fillRect(cl(r() * 16) * u, cl(r() * 16) * u, u * (1 + cl(r() * 2)), u); }      // grano
-  q.globalAlpha = 1; q.lineJoin = q.lineCap = 'round';
-  if (lito === 1) for (let i = 0; i < 5; i++) {     // arenisca: láminas finas que siguen el echado
-    const y = (0.8 + i * 3.1 + r() * 1.4) * u; q.strokeStyle = i % 2 ? '#0000001f' : '#ffffff22'; q.lineWidth = Math.max(1, u * (0.3 + r() * 0.35)); q.beginPath(); q.moveTo(0, y); q.lineTo(T, y + T * 0.12); q.stroke();
-  } else if (lito === 2) {                          // lutita: se parte en bloques
-    q.strokeStyle = '#00000040'; q.lineWidth = Math.max(1, u * 0.45);
-    for (let i = 0, n = 2 + cl(r() * 2); i < n; i++) { let x = r() * T, y = r() * T; q.beginPath(); q.moveTo(x, y); for (let k = 0; k < 3; k++) { if (k % 2) x += (r() - 0.5) * u * 10; else y += (r() - 0.5) * u * 10; q.lineTo(x, y); } q.stroke(); }
-  } else if (lito === 3) {                          // conglomerado: guijarros de colores pegados
-    const G = ['#9a948e', '#b98a6a', '#6f6a66', '#c9b29c', '#7a5a4a'];
-    for (let i = 0, n = 5 + cl(r() * 4); i < n; i++) { const x = r() * T, y = r() * T, a = (0.8 + r() * 1.5) * u; q.globalAlpha = 0.8; q.fillStyle = G[cl(r() * 5)]; q.beginPath(); q.ellipse(x, y, a * 1.3, a, r() * 3, 0, 7); q.fill(); q.globalAlpha = 1; q.fillStyle = '#ffffff38'; q.beginPath(); q.ellipse(x - a * 0.3, y - a * 0.3, a * 0.5, a * 0.3, 0, 0, 7); q.fill(); q.fillStyle = '#0000002a'; q.beginPath(); q.ellipse(x + a * 0.2, y + a * 0.5, a, a * 0.3, 0, 0, 7); q.fill(); }
-  }
-  if (lito !== 3) for (let i = 0, n = 1 + cl(r() * 3); i < n; i++) {      // piedritas
+  for (let i = 0; i < 34; i++) { q.fillStyle = B[1 + (i % 3)]; q.globalAlpha = 0.35 + r() * 0.5; q.fillRect(Math.floor(r() * 16) * u, Math.floor(r() * 16) * u, u * (1 + Math.floor(r() * 2)), u); }
+  q.globalAlpha = 0.12; q.fillStyle = '#000'; q.fillRect(0, (3 + r() * 9) * u, T, u * 0.7); q.fillStyle = '#fff'; q.fillRect(0, (2 + r() * 11) * u, T, u * 0.5);
+  q.globalAlpha = 1;
+  for (let i = 0; i < 3; i++) {                   // piedritas
     const x = (2 + r() * 12) * u, y = (2 + r() * 12) * u, a = (0.7 + r() * 0.9) * u;
     q.fillStyle = B[3]; q.beginPath(); q.ellipse(x, y, a * 1.3, a, r() * 3, 0, 7); q.fill();
     q.fillStyle = '#ffffff22'; q.beginPath(); q.ellipse(x - a * 0.3, y - a * 0.3, a * 0.6, a * 0.4, 0, 0, 7); q.fill();
   }
-  if (r() < (lito === 2 ? 0.2 : 0.4)) {             // una fisura: trazo oscuro quebrado con su filo de luz
-    const pts = []; let x = r() * T, y = r() * T * 0.4; for (let k = 0; k < 4; k++) { pts.push([x, y]); x += (r() - 0.5) * u * 6; y += u * (2 + r() * 3); }
-    for (const [dx, col, an] of [[u * 0.35, '#ffffff1e', 0.4], [0, '#0000004d', 0.5]]) { q.strokeStyle = col; q.lineWidth = Math.max(1, u * an); q.beginPath(); pts.forEach(([a, b], k) => q[k ? 'lineTo' : 'moveTo'](a + dx, b)); q.stroke(); }
-  }
-  const d = r();                                     // rarezas: pocas, para quien se fije
-  if (d < 0.07 && zona < 4) { q.strokeStyle = '#f3ead870'; q.lineWidth = Math.max(1, u * 0.45); const x = (4 + r() * 8) * u, y = (4 + r() * 8) * u; q.beginPath(); for (let a = 0; a < 9; a += 0.5) q.lineTo(x + Math.cos(a) * a * u * 0.28, y + Math.sin(a) * a * u * 0.28); q.stroke(); }      // un caracol fósil
-  else if (d < 0.16) { q.fillStyle = '#ffffff90'; for (let i = 0; i < 3; i++) q.fillRect(r() * 15 * u, r() * 15 * u, u * 0.6, u * 0.6); }                                                          // brillitos de mica
-  else if (d < 0.22) { q.fillStyle = '#00000030'; q.beginPath(); q.ellipse(r() * T, r() * T, u * 2.6, u * 1.8, r() * 3, 0, 7); q.fill(); }                                                         // un nódulo oscuro
-  else if (d < 0.3 && zona >= 5) { for (let i = 0; i < 3; i++) { q.fillStyle = ['#b9a0ff90', '#7fe3e090', '#ff9ad090'][cl(r() * 3)]; const x = r() * 14 * u, y = r() * 14 * u; q.beginPath(); q.moveTo(x, y); q.lineTo(x + u * 0.7, y + u * 1.6); q.lineTo(x - u * 0.7, y + u * 1.6); q.fill(); } }      // esquirlas de cristal en las zonas hondas
-  else if (d < 0.34) { q.strokeStyle = '#3a2a1e55'; q.lineWidth = Math.max(1, u * 0.35); let x = r() * T, y = 0; q.beginPath(); q.moveTo(x, y); for (let k = 0; k < 5; k++) { x += (r() - 0.5) * u * 4; y += u * 2.5; q.lineTo(x, y); } q.stroke(); }                         // una raicilla o vetilla oscura
 }
 function poligono(q, x, y, a, n, r, ach = 1) {
   q.beginPath();
@@ -1659,17 +1748,7 @@ function sprite(id) {
     q.beginPath(); q.moveTo(u * 8, u * 14); q.bezierCurveTo(u * 1, u * 9, u * 2, u * 2.5, u * 8, u * 5.5); q.bezierCurveTo(u * 14, u * 2.5, u * 15, u * 9, u * 8, u * 14); q.fill(); q.stroke(); q.shadowBlur = 0;
     q.fillStyle = '#ff9a7a'; q.beginPath(); q.moveTo(u * 8, u * 5.5); q.lineTo(u * 5, u * 8); q.lineTo(u * 8, u * 14); q.fill(); q.fillStyle = '#c81e2a'; q.beginPath(); q.moveTo(u * 8, u * 5.5); q.lineTo(u * 11.5, u * 8.5); q.lineTo(u * 8, u * 14); q.fill();
     q.fillStyle = '#fff'; q.beginPath(); q.ellipse(u * 5.2, u * 6, u * 1.2, u * 0.7, -0.6, 0, 7); q.fill();
-  } else if (id[0] === 'p') {                        // pintas: lo que rodea a cada mineral en la roca
-    const k = +id[1], r = azarDe(700 + k * 10 + +id[2]), u = T / 16; c.width = c.height = T;
-    if (k === 1) { q.strokeStyle = '#f4f1eacc'; q.lineCap = 'round'; for (let i = 0; i < 3; i++) { q.lineWidth = u * (0.5 + r() * 0.5); let x = r() * T, y = 0; q.beginPath(); q.moveTo(x, y); while (y < T) { x += (r() - 0.5) * u * 5; y += u * 4; q.lineTo(x, y); } q.stroke(); } q.fillStyle = '#e8c55a'; for (let i = 0; i < 3; i++) q.fillRect(r() * 14 * u, r() * 14 * u, u * 1.1, u * 1.1); }      // vetillas de cuarzo y cubitos de pirita
-    else if (k === 2) { for (let i = 0; i < 7; i++) { q.fillStyle = i % 3 ? '#3fbf7a88' : '#3f7fd688'; q.beginPath(); q.arc(r() * T, r() * T, u * (0.8 + r() * 1.4), 0, 7); q.fill(); } }       // malaquita y un poco de azurita
-    else if (k === 3) { for (let i = 0; i < 6; i++) { q.fillStyle = '#b5532a66'; q.beginPath(); q.ellipse(r() * T, r() * T, u * (1.5 + r() * 2.5), u * (0.8 + r() * 1.2), r() * 3, 0, 7); q.fill(); } }      // óxido
-    else { q.fillStyle = '#4f7fb840'; q.fillRect(0, 0, T, T); q.fillStyle = '#1f3a5c66'; for (let i = 0; i < 9; i++) q.fillRect(Math.floor(r() * 16) * u, Math.floor(r() * 16) * u, u, u); }      // tierra azul
   } else if (id === 'geo') { const u = T / 16; c.width = c.height = T; q.shadowColor = '#c9a0ff'; q.shadowBlur = u * 2.5; q.fillStyle = '#b48cf0'; q.beginPath(); q.moveTo(u * 9, u * 6); q.lineTo(u * 10.4, u * 8.2); q.lineTo(u * 9.4, u * 10.6); q.lineTo(u * 8.4, u * 8.4); q.fill(); q.fillStyle = '#fff'; q.fillRect(u * 9.1, u * 7.4, u * 0.6, u * 0.6);
-  } else if (id === 'marco') { const u = T / 16; c.width = c.height = T; q.fillStyle = '#6b4a2a'; q.fillRect(u * 0.6, u * 1.4, u * 1.5, T - u * 1.4); q.fillRect(T - u * 2.1, u * 1.4, u * 1.5, T - u * 1.4); q.fillStyle = '#84603a'; q.fillRect(0, 0, T, u * 1.7); q.fillStyle = '#4a321b'; q.fillRect(0, u * 1.7, T, u * 0.4); q.fillRect(u * 0.6, u * 5, u * 1.5, u * 0.4); q.fillRect(T - u * 2.1, u * 9, u * 1.5, u * 0.4);
-  } else if (id === 'riel') { const u = T / 16; c.width = c.height = T; q.fillStyle = '#4a321b'; for (let i = 0; i < 4; i++) q.fillRect(u * (1 + i * 4), T - u * 1.1, u * 1.6, u * 1.1); q.fillStyle = '#8d8a86'; q.fillRect(0, T - u * 1.7, T, u * 0.5);
-  } else if (id === 'escala') { const u = T / 16; c.width = c.height = T; q.fillStyle = '#6b4a2a'; q.fillRect(u * 1, 0, u * 0.7, T); q.fillRect(u * 4.2, 0, u * 0.7, T); q.fillStyle = '#84603a'; for (let i = 0; i < 4; i++) q.fillRect(u * 1, u * (1.5 + i * 4), u * 3.9, u * 0.7);
-  } else if (id.startsWith('esta')) { const u = T / 16, r = azarDe(id === 'esta0' ? 5 : 9); c.width = c.height = T; q.fillStyle = '#00000055'; for (let i = 0; i < 3; i++) { const x = (2 + r() * 11) * u, w = (0.8 + r() * 1.2) * u, l = (2 + r() * 5) * u; q.beginPath(); q.moveTo(x - w, 0); q.lineTo(x + w, 0); q.lineTo(x, l); q.fill(); } q.fillStyle = '#ffffff22'; q.fillRect(0, 0, T, u * 0.5);
   } else if (id[0] === 'f') {                        // lo que crece en el piso de las cuevas naturales
     const z = +id[1], v = +id[2], u = T / 16; c.width = c.height = T;
     const hongo = (x, a, copa, tallo) => { q.fillStyle = tallo; q.fillRect((x - 0.4) * u, (16 - a) * u, u * 0.8, a * u); q.fillStyle = copa; q.beginPath(); q.ellipse(x * u, (16 - a) * u, u * (1.1 + a * 0.16), u * (0.7 + a * 0.08), 0, Math.PI, Math.PI * 2); q.fill(); };
@@ -2107,13 +2186,6 @@ function dibujar() {
         if (y > 0 && !hueca(x, y - 1)) { g.fillStyle = '#00000055'; g.fillRect(px, py, T, grueso); }             // sombra del techo
         const ci = y * W + x;                          // en el piso de las cuevas que nadie cavó crece algo, según la zona
         if (y > 2 && lug < 2 && ((x * 31 + y * 17) & 3) < 2 && !(dug[ci >> 3] & (1 << (ci & 7))) && solida(x, y + 1)) g.drawImage(sprite('f' + (t === 6 ? 4 : zona < 4 ? 0 : zona === 4 ? 5 : zona) + ((x + y) & 1)), px, py);
-        if (y > 2 && lug < 1 && t === 0) {
-          if (dug[ci >> 3] & (1 << (ci & 7))) {     // lo que cavó el equipo se adema: marcos de madera y rieles en las galerías, escalera en los tiros
-            const ar = solida(x, y - 1), ab = solida(x, y + 1);
-            if (ar && ab) { g.drawImage(sprite('riel'), px, py); if (x % 3 === 0) g.drawImage(sprite('marco'), px, py); }
-            else if (!ar && solida(x - 1, y) && solida(x + 1, y)) g.drawImage(sprite('escala'), px, py);
-          } else if (!hueca(x, y - 1) && ((x * 17 + y * 29) & 3) < 2) g.drawImage(sprite('esta' + ((x + y) & 1)), px, py);      // estalactitas en las cuevas naturales
-        }
         if (t === 6 && celda(x, y - 1) === 0) { g.fillStyle = '#bfe9ff77'; g.fillRect(px, py + Math.round(Math.sin(reloj * 2 + x * 0.9) * fino), T, fino * 2); }      // la superficie del agua
         continue;
       }
@@ -2123,15 +2195,7 @@ function dibujar() {
       const vr = t === 1 ? vt : t === 3 ? (celda(x, y - 1) === 3 ? 1 : 0) | (celda(x + 1, y) === 3 ? 2 : 0) | (celda(x, y + 1) === 3 ? 4 : 0) | (celda(x - 1, y) === 3 ? 8 : 0) | (((x * 7 + y * 13) & 3) << 4) : t === 7 ? (x * 7 + y * 13) & 3 : t === 50 ? Math.floor(colec.get(y * W + x) / 3) : t >= 10 && y >= 165 && lugarDe(x, y) > (t >= 40 ? 0 : 2) ? 1 : 0;
       if (t !== 1 && t !== 5 && t !== 7 && !(t >= 10 && t !== 50 && vr)) g.drawImage(tile(1, zona, vt), px, py);       // la tierra de la celda, debajo de lo que tenga
       g.drawImage(tile(t, zona, vr), px, py);
-      if (t === 1) {
-        // Los estratos: capas con echado (bajan hacia la derecha) y dos fallas que las desplazan, en las columnas 31 y 67.
-        const e = (3.5 - ((y - 0.12 * x - (x > 30 ? 1.3 : 0) + (x > 66 ? 0.9 : 0)) % 3.5 + 3.5) % 3.5) % 3.5;
-        if (e < 1) { g.strokeStyle = '#00000026'; g.lineWidth = fino; g.beginPath(); g.moveTo(px, py + e * T); g.lineTo(px + T, py + (e + 0.12) * T); g.stroke(); }
-        if (x === 31 || x === 67) { g.fillStyle = '#0000002e'; g.fillRect(px, py, fino, T); }
-        // Las pintas: lo que delata al mineral de junto. Cuarzo con el oro, malaquita con el cobre, óxido con el hierro, tierra azul con el diamante.
-        let pin = 0; for (const [a, b] of V4) { const n = celda(x + a, y + b); if (n === 13) { pin = 1; break; } if (n === 11) pin = pin || 2; else if (n === 10) pin = pin || 3; else if (n === 18) pin = 4; }
-        if (pin) g.drawImage(sprite('p' + pin + ((x + y) & 1)), px, py);
-      } else if (t === 2 && esGeoda(x, y)) g.drawImage(sprite('geo'), px, py);
+      if (t === 2 && esGeoda(x, y)) g.drawImage(sprite('geo'), px, py);
       if (t === 3) calor.push(px, py, x, y);
       else if (esGas) { if (!gasOculto || insinua) gases.push(px, py, x, y); }
       else if (t >= 10) {                       // destello
@@ -2152,15 +2216,27 @@ function dibujar() {
     const X = (cx) => ox + (cx + 0.5) * T, Y = (cx) => oy + (Math.floor(pisoR(R, cx)) + 1) * T, figura = (em, cx, tam, dy = 0) => { g.font = `${T * tam}px system-ui, "Apple Color Emoji", "Segoe UI Emoji", sans-serif`; g.textAlign = 'center'; g.textBaseline = 'bottom'; g.fillText(em, X(cx), Y(cx) + dy); };
     g.fillStyle = '#fff';
     if (R.t === 'camp') { figura('⛺', R.cx + 5, 2.2); figura('🛒', R.cx - 3, 1.1); figura('🏮', R.cx + 1, 1); g.globalCompositeOperation = 'lighter'; g.globalAlpha = 0.7 + 0.2 * Math.sin(reloj * 7); g.drawImage(sprite('res'), X(R.cx + 1) - T * 1.25, Y(R.cx + 1) - T * 1.9); g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1; }
-    else if (R.t === 'hongos') for (const [dx, tam, col] of [[-10, 2.6, '120,255,220'], [-5, 3.6, '255,140,220'], [0, 4.4, '120,255,220'], [6, 3.2, '190,140,255'], [11, 2.4, '120,255,220']]) {      // hongos gigantes: tallo, copa y su luz
+    else if (R.t === 'hongos') for (let k = 0; k < 5; k++) {      // hongos gigantes: tallo, copa y su luz, que se enciende cuando cantan
+      const [dx, tam, col] = HONGOS[k], canta = tiempo >= hongo.luz[k] ? Math.exp(-1.6 * (tiempo - hongo.luz[k])) : 0;
       const x = X(R.cx + dx), yb = Y(R.cx + dx), al = T * tam, an = al * 0.5;
       g.fillStyle = '#e9e2d3'; g.fillRect(x - al * 0.06, yb - al * 0.8, al * 0.12, al * 0.8);
-      const gl = g.createRadialGradient(x, yb - al * 0.8, 0, x, yb - al * 0.8, an * 1.5); gl.addColorStop(0, `rgba(${col},${0.45 + 0.12 * Math.sin(reloj * 1.7 + dx)})`); gl.addColorStop(1, `rgba(${col},0)`); g.globalCompositeOperation = 'lighter'; g.fillStyle = gl; g.fillRect(x - an * 1.5, yb - al * 0.8 - an * 1.5, an * 3, an * 3); g.globalCompositeOperation = 'source-over';
+      const gl = g.createRadialGradient(x, yb - al * 0.8, 0, x, yb - al * 0.8, an * 1.5); gl.addColorStop(0, `rgba(${col},${Math.min(1, 0.45 + 0.12 * Math.sin(reloj * 1.7 + dx) + 0.55 * canta)})`); gl.addColorStop(0.5, `rgba(${col},${0.5 * canta})`); gl.addColorStop(1, `rgba(${col},0)`); g.globalCompositeOperation = 'lighter'; g.fillStyle = gl; g.fillRect(x - an * 1.5, yb - al * 0.8 - an * 1.5, an * 3, an * 3); g.globalCompositeOperation = 'source-over';
       g.fillStyle = `rgb(${col})`; g.beginPath(); g.ellipse(x, yb - al * 0.8, an, al * 0.3, 0, Math.PI, Math.PI * 2); g.fill(); g.fillStyle = '#ffffffaa'; for (const [a, b] of [[-0.5, 0.12], [0.1, 0.2], [0.5, 0.1]]) { g.beginPath(); g.arc(x + a * an, yb - al * 0.8 - b * al, al * 0.035, 0, 7); g.fill(); }
     }
     else if (R.t === 'cemen') [[-9, 1, 0.3], [-3, 5, -0.5], [4, 2, 0.15], [10, 7, -0.25]].forEach(([dx, mo, gi]) => { g.save(); g.translate(X(R.cx + dx), Y(R.cx + dx) - T * 0.42); g.rotate(gi); g.globalAlpha = 0.55; dibMaq(g, 0, 0, T, mo, gi > 0 ? 1 : -1, 0, 0, '', ''); g.restore(); });
     else if (R.t === 'termas') { g.fillStyle = '#ffffff'; for (let n = 0; n < 12; n++) { const sx = R.cx - 11 + n * 2, f = (reloj * 0.35 + n * 0.37) % 1; g.globalAlpha = 0.22 * Math.sin(Math.PI * f); g.beginPath(); g.arc(X(sx) + Math.sin(reloj + n) * T * 0.3, oy + (R.cy + 1 - f * 4) * T, T * (0.25 + 0.5 * f), 0, 7); g.fill(); } g.globalAlpha = 1; }
     else if (R.t === 'guard') for (const dx of [-10, -4, 3, 9]) figura('🗿', R.cx + dx, 3 + (dx & 1) * 0.6);
+    else if (R.t === 'jardin') {                      // las mariposas de vidrio: sueltas, o escribiendo tu nombre
+      poblarJardin();
+      const t = T * (jardin.forma ? 0.075 : 0.085), COL = ['#9fdcff', '#d6b8ff', '#ffffff'];
+      g.globalCompositeOperation = 'lighter'; g.globalAlpha = jardin.forma ? 0.95 : 0.8;
+      for (let k = 0; k < 3; k++) {
+        g.fillStyle = COL[k]; g.beginPath();
+        for (const b of jardin.m) { if (b.c !== k) continue; const px = ox + b.x * T, py = oy + b.y * T, al = 0.35 + 0.65 * Math.abs(Math.sin(b.f)); g.moveTo(px, py); g.ellipse(px - t * 0.8, py, t * al, t * 1.15, -0.4, 0, 7); g.moveTo(px, py); g.ellipse(px + t * 0.8, py, t * al, t * 1.15, 0.4, 0, 7); }
+        g.fill();
+      }
+      g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1;
+    }
     else if (R.t === 'nido') { figura('🐉', R.cx - 1, 5.5 + 0.12 * Math.sin(reloj * 1.2), T * 0.6); g.globalAlpha = 0.5 + 0.5 * Math.sin(reloj * 1.2); g.font = `800 ${T * 0.5}px system-ui`; g.fillStyle = '#cfe6ff'; g.fillText('z z z', X(R.cx + 3), Y(R.cx - 1) - T * (4.6 + ((reloj * 0.3) % 1))); g.globalAlpha = 1; }
     else if (R.t === 'boveda') { g.font = `800 ${T * 0.42}px system-ui`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#ffd23f'; g.fillText('COMPAÑÍA MINERA · BÓVEDA 7', X(R.cx), oy + (R.cy - R.ry + 0.5) * T); }
     else if (R.t === 'fosil' && S && !S.lug[R.i]) { /* nada: los huesos se ven solos */ }
@@ -2179,6 +2255,7 @@ function dibujar() {
     g.beginPath(); g.ellipse(px, py, t * 1.5, t * 0.75, 0, 0, 7); g.moveTo(px - d * t * 1.2, py); g.lineTo(px - d * t * 2.4, py - t * 0.8 + cola); g.lineTo(px - d * t * 2.4, py + t * 0.8 + cola); g.fill();
     g.fillStyle = '#12222e'; g.beginPath(); g.arc(px + d * t * 0.8, py - t * 0.15, t * 0.17, 0, 7); g.fill();
   }
+  if (S && y1 >= MURAL.y && y0 <= MURAL.y + MURAL.al) { g.globalAlpha = 0.8; g.drawImage(mural(), ox + MURAL.x * T, oy + MURAL.y * T); g.globalAlpha = 1; }      // el mural de los que vendrán
   if (y1 >= 2800 && y0 <= 2826) {                  // las antorchas de la Ciudad Perdida
     const res = sprite('res');
     for (const b of [0, 1, 2, 6, 7]) {
@@ -2380,6 +2457,8 @@ function ciclo(t, id) {
   dibujar();
   sonarLazos(false); gotear(d);                            // el sonido sigue a la maquinita cuadro por cuadro
   if ((tPos += d) >= (red.lenta ? 0.125 : 0.066)) { tPos = 0; enviarPos(); }
+  if (Math.abs(yo.y - R_HONGOS.cy) < 14) cantarHongos();
+  if (jardin.m.length) mariposas(d, Math.abs(yo.y - R_JARDIN.cy) < 14 && enRincon(R_JARDIN, Math.floor(yo.x), Math.floor(yo.y), true));
   if ((tHud += d) > 0.12) { tHud = 0; cadaTanto(); }
   // la veta madre se busca con el oído
   if ((tBip -= d) < 0 && yo.y > 0) {
@@ -2539,6 +2618,10 @@ function cadaTanto() {
     tarjeta(`${L.ic} Descubriste ${L.n} · bono de ${fmt(L.q)}`, L.tx + ' Ya puedes volver aquí desde El Elevador.', 'msj', 14000, true); difundir('descubrió ' + L.n); pintarHud(true);
   }
   if (yo.agua && lg >= 0 && LUGARES[lg].t === 'termas' && S.vida < vidaMax()) { S.vida = Math.min(vidaMax(), S.vida + vidaMax() * 0.04); sucio = true; if (tiempo - tTermas > 2.5) { tTermas = tiempo; flota(yo.x, yo.y - 0.9, '♨ el agua repara el casco', '#bfe9ff'); } }
+  if (!S.fl.mural && yo.y > MURAL.y - 1 && yo.y < MURAL.y + MURAL.al + 2 && yo.x > MURAL.x - 2 && yo.x < MURAL.x + MURAL.an + 2) {
+    S.fl.mural = 1; sucio = true; son.descubre();
+    tarjeta('🖐️ El mural de «Los que vendrán»', 'Lo pintaron hace miles de años. Y ahí está ' + miNombre + ', con su nombre' + (otros.size ? ', junto a las demás maquinitas de este mundo' : '') + '. Abajo, los objetos de la colección que ya aparecieron.', 'msj', 14000, true);
+  }
   { const z = zonaDe(prof()); if (z >= 4 && z > (S.zmax || 3)) { S.zmax = z; sucio = true; son.espacio(); tarjeta('⬇ ' + ZONA_N[z], ZONA_TX[z] + ' La piedra de aquí pide ' + PZ[0].niv[PIEDRA[z - 3][0]][0] + '.', 'msj', 12000, true); } }
   if (yo.y > 1470 && yo.y < 1520 && !S.fl.guero) {
     const [gx, gy] = guero();
@@ -3202,7 +3285,7 @@ function menuPrincipal() {
       <p><b>La colección:</b> hay 99 objetos enterrados (33 distintos, tres de cada uno), cada uno en su franja de profundidad. Se ven como medallones dorados. Son del mundo: los junta el equipo entero y se van encendiendo en Menú → Colección. Las explosiones no los destruyen.</p>
       <p><b>Pleitos:</b> en el aire las maquinitas rebotan y no pasa nada. Bajo tierra, si empujas tu taladro contra otra (← → a su lado, o ↓ encima de ella), le pegas: tu taladro contra su casco. Por la espalda o desde arriba pega 50 % más; taladro contra taladro pega la mitad y los dos salen rebotados. La que pierde vuelve a la superficie sin perder nada. En el pueblo no hay pleitos, y quien creó el mundo puede apagarlos.</p>
       <p><b>Mapa y archivo:</b> Menú → Mapa muestra todos los túneles abiertos. Menú → Mundo → Guardar archivo descarga el mundo completo; desde «Mis mundos» se abre como una copia idéntica.</p>
-      <p><b>Ojo de minero:</b> la roca avisa. Junto al oro hay vetillas de cuarzo blanco; junto al cobre, manchas verdes de malaquita; junto al hierro, óxido; junto al diamante, tierra azul. Las capas de roca bajan hacia la derecha y dos fallas las cortan. Una de cada catorce piedras es una geoda: búscale el brillo morado. Cuando la flama de tu lámpara se pone azul, hay grisú al lado.</p>
+      <p><b>Ojo de minero:</b> una de cada catorce piedras es una geoda: búscale el brillo morado. Cuando la flama de tu lámpara se pone azul, hay grisú al lado. Y tres lugares guardan una sorpresa para quien se detiene a mirar, a tocar o a quedarse quieto.</p>
       <p><b>Diez kilómetros:</b> debajo de la Corteza siguen el Acuífero, las Cavernas, la Cristalera y la Zona de presión, con doce minerales nuevos y cuatro lugares por descubrir. Cada lugar que encuentres queda apuntado en <b>El Elevador</b> (el último edificio), que también te regresa al punto donde te recogió la grúa.</p>
       <p><b>Sin internet y como aplicación:</b> Mina se puede instalar (Menú → Opciones) y abre aunque no haya señal. Lo que caves y ganes sin internet se queda en tu equipo y se manda al mundo cuando la señal vuelve. En pantallas táctiles, arrastra el dedo para moverte y da un toque frente a un edificio para entrar.</p>
       <p><b>Tu nombre y tus ligas:</b> la maquinita nace bautizada para que empieces a jugar sin llenar nada; el nombre y el modelo se cambian en Menú → Mundo. Hay dos ligas: la del mundo (invita a excavar) y la tuya (presume tu maquinita); cada una lleva su imagen al mandarla por WhatsApp.</p>
