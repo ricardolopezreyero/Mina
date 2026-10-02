@@ -349,13 +349,27 @@ const dug = new Uint8Array(W * H / 8), mapa = new Uint8Array(W * H).fill(255);
 //    Formato: «MN», versión del formato, versión del generador; una celda por byte (9 = piedra con geoda); y la celda
 //    donde está cada uno de los 99 objetos de la colección. Ojo: los minerales y hallazgos se identifican por su número
 //    (10 + índice, 40 + índice): a esas listas solo se les puede agregar al final, nunca insertar ni reordenar.
-const GEN = 1, NB = W * H, MAPA_BYTES = 4 + NB + NCOL * 4;
+const GEN = 2, NB = W * H, MAPA_BYTES = 4 + NB + NCOL * 4;
 const base = new Uint8Array(NB), geodas = new Uint8Array(NB / 8);
 let mapaHash = '', mapaDe = '', mapaOk = -1, mundoGen = GEN, mapaTurno = 0, mapaEspera = null, pediRemin = false;
 function huellaMapa(u) {
   let a = 0x811c9dc5, b = 0x9e3779b9;
   for (let i = 0; i < u.length; i++) { const v = u[i]; a = Math.imul(a ^ v, 16777619); b = Math.imul(b + v, 0x85ebca6b) ^ (b >>> 13); }
   return (a >>> 0).toString(16).padStart(8, '0') + (b >>> 0).toString(16).padStart(8, '0');
+}
+// Dos franjas con sentido, de orilla a orilla, para que se note por dónde vas sin que nadie lo diga.
+// · 333 m: tres de plata, tres de oro, tres de platino, y así toda la fila; arriba y abajo, una piedra entre cada grupo.
+// · 666 m: una trenza de esmeralda, rubí y diamante que sube y baja, con piedras en los huecos de la trenza.
+// Se ponen siempre igual, también en los mundos que nacieron antes de que existieran. Lo ya cavado no se toca.
+function franjas() {
+  const pon = (x, y, t) => { const i = y * W + x; if (base[i] === 5) return; base[i] = t; geodas[i >> 3] &= ~(1 << (i & 7)); };
+  for (let x = 0; x < W; x++) {
+    const k = x % 12, hueco = k % 4 === 3;
+    pon(x, 165, hueco ? 2 : 1); pon(x, 166, hueco ? 1 : 10 + [2, 3, 4][k >> 2]); pon(x, 167, hueco ? 2 : 1);
+    const z = x % 4, gema = 10 + [6, 7, 8][x % 3];
+    pon(x, 332, z === 1 ? gema : z === 3 ? 2 : 1); pon(x, 333, z % 2 === 0 ? gema : 1); pon(x, 334, z === 3 ? gema : z === 1 ? 2 : 1);
+    for (const y of [163, 164, 168, 169, 330, 331, 335, 336]) pon(x, y, 1);      // dos filas de pura tierra arriba y abajo: así la franja resalta
+  }
 }
 function empacar() {
   const u = new Uint8Array(MAPA_BYTES), d = new DataView(u.buffer); u[0] = 77; u[1] = 78; u[2] = 1; u[3] = mundoGen;
@@ -368,7 +382,7 @@ function desempacar(u) {
   mundoGen = u[3]; geodas.fill(0); colec.clear();
   for (let i = 0; i < NB; i++) { const t = u[4 + i]; if (t === 9) { base[i] = 2; geodas[i >> 3] |= 1 << (i & 7); } else base[i] = t; }
   const d = new DataView(u.buffer, u.byteOffset + 4 + NB); for (let id = 0; id < NCOL; id++) colec.set(d.getUint32(id * 4, true), id);
-  mapa.fill(255); bloques.clear(); return true;
+  franjas(); mapa.fill(255); bloques.clear(); return true;
 }
 // El terreno también se guarda en este equipo, por su huella: la siguiente vez abre sin pedir nada, incluso sin internet.
 async function leerMapaLocal(h) { try { const c = await caches.open('mina-mapas'), r = await c.match('/mapa-local/' + h); return r ? new Uint8Array(await r.arrayBuffer()) : null; } catch { return null; } }
@@ -662,7 +676,7 @@ function terrenoProcedural() {
   }
   geodas.fill(0);
   for (let y = 0, i = 0; y < H; y++) for (let x = 0; x < W; x++, i++) { const t = gen(x, y); base[i] = t; if (t === 2 && azar(x, y, 61) < 0.07) geodas[i >> 3] |= 1 << (i & 7); }
-  mundoGen = GEN; mapa.fill(255); bloques.clear();
+  franjas(); mundoGen = GEN; mapa.fill(255); bloques.clear();
   const u = empacar(); mapaHash = huellaMapa(u); mapaDe = seed + '|' + remin; guardarMapaLocal(mapaHash, u);
 }
 

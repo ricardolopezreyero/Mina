@@ -929,6 +929,20 @@ Antes, al entrar al agua (el Acuífero, el Río, las Aguas termales) la caída s
 - **Bajo el agua no hay golpe de caída**: el agua amortigua.
 - Se ven los rotorcitos y más burbujas mientras se baja así; las demás maquinitas también lo ven.
 
+### 9.29 Las franjas de 333 m y 666 m
+
+Dos franjas que cruzan el mundo de orilla a orilla (y empatan en la orilla, porque el mundo da la vuelta), para que se note por dónde se va pasando sin que ningún letrero lo diga.
+
+| Profundidad | Qué hay | Valor de la franja |
+|---|---|---|
+| **333 m** (filas 165 a 167) | En la fila del centro, tres de **plata**, tres de **oro**, tres de **platino** y una celda de tierra, repetido ocho veces. Arriba y abajo, una piedra sobre cada celda de tierra | $26,400 |
+| **666 m** (filas 332 a 334) | Una trenza de **esmeralda**, **rubí** y **diamante** que sube y baja entre tres filas, con piedras en los huecos de la trenza | $4,000,000 |
+
+- **Minerales del lugar:** plata, oro y platino son los metales que ya se dan alrededor de los 333 m; esmeralda, rubí y diamante, las gemas de los 666 m.
+- **Marco:** dos filas de pura tierra arriba y dos abajo de cada franja, para que resalte entre el mineral al azar.
+- **Las piedras no cierran el paso:** siempre queda tierra entre una y otra.
+- **En todos los mundos**, también los ya creados: `franjas()` se aplica al cargar el terreno, siempre igual. Lo que ya estaba cavado no se toca. Es la única excepción a «el terreno de un mundo creado no se mueve» (9.21), hecha a pedido de Ricardo; el generador pasa a `GEN = 2`.
+
 ## 10. Revisión de código del 2 de octubre
 
 Se revisó todo el código buscando fallas y se corrigieron estas:
