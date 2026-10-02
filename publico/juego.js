@@ -145,7 +145,7 @@ const MODELOS = [['#ffd23f', '#b07a00'], ['#ff6b5a', '#a8322a'], ['#6ec3ff', '#2
 
 const MODOS = {
   paseo:   { comb: 0, caida: 0, lava: 0, gas: 0, verGas: 1, pierde: 0, rescates: -1 },
-  clasico: { comb: 1, caida: 1, lava: 1, gas: 1, verGas: 0, pierde: 2, rescates: 3 },
+  clasico: { comb: 1, caida: 1, lava: 1, gas: 1, verGas: 2, pierde: 2, rescates: 3 },
   rudo:    { comb: 1, caida: 2, lava: 2, gas: 2, verGas: 0, pierde: 3, rescates: 0 },
 };
 const MULT = [0, 1, 1.5];
@@ -484,11 +484,12 @@ function aviso(x) {
   while (c.children.length > 6) c.firstChild.remove();
   setTimeout(() => d.remove(), 9000);
 }
-function tarjeta(t, x, clase = '', ms = 4500) {
+function tarjeta(t, x, clase = '', ms = 4500, urgente = false) {
   const d = document.createElement('div'); if (clase) d.className = clase;
   const h = document.createElement('h3'); h.textContent = t; d.appendChild(h);
   if (x) { const p = document.createElement('p'); p.textContent = x; d.appendChild(p); }
-  colaTarjetas.push([d, ms]); sacarTarjeta();
+  if (urgente) { const c = $('#tarjeta'); while (c.children.length >= 3) c.firstChild.remove(); colaTarjetas.unshift([d, ms]); } else colaTarjetas.push([d, ms]);
+  sacarTarjeta();
 }
 const colaTarjetas = [];
 function sacarTarjeta() {
@@ -613,11 +614,14 @@ function pintarContratos() {
 function danar(q, causa) {
   q = Math.round(q);
   if (q <= 0 || !S) return;
+  ultGolpe = { q, m: prof() };
   S.vida -= q; S.vj.dano = 1; sucio = true;
   son.dano(); temblar(Math.min(14, 3 + q / 6)); chispas(yo.x, yo.y, '#ff6b5a', 10, 6);
   if (S.vida <= 0) morir(causa);
 }
+let ultGolpe = { q: 0, m: 0 };
 function morir(causa) {
+  const tenia = vidaMax(), dondeFue = donde(yo.y);
   son.boom(); temblar(16); chispas(yo.x, yo.y, '#ffb347', 40, 10);
   S.st.muertes++;
   const gratis = cfg.rescates < 0 || S.resc < cfg.rescates;
@@ -630,7 +634,12 @@ function morir(causa) {
   }
   S.vida = vidaMax(); S.fuel = tanque(); S.vj.dano = 0;
   yo.renace = true;
-  tarjeta(causa === 'combustible' ? '💥 Te quedaste sin combustible' : '💥 Tu maquinita explotó', x || 'Reapareces en la superficie.', '', 6000);
+  const gas = causa === 'una bolsa de gas', sg = gasSeguro();
+  const titulo = causa === 'combustible' ? '💥 Te quedaste sin combustible' : gas ? '💥 Te explotó una bolsa de gas' : causa === 'la lava' ? '💥 La lava fundió tu maquinita' : causa === 'una caída' ? '💥 Te estrellaste' : '💥 Tu maquinita explotó';
+  const porque = gas ? `A ${ultGolpe.m} m el gas pegó ${ultGolpe.q} y tu casco aguanta ${tenia}. Con lo que traes aguantas el gas hasta ${sg < 650 ? 'ninguna profundidad' : sg + ' m'}: mejora casco y radiador en El Taller, o vuela con dinamita la tierra que burbujea. `
+    : causa === 'combustible' ? `Fue a ${dondeFue}. Regresa antes de que el medidor se ponga rojo, o lleva un tanque de reserva (tecla F). `
+    : causa === 'la lava' ? `La lava pegó ${ultGolpe.q} y tu casco aguanta ${tenia}. Rodéala, vuélala con dinamita o compra radiador. ` : '';
+  tarjeta(titulo, porque + 'La grúa de rescate te dejó en la superficie. ' + x, '', 14000, true);
   difundir(causa === 'combustible' ? 'se quedó sin combustible' : 'explotó (' + causa + ')');
   sucio = true; enviarEst();
 }
@@ -654,7 +663,9 @@ function fisica(dt) {
   if (solida(Math.floor(yo.x), Math.floor(yo.y))) { yo.x = INICIO_X; yo.y = INICIO_Y; yo.vx = yo.vy = 0; yo.suelo = true; aviso('El terreno cambió: tu maquinita salió a la superficie.'); return; }
   const reserva = S.fuel <= 0;                // solo pasa en mundos donde no explota
   const k = reserva ? 0.5 : 1;
-  const izq = teclas.izq, der = teclas.der, arr = teclas.arr, aba = teclas.aba;
+  if (crucero && (teclas.aba || yo.y > -12 || yo.y <= TECHO + 1)) crucero = false;
+  if (crucero && S.fuel / tanque() < 0.12) { crucero = false; tarjeta('Combustible bajo', 'Dejaste de subir sola. Déjate caer: allá arriba casi no se gasta.'); }
+  const izq = teclas.izq, der = teclas.der, arr = teclas.arr || crucero, aba = teclas.aba;
   const caballos = hp(), pesoMax = caballos * 29.5, peso = 1980 + kgCarga();
   const alto = Math.max(0, -(yo.y + HH));        // celdas sobre el suelo
   const vmax = (5 + (caballos - 150) / 30) * k;
@@ -672,7 +683,8 @@ function fisica(dt) {
   yo.vy = Math.max(-vsube, Math.min(36 + alto / 40, yo.vy));
   // parado en la superficie no gasta: nadie explota por leer un letrero
   const quieto = yo.suelo && yo.y < 0 && !yo.vuela && Math.abs(yo.vx) < 0.5;
-  if (!quieto) gastar((yo.vuela ? 17 : Math.abs(yo.vx) > 0.5 ? 8 : 5) / 60 * dt);
+  // El aire se adelgaza con la altura: arriba el motor casi no gasta. Con un tanque mediano se llega al espacio.
+  if (!quieto) gastar((yo.vuela ? 17 : Math.abs(yo.vx) > 0.5 ? 8 : 5) / 60 * dt / (1 + alto / 600));
   if (yo.renace) return;
 
   // eje X
@@ -745,6 +757,9 @@ function seguirPerforando(p) {
   else if (solida(p.tx, p.ty + 1)) { if (izq && !der) { yo.dir = -1; perforar(p.tx - 1, p.ty); } else if (der && !izq) { yo.dir = 1; perforar(p.tx + 1, p.ty); } }
 }
 let tTaladro = 0;
+// Hasta qué profundidad aguanta una bolsa de gas lo que traes puesto (el gas empieza a los 650 m).
+function gasSeguro() { return cfg.gas ? Math.floor(410 + 2.05 * vidaMax() / ((1 - rad()) * MULT[cfg.gas])) : 9999; }
+const pistaGas = () => cfg.verGas === 2 || (cfg.modo === 'clasico' && !cfg.verGas);     // el gas se insinúa con burbujas
 function gastar(l) {
   if (!S || S.fuel <= 0) return;
   S.fuel -= l;
@@ -963,7 +978,7 @@ function iniciarMundo(d) {
     if (solida(Math.floor(yo.x), Math.floor(yo.y))) { yo.x = INICIO_X; yo.y = INICIO_Y; }   // el mundo cambió mientras no estaba
   } else sucio = true;                 // al reconectar manda lo que pasó mientras tanto
   if (d.cuenta) cuentaFin = Date.now() + d.cuenta * 1000;
-  if (soyCreador && !cfg.nombre) { cfg.nombre = 'Mundo de ' + miNombre; enviar({ t: 'cfg', cfg }); }
+  if (soyCreador && (!cfg.nombre || (cfg.modo === 'clasico' && !cfg.verGas))) { cfg.nombre = cfg.nombre || 'Mundo de ' + miNombre; if (cfg.modo === 'clasico') cfg.verGas = 2; enviar({ t: 'cfg', cfg }); }
   guardarMundo();
   conectado = true; tCaido = 0; listo = true; bautizo = null; llaveAntes = '';
   // lo que se cavó sin conexión: se vuelve a marcar aquí y se le avisa al mundo
@@ -1324,7 +1339,7 @@ function dibujar() {
   if (oy > 0) cielo(w, h, oy);
   const x0 = Math.max(0, Math.floor(camX)), x1 = Math.min(W - 1, Math.ceil(camX + cols));
   const y0 = Math.max(0, Math.floor(camY)), y1 = Math.min(H - 1, Math.ceil(camY + filas));
-  const fino = Math.max(1, Math.round(T * 0.07)), grueso = Math.max(2, Math.round(T * 0.13));
+  const fino = Math.max(1, Math.round(T * 0.07)), grueso = Math.max(2, Math.round(T * 0.13)), insinua = pistaGas();
   for (let y = y0; y <= y1; y++) {
     const m = (y + 1) * 2, zona = m < 210 ? 0 : m < 410 ? 1 : m < 650 ? 2 : 3, py = oy + y * T;
     for (let x = x0; x <= x1; x++) {
@@ -1334,8 +1349,13 @@ function dibujar() {
         if (y > 0 && celda(x, y - 1) !== 0) { g.fillStyle = '#00000055'; g.fillRect(px, py, T, grueso); }             // sombra del techo
         continue;
       }
-      if (t === 4 && !cfg.verGas) t = 1;
+      const gasOculto = t === 4 && cfg.verGas !== 1;
+      if (gasOculto) t = 1;
       g.drawImage(tile(t, zona, t === 1 ? (x * 7 + y * 13) & 3 : 0), px, py);
+      if (gasOculto && insinua) for (let k = 0; k < 3; k++) {          // burbujitas verdes que suben despacio
+        const s = (reloj * 0.45 + ((x * 37 + y * 91 + k * 53) % 100) / 100) % 1;
+        g.globalAlpha = 0.8 * Math.sin(Math.PI * s); g.fillStyle = '#a8ff94'; g.beginPath(); g.arc(px + T * (0.2 + ((x * 13 + y * 7 + k * 41) % 60) / 100), py + T * (0.85 - 0.7 * s), T * (0.045 + 0.02 * k), 0, 7); g.fill(); g.globalAlpha = 1;
+      }
       if (t === 3) { g.fillStyle = `rgba(255,205,90,${0.1 + 0.1 * Math.sin(reloj * 3 + x * 1.7 + y)})`; g.fillRect(px, py, T, T); }
       else if (t >= 10) {                            // destello
         const s = Math.sin(reloj * 1.9 + ((x * 73 + y * 151) % 97));
@@ -1497,11 +1517,12 @@ function queEs() {
     else if (t >= 20) txt = 'Algo enterrado…';
     else if (t === 2) txt = 'Piedra · no se perfora';
     else if (t === 3) txt = 'Lava · hace daño';
-    else if (t === 4 && cfg.verGas) txt = 'Bolsa de gas';
+    else if (t === 4 && (cfg.verGas === 1 || pistaGas())) txt = 'Bolsa de gas · al perforarla explota';
   }
   if (o._t !== txt) { o._t = txt; o.textContent = txt; o.style.display = txt ? 'block' : 'none'; }
   if (txt) { o.style.left = raton.x + 16 + 'px'; o.style.top = raton.y + 18 + 'px'; }
 }
+let tGas = -9, crucero = false;
 let pistaDe = null, tAlarma = 0, estabaAbajo = false, tTabla = 0, tGrua = -9;
 function pista(x) { const p = $('#pista'); if (p._t !== x) { p._t = x; p.textContent = x; p.style.display = x ? 'block' : 'none'; } }
 // La grúa te deja en la Gasolinera. Cobra por lo lejos que estás y por lo que pesas.
@@ -1553,12 +1574,17 @@ function cadaTanto() {
   let e = null;
   if (yo.suelo && yo.y < 0) e = EDIF.find((b) => yo.x > b.x + 0.2 && yo.x < b.x + 2.8) || null;
   pistaDe = e;
-  pista(vistaLibre ? '🖱  Vista libre · pulsa una flecha para volver a tu maquinita' : e ? '↓  Entrar a ' + e.n + ' · ' + e.h.toLowerCase() : '');
+  pista(crucero ? '🚀  Subiendo sola · barra espaciadora o ↓ para soltar' : yo.y < -25 && teclas.arr ? 'Barra espaciadora: seguir subiendo sin sostener la tecla' : vistaLibre ? '🖱  Vista libre · pulsa una flecha para volver a tu maquinita' : e ? '↓  Entrar a ' + e.n + ' · ' + e.h.toLowerCase() : '');
   // la grúa se ofrece mientras vas subiendo
   if ((yo.y > 1 && (teclas.arr || yo.vy < -1)) || (yo.y < -20 && yo.vy > -1)) tGrua = tiempo;       // bajo tierra al subir; en el cielo al caer
   const c = costoGrua(), ver = (yo.y > 1 || yo.y < -20) && tiempo - tGrua < 3.5, gr = $('#grua');
   const txt = ver ? `🚁 Grúa a la Gasolinera · <b>${fmt(c)}</b> · tecla E${S.d < c ? ' · no te alcanza' : ''}` : '';
   if (gr._h !== txt) { gr._h = txt; gr.innerHTML = txt; gr.style.display = txt ? 'block' : 'none'; }
+  // huele a gas: hay una bolsa pegada a la maquinita
+  if (yo.y > 0 && cfg.gas && pistaGas() && tiempo - tGas > 2.5) {
+    const cx = Math.floor(yo.x), cy = Math.floor(yo.y);
+    if ([[0, 1], [-1, 0], [1, 0]].some(([a, b]) => celda(cx + a, cy + b) === 4)) { tGas = tiempo; flota(yo.x, yo.y - 0.9, '⚠ Huele a gas', '#a8ff94'); ruido(0.5, 0.07, 'peligro', 5200, 'highpass', 0.7); }
+  }
   pintarHud(); queEs();
   if (++tTabla % 4 === 0) pintarTabla();
 }
@@ -1570,6 +1596,7 @@ function metas() {
   let mejor = null;
   for (let p = 0; p < 6; p++) { const n = PZ[p].niv[S.eq[p] + 1]; if (n && (!mejor || n[1] < mejor[1])) mejor = n; }
   if (mejor) l.push(S.d >= mejor[1] ? { ya: 1, tx: `¡Ya te alcanza para ${mejor[0]}! Ve al Taller`, p: 1 } : { tx: `Te faltan ${fmt(mejor[1] - S.d)} para ${mejor[0]}`, p: S.d / mejor[1] });
+  if (cfg.gas && S.rec >= 560) { const sg = gasSeguro(), pr = prof(); l.push(pr > sg ? { mal: 1, tx: `⚠ A esta profundidad una bolsa de gas te explota. Tu equipo la aguanta hasta ${sg < 650 ? 'ninguna' : sg + ' m'}`, p: 1 } : { tx: sg >= 1000 ? 'Tu equipo aguanta el gas hasta el fondo' : sg < 650 ? '⚠ Con tu equipo, cualquier bolsa de gas te explota (empiezan a los 650 m)' : `Tu equipo aguanta el gas hasta ${sg} m`, p: Math.min(1, pr / Math.max(650, sg)) }); }
   const b = MSJ.slice(S.msj).find((x) => x.q);
   if (b) l.push({ tx: `Bono de ${fmt(b.q)} a los ${b.m} m`, p: prof() / b.m });
   const sig = RANGOS.find((r) => r[0] > S.rec);
@@ -1585,7 +1612,7 @@ function pintarHud(forzar) {
   bc.firstChild.style.width = f * 100 + '%'; bc.lastChild.textContent = S.fuel.toFixed(1) + ' / ' + tanque() + ' L'; bc.classList.toggle('bajo', f < 0.25);
   bv.firstChild.style.width = v * 100 + '%'; bv.lastChild.textContent = Math.max(0, Math.ceil(S.vida)) + ' / ' + vidaMax(); bv.classList.toggle('bajo', v < 0.3);
   $('#prof').textContent = donde(yo.y); $('#din').textContent = fmt(S.d); $('#bod').textContent = '📦 ' + nCarga() + '/' + bodega() + (nCarga() ? ' · ' + fmt(valorCarga()) : '');
-  poner($('#metas'), metas().map((m) => `<div class="m${m.ya ? ' ya' : ''}"><i style="width:${Math.round(Math.min(100, m.p * 100))}%"></i><span>${esc(m.tx)}</span></div>`).join(''));
+  poner($('#metas'), metas().map((m) => `<div class="m${m.ya ? ' ya' : ''}${m.mal ? ' mal' : ''}"><i style="width:${Math.round(Math.min(100, m.p * 100))}%"></i><span>${esc(m.tx)}</span></div>`).join(''));
   poner($('#objetos'), OBJ.map((o, i) => `<div data-u="${i}" class="${S.obj[i] ? '' : 'n0'}" title="${o.n}: ${o.ef}"><kbd>${o.k}</kbd>${CORTO[i]} ×${S.obj[i]}</div>`).join(''));
   if (forzar) pintarTabla();
 }
@@ -1739,7 +1766,7 @@ function pintarMenu() {
   } else if (menu === 'tal') {
     const P = PZ[pieza];
     h = cab('🔧 El Taller') + `<div class="pest">${PZ.map((p, i) => `<button data-a="pieza" data-v="${i}" class="${i === pieza ? 'on' : ''}">${p.n}</button>`).join('')}</div>
-      <div class="cuerpo"><p class="nota">${P.que}</p>` + P.niv.map((n, i) => {
+      <div class="cuerpo"><p class="nota">${P.que}${(pieza === 1 || pieza === 4) && cfg.gas ? ` Con lo que traes, aguantas una bolsa de gas hasta <b>${gasSeguro() < 650 ? 'ninguna profundidad' : gasSeguro() >= 1000 ? 'el fondo' : gasSeguro() + ' m'}</b> (el gas empieza a los 650 m).` : ''}</p>` + P.niv.map((n, i) => {
       const tengo = i <= S.eq[pieza], act = i === S.eq[pieza];
       return `<div class="fila ${act ? 'act' : tengo ? 'tengo' : ''}"><div class="t"><b>${n[0]}${act ? ' · lo que traes' : ''}</b><small>${n[3]}</small><small>${act || tengo ? n[2] + ' ' + P.u : `<b style="display:inline;color:var(--ok)">${nv(pieza)} → ${n[2]}</b> ${P.u}`}</small></div>
         ${tengo ? '' : `<div class="v">${fmt(n[1])}</div><button data-a="mejorar" data-v="${i}" ${S.d < n[1] ? 'disabled' : ''}>Comprar</button>`}</div>`;
@@ -1915,7 +1942,7 @@ function menuPrincipal() {
       <label class="op"><span>Caídas</span>${sel('caida', o3)}</label>
       <label class="op"><span>Lava</span>${sel('lava', o3)}</label>
       <label class="op"><span>Gas</span>${sel('gas', o3)}</label>
-      <label class="op"><span>Ver el gas</span>${sel('verGas', [[1, 'Sí'], [0, 'No'] ])}</label>
+      <label class="op"><span>Ver el gas</span>${sel('verGas', [[1, 'Sí, completo'], [2, 'Se insinúa con burbujas'], [0, 'No']])}</label>
       <label class="op"><span>Qué se pierde al explotar</span>${sel('pierde', [[0, 'Nada'], [1, 'La carga'], [2, 'La carga y la reparación'], [3, 'Carga, reparación y 10 % del dinero']])}</label>
       <label class="op"><span>Rescates gratis</span>${sel('rescates', [[0, 'Ninguno'], [3, 'Los 3 primeros'], [-1, 'Sin límite']])}</label>
       <h4>El mundo</h4>
@@ -1941,7 +1968,8 @@ function menuPrincipal() {
       <p><b>Objetos:</b> F tanque de reserva · R nanobots · X dinamita · C explosivo plástico · Q teletransportador · M transmisor.</p>
       <p><b>Acompañado:</b> G deja una señal que todos ven · T le pasa 5 litros a la maquinita que tengas junto · P pausa tu maquinita.</p>
       <p><b>Grúa:</b> mientras subes, la tecla E te lleva a la Gasolinera. Cobra según lo lejos que estés y lo que peses.</p>
-      <p><b>Hacia arriba:</b> el cielo también se explora. A 100 km empieza el espacio y a 1,000 km la Luna llena la vista: son unos 15 minutos de vuelo y hace falta mucho tanque.</p>
+      <p><b>Hacia arriba:</b> el cielo también se explora. A 100 km empieza el espacio y a 1,000 km la Luna llena la vista: son unos 15 minutos de vuelo. Entre más alto, menos combustible se gasta; con un tanque «Cisterna» alcanza. Pasando los 50 m de altura, la barra espaciadora deja a la maquinita subiendo sola.</p>
+      <p><b>Gas:</b> desde los 650 m hay bolsas de gas. Se notan por unas burbujitas verdes y por el aviso «Huele a gas». Vuélalas con dinamita o lleva casco y radiador suficientes: arriba, en las metas, dice hasta qué profundidad aguantas.</p>
       <p><b>Sonido:</b> la bocina de arriba a la derecha lo apaga, lo baja y lo sube; «♪ Sonidos» deja elegir qué tipos se oyen.</p>
       <p><b>Mirar alrededor:</b> la rueda del mouse o dos dedos en el trackpad mueven la vista; cualquier flecha la regresa a tu maquinita.</p>
       <p class="nota">Piedra desde 210 m: no se perfora. Lava desde 410 m: se ve, rodéala. Gas desde 650 m: no se ve.</p>`;
@@ -1980,6 +2008,7 @@ addEventListener('keydown', (e) => {
   if (k === 'g') { enviar({ t: 'senal', x: yo.x, y: yo.y }); senales.push({ x: yo.x, y: yo.y, t: 10, n: miNombre }); son.senal(); }
   if (k === 't') pasarCombustible();
   if (k === 'e') grua();
+  if (k === ' ') { e.preventDefault(); if (crucero) crucero = false; else if (yo.y < -25) { crucero = true; son.clic(); } }
 });
 // La rueda o el trackpad mueven la vista para mirar alrededor; cualquier flecha la regresa a la maquinita.
 addEventListener('wheel', (e) => {

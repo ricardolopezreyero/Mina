@@ -17,7 +17,7 @@ const DIA = 86400000, CADUCA = 180 * DIA;
 const MUNDOS_POR_DIA = 20;
 
 const CFG_BASE = {
-  modo: "clasico", comb: 1, caida: 1, lava: 1, gas: 1, verGas: 0,
+  modo: "clasico", comb: 1, caida: 1, lava: 1, gas: 1, verGas: 2,
   pierde: 2, rescates: 3, nombre: "", puerta: 0, reminTodos: 1, regalos: 1,
 };
 
@@ -51,7 +51,7 @@ function cfgLimpia(c, antes) {
     caida: entero(c.caida, 0, 2, antes.caida),
     lava: entero(c.lava, 0, 2, antes.lava),
     gas: entero(c.gas, 0, 2, antes.gas),
-    verGas: entero(c.verGas, 0, 1, antes.verGas),
+    verGas: entero(c.verGas, 0, 2, antes.verGas),
     pierde: entero(c.pierde, 0, 3, antes.pierde),
     rescates: entero(c.rescates, -1, 3, antes.rescates),
     nombre: limpio(c.nombre, 24) || antes.nombre,

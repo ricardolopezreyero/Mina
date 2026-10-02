@@ -1,4 +1,4 @@
-# DOCUMENTO MAESTRO · «Mina» · v5
+# DOCUMENTO MAESTRO · «Mina» · v6
 
 **Ver en vivo: https://mina.capitaltorreon.com**
 
@@ -281,7 +281,7 @@ Falta para la visión completa: varias maquinitas por persona, comprarlas, dise�
 
 - Ya no hay techo a 28 m. Se puede volar hasta **1,000 km**.
 - La velocidad de subida crece con la altura: 6 celdas/s en el suelo más 1 por cada 140 celdas de altura. Medido con motor «Mamut»: 3 km en 1 min 55 s, 12 km en 4 min 13 s, **100 km (el espacio) en 8 min 48 s**, y unos 14 minutos hasta los 1,000 km.
-- Combustible: llegar al espacio gasta unos 150 litros, el tanque más grande completo. Para los 1,000 km hacen falta además unos cuatro tanques de reserva.
+- Combustible: el gasto baja con la altura (ver 9.1); con un tanque «Cisterna» de 40 L se llega a los 1,000 km y se regresa.
 - El cielo cambia con la altura: atardecer hasta los 3 km, azul profundo a los 12, estrellas desde los 15, negro a los 100. El sol pasa de cálido y difuso a blanco con destellos. Desde arriba se ve la curva del planeta con su atmósfera, y la Luna asoma al llegar al espacio y crece hasta llenar la vista.
 - Bonos por altura: $500 a 1 km, $2,000 a 3 km, $10,000 a 12 km, $250,000 a 100 km y $5,000,000 a 1,000 km [N]. Tres logros nuevos.
 - Bajar: en caída libre desde lo más alto son unos 7 minutos y el golpe hace 8 de daño; la grúa también funciona desde el cielo.
@@ -307,6 +307,21 @@ Falta para la visión completa: varias maquinitas por persona, comprarlas, dise�
 | Llegó alguien nuevo | Cuando una maquinita nueva entra a un mundo con gente, cada quien recibe $500 [N] (las primeras 9). Logro «Anfitrión» a las tres. |
 
 La imagen de vista previa sale del propio juego: `…/?foto=1` dibuja una escena de muestra sin conectarse, y se captura con Chrome sin ventana a 1200 × 630.
+
+---
+
+### 9.1 Sexta iteración: el gas ya no mata «sin razón» y al espacio se llega sin parar
+
+Salió de un video de Ricardo: a 704 m una bolsa de gas lo explotó y el juego no le dijo por qué.
+
+| Cambio | Cómo quedó |
+|---|---|
+| El gas se insinúa | En modo Clásico las bolsas de gas sueltan burbujitas verdes. «Ver el gas» ahora tiene tres valores: completo (Paseo), se insinúa (Clásico) y no (Rudo). Los mundos Clásicos ya creados se pasan solos a «se insinúa». |
+| «Huele a gas» | Si hay una bolsa pegada a la maquinita (abajo o a los lados) sale el aviso con un siseo. |
+| Hasta dónde aguantas | En las metas, desde los 560 m de récord: «Tu equipo aguanta el gas hasta 683 m»; en rojo si ya estás más abajo. El Taller lo dice también en Casco y Radiador. |
+| La explosión explica | La tarjeta dice la causa, los números («el gas pegó 83 y tu casco aguanta 80») y qué hacer. Sale de inmediato aunque haya otros avisos en fila. |
+| Combustible en el cielo | El gasto baja con la altura (dividido entre 1 + altura ÷ 1,200 m) [N]. Medido con motor «Toro» y tanque «Cisterna» de 40 L: 3 km gastan 19.5 L, el espacio 29 L y los 1,000 km 30 L; el regreso en caída libre, 2 L. Con el tanque de fábrica se llega a 600 m. |
+| Subir sin sostener la tecla | Pasando los 50 m de altura, la barra espaciadora deja a la maquinita subiendo sola. Se suelta con la barra, con ↓, al llegar arriba o al 12 % de combustible. |
 
 ---
 
