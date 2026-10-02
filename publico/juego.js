@@ -638,6 +638,7 @@ const son = {
   golpe: () => { tono(95, 0.14, 'sine', 0.2, 45, 0, 'peligro'); ruido(0.08, 0.1, 'peligro', 500, 'lowpass', 1); },
   // taladro: el mordisco con que arranca cada celda y el rebote contra la piedra
   muerde: (duro) => { ruido(0.09, 0.2, 'taladro', duro ? 1900 : 800, 'bandpass', 0.9, 0, duro ? 900 : 260); tono(duro ? 120 : 84, 0.08, 'sine', 0.14, 46, 0, 'taladro'); },
+  choque: () => { campana(2400, 0.25, 0.14, 'peligro'); campana(3300, 0.18, 0.08, 'peligro', 0.02); ruido(0.12, 0.3, 'peligro', 4200, 'bandpass', 2); tono(140, 0.12, 'sine', 0.2, 60, 0, 'peligro'); },
   piedra: () => { campana(1900, 0.12, 0.1, 'taladro'); ruido(0.05, 0.25, 'taladro', 3000, 'bandpass', 3); },
   // los demás
   entra: () => { cuerda(659, 0.3, 0.07, 'otros'); cuerda(880, 0.45, 0.07, 'otros', 0.12); },
@@ -794,6 +795,7 @@ function chispas(x, y, col, n = 8, f = 4) {
 let flot = [];
 function flota(x, y, txt, col = '#fff') { flot.push({ x, y, txt, col, t: 1.7 }); if (flot.length > 14) flot.shift(); }
 function temblar(q) { if (op.temblor) temblor = Math.max(temblor, q); }
+let faroCol = '#fff3b0';        // la lámpara de mi maquinita: se pone azul cuando hay grisú al lado
 let ondas = [], golpeFx = 0, bichos = [], tBicho = -99, calorFx = 0;
 const natural = (x, y) => { if (x < 0 || x >= W || y < 1 || y >= H) return false; const i = y * W + x; return !(dug[i >> 3] & (1 << (i & 7))) && celda(x, y) === 0; };
 function soltarBichos(x, y) {
@@ -837,6 +839,7 @@ const LOGROS = [
   { id: 'col1', n: 'Coleccionista', d: 'Encuentra un objeto de la colección del mundo.', ok: () => (S.st.col || 0) >= 1 },
   { id: 'col33', n: 'Media vitrina', d: 'Que el equipo junte 50 objetos de la colección.', ok: () => nHallados() >= 50 },
   { id: 'col99', n: 'Vitrina completa', d: 'Que el equipo junte los 99 objetos de la colección.', ok: () => nHallados() >= NCOL },
+  { id: 'pleito', n: 'Taladro bravo', d: 'Gana un pleito contra otra maquinita.', ok: () => (S.st.pleitos || 0) >= 1 },
   { id: 'diezkm', n: 'Diez kilómetros', d: 'Llega al fondo del mundo: 10,000 m.', ok: () => S.rec >= 9990 },
   { id: 'intacto', n: 'Sin rasguños', d: 'Llega a 500 m sin recibir daño en el viaje.', ok: () => S.fl.intacto },
   { id: 'anfitrion', n: 'Anfitrión', d: 'Tres maquinitas nuevas llegan a un mundo donde estás.', ok: () => (S.st.amigos || 0) >= 3 },
@@ -934,6 +937,7 @@ function morir(causa) {
     son.boom(); temblar(12); chispas(yo.x, yo.y, '#ffb347', 40, 10); onda(yo.x, yo.y, 4, '#ffd9a0', 0.6); recordar();
     S.vida = vidaMax(); yo.renace = true; S.st.perdidos = (S.st.perdidos || 0) + 1;
     tarjeta('⚔️ ' + rival + ' te ganó el pleito', 'Vuelves a la superficie con tu carga y tu dinero completos. El Elevador te regresa a donde estabas.', '', 10000, true);
+    enviar({ t: 'golpe', a: rivalI, q: 1, v: 1 });        // que quien ganó lo celebre
     difundir('perdió un pleito contra ' + rival); sucio = true; enviarEst(); return;
   }
   const tenia = vidaMax(), dondeFue = donde(yo.y); recordar();
@@ -1075,9 +1079,19 @@ function fisica(dt) {
     } else if (cfg.pleitos !== 0 && yo.suelo && yo.y > 0.5 && !yo.perf) {
       const lado = Math.abs(dy) < 0.6 && Math.abs(dx) < 1.1 && ((izq && dx < 0) || (der && dx > 0)), abajo = aba && Math.abs(dx) < 0.6 && dy > 0 && dy < 1.15;
       if (!lado && !abajo) continue;
-      yo.ataca = abajo ? 2 : s;
+      yo.ataca = abajo ? 2 : s; yo.pelea = tiempo;
       if (lado) { yo.vx = 0; if (Math.abs(dx) < 0.74) yo.x = o.x - s * 0.74; }  // no se enciman: quedan taladro contra casco
-      if (tiempo - tAtaque > 0.4) { tAtaque = tiempo; enviar({ t: 'golpe', a: o.i, q: pot() }); son.piedra(); chispas(yo.x + (lado ? s * 0.5 : 0), yo.y + (abajo ? 0.5 : 0), '#fff3b0', 10, 6); }
+      const cx = yo.x + (lado ? s * 0.55 : 0), cy = yo.y + (abajo ? 0.55 : 0.1);
+      // Qué clase de golpe es: 0 de frente · 1 por la espalda (pega 50 % más) · 2 desde arriba (50 % más) · 3 taladro contra taladro (la mitad, y los dos salen rebotados)
+      const suTaladro = (o.fl & 4) && !(o.fl & 16), meMira = (o.fl & 1 ? 1 : -1) === -s, k = abajo ? 2 : suTaladro && meMira ? 3 : !meMira ? 1 : 0;
+      if (Math.random() < dt * 45) chispas(cx, cy, k === 3 ? '#ffffff' : '#ffd76a', 1, 7);          // chispas todo el tiempo que dura el contacto
+      if (tiempo - tAtaque > 0.4) {
+        tAtaque = tiempo; const q = Math.round(pot() * [1, 1.5, 1.5, 0.5][k]);
+        enviar({ t: 'golpe', a: o.i, q, k });
+        chispas(cx, cy, '#fff3b0', 16, 8); chispas(cx, cy, '#ff9a3a', 8, 5); onda(cx, cy, k === 3 ? 1.6 : 0.9, '#fff3b0', 0.3); temblar(k === 3 ? 6 : 3);
+        flota(o.x, o.y - 1.25, '−' + Math.max(1, Math.round(q * 0.25)) + ['', ' · ¡por la espalda!', ' · ¡desde arriba!', ' · ¡choque de taladros!'][k], k === 3 ? '#ffffff' : '#ffd76a');
+        if (k === 3) { son.choque(); yo.vx = -s * 6; yo.vy = -3; } else son.piedra();
+      }
     }
   }
   // empezar a perforar
@@ -1119,11 +1133,13 @@ function aterrizar(v) {
   danar(d * MULT[cfg.caida], 'una caída');
   if (h >= 46 && !yo.renace && cfg.caida) S.fl.caida = 1;
 }
-let ultNo = 0, tMuerde = 0, tAvisoPiedra = -9, tChoque = -9, tAtaque = -9, rival = '';
+let ultNo = 0, tMuerde = 0, tAvisoPiedra = -9, tChoque = -9, tAtaque = -9, rival = '', rivalI = -1;
 // La piedra: cinco durezas según la zona. Cada una pide un taladro mínimo (nivel de la pieza) y tiene su color.
 const PIEDRA = [[4, 'gris', ['#77726d', '#56524e', '#9a948e', '#3b3836']], [7, 'azulada', ['#5f8196', '#456275', '#8fb0c4', '#26383f']], [9, 'morada', ['#7d6796', '#5d4a74', '#a995c2', '#33263f']], [12, 'índigo', ['#4d5aa3', '#39437d', '#7f8cd6', '#1d2247']], [15, 'negra', ['#3d3438', '#2a2226', '#6b565c', '#120c0e']]];
 const durezaDe = (m) => (m < 1000 ? 0 : m < 2000 ? 1 : m < 4000 ? 2 : m < 8000 ? 3 : 4);
 // Cuánto tarda tu taladro en una piedra a esa profundidad: 1.5 s si apenas le alcanza, 0.6 s si le sobran tres niveles. 0 = no entra.
+// Una de cada catorce piedras es una geoda: por fuera igual a las demás, salvo un brillo en una grieta. Solo el taladro la abre.
+const esGeoda = (x, y) => azar(x, y, 61) < 0.07;
 const tiempoPiedra = (m) => { const sobra = S.eq[0] - PIEDRA[durezaDe(m)][0]; return sobra < 0 ? 0 : 1.5 - 0.9 * Math.min(1, sobra / 3); };
 function perforar(x, y) {
   const t = celda(x, y);
@@ -1153,11 +1169,16 @@ function llegar(p) {
       S.carga[i]++; S.st.rec[i]++; son.mineral(i); chispas(x, y, MIN[i].col, 12, 5);
       flota(x, p.ty - 0.15, '+ ' + MIN[i].n + ' · ' + fmt(MIN[i].v), MIN[i].col);
       recientes.set(p.idx, [t, Date.now()]);
-      if (S.st.rec[i] === 1) { son.descubre(); tarjeta('¡Descubriste ' + MIN[i].n + '!', 'Vale ' + fmt(MIN[i].v) + ' la pieza.'); difundir('descubrió ' + MIN[i].n); }
+      if (S.st.rec[i] === 1) { son.descubre(); tarjeta('¡Descubriste ' + MIN[i].n + '!', (i === 3 ? 'No es pirita: es oro de verdad. Fíjate en el cuarzo blanco que lo rodea: donde hay cuarzo, suele haber oro. ' : i === 1 ? 'La mancha verde de alrededor es malaquita: así se delata el cobre. ' : i === 8 ? 'Mira la tierra azul que lo envuelve: es kimberlita, la roca que sube los diamantes. ' : '') + 'Vale ' + fmt(MIN[i].v) + ' la pieza.'); difundir('descubrió ' + MIN[i].n); }
       const [vx, vy] = veta(Math.floor(p.ty / 75));
       if (Math.abs(p.tx - vx) <= 1 && Math.abs(p.ty - vy) <= 1 && !S.fl.veta) { S.fl.veta = 1; tarjeta('✨ ¡Veta madre!', 'Un racimo entero del mejor mineral de la zona.'); }
       if (nCarga() === bodega()) { tarjeta('Bodega llena', 'Sube a vender: lo que perfores ahora se pierde.'); son.alarma(); }
     } else { flota(x, p.ty - 0.15, 'Bodega llena · se perdió ' + MIN[i].n, '#ff8a7a'); son.no(); }
+  } else if (t === 2 && esGeoda(p.tx, p.ty)) {
+    const v = Math.round(3000 * Math.max(1, ((p.ty + 1) / 500) ** 3) / 100) * 100;
+    S.d += v; S.tot += v; S.st.geodas = (S.st.geodas || 0) + 1;
+    flota(x, p.ty - 0.15, '+ ' + fmt(v) + ' · Geoda', '#d9b8ff'); son.mineral(6); chispas(x, y, '#c9a0ff', 22, 7); chispas(x, y, '#ffffff', 8, 5);
+    if (S.st.geodas === 1) tarjeta('💜 ¡Una geoda!', 'Piedra por fuera, cristales por dentro. Se reconocen por el brillo morado en una grieta. Solo se abren con taladro: la dinamita las hace polvo.', '', 10000);
   } else if (t === 50) {
     const id = colec.get(p.idx), k = Math.floor(id / 3);
     if (id !== undefined && !hallados[id]) {
@@ -1202,7 +1223,7 @@ function usar(i) {
   else if (i === 2 || i === 3) {
     const r = i === 2 ? 1 : 2, cx = Math.floor(yo.x), cy = Math.floor(yo.y), lista = [];
     for (let a = -r; a <= r; a++) for (let b = -r; b <= r; b++) if (celda(cx + a, cy + b) !== 46) lista.push([cx + a, cy + b]);
-    cavar(lista); son.boom(); temblar(i === 2 ? 9 : 14); chispas(yo.x, yo.y, '#ffb347', 50, i === 2 ? 9 : 13); onda(yo.x, yo.y, i === 2 ? 2.4 : 3.9); humo(yo.x, yo.y, i === 2 ? 10 : 18);
+    flota(yo.x, yo.y - 1.2, '¡Fuego en el barreno!', '#ffd9a0'); cavar(lista); son.boom(); temblar(i === 2 ? 9 : 14); chispas(yo.x, yo.y, '#ffb347', 50, i === 2 ? 9 : 13); onda(yo.x, yo.y, i === 2 ? 2.4 : 3.9); humo(yo.x, yo.y, i === 2 ? 10 : 18);
     S.st.expl++; evento('expl');
   } else {
     recordar(); son.tele(); chispas(yo.x, yo.y, '#6ec3ff', 30, 8);
@@ -1226,7 +1247,7 @@ const bufPos = new Uint8Array(8), datoPos = new DataView(bufPos.buffer); let ult
 function enviarPos() {
   if (!conectado || ![...otros.values()].some((o) => o.on)) return;
   const x = Math.round(yo.x * 256), y = Math.round(yo.y * 64);
-  const f = (yo.dir > 0 ? 1 : 0) | (yo.vuela ? 2 : 0) | (yo.planea ? 32 : 0) | (yo.perf || yo.ataca ? 4 : 0) | (menu || pausa ? 8 : 0) | ((yo.perf && yo.perf.ty > Math.floor(yo.perf.oy)) || yo.ataca === 2 ? 16 : 0);
+  const f = (yo.dir > 0 ? 1 : 0) | (yo.vuela ? 2 : 0) | (yo.planea ? 32 : 0) | (tiempo - (yo.pelea || -9) < 0.7 ? 64 : 0) | (yo.perf || yo.ataca ? 4 : 0) | (menu || pausa ? 8 : 0) | ((yo.perf && yo.perf.ty > Math.floor(yo.perf.oy)) || yo.ataca === 2 ? 16 : 0);
   const k = x + ',' + y + ',' + f;
   if (k === ultPos) return; ultPos = k;
   bufPos[0] = 1; datoPos.setUint16(1, x, true); datoPos.setInt32(3, y, true); bufPos[7] = f;
@@ -1303,11 +1324,21 @@ function recibir(d) {
     case 'sale': { const o = otros.get(d.i); if (o) { o.on = 0; o.x = undefined; o.b = []; aviso(o.n + ' salió'); } return pintarTabla(); }
     case 'j': { const o = otros.get(d.i); if (o) { o.rec = d.rec; o.tot = d.tot; } return pintarTabla(); }
     case 'col': if (d.k >= 0 && d.k < NCOL) { hallados[d.k] = 1; pintarHud(true); if (menu === 'menu') pintarMenu(); } return;
-    case 'golpe': {            // otra maquinita me alcanzó con su taladro: pega según su taladro; lo que aguanto es mi casco
-      if (cfg.pleitos === 0 || yo.y <= 0.5 || yo.renace || !S) return;
-      const o = otros.get(d.i); rival = nombreDe(d.i);
-      if (o && o.x !== undefined) { yo.vx += Math.sign(yo.x - o.x || 1) * 4; yo.vy -= 2; }
-      return danar(Math.max(1, Math.min(500, d.q | 0) * 0.25), 'pleito');
+    case 'golpe': {            // otra maquinita me alcanzó con su taladro: pega según su taladro y la clase de golpe; lo que aguanto es mi casco
+      if (!S) return;
+      if (d.v) {               // …o me avisa que le gané
+        S.st.pleitos = (S.st.pleitos || 0) + 1; sucio = true; son.rango(); temblar(6);
+        for (const c of ['#ffd23f', '#6ec3ff', '#ff6b5a', '#6fdc7a']) chispas(yo.x, yo.y - 0.3, c, 14, 9);
+        onda(yo.x, yo.y, 3, '#ffd23f', 0.7); flota(yo.x, yo.y - 1.4, '🏆 ¡Ganaste!', '#ffd23f');
+        return tarjeta('🏆 Le ganaste el pleito a ' + nombreDe(d.i), 'Se fue a la superficie. Llevas ' + S.st.pleitos + (S.st.pleitos === 1 ? ' pleito ganado.' : ' pleitos ganados.'), '', 8000, true);
+      }
+      if (cfg.pleitos === 0 || yo.y <= 0.5 || yo.renace) return;
+      const o = otros.get(d.i), k = d.k | 0, dir = o && o.x !== undefined ? Math.sign(yo.x - o.x || 1) : 1;
+      rival = nombreDe(d.i); rivalI = d.i; yo.pelea = tiempo;
+      yo.vx += dir * (k === 3 ? 7 : 4); if (k !== 2) yo.vy -= 2;
+      chispas(yo.x - dir * 0.4, yo.y, '#ffd76a', 14, 8); chispas(yo.x - dir * 0.4, yo.y, '#ffffff', 6, 5);
+      if (k === 3) { son.choque(); onda(yo.x - dir * 0.5, yo.y, 1.6, '#ffffff', 0.3); }
+      return danar(Math.max(1, Math.min(900, d.q | 0) * 0.25), 'pleito');
     }
     case 'aviso': return aviso(nombreDe(d.i) + ' ' + d.x);
     case 'senal': senales.push({ x: d.x, y: d.y, t: 10, n: nombreDe(d.i) }); son.senal(); return aviso(nombreDe(d.i) + ' marcó un punto');
@@ -1376,6 +1407,7 @@ function iniciarMundo(d) {
   if (menu === 'inicio') { menu = null; $('#velo').classList.remove('on'); }
   document.body.classList.add('jugando');
   surtirContratos(); pintarHud(true); pintarTabla(); arrancar();
+  { const f = new Date(), hoy = f.getDate() + '/' + (f.getMonth() + 1); if (primera && hoy === '11/7') tarjeta('⛏️ ¡Feliz Día del Minero!', 'Hoy, 11 de julio, México celebra a su gente de mina. Buen turno.', 'msj', 10000); if (primera && hoy === '4/12') tarjeta('🕯️ Día de Santa Bárbara', 'Hoy, 4 de diciembre, las minas festejan a su patrona.', 'msj', 10000); }
   if (!d.est) tarjeta('¡Bienvenido, ' + miNombre + '!', 'Flechas o WASD para moverte. Primero: carga combustible en la Gasolinera (↓ para entrar).', 'msj', 9000);
 }
 
@@ -1560,7 +1592,7 @@ function tile(tipo, zona, vr) {
   return tiles.set(key, c), c;
 }
 // Figuras chicas que se pintan una vez y se estampan muchas: el resplandor de la lava y las burbujas.
-const sprites = new Map(), calor = [], gases = [];
+const sprites = new Map(), calor = [], gases = [], V4 = [[0, -1], [1, 0], [0, 1], [-1, 0]];
 function sprite(id) {
   let c = sprites.get(id); if (c) return c;
   c = document.createElement('canvas'); const q = c.getContext('2d');
@@ -1573,6 +1605,17 @@ function sprite(id) {
     q.beginPath(); q.moveTo(u * 8, u * 14); q.bezierCurveTo(u * 1, u * 9, u * 2, u * 2.5, u * 8, u * 5.5); q.bezierCurveTo(u * 14, u * 2.5, u * 15, u * 9, u * 8, u * 14); q.fill(); q.stroke(); q.shadowBlur = 0;
     q.fillStyle = '#ff9a7a'; q.beginPath(); q.moveTo(u * 8, u * 5.5); q.lineTo(u * 5, u * 8); q.lineTo(u * 8, u * 14); q.fill(); q.fillStyle = '#c81e2a'; q.beginPath(); q.moveTo(u * 8, u * 5.5); q.lineTo(u * 11.5, u * 8.5); q.lineTo(u * 8, u * 14); q.fill();
     q.fillStyle = '#fff'; q.beginPath(); q.ellipse(u * 5.2, u * 6, u * 1.2, u * 0.7, -0.6, 0, 7); q.fill();
+  } else if (id[0] === 'p') {                        // pintas: lo que rodea a cada mineral en la roca
+    const k = +id[1], r = azarDe(700 + k * 10 + +id[2]), u = T / 16; c.width = c.height = T;
+    if (k === 1) { q.strokeStyle = '#f4f1eacc'; q.lineCap = 'round'; for (let i = 0; i < 3; i++) { q.lineWidth = u * (0.5 + r() * 0.5); let x = r() * T, y = 0; q.beginPath(); q.moveTo(x, y); while (y < T) { x += (r() - 0.5) * u * 5; y += u * 4; q.lineTo(x, y); } q.stroke(); } q.fillStyle = '#e8c55a'; for (let i = 0; i < 3; i++) q.fillRect(r() * 14 * u, r() * 14 * u, u * 1.1, u * 1.1); }      // vetillas de cuarzo y cubitos de pirita
+    else if (k === 2) { for (let i = 0; i < 7; i++) { q.fillStyle = i % 3 ? '#3fbf7a88' : '#3f7fd688'; q.beginPath(); q.arc(r() * T, r() * T, u * (0.8 + r() * 1.4), 0, 7); q.fill(); } }       // malaquita y un poco de azurita
+    else if (k === 3) { for (let i = 0; i < 6; i++) { q.fillStyle = '#b5532a66'; q.beginPath(); q.ellipse(r() * T, r() * T, u * (1.5 + r() * 2.5), u * (0.8 + r() * 1.2), r() * 3, 0, 7); q.fill(); } }      // óxido
+    else { q.fillStyle = '#4f7fb840'; q.fillRect(0, 0, T, T); q.fillStyle = '#1f3a5c66'; for (let i = 0; i < 9; i++) q.fillRect(Math.floor(r() * 16) * u, Math.floor(r() * 16) * u, u, u); }      // tierra azul
+  } else if (id === 'geo') { const u = T / 16; c.width = c.height = T; q.shadowColor = '#c9a0ff'; q.shadowBlur = u * 2.5; q.fillStyle = '#b48cf0'; q.beginPath(); q.moveTo(u * 9, u * 6); q.lineTo(u * 10.4, u * 8.2); q.lineTo(u * 9.4, u * 10.6); q.lineTo(u * 8.4, u * 8.4); q.fill(); q.fillStyle = '#fff'; q.fillRect(u * 9.1, u * 7.4, u * 0.6, u * 0.6);
+  } else if (id === 'marco') { const u = T / 16; c.width = c.height = T; q.fillStyle = '#6b4a2a'; q.fillRect(u * 0.6, u * 1.4, u * 1.5, T - u * 1.4); q.fillRect(T - u * 2.1, u * 1.4, u * 1.5, T - u * 1.4); q.fillStyle = '#84603a'; q.fillRect(0, 0, T, u * 1.7); q.fillStyle = '#4a321b'; q.fillRect(0, u * 1.7, T, u * 0.4); q.fillRect(u * 0.6, u * 5, u * 1.5, u * 0.4); q.fillRect(T - u * 2.1, u * 9, u * 1.5, u * 0.4);
+  } else if (id === 'riel') { const u = T / 16; c.width = c.height = T; q.fillStyle = '#4a321b'; for (let i = 0; i < 4; i++) q.fillRect(u * (1 + i * 4), T - u * 1.1, u * 1.6, u * 1.1); q.fillStyle = '#8d8a86'; q.fillRect(0, T - u * 1.7, T, u * 0.5);
+  } else if (id === 'escala') { const u = T / 16; c.width = c.height = T; q.fillStyle = '#6b4a2a'; q.fillRect(u * 1, 0, u * 0.7, T); q.fillRect(u * 4.2, 0, u * 0.7, T); q.fillStyle = '#84603a'; for (let i = 0; i < 4; i++) q.fillRect(u * 1, u * (1.5 + i * 4), u * 3.9, u * 0.7);
+  } else if (id.startsWith('esta')) { const u = T / 16, r = azarDe(id === 'esta0' ? 5 : 9); c.width = c.height = T; q.fillStyle = '#00000055'; for (let i = 0; i < 3; i++) { const x = (2 + r() * 11) * u, w = (0.8 + r() * 1.2) * u, l = (2 + r() * 5) * u; q.beginPath(); q.moveTo(x - w, 0); q.lineTo(x + w, 0); q.lineTo(x, l); q.fill(); } q.fillStyle = '#ffffff22'; q.fillRect(0, 0, T, u * 0.5);
   } else if (id[0] === 'f') {                        // lo que crece en el piso de las cuevas naturales
     const z = +id[1], v = +id[2], u = T / 16; c.width = c.height = T;
     const hongo = (x, a, copa, tallo) => { q.fillStyle = tallo; q.fillRect((x - 0.4) * u, (16 - a) * u, u * 0.8, a * u); q.fillStyle = copa; q.beginPath(); q.ellipse(x * u, (16 - a) * u, u * (1.1 + a * 0.16), u * (0.7 + a * 0.08), 0, Math.PI, Math.PI * 2); q.fill(); };
@@ -1719,7 +1762,7 @@ function dibMaq(q, px, py, t, modelo, dir, vuela, perfDir, nombre, estado, mundo
   q.fillStyle = '#ffffffaa'; q.beginPath(); q.ellipse(cx - w * 0.07, cy - h * 0.1, w * 0.05, h * 0.05, -0.6, 0, 7); q.fill();
   q.fillStyle = '#24323a'; q.beginPath(); q.arc(cx + dir * w * 0.02, cy - h * 0.03, w * 0.055, 0, 7); q.fill();     // piloto
   // faro
-  q.fillStyle = '#fff3b0'; q.beginPath(); q.arc(px + dir * w * 0.44, y + h * 0.5, h * 0.06, 0, 7); q.fill();
+  q.fillStyle = q === g ? faroCol : '#fff3b0'; q.beginPath(); q.arc(px + dir * w * 0.44, y + h * 0.5, h * 0.06, 0, 7); q.fill(); if (q === g) faroCol = '#fff3b0';
   if (nombre) {
     q.font = `700 ${Math.max(10 * RES, t * 0.27)}px system-ui`; q.textAlign = 'center'; q.textBaseline = 'bottom';
     const tx = estado ? nombre + ' · ' + estado : nombre;
@@ -2010,6 +2053,13 @@ function dibujar() {
         if (y > 0 && !hueca(x, y - 1)) { g.fillStyle = '#00000055'; g.fillRect(px, py, T, grueso); }             // sombra del techo
         const ci = y * W + x;                          // en el piso de las cuevas que nadie cavó crece algo, según la zona
         if (y > 2 && lug < 2 && ((x * 31 + y * 17) & 3) < 2 && !(dug[ci >> 3] & (1 << (ci & 7))) && solida(x, y + 1)) g.drawImage(sprite('f' + (t === 6 ? 4 : zona < 4 ? 0 : zona === 4 ? 5 : zona) + ((x + y) & 1)), px, py);
+        if (y > 2 && lug < 1 && t === 0) {
+          if (dug[ci >> 3] & (1 << (ci & 7))) {     // lo que cavó el equipo se adema: marcos de madera y rieles en las galerías, escalera en los tiros
+            const ar = solida(x, y - 1), ab = solida(x, y + 1);
+            if (ar && ab) { g.drawImage(sprite('riel'), px, py); if (x % 3 === 0) g.drawImage(sprite('marco'), px, py); }
+            else if (!ar && solida(x - 1, y) && solida(x + 1, y)) g.drawImage(sprite('escala'), px, py);
+          } else if (!hueca(x, y - 1) && ((x * 17 + y * 29) & 3) < 2) g.drawImage(sprite('esta' + ((x + y) & 1)), px, py);      // estalactitas en las cuevas naturales
+        }
         if (t === 6 && celda(x, y - 1) === 0) { g.fillStyle = '#bfe9ff77'; g.fillRect(px, py + Math.round(Math.sin(reloj * 2 + x * 0.9) * fino), T, fino * 2); }      // la superficie del agua
         continue;
       }
@@ -2017,6 +2067,15 @@ function dibujar() {
       if (gasOculto) t = 1;
       const vr = t === 1 ? (x * 7 + y * 13) & 3 : t === 3 ? (celda(x, y - 1) === 3 ? 1 : 0) | (celda(x + 1, y) === 3 ? 2 : 0) | (celda(x, y + 1) === 3 ? 4 : 0) | (celda(x - 1, y) === 3 ? 8 : 0) | (((x * 7 + y * 13) & 3) << 4) : t === 7 ? (x * 7 + y * 13) & 3 : t === 50 ? Math.floor(colec.get(y * W + x) / 3) : t >= 10 && y >= 165 && lugarDe(x, y) > (t >= 40 ? 0 : 2) ? 1 : 0;
       g.drawImage(tile(t, zona, vr), px, py);
+      if (t === 1) {
+        // Los estratos: capas con echado (bajan hacia la derecha) y dos fallas que las desplazan, en las columnas 31 y 67.
+        const e = (3.5 - ((y - 0.12 * x - (x > 30 ? 1.3 : 0) + (x > 66 ? 0.9 : 0)) % 3.5 + 3.5) % 3.5) % 3.5;
+        if (e < 1) { g.strokeStyle = '#00000026'; g.lineWidth = fino; g.beginPath(); g.moveTo(px, py + e * T); g.lineTo(px + T, py + (e + 0.12) * T); g.stroke(); }
+        if (x === 31 || x === 67) { g.fillStyle = '#0000002e'; g.fillRect(px, py, fino, T); }
+        // Las pintas: lo que delata al mineral de junto. Cuarzo con el oro, malaquita con el cobre, óxido con el hierro, tierra azul con el diamante.
+        let pin = 0; for (const [a, b] of V4) { const n = celda(x + a, y + b); if (n === 13) { pin = 1; break; } if (n === 11) pin = pin || 2; else if (n === 10) pin = pin || 3; else if (n === 18) pin = 4; }
+        if (pin) g.drawImage(sprite('p' + pin + ((x + y) & 1)), px, py);
+      } else if (t === 2 && esGeoda(x, y)) g.drawImage(sprite('geo'), px, py);
       if (t === 3) calor.push(px, py, x, y);
       else if (esGas) { if (!gasOculto || insinua) gases.push(px, py, x, y); }
       else if (t >= 10) {                       // destello
@@ -2109,6 +2168,19 @@ function dibujar() {
   if (ox > 0) g.fillRect(0, Math.max(0, oy), ox, h);
   if (ox + W * T < w) g.fillRect(ox + W * T, Math.max(0, oy), w, h);
   if (oy + H * T < h) g.fillRect(0, oy + H * T, w, h);
+  if (oy > -T && oy < h + 6 * T) {
+    // El terrero: ahí se tira el tepetate. Crece con todo lo que ha cavado el equipo.
+    const al = T * Math.min(2.4, 0.3 + 0.5 * Math.log10(1 + cavadasMundo / 40)), tx = ox + 30 * T, an = T * 6;
+    g.fillStyle = '#6b5a4c'; g.beginPath(); g.moveTo(tx, oy); g.quadraticCurveTo(tx + an * 0.3, oy - al * 1.25, tx + an * 0.55, oy - al); g.quadraticCurveTo(tx + an * 0.8, oy - al * 0.8, tx + an, oy); g.fill();
+    g.fillStyle = '#857362'; for (let n = 0; n < 9; n++) { const fx = 0.12 + 0.76 * azar01(n * 3.1), fy = azar01(n * 7.7) * 0.7 * Math.sin(Math.PI * fx); g.beginPath(); g.arc(tx + an * fx, oy - al * fy - T * 0.06, T * (0.06 + 0.05 * azar01(n)), 0, 7); g.fill(); }
+    // El nicho de Santa Bárbara, patrona de los mineros, con su veladora
+    const nx = ox + 37.6 * T, u = T / 16;
+    g.fillStyle = '#e9e2d3'; g.beginPath(); g.roundRect(nx - u * 5, oy - u * 15, u * 10, u * 15, [u * 5, u * 5, 0, 0]); g.fill(); g.fillStyle = '#2f5fb0'; g.beginPath(); g.roundRect(nx - u * 3.4, oy - u * 12.6, u * 6.8, u * 10, [u * 3.4, u * 3.4, 0, 0]); g.fill();
+    g.fillStyle = '#f3ead8'; g.beginPath(); g.arc(nx, oy - u * 9, u * 1.3, 0, 7); g.fill(); g.fillStyle = '#b8362b'; g.beginPath(); g.moveTo(nx - u * 2, oy - u * 3); g.lineTo(nx, oy - u * 8); g.lineTo(nx + u * 2, oy - u * 3); g.fill();
+    g.fillStyle = '#ffd23f'; g.beginPath(); g.arc(nx, oy - u * 9, u * 2, Math.PI * 1.15, Math.PI * 1.85); g.lineWidth = Math.max(1, u * 0.4); g.strokeStyle = '#ffd23f'; g.stroke();
+    g.fillStyle = '#fff6c9'; g.fillRect(nx + u * 2.2, oy - u * 4.5, u * 1.1, u * 2.5); g.fillStyle = '#ffb347'; g.beginPath(); g.ellipse(nx + u * 2.75 + Math.sin(reloj * 9) * u * 0.15, oy - u * 5.3, u * 0.5, u * 0.9, 0, 0, 7); g.fill();
+    g.globalCompositeOperation = 'lighter'; g.globalAlpha = 0.35 + 0.1 * Math.sin(reloj * 8); g.drawImage(sprite('res'), nx + u * 2.75 - T * 0.75, oy - u * 5.3 - T * 0.75, T * 1.5, T * 1.5); g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1;
+  }
   // edificios
   if (oy > -T && oy < h + 80 * T / 16) for (const e of EDIF) {
     const u = T / 16, c = casa(e), bx = ox + e.x * T + Math.round(1.5 * T - c.width / 2), by = oy - c.height;
@@ -2141,7 +2213,7 @@ function dibujar() {
   // las demás maquinitas y la mía
   for (const o of otros.values()) {
     if (!o.on || o.x === undefined) continue;
-    dibMaq(g, ox + o.x * T, oy + o.y * T, T, o.m, o.fl & 1 ? 1 : -1, o.fl & 2 ? 1 : o.fl & 32 ? 2 : 0, o.fl & 4 ? (o.fl & 16 ? 2 : o.fl & 1 ? 1 : -1) : 0, op.nombres ? o.n : '', o.fl & 8 ? 'en pausa' : '', o.x);
+    dibMaq(g, ox + o.x * T, oy + o.y * T, T, o.m, o.fl & 1 ? 1 : -1, o.fl & 2 ? 1 : o.fl & 96 ? 2 : 0, o.fl & 4 ? (o.fl & 16 ? 2 : o.fl & 1 ? 1 : -1) : 0, op.nombres ? o.n : '', o.fl & 8 ? 'en pausa' : '', o.x);
   }
   const p = yo.perf, mx = ox + vis.x * T, my = oy + vis.y * T;
   if (p && p.tipo === 2) {                         // la piedra que estás perforando se queda a la vista y se va desmoronando
@@ -2156,7 +2228,9 @@ function dibujar() {
     g.globalAlpha = 1 - e * 0.85; g.drawImage(tile(3, zonaDe((p.ty + 1) * 2), 0), lx, ly); g.globalAlpha = 1;
     g.globalCompositeOperation = 'lighter'; g.globalAlpha = 0.5 + 0.5 * e; const res = sprite('res'); g.drawImage(res, lx - T * 1.25, ly - T * 1.25, T * 3.5, T * 3.5); g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1;
   }
-  dibMaq(g, mx, my, T, miModelo, yo.dir, yo.vuela ? 1 : yo.planea ? 2 : 0, p ? (p.ty > Math.floor(p.oy) ? 2 : p.tx < Math.floor(p.ox) ? -1 : 1) : yo.ataca || 0, op.nombres ? miNombre : '', '', vis.x);
+  const enPelea = tiempo - (yo.pelea || -9) < 0.7, bx = enPelea ? Math.sin(reloj * 70) * T * 0.035 : 0;       // en pelea la maquinita vibra y saca los rotorcitos
+  faroCol = tiempo - tGas < 3 ? '#6fc3ff' : '#fff3b0';
+  dibMaq(g, mx + bx, my, T, miModelo, yo.dir, yo.vuela ? 1 : yo.planea || enPelea ? 2 : 0, p ? (p.ty > Math.floor(p.oy) ? 2 : p.tx < Math.floor(p.ox) ? -1 : 1) : yo.ataca || 0, op.nombres ? miNombre : '', '', vis.x);
   // el aire como resistencia: al caer rápido se forma un arco bajo la maquinita; muy rápido se pone al rojo y deja estela
   const dens = vis.y < 0 ? Math.max(0, 1 + (vis.y + HH) / 45000) : 0;
   if (yo.vy > 30 && dens > 0.02) {
@@ -2268,6 +2342,7 @@ function animar(d) {
     if (!B || ahora <= A.t) { o.x = A.x; o.y = A.y; o.fl = A.fl; continue; }
     const k = Math.min(1, (ahora - A.t) / (B.t - A.t)), lejos = Math.abs(B.x - A.x) > 3 || Math.abs(B.y - A.y) > 3;
     o.x = lejos ? B.x : A.x + (B.x - A.x) * k; o.y = lejos ? B.y : A.y + (B.y - A.y) * k; o.fl = B.fl;
+    if (o.fl & 64 && Math.random() < d * 30) chispas(o.x + (o.fl & 1 ? 0.5 : -0.5), o.y + 0.1, '#ffd76a', 1, 7);       // las que se están peleando sueltan chispas
     if (o.fl & 4 && Math.random() < d * 20) chispas(o.x + (o.fl & 16 ? 0 : o.fl & 1 ? 0.5 : -0.5), o.y + (o.fl & 16 ? 0.5 : 0), '#a9744f', 1, 3);
   }
   for (const q of parts) { q.x += q.vx * d; q.y += q.vy * d; q.vy += (q.gr ?? 9) * d; q.t -= d; }
@@ -2325,7 +2400,12 @@ const raton = { x: -1, y: -1, t: 0 };
 addEventListener('mousemove', (e) => { raton.x = e.clientX; raton.y = e.clientY; raton.t = performance.now(); });
 function queEs() {
   const o = $('#ojo'); let txt = '';
-  if (!menu && raton.x >= 0 && performance.now() - raton.t < 5000) {
+  if (!menu && raton.x >= 0 && performance.now() - raton.t < 5000 && camY + raton.y * RES / T < 0 && camY + raton.y * RES / T > -2.6) {
+    const wx = camX + raton.x * RES / T;
+    if (wx > 30 && wx < 36) txt = `El terrero · aquí se tira el tepetate, la roca sin valor. El equipo lleva ${cavadasMundo.toLocaleString('es-MX')} celdas cavadas`;
+    else if (Math.abs(wx - 37.6) < 0.5) txt = 'Nicho de Santa Bárbara, patrona de los mineros';
+  }
+  if (!txt && !menu && raton.x >= 0 && performance.now() - raton.t < 5000) {
     const t = celda(Math.floor(camX + raton.x * RES / T), Math.floor(camY + raton.y * RES / T));
     if (t >= 10 && t < 40) { const m = MIN[t - 10]; txt = S.st.rec[t - 10] ? `${m.n} · ${fmt(m.v)} · ${m.kg} kg` : 'Mineral sin descubrir'; }
     else if (t === 50) txt = 'Un objeto para la colección';
@@ -2339,6 +2419,7 @@ function queEs() {
   if (o._t !== txt) { o._t = txt; o.textContent = txt; o.style.display = txt ? 'block' : 'none'; }
   if (txt) { o.style.left = raton.x + 16 + 'px'; o.style.top = raton.y + 18 + 'px'; }
 }
+let cavadasMundo = 0;       // celdas cavadas en todo el mundo: de eso depende el tamaño del terrero
 let tGas = -9, crucero = false, tLatido = -9, tMach = -99, eraSonico = false, tTermas = -9;
 let pistaDe = null, tAlarma = 0, estabaAbajo = false, tTabla = 0;
 function pista(x, discreta) { const p = $('#pista'); if (p._t !== x) { p._t = x; p.textContent = x; p.style.display = x ? 'block' : 'none'; p.classList.toggle('dis', !!discreta); } }
@@ -2426,7 +2507,7 @@ function cadaTanto() {
   // huele a gas: hay una bolsa pegada a la maquinita
   if (yo.y > 0 && cfg.gas && pistaGas() && tiempo - tGas > 2.5) {
     const cx = Math.floor(yo.x), cy = Math.floor(yo.y);
-    if ([[0, 1], [-1, 0], [1, 0]].some(([a, b]) => celda(cx + a, cy + b) === 4)) { tGas = tiempo; flota(yo.x, yo.y - 0.9, '⚠ Huele a gas', '#a8ff94'); son.huele(); }
+    if ([[0, 1], [-1, 0], [1, 0]].some(([a, b]) => celda(cx + a, cy + b) === 4)) { tGas = tiempo; flota(yo.x, yo.y - 0.9, '⚠ Grisú: la flama se puso azul', '#9fd8ff'); son.huele(); }
   }
   pintarVel();
   // la barrera del sonido: al pasar de 343 m/s dentro del aire, truena
@@ -2435,6 +2516,8 @@ function cadaTanto() {
   eraSonico = sonico;
   pintarHud(); queEs();
   if (++tTabla % 4 === 0) pintarTabla();
+  if (tTabla % 40 === 1) { let n = 0; for (let i = 0; i < dug.length; i++) { let b = dug[i]; while (b) { n += b & 1; b >>= 1; } } cavadasMundo = n; }
+  if (yo.suelo && yo.y < 0 && Math.abs(yo.x - 37.6) < 0.9 && !S.fl.nicho) { S.fl.nicho = 1; sucio = true; son.descubre(); tarjeta('🕯️ Santa Bárbara', 'El nicho de la patrona de los mineros. Aquí se encomienda uno antes de bajar. Que salgas con bien.', 'msj', 9000); }
 }
 
 /* ════════ Pantalla: medidores, metas y tabla ════════ */
@@ -2634,10 +2717,10 @@ function pintarMenu() {
     // Todo lo que vas a vender cabe en una pantalla: dos columnas arriba y, siempre a la vista abajo, el total y el botón.
     const v = venta(), linea = (cls, punto, nombre, sub, monto, dato) => `<div class="vi ${cls}" data-q="${dato}"><i style="background:${punto}"></i><span><b>${nombre}</b><small>${sub}</small></span><u>${monto}</u></div>`;
     h = cab('⚖️ La Báscula') + (v.piezas ? `<div class="cuerpo"><div class="vende">` +
-      S.carga.map((n, i) => n ? linea('', MIN[i].col, `${MIN[i].n} × ${n}`, fmt(MIN[i].v) + ' la pieza', fmt(n * MIN[i].v), n * MIN[i].v) : '').join('') +
+      S.carga.map((n, i) => n ? linea('', MIN[i].col, `${MIN[i].n} × ${n}`, fmt(MIN[i].v) + ' la pieza · ' + (n * MIN[i].kg).toLocaleString('es-MX') + ' kg', fmt(n * MIN[i].v), n * MIN[i].v) : '').join('') +
       (v.perfecto ? linea('bono', '#ffd23f', '✨ Viaje perfecto', 'Bodega llena y cero daño: +10 %', '+' + fmt(v.base * 0.1), v.base * 0.1) : '') +
       (v.cat ? linea('bono', '#ffd23f', '📖 Catálogo completo', '+5 % para siempre', '+' + fmt(v.base * 0.05), v.base * 0.05) : '') +
-      `</div></div><footer class="pie"><div><small>${v.piezas} ${v.piezas === 1 ? 'pieza' : 'piezas'} · se vende en</small><b id="totalVenta">${fmt(v.total)}</b></div><button id="bVender" data-a="vender">Vender toda la carga</button></footer>`
+      `</div></div><footer class="pie"><div><small>${v.piezas} ${v.piezas === 1 ? 'pieza' : 'piezas'} · ${kgCarga().toLocaleString('es-MX')} kg en la báscula · se vende en</small><b id="totalVenta">${fmt(v.total)}</b></div><button id="bVender" data-a="vender">Vender toda la carga</button></footer>`
       : `<div class="cuerpo">${ultVenta ? `<p class="nota">Tu última venta</p><p class="grande">${fmt(ultVenta)}</p>` : ''}<p class="nota">La bodega está vacía. Baja, recoge mineral y vuelve.</p></div>`);
   } else if (menu === 'tal') {
     const P = PZ[pieza];
@@ -2658,7 +2741,7 @@ function pintarMenu() {
   } else if (menu === 'ele') {
     const u = ultimoPunto(), fila = (ic, n, sub, m, v) => `<div class="fila"><div class="ic">${ic}</div><div class="t"><b>${n}</b><small>${sub}</small></div><div class="v">${fmt(costoEle(m))}</div><button data-a="bajar" data-v="${v}" ${S.d >= costoEle(m) ? '' : 'disabled'}>Bajar</button></div>`;
     const tope = Math.floor(S.rec / 10) * 10, def = Math.max(10, Math.min(tope, eleM || tope));
-    h = cab('🛗 El Elevador') + `<div class="cuerpo"><p class="nota">Te baja en un instante: a un lugar que ya descubriste o a los metros que tú digas. Cobra $50 por metro. Para subir, la grúa (tecla E).</p><div class="dos"><div>
+    h = cab('🛗 El Elevador') + `<div class="cuerpo"><p class="nota">El malacate te baja en un instante: a un lugar que ya descubriste o a los metros que tú digas. Cobra $50 por metro. Para subir, la grúa (tecla E).</p><div class="dos"><div>
       <h4>A un lugar</h4>` +
       (u ? fila('📍', 'Donde te quedaste', `A ${Math.round((u.y + HH) * 2).toLocaleString('es-MX')} m: donde te recogió la grúa o el rescate.`, (u.y + HH) * 2, 'u') : '<div class="fila tengo"><div class="ic">📍</div><div class="t"><b>Donde te quedaste</b><small>Cuando la grúa te suba desde abajo, aquí aparecerá ese punto para regresar.</small></div></div>') +
       LUGARES.map((L, i) => [L, i]).sort((a, b) => a[0].m - b[0].m).map(([L, i]) => S.lug[i] ? fila(L.ic, L.n, L.tx, L.m, i) : `<div class="fila tengo"><div class="ic">❔</div><div class="t"><b>Lugar sin descubrir</b><small>Dicen que hay algo cerca de los ${L.m.toLocaleString('es-MX')} m.</small></div></div>`).join('') +
@@ -2959,7 +3042,7 @@ function menuPrincipal() {
       <p class="nota"><b>Tu maquinita es tuya.</b> Entra contigo a cualquier mundo con todo lo que trae, y no se pierde aunque un mundo se borre. Para seguir con ella en otra computadora o en el teléfono, abre allá su liga o su código QR. <b>No los compartas:</b> quien los abra maneja tu maquinita.</p>
       <div class="fila"><div class="t"><small>Código: <code>${esc(miK)}</code></small></div><button class="s" data-a="menu" data-v="qrmaq">Ver su código QR</button><button data-a="ligaMaq">Copiar su liga</button></div>
       <div class="fila"><div class="t"><b>Guardar este mundo en un archivo</b><small>Semilla, reglas, todos los túneles y la colección. Desde «Mis mundos» puedes abrirlo cuando quieras como un mundo nuevo, idéntico.</small></div><button data-a="guardarArchivo">💾 Guardar archivo</button></div>
-      <div class="fila"><div class="t"></div><button class="s" data-a="mundos">Mis mundos</button><button class="mal" data-a="desechar">Desechar este mundo</button></div>`;
+      <div class="fila"><div class="t"></div><button class="s" data-a="mundos">Mis mundos · crear o cargar otro</button><button class="mal" data-a="desechar">Desechar este mundo</button></div>`;
   } else {
     h += `<p><b>Moverte:</b> flechas o WASD. <b>↑</b> vuela. <b>↓</b> perfora hacia abajo. <b>← →</b> contra una pared, perfora de lado. Nunca se perfora hacia arriba.</p>
       <p><b>El ciclo:</b> baja, llena la bodega, sube, vende en La Báscula, carga combustible y mejora tu equipo en El Taller. En la superficie, párate frente a un edificio y pulsa ↓.</p>
@@ -2973,8 +3056,9 @@ function menuPrincipal() {
       <p><b>Sonido:</b> la bocina de arriba a la derecha lo apaga, lo baja y lo sube; «♪ Sonidos» deja elegir qué se oye: música, taladro, hélice, motor (viene apagado) y lo demás, cada uno con su interruptor.</p>
       <p><b>Mirar alrededor:</b> la rueda del mouse o dos dedos en el trackpad mueven la vista; cualquier flecha la regresa a tu maquinita.</p>
       <p><b>La colección:</b> hay 99 objetos enterrados (33 distintos, tres de cada uno), cada uno en su franja de profundidad. Se ven como medallones dorados. Son del mundo: los junta el equipo entero y se van encendiendo en Menú → Colección. Las explosiones no los destruyen.</p>
-      <p><b>Pleitos:</b> en el aire las maquinitas rebotan y no pasa nada. Bajo tierra, si empujas tu taladro contra otra (← → a su lado, o ↓ encima de ella), le pegas: tu taladro contra su casco. La que pierde vuelve a la superficie sin perder nada. En el pueblo no hay pleitos, y quien creó el mundo puede apagarlos.</p>
+      <p><b>Pleitos:</b> en el aire las maquinitas rebotan y no pasa nada. Bajo tierra, si empujas tu taladro contra otra (← → a su lado, o ↓ encima de ella), le pegas: tu taladro contra su casco. Por la espalda o desde arriba pega 50 % más; taladro contra taladro pega la mitad y los dos salen rebotados. La que pierde vuelve a la superficie sin perder nada. En el pueblo no hay pleitos, y quien creó el mundo puede apagarlos.</p>
       <p><b>Mapa y archivo:</b> Menú → Mapa muestra todos los túneles abiertos. Menú → Mundo → Guardar archivo descarga el mundo completo; desde «Mis mundos» se abre como una copia idéntica.</p>
+      <p><b>Ojo de minero:</b> la roca avisa. Junto al oro hay vetillas de cuarzo blanco; junto al cobre, manchas verdes de malaquita; junto al hierro, óxido; junto al diamante, tierra azul. Las capas de roca bajan hacia la derecha y dos fallas las cortan. Una de cada catorce piedras es una geoda: búscale el brillo morado. Cuando la flama de tu lámpara se pone azul, hay grisú al lado.</p>
       <p><b>Diez kilómetros:</b> debajo de la Corteza siguen el Acuífero, las Cavernas, la Cristalera y la Zona de presión, con doce minerales nuevos y cuatro lugares por descubrir. Cada lugar que encuentres queda apuntado en <b>El Elevador</b> (el último edificio), que también te regresa al punto donde te recogió la grúa.</p>
       <p><b>Explosivos:</b> se usan donde sea, también volando: si topas con piedra al subir, X te abre paso.</p>
       <p><b>Piedra:</b> se perfora si tu taladro alcanza. Hay cinco durezas, cada una de un color, según la zona; el Taller dice qué taladro pide cada una. Con el justo tarda 1.5 s; con uno mejor, hasta 0.6 s.</p>
@@ -3054,16 +3138,25 @@ function pantallaMundos() {
     (maqLocal && maqLocal.n ? `<p class="nota">Tu maquinita <b>${esc(maqLocal.n)}</b> entra contigo al mundo que elijas, con todo lo que trae.</p>` : '') +
     mundos.map((m) => `<div class="fila"><div class="t"><b>${esc(m.nombre)}</b><small>${m.maq ? 'Tu maquinita: ' + esc(m.maq) + ' · ' : ''}${new Date(m.ult).toLocaleDateString('es-MX', { day: 'numeric', month: 'long' })} · ${m.id}</small></div>
       <button data-ir="${m.id}">Continuar</button><button class="s" data-des="${m.id}">Desechar</button></div>`).join('') +
-    `<p style="margin-top:14px"><button id="bNuevo">＋ Mundo nuevo</button> <button id="bAbrir" class="s">📂 Abrir un mundo guardado</button><input id="fArchivo" type="file" accept=".json,application/json" hidden></p><p class="nota">Cada mundo nace con una semilla distinta y se guarda solo. Para jugar acompañado, entra y copia su liga.</p></div>`);
-  $('#bNuevo').onclick = () => crearMundo();
+    `<p style="margin-top:14px"><button id="bNuevo">＋ Crear mundo nuevo</button></p><p class="nota">Cada mundo nace con una semilla distinta y se guarda solo. Para jugar acompañado, entra y copia su liga.</p></div>`);
+  $('#bNuevo').onclick = pantallaCrear;
+  $('#caja').querySelectorAll('[data-ir]').forEach((b) => (b.onclick = () => (location.href = '/m/' + b.dataset.ir)));
+  $('#caja').querySelectorAll('[data-des]').forEach((b) => (b.onclick = () => { const m = mundos.find((x) => x.id === b.dataset.des); desechar(m.id, m.creador, m.k); }));
+}
+// Crear un mundo: de cero, o a partir de un archivo que alguien guardó. Siempre nace un mundo nuevo con su propia liga; nada se reemplaza.
+function pantallaCrear() {
+  inicio(`<header><h2>⛏️ Crear mundo nuevo</h2>${mundos.length ? '<button class="s" id="bVolver">Volver</button>' : ''}</header><div class="cuerpo">
+    <div class="fila"><div class="ic">🌱</div><div class="t"><b>De cero</b><small>Semilla nueva, tierra sin tocar. Nadie ha cavado aquí.</small></div><button id="bCero">Crear</button></div>
+    <div class="fila"><div class="ic">📂</div><div class="t"><b>Cargar un archivo de mundo</b><small>El archivo que tú u otra persona guardó desde Menú → Mundo → Guardar archivo. Nace un mundo nuevo, con su propia liga, idéntico al guardado: sus túneles, sus reglas y su colección.</small></div><button id="bAbrir">Elegir archivo</button><input id="fArchivo" type="file" accept=".json,application/json" hidden></div>
+    <p class="nota">Cargar un archivo nunca reemplaza un mundo que ya existe: siempre crea otro. Tu maquinita no va en el archivo: es tuya y entra contigo al mundo que abras. Para pasarla a otro equipo, usa su liga o su código QR (Menú → Mundo → Mi maquinita).</p></div>`);
+  if ($('#bVolver')) $('#bVolver').onclick = pantallaMundos;
+  $('#bCero').onclick = () => crearMundo();
   $('#bAbrir').onclick = () => $('#fArchivo').click();
   $('#fArchivo').onchange = async (e) => {
     const f = e.target.files[0]; if (!f) return;
     try { const a = JSON.parse(await f.text()); if (a.formato !== 'mina-mundo' || !Number.isFinite(a.seed) || typeof a.dug !== 'string') throw 0; crearMundo(a); }
     catch { pantallaFinal('Ese archivo no es un mundo de Mina', 'Elige un archivo .json guardado desde Menú → Mundo → Guardar archivo.'); }
   };
-  $('#caja').querySelectorAll('[data-ir]').forEach((b) => (b.onclick = () => (location.href = '/m/' + b.dataset.ir)));
-  $('#caja').querySelectorAll('[data-des]').forEach((b) => (b.onclick = () => { const m = mundos.find((x) => x.id === b.dataset.des); desechar(m.id, m.creador, m.k); }));
 }
 function desechar(id, creador, k) {
   if (!confirm('¿Desechar este mundo? Sale de tu lista.')) return;

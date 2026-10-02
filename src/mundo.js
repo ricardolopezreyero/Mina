@@ -295,7 +295,7 @@ export class Mundo extends DurableObject {
       case "golpe": {            // un pleito: se le avisa a la maquinita alcanzada; ella calcula su daño
         if (m.cfg.pleitos === 0) return;
         const otro = this.socketDe(entero(d.a, 0, MAX_MAQUINITAS, -1));
-        if (otro && otro !== ws) manda(otro, { t: "golpe", i, q: entero(d.q, 1, 1000, 20) });
+        if (otro && otro !== ws) manda(otro, { t: "golpe", i, q: entero(d.q, 1, 1000, 20), k: entero(d.k, 0, 3, 0), v: d.v ? 1 : 0 });
         return;
       }
       case "aviso":

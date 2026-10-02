@@ -1,4 +1,4 @@
-# DOCUMENTO MAESTRO · «Mina» · v18
+# DOCUMENTO MAESTRO · «Mina» · v19
 
 **Ver en vivo: https://mina.capitaltorreon.com**
 
@@ -558,6 +558,29 @@ Ricardo pidió que lo que va a vender se vea completo en una pantalla (el total 
 - **Cuánto dura:** entre 3 y 7 s según cuántos minerales distintos traigas (6.5 s con catorce). Antes duraba 0.7 s.
 - El dinero ya es tuyo desde el clic; lo que tarda es solo lo que se ve. Si cierras a media venta no se pierde nada.
 - Con la bodega vacía, La Báscula muestra tu última venta.
+
+### 9.14 Ojo de minero, pleitos con todo y crear mundo desde archivo
+
+**Detalles que solo un minero notaría** (pedido: «que diga: qué bien pensada está»):
+
+| Detalle | Qué es en una mina de verdad | Cómo quedó |
+|---|---|---|
+| Pintas junto al mineral | El oro va con el cuarzo y la pirita; el cobre se delata con malaquita verde y azurita; el hierro, con óxido; el diamante sale en «tierra azul» (kimberlita). | La tierra pegada a esos minerales lleva vetillas blancas con cubitos dorados, manchas verdes y azules, manchas de óxido o un tono azul. Sirve para prospectar: la roca avisa antes de llegar. |
+| Estratos y fallas | Las capas de roca tienen echado (inclinación) y las fallas las desplazan. | Líneas de capa que bajan hacia la derecha en todo el mundo, cortadas y desplazadas por dos fallas (columnas 31 y 67). |
+| Ademe | Las galerías se sostienen con marcos de madera y llevan riel; los tiros llevan escalera. | Lo que cava el equipo se adema solo: marcos cada tres celdas y riel en las galerías, escalera en los tiros. Las cuevas naturales no. |
+| Estalactitas | Solo crecen en techos de cuevas naturales. | En los techos de las cuevas que nadie cavó. |
+| Geodas | Piedras comunes por fuera, con cristales adentro. | Una de cada catorce piedras; se reconoce por un brillo morado en una grieta. Solo el taladro la abre y paga (más entre más honda); la dinamita la destruye. |
+| Grisú | El gas de mina; la flama de la lámpara de seguridad se pone azul cuando lo hay. | El aviso ahora dice «Grisú: la flama se puso azul» y el faro de la maquinita se pone azul. |
+| ¡Fuego en el barreno! | El grito antes de tronar. | Sale al usar dinamita o plástico. |
+| El terrero | El cerro donde se tira el tepetate (roca sin valor). | En la superficie, a la izquierda del pueblo; crece con el total de celdas cavadas por el equipo y el ratón dice cuántas van. |
+| Santa Bárbara | Patrona de los mineros; su nicho está a la entrada de muchas minas. | Un nicho con veladora junto a la Gasolinera. Al pasar por primera vez, un mensaje. |
+| El malacate | Así se llama el aparato que sube y baja la jaula. | El Elevador lo nombra así. |
+| La báscula pesa | Se vende por peso. | La venta muestra los kilos de cada mineral y el total. |
+| Fechas | 11 de julio, Día del Minero en México; 4 de diciembre, Santa Bárbara. | Ese día, un saludo al entrar. |
+
+**Pleitos con todo.** Mientras dura el contacto salen chispas sin parar, las dos maquinitas vibran y sacan sus rotorcitos, y cada golpe deja un anillo, un temblor y el número de daño sobre la rival. Cuatro clases de golpe [N]: de frente (normal), por la espalda (+50 %), desde arriba (+50 %) y taladro contra taladro (la mitad, con campanazo, y las dos salen rebotadas). Quien gana recibe su celebración y lleva la cuenta de pleitos ganados.
+
+**Crear mundo.** «Crear mundo nuevo» ofrece dos caminos: de cero, o cargar un archivo de mundo. Cargar siempre crea un mundo nuevo con su propia liga; nunca reemplaza uno existente. Así se comparte un mundo: se manda el archivo y quien lo recibe lo carga. La maquinita no va en el archivo: se mueve con su liga o su código QR.
 
 ---
 
