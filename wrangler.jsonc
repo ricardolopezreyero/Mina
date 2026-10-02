@@ -12,9 +12,9 @@
     "run_worker_first": ["/api/*", "/ws/*"]
   },
   "durable_objects": {
-    "bindings": [{ "name": "MUNDO", "class_name": "Mundo" }]
+    "bindings": [{ "name": "MUNDO", "class_name": "Mundo" }, { "name": "MAQUINA", "class_name": "Maquina" }]
   },
-  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Mundo"] }],
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Mundo"] }, { "tag": "v2", "new_sqlite_classes": ["Maquina"] }],
   "routes": [{ "pattern": "mina.capitaltorreon.com", "custom_domain": true }],
   "workers_dev": false,
   "preview_urls": false

@@ -40,7 +40,14 @@ body.jugando .hud{visibility:visible}
 #metas .m i{position:absolute;inset:0 auto 0 0;background:#ffd23f33}
 #metas .m span{position:relative}
 #metas .m.ya{outline:1px solid var(--ac);color:var(--ac)}
-#der{right:10px;top:10px;text-align:right;width:calc(250px*var(--f))}
+#der{right:10px;top:10px;display:flex;flex-direction:column;align-items:flex-end}
+#botones{display:flex;gap:4px;align-items:center}
+#botones button{padding:.3em .6em;background:#0007}
+#bVol{background:#0007;border-radius:5px;padding:.2em .45em;font-size:.8em;min-width:3.6em;text-align:center}
+#panSon{display:none;background:#120b08f2;border:1px solid var(--borde);border-radius:8px;padding:6px 10px;margin-top:6px;width:calc(250px*var(--f));text-align:left;font-size:.86em}
+#panSon label{display:flex;gap:8px;align-items:center;padding:3px 0;cursor:pointer}
+#tabla,#tarjeta{width:calc(250px*var(--f))}
+.qr{position:static;display:inline-block;width:min(300px,70vw);height:auto;image-rendering:pixelated;border-radius:8px;border:6px solid #fff}
 #tabla{background:#0007;border-radius:6px;padding:4px 7px;margin-top:6px;font-size:.8em;text-align:left}
 #tabla div{display:flex;gap:5px;align-items:center;white-space:nowrap}
 #tabla div b{flex:1;overflow:hidden;text-overflow:ellipsis}
@@ -110,7 +117,10 @@ a{color:var(--az)}
   <div id="datos"><span id="prof">0 m</span><span id="din">$0</span><span id="bod">0/7</span></div>
 </div>
 <div class="hud" id="metas"></div>
-<div class="hud" id="der"><button id="bMenu" class="s">☰ Menú (Esc)</button><div id="tabla"></div><div id="tarjeta"></div></div>
+<div class="hud" id="der">
+  <div id="botones"><button id="bSon" class="s" title="Apagar el sonido">🔊</button><button id="bMenos" class="s" title="Bajar el volumen">−</button><span id="bVol">70 %</span><button id="bMas" class="s" title="Subir el volumen">+</button><button id="bTipos" class="s" title="Elegir qué sonidos se oyen">♪ Sonidos</button><button id="bInv" class="s">👥 Invitar</button><button id="bMenu" class="s">☰ Menú (Esc)</button></div>
+  <div id="panSon"></div><div id="tabla"></div><div id="tarjeta"></div>
+</div>
 <div class="hud" id="avisos"></div>
 <div class="hud" id="contratos"></div>
 <div class="hud" id="objetos"></div>

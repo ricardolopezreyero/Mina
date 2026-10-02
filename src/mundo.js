@@ -61,6 +61,39 @@ function cfgLimpia(c, antes) {
   };
 }
 
+// RLR · la maquinita
+// Cada maquinita es de su dueño y vive aquí, fuera de los mundos: entra a cualquiera con todo lo que
+// trae y sobrevive aunque un mundo se borre. Solo puede estar en un mundo a la vez.
+export class Maquina extends DurableObject {
+  async entrar({ mundo, k, n, mo, est }) {
+    let m = await this.ctx.storage.get("m");
+    if (!m) {
+      if (!n) return null;                                   // todavía no existe: hay que bautizarla
+      m = { n, mo: mo || 0, est: est || null, v: (est && est.v) || 0, alta: Date.now() };
+    } else if (m.mundo && m.mundo !== mundo) {
+      // Estaba en otro mundo: aquel la suelta y entrega lo último que supo de ella.
+      try {
+        const r = await this.env.MUNDO.get(this.env.MUNDO.idFromName(m.mundo)).soltar(k);
+        if (r && r.est && (r.est.v || 0) >= (m.v || 0)) { m.est = r.est; m.v = r.est.v || 0; }
+      } catch {}
+    }
+    m.mundo = mundo; m.vista = Date.now();
+    await this.ctx.storage.put("m", m);
+    return { n: m.n, mo: m.mo, est: m.est };
+  }
+
+  // Nunca se pisa un estado nuevo con uno viejo, ni se acepta el de un mundo donde ya no está.
+  async guardar(est, mundo) {
+    const m = await this.ctx.storage.get("m");
+    if (!m || !est || typeof est !== "object") return false;
+    if (m.mundo && mundo && m.mundo !== mundo) return false;
+    if ((est.v || 0) < (m.v || 0)) return false;
+    m.est = est; m.v = est.v || 0; m.vista = Date.now();
+    await this.ctx.storage.put("m", m);
+    return true;
+  }
+}
+
 // RLR · el mundo
 export class Mundo extends DurableObject {
   constructor(ctx, env) {
@@ -69,7 +102,8 @@ export class Mundo extends DurableObject {
     this.dug = null;        // bits de celdas cavadas
     this.jug = [];          // maquinitas registradas
     this.pos = new Map();   // última posición conocida de cada conectado
-    this.sucio = { meta: false, dug: false, jug: new Set() };
+    this.sucio = { meta: false, dug: false, jug: new Set(), maq: new Set() };
+    this.maqT = new Map();    // cuándo se guardó por última vez cada maquinita en su propio objeto
     this.creados = new Map(); // portero: mundos creados hoy por visitante (solo en memoria)
     ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair("p", "q"));
   }
@@ -83,11 +117,11 @@ export class Mundo extends DurableObject {
     return n <= MUNDOS_POR_DIA;
   }
 
-  async crear() {
+  async crear(id) {
     if (await this.ctx.storage.get("meta")) return false;
     const seed = crypto.getRandomValues(new Uint32Array(1))[0];
     const dueno = [...crypto.getRandomValues(new Uint8Array(16))].map((b) => b.toString(16).padStart(2, "0")).join("");
-    const meta = { seed, remin: 0, reminAt: 0, cfg: { ...CFG_BASE }, creado: Date.now(), visto: Date.now(), n: 0, dueno, creador: -1 };
+    const meta = { seed, remin: 0, reminAt: 0, cfg: { ...CFG_BASE }, creado: Date.now(), visto: Date.now(), n: 0, dueno, creador: -1, id };
     await this.ctx.storage.put({ meta, dug: new Uint8Array(BYTES) });
     await this.ctx.storage.setAlarm(Date.now() + DIA);   // si nadie llega a bautizarse, se borra en un día
     this.m = null;
@@ -144,23 +178,51 @@ export class Mundo extends DurableObject {
     const m = this.m;
     if (!m) return;
     let cuando = Math.max(Date.now() + 3600000, this.jug.length ? m.visto + CADUCA : m.creado + DIA);
-    if (this.sucio.meta || this.sucio.dug || this.sucio.jug.size) cuando = Math.min(cuando, Date.now() + 5000);
+    if (this.sucio.meta || this.sucio.dug || this.sucio.jug.size || this.sucio.maq.size) cuando = Math.min(cuando, Date.now() + 5000);
     if (m.reminAt) cuando = Math.min(cuando, m.reminAt);
     const actual = await this.ctx.storage.getAlarm();
     if (actual === null || cuando < actual || actual < Date.now()) await this.ctx.storage.setAlarm(cuando);
   }
 
   // Guardado por lotes: una fila por cosa que cambió, nunca una por celda.
+  maquina(k) { return this.env.MAQUINA.get(this.env.MAQUINA.idFromName(k)); }
+
+  // La maquinita se guarda en su propio objeto cada 15 s como mucho, y siempre al salir.
+  async guardarMaquinas(ya) {
+    const ahora = Date.now();
+    for (const i of [...this.sucio.maq]) {
+      const j = this.jug[i];
+      if (!j || !j.est) { this.sucio.maq.delete(i); continue; }
+      if (!ya && ahora - (this.maqT.get(i) || 0) < 15000) continue;
+      this.sucio.maq.delete(i); this.maqT.set(i, ahora);
+      try { await this.maquina(j.k).guardar(j.est, this.m.id); } catch { this.sucio.maq.add(i); }
+    }
+  }
+
+  // Otro mundo recibió a esta maquinita: aquí se le suelta y se entrega lo último que se supo.
+  async soltar(k) {
+    if (!(await this.cargar())) return null;
+    const i = this.jug.findIndex((j) => j && j.k === k);
+    if (i < 0) return null;
+    const ws = this.socketDe(i);
+    if (ws) { manda(ws, '{"t":"otra"}'); ws.serializeAttachment(null); try { ws.close(4000, "otra"); } catch {} this.pos.delete(i); this.difundir({ t: "sale", i }); }
+    this.sucio.maq.delete(i);
+    return { est: this.jug[i].est || null };
+  }
+
   async guardar() {
     const o = {};
     if (this.sucio.meta) o.meta = this.m;
     if (this.sucio.dug) o.dug = this.dug;
     for (const i of this.sucio.jug) o["j:" + i] = this.jug[i];
-    this.sucio = { meta: false, dug: false, jug: new Set() };
+    this.sucio = { meta: false, dug: false, jug: new Set(), maq: this.sucio.maq };
     if (Object.keys(o).length) await this.ctx.storage.put(o);
+    await this.guardarMaquinas(false);
   }
 
   async fetch(request) {
+    const id = new URL(request.url).pathname.split("/").pop();
+    if (/^[2-9A-HJ-NP-Z]{8}$/.test(id)) this.idVisto = id;        // mundos anteriores no guardaban su propio nombre
     if (request.headers.get("Upgrade") !== "websocket") return new Response("Se esperaba websocket", { status: 426 });
     const [cliente, servidor] = Object.values(new WebSocketPair());
     this.ctx.acceptWebSocket(servidor);
@@ -174,8 +236,8 @@ export class Mundo extends DurableObject {
 
     // Posición: 6 bytes binarios → se reenvía con el número de maquinita (7 bytes)
     if (typeof msg !== "string") {
-      if (!att || msg.byteLength !== 6) return;
-      const e = new Uint8Array(msg), s = new Uint8Array(7);
+      if (!att || msg.byteLength !== 8) return;
+      const e = new Uint8Array(msg), s = new Uint8Array(9);
       s[0] = 1; s[1] = att.i; s.set(e.subarray(1), 2);
       this.pos.set(att.i, s);
       this.difundir(s, ws);
@@ -211,6 +273,7 @@ export class Mundo extends DurableObject {
       case "est": {
         if (!d.e || typeof d.e !== "object") return;
         yo.est = d.e;
+        this.sucio.maq.add(i);
         const rec = entero(d.rec, 0, H * 2, yo.rec || 0), tot = Number.isFinite(d.tot) && d.tot >= 0 ? d.tot : yo.tot || 0;
         if (rec !== yo.rec || tot !== yo.tot) {
           yo.rec = rec; yo.tot = tot;
@@ -271,23 +334,34 @@ export class Mundo extends DurableObject {
     let i = this.jug.findIndex((j) => j && j.k === k);
     const previo = ws.deserializeAttachment();
     if (previo && previo.i !== i) { ws.serializeAttachment(null); this.pos.delete(previo.i); this.difundir({ t: "sale", i: previo.i }, ws); }
-    const on = this.conectados();
     // el tope de conectados se revisa antes de registrar a nadie
-    if ((i < 0 || !on.has(i)) && on.size >= MAX_CONECTADOS) return fin({ t: "lleno" });
+    if ((i < 0 || !this.conectados().has(i)) && this.conectados().size >= MAX_CONECTADOS) return fin({ t: "lleno" });
+    if (!m.id) { m.id = this.idVisto || ""; this.sucio.meta = true; }
 
+    // La maquinita vive en su propio objeto. Si este mundo la conocía de antes (versión anterior), se muda allá.
+    const viejo0 = i >= 0 ? this.jug[i] : null, n = limpio(d.n, 14);
+    let r = null;
+    try {
+      r = await this.maquina(k).entrar({ mundo: m.id, k, n: n.length >= 2 ? n : (viejo0 ? viejo0.n : ""), mo: n.length >= 2 ? entero(d.m, 0, 7, 0) : (viejo0 ? viejo0.m : 0), est: viejo0 ? viejo0.est : null });
+    } catch { try { ws.close(1011, "reintenta"); } catch {} return; }      // el navegador vuelve a intentar solo
+    if (!r) {
+      manda(ws, { t: "nuevo", nombre: m.cfg.nombre, puerta: m.cfg.puerta, hay: this.jug.filter(Boolean).length });
+      return;
+    }
+    i = this.jug.findIndex((j) => j && j.k === k);            // se vuelve a buscar: mientras se esperaba pudo entrar alguien más
     if (i < 0) {
-      const n = limpio(d.n, 14);
-      if (n.length < 2) {
-        manda(ws, { t: "nuevo", nombre: m.cfg.nombre, puerta: m.cfg.puerta, hay: this.jug.filter(Boolean).length });
-        return;
-      }
       if (m.cfg.puerta && this.jug.length) return fin({ t: "cerrado" });
       if (this.jug.length >= MAX_MAQUINITAS) return fin({ t: "lleno" });
       i = this.jug.length;
-      this.jug[i] = { k, n, m: entero(d.m, 0, 7, 0), est: null, rec: 0, tot: 0, alta: Date.now() };
+      this.jug[i] = { k, n: r.n, m: r.mo, est: r.est, rec: 0, tot: 0, alta: Date.now() };
       m.n = this.jug.length;
       await this.ctx.storage.put({ ["j:" + i]: this.jug[i], meta: m });
     }
+    const yo = this.jug[i];
+    yo.n = r.n; yo.m = r.mo; yo.est = r.est;
+    if (r.est) { yo.rec = entero(r.est.rec, 0, H * 2, yo.rec || 0); yo.tot = Number.isFinite(r.est.tot) ? Math.floor(r.est.tot) : yo.tot || 0; }
+    const on = this.conectados();
+
     // La misma maquinita en otra pestaña: se queda la más reciente.
     const viejo = this.socketDe(i);
     if (viejo && viejo !== ws) { manda(viejo, '{"t":"otra"}'); viejo.serializeAttachment(null); try { viejo.close(4000, "otra"); } catch {} }
@@ -325,6 +399,7 @@ export class Mundo extends DurableObject {
     m.visto = Date.now();
     this.sucio.meta = true;
     await this.guardar();
+    await this.guardarMaquinas(true);
     await this.programar();
   }
 
@@ -363,7 +438,7 @@ export default {
       if (!(await portero.permiso(quien))) return json({ error: "limite" }, 429);
       for (let n = 0; n < 5; n++) {
         const id = nuevoId();
-        const d = await env.MUNDO.get(env.MUNDO.idFromName(id)).crear();
+        const d = await env.MUNDO.get(env.MUNDO.idFromName(id)).crear(id);
         if (d) return json({ id, d });
       }
       return json({ error: "reintenta" }, 503);

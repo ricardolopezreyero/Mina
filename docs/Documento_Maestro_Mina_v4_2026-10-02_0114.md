@@ -1,4 +1,4 @@
-# DOCUMENTO MAESTRO · «Mina» · v3
+# DOCUMENTO MAESTRO · «Mina» · v4
 
 **Ver en vivo: https://mina.capitaltorreon.com**
 
@@ -192,7 +192,7 @@ Mensajes por hora de juego de una persona: unos 5,000 si juega sola y unos 41,00
 
 | Tope (sección 9 del prompt) | Medido |
 |---|---|
-| Descarga inicial ≤ 150 KB comprimida | **44.2 KB** (página 3.0 + juego 41.2) |
+| Descarga inicial ≤ 150 KB comprimida | **54.0 KB** (sigue siendo un solo archivo de juego, sin imágenes ni audios) |
 | 3 solicitudes o menos | **2** |
 | Trabajo por cuadro < 4 ms | **0.35 a 0.62 ms** de dibujo en un lienzo de 2800 × 1600; la física no llega a 0.01 ms |
 | Guardado de una capa: 6 KB | 6,000 bytes |
@@ -252,7 +252,48 @@ Medido: dibujar un cuadro a 2800 × 1600 toma 0.35 ms en la superficie y 0.62 ms
 
 ---
 
-## 8. Revisión de código del 2 de octubre
+## 8. Cuarta iteración: la maquinita es del jugador, sonido, cielo, letreros y QR
+
+### 8.1 La maquinita vive fuera de los mundos
+
+Antes cada maquinita pertenecía a un mundo. Ahora es **del jugador**:
+
+- Cada maquinita tiene su propio lugar en el servidor (un objeto `Maquina` por llave). Guarda nombre, modelo y todo su estado: equipo, dinero, objetos, récords, logros y contratos.
+- **Entra a cualquier mundo con todo lo que trae.** En un mundo nuevo ya no se bautiza otra vez: llega la misma, parada en la superficie.
+- **No se pierde aunque un mundo se borre o caduque.**
+- **Está en un solo mundo a la vez.** Si se abre en otro mundo o en otro equipo, el anterior la suelta y entrega lo último que supo de ella; esa pantalla avisa «Tu maquinita se abrió en otro lado».
+- **Nunca se pisa un estado nuevo con uno viejo**: cada guardado lleva un número de versión y el servidor rechaza los atrasados y los de un mundo donde ya no está.
+- Se guarda en su objeto cada 15 s como mucho y siempre al salir; el mundo conserva además su copia cada 5 s.
+- **Mudanza automática**: las maquinitas de la versión anterior se pasan solas a su nuevo lugar la primera vez que entran, con todo lo que tenían (probado).
+- La liga y el QR de la maquinita la llevan a otro equipo. La llave va después del `#`: nunca viaja en la dirección que ve el servidor.
+
+Falta para la visión completa: varias maquinitas por persona, comprarlas, diseñarlas y cambiarles el nombre.
+
+### 8.2 Sonido
+
+- Siete tipos, cada uno con su canal y su interruptor: música, motor/hélice/taladro, minerales y dinero, explosiones y daño, avisos y logros, lo que hacen los demás, viento y cueva.
+- Arriba a la derecha: bocina (apagar), − y + (volumen) y «♪ Sonidos» (elegir tipos). Todo queda guardado en el navegador.
+- Motor, hélice, taladro, viento y cueva son sonidos continuos que suben y bajan con lo que hace la maquinita. La música se compone sola según la zona: superficie, mina, fondo, cielo y espacio.
+- **Todo está fabricado por código**, sin archivos. El pedido exacto para reemplazarlo por sonidos grabados con ElevenLabs está en `sonidos-fuente/`; no se generó porque el permiso para usar la llave de la bóveda fue negado en esta sesión.
+- **Nadie lo ha oído todavía**: se comprobó que nada truena y que los controles funcionan, no cómo suena.
+
+### 8.3 Hacia arriba: 1,000 km de cielo
+
+- Ya no hay techo a 28 m. Se puede volar hasta **1,000 km**.
+- La velocidad de subida crece con la altura: 6 celdas/s en el suelo más 1 por cada 140 celdas de altura. Medido con motor «Mamut»: 3 km en 1 min 55 s, 12 km en 4 min 13 s, **100 km (el espacio) en 8 min 48 s**, y unos 14 minutos hasta los 1,000 km.
+- Combustible: llegar al espacio gasta unos 150 litros, el tanque más grande completo. Para los 1,000 km hacen falta además unos cuatro tanques de reserva.
+- El cielo cambia con la altura: atardecer hasta los 3 km, azul profundo a los 12, estrellas desde los 15, negro a los 100. El sol pasa de cálido y difuso a blanco con destellos. Desde arriba se ve la curva del planeta con su atmósfera, y la Luna asoma al llegar al espacio y crece hasta llenar la vista.
+- Bonos por altura: $500 a 1 km, $2,000 a 3 km, $10,000 a 12 km, $250,000 a 100 km y $5,000,000 a 1,000 km [N]. Tres logros nuevos.
+- Bajar: en caída libre desde lo más alto son unos 7 minutos y el golpe hace 8 de daño; la grúa también funciona desde el cielo.
+
+### 8.4 Letreros y compartir
+
+- Cada edificio lleva un letrero con su nombre y, debajo, lo que se hace ahí: «Rellena tu combustible», «Vende tu mineral», «Mejora tu maquinita», «Repara y compra objetos», «Vuelve a llenar de mineral el mundo».
+- Botón **Invitar** arriba a la derecha: código QR del mundo, liga y copiar. El QR lo genera el propio juego (sin librerías); se comparó módulo por módulo contra una librería de referencia y el navegador lo leyó de vuelta.
+
+---
+
+## 9. Revisión de código del 2 de octubre
 
 Se revisó todo el código buscando fallas y se corrigieron estas:
 
@@ -282,7 +323,7 @@ Prueba automática: un jugador simulado con teclas al azar durante 40 y 60 minut
 
 ---
 
-## 9. Decisiones que te tocan
+## 10. Decisiones que te tocan
 
 1. **Parado en la superficie no se gasta combustible.** Lo puse porque un jugador nuevo explotaba leyendo la bienvenida. El original sí gasta. Recomiendo dejarlo.
 2. **Se entra a los edificios con ↓**, no al pasar. Con cinco edificios seguidos, entrar al pasar estorbaba. Recomiendo dejarlo.

@@ -4,7 +4,7 @@
 
 Juego de minería para navegador, infinito y compartido. Bajas con tu maquinita, llenas la bodega, subes, vendes, mejoras el equipo y bajas más hondo. Mandas la liga de tu mundo y tu gente entra a excavar contigo, en tiempo real.
 
-Gratis, sin registro y sin instalar nada. Toda la descarga pesa unos 44 KB.
+Gratis, sin registro y sin instalar nada. Toda la descarga pesa unos 54 KB.
 
 ## Cómo se juega
 
@@ -12,7 +12,9 @@ Gratis, sin registro y sin instalar nada. Toda la descarga pesa unos 44 KB.
 - En la superficie, párate frente a un edificio y pulsa **↓** para entrar.
 - **F R X C Q M** usan los objetos. **G** deja una señal, **T** pasa combustible, **P** pausa, **Esc** abre el menú.
 - **E** pide la grúa a la Gasolinera mientras subes. La rueda o el trackpad mueven la vista; cualquier flecha la regresa.
-- Para jugar acompañado: Menú → Mundo → **Copiar la liga**.
+- Para jugar acompañado: botón **Invitar** (liga y código QR).
+- El sonido se maneja con la bocina de arriba a la derecha.
+- Tu maquinita es tuya: entra contigo a cualquier mundo y a cualquier equipo.
 
 ## Qué hay en el repositorio
 
@@ -21,8 +23,9 @@ Gratis, sin registro y sin instalar nada. Toda la descarga pesa unos 44 KB.
 | `publico/index.html`, `publico/juego.js` | Todo el juego. Sin librerías, imágenes ni audios |
 | `src/mundo.js` | El servidor: un Durable Object de Cloudflare por mundo |
 | `wrangler.jsonc` | Configuración del Worker y del dominio |
-| `docs/Documento_Maestro_Mina_v3_2026-10-02_0047.md` | Qué está construido, con qué números y qué falta |
+| `docs/Documento_Maestro_Mina_v4_2026-10-02_0114.md` | Qué está construido, con qué números y qué falta |
 | `Prompt_Maestro_Mina_v4_2026-10-01_2336.md` | El diseño completo |
+| `sonidos-fuente/` | El pedido exacto de sonidos y música para ElevenLabs (aún sin generar) |
 
 ## Probar y publicar
 
