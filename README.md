@@ -14,6 +14,8 @@ Gratis, sin registro y sin instalar nada. El juego completo pesa unos 57 KB.
 - **Barra espaciadora** (pasando los 50 m de altura): la maquinita sigue subiendo sola hasta el espacio.
 - Abajo a la izquierda está tu viaje: cuánto llevas, en cuánto se vende y si el combustible alcanza para subir. Ahí mismo, la **grúa** a la Gasolinera (tecla **E**).
 - La rueda o el trackpad mueven la vista; cualquier flecha la regresa.
+- El mundo baja hasta los **10,000 m**, con cuatro lugares por descubrir. **El Elevador** (último edificio) te regresa a ellos y al punto donde te recogió la grúa.
+- Los explosivos (**X** y **C**) se usan donde sea, también volando.
 - Para jugar acompañado: botón **Invitar** (liga y código QR).
 - El sonido se maneja con la bocina de arriba a la derecha: música, taladro, hélice y motor tienen cada uno su interruptor (el motor viene apagado).
 - Tu maquinita es tuya: entra contigo a cualquier mundo y a cualquier equipo.
@@ -26,7 +28,7 @@ Gratis, sin registro y sin instalar nada. El juego completo pesa unos 57 KB.
 | `publico/mina.jpg` | Imagen de vista previa de la liga. Se regenera capturando `/?foto=1` a 1200 × 630 |
 | `src/mundo.js` | El servidor: un Durable Object de Cloudflare por mundo |
 | `wrangler.jsonc` | Configuración del Worker y del dominio |
-| `docs/Documento_Maestro_Mina_v8_2026-10-02_0217.md` | Qué está construido, con qué números y qué falta |
+| `docs/Documento_Maestro_Mina_v9_2026-10-02_0234.md` | Qué está construido, con qué números y qué falta |
 | `Prompt_Maestro_Mina_v4_2026-10-01_2336.md` | El diseño completo |
 | `sonidos-fuente/` | El pedido exacto de sonidos y música para ElevenLabs (aún sin generar) |
 

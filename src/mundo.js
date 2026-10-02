@@ -2,15 +2,15 @@
 // Mina · el mundo compartido — Ricardo López Reyero (RLR)
 // Un Durable Object por mundo: es la única verdad sobre el terreno cavado y
 // sobre quién está jugando. El terreno no se guarda: se calcula con la semilla;
-// aquí solo vive un bit por celda cavada (6 KB por capa).
+// aquí solo vive un bit por celda cavada (60 KB para los 10 km de profundidad).
 // ─────────────────────────────────────────────────────────────────────────────
 import { DurableObject } from "cloudflare:workers";
 
 const _RLR = "Ricardo López Reyero";
 const _k = "EYE", _rev = 181218; // RLR · sello de autoría
 
-const W = 96, H = 500, BYTES = (W * H) / 8;
-const ZX0 = 39, ZX1 = 63;            // suelo firme bajo los edificios (filas 0 y 1)
+const W = 96, H = 5000, BYTES = (W * H) / 8;
+const ZX0 = 39, ZX1 = 68;            // suelo firme bajo los edificios (filas 0 y 1)
 const ALFA = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"; // sin 0/O ni 1/I
 const MAX_CONECTADOS = 10, MAX_MAQUINITAS = 30;
 const DIA = 86400000, CADUCA = 180 * DIA;
@@ -133,7 +133,9 @@ export class Mundo extends DurableObject {
     const meta = await this.ctx.storage.get("meta");
     if (!meta) { this.m = false; return false; }
     const dug = await this.ctx.storage.get("dug");
-    this.dug = dug instanceof Uint8Array && dug.length === BYTES ? dug : new Uint8Array(BYTES);
+    // Los mundos de cuando el fondo estaba a 1 km guardaban menos celdas: se conserva lo cavado y se agranda.
+    if (dug instanceof Uint8Array && dug.length === BYTES) this.dug = dug;
+    else { this.dug = new Uint8Array(BYTES); if (dug instanceof Uint8Array) this.dug.set(dug.subarray(0, BYTES)); }
     this.jug = [];
     const lista = await this.ctx.storage.list({ prefix: "j:" });
     for (const [k, v] of lista) this.jug[Number(k.slice(2))] = v;
@@ -377,8 +379,10 @@ export class Mundo extends DurableObject {
     m.visto = Date.now();
     this.sucio.meta = true;
 
+    // Solo viaja hasta la última celda cavada: un mundo nuevo pesa casi nada.
+    let hasta = BYTES; while (hasta > 0 && !this.dug[hasta - 1]) hasta--;
     let b = "";
-    for (let x = 0; x < BYTES; x++) b += String.fromCharCode(this.dug[x]);
+    for (let x = 0; x < hasta; x += 8192) b += String.fromCharCode.apply(null, this.dug.subarray(x, Math.min(hasta, x + 8192)));
     manda(ws, {
       t: "mundo", i, seed: m.seed, remin: m.remin, cfg: m.cfg, creador: i === this.creador() ? 1 : 0,
       est: this.jug[i].est, cuenta: m.reminAt ? Math.max(0, Math.ceil((m.reminAt - Date.now()) / 1000)) : 0,

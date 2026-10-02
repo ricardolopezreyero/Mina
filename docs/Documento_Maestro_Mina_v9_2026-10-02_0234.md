@@ -1,4 +1,4 @@
-# DOCUMENTO MAESTRO · «Mina» · v8
+# DOCUMENTO MAESTRO · «Mina» · v9
 
 **Ver en vivo: https://mina.capitaltorreon.com**
 
@@ -365,6 +365,41 @@ Lo pidió Ricardo con tres capturas: quería comprar 50 de un jalón, iconos, m�
 | La subida, en orden | Tarde dorada → el Sol baja, enrojece y se mete (9 km) → hora azul → noche con estrellas y Vía Láctea (25 km) → estrellas fugaces (30 a 200 km) → aurora al cruzar al espacio (70 a 430 km) → la Luna crece desde los 100 km → **el Sol vuelve a salir** por la orilla del planeta (430 a 900 km) y el planeta se ilumina otra vez. |
 | Lo que te cruzas | Una parvada (200 m a 1 km), un avión con su estela (8 a 15 km), un globo meteorológico (23 a 41 km), la estación en órbita (320 a 520 km). De noche se ven allá abajo las luces de la Gasolinera. |
 | Mensajes nuevos | A 30 km (Doña Chela, $30,000), 400 km (la estación «Lupita», $1 M) y 650 km (amanecer, $2 M). Los mensajes ya dados se cuentan por la altura récord, para no repetir bonos. |
+
+### 9.4 Novena iteración: el mundo llega a 10,000 m, con cuatro lugares en el camino
+
+Ricardo llegó al fondo y pidió ampliar a 10 km «con todo lo que hemos planeado», simple, para gozar: bajar, ganar, subir, vender, comprar. Con 3 o 4 «experiencias» en el camino, más tesoros, explosivos que se puedan usar volando y poder ver qué lleva en la bodega.
+
+**Cómo se hizo.** Un solo tablero de 96 × 5,000 celdas (2 m por celda), no capas separadas: es lo más simple y deja todo continuo. El servidor guarda un bit por celda cavada: 60 KB por mundo (antes 6 KB). Los mundos ya creados conservan sus túneles: su registro se agranda al cargar. Al entrar solo viaja hasta la última celda cavada, así que un mundo nuevo sigue pesando casi nada.
+
+| Zona | De – a | Minerales nuevos (valor · kg) |
+|---|---|---|
+| Corteza | 0 – 1 km | Los 10 de siempre |
+| Acuífero | 1 – 2 km | Aguamarina $700 mil · 100 — Zafiro $1 M · 110 — Perla negra $1.5 M · 60 |
+| Cavernas | 2 – 4 km | Ónix $2 M · 130 — Topacio $3 M · 130 — Jade imperial $4 M · 140 |
+| Cristalera | 4 – 8 km | Amatista $6 M · 150 — Tanzanita $8 M · 150 — Alejandrita $12 M · 160 |
+| Zona de presión | 8 – 10 km | Paladio $16 M · 180 — Rodio $24 M · 190 — Osmio $40 M · 220 |
+
+Los nombres y las zonas son los del prompt maestro (sección 6.5). Los valores **no** siguen el × 10 por capa de aquel plan: suben más despacio [N] para que las 60 mejoras del Taller (hasta $2,500 M) duren todo el viaje y las cifras no se disparen. Cada zona tiene su color de tierra.
+
+| Lugar | Dónde | Qué es | Bono |
+|---|---|---|---|
+| 💧 El Acuífero | 1,040 a 1,240 m | Un estrato inundado con un lago enorme. En el agua se flota (la gravedad baja a 30 % y nadie se estrella), no hay lava ni gas, hay peces, columnas de roca con mineral y perlas gigantes en el lecho ($400 mil cada una). | $1 M |
+| 💎 La Gruta de Cristal | 2,950 a 3,030 m | Una cueva de 76 × 38 celdas. Sus paredes son 82 % mineral precioso (oro, platino, rubí, diamante, amazonita, ónix, topacio y jade): unas 500 piezas. Estalactitas y estalagmitas de cristal. | $10 M |
+| 🏛️ La Ciudad Perdida | 5,580 a 5,650 m | Una caverna con cinco casas de ladrillo antiguo (hasta cuatro pisos, con tesoros en cada piso), antorchas y una pirámide con el Ídolo de oro ($25 M) en su cámara. | $50 M |
+| ❤️ El Corazón de la Tierra | 9,770 a 9,890 m | Una geoda cuya pared es 90 % paladio, rodio y osmio (la veta madre). Al centro late el Corazón: se oye y se ve latir al acercarse. Vale $2,500 M. Los explosivos no lo destruyen. | $500 M |
+
+| Cambio | Cómo quedó |
+|---|---|
+| El Elevador | Edificio nuevo en la superficie (un castillete de mina). Baja al instante a los lugares descubiertos y al punto donde te recogió la grúa, el teletransportador o el rescate. Cobra $50 por metro. De los lugares sin descubrir dice a qué profundidad «hay algo». |
+| Más tesoros | Los hallazgos enterrados pasaron de 0.06 % a 0.16 % de las celdas. Valen más entre más hondo: a 10 km, mil veces lo que en la Corteza (un cofre, $5 M). |
+| Piedra, lava y gas hondos | Bajo el primer kilómetro: piedra 11 %, lava 3 %, gas 3.5 %. El golpe del gas crece despacio (un punto cada 20 m). La Corteza quedó igual. |
+| Taladro | El tiempo por celda crece hasta × 5 al primer kilómetro, como antes, y de ahí solo × 11 a los 10 km. |
+| Explosivos | Dinamita y explosivo plástico se usan donde sea: volando, topando con piedra o a media perforación. |
+| La bodega a la vista | El panel del viaje lista lo que llevas, mineral por mineral. Un clic abre la pestaña Bodega. |
+| Historia y rangos | Nueve mensajes nuevos (hasta $1,000 M de bono al tocar los 10,000 m) y nueve rangos nuevos, hasta «Leyenda de las Profundidades». |
+
+Sin medir todavía: cuánto tarda un jugador real en bajar los 10 km y si los valores hondos dejan la economía pareja. La prueba fue juego simulado con el equipo al máximo.
 
 ---
 
