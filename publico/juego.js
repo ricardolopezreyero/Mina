@@ -2416,7 +2416,7 @@ function pintarQR(lienzoQR, texto, lado = 8) {
 }
 
 /* ════════ Menús ════════ RLR */
-let pestana = 0, pieza = 0, cuantos = 1;
+let pestana = 0, pieza = 0, cuantos = 1, eleM = 0;
 function abrir(id) {
   if (!S) return;
   son.clic();
@@ -2457,9 +2457,15 @@ function pintarMenu() {
       <div class="v">${fmt(o.p * cuantos)}</div><button data-a="objeto" data-v="${i}" ${S.d < o.p * cuantos ? 'disabled' : ''}>Comprar${cuantos > 1 ? ' ' + cuantos : ''}</button></div>`).join('') + '</div>';
   } else if (menu === 'ele') {
     const u = ultimoPunto(), fila = (ic, n, sub, m, v) => `<div class="fila"><div class="ic">${ic}</div><div class="t"><b>${n}</b><small>${sub}</small></div><div class="v">${fmt(costoEle(m))}</div><button data-a="bajar" data-v="${v}" ${S.d >= costoEle(m) ? '' : 'disabled'}>Bajar</button></div>`;
-    h = cab('🛗 El Elevador') + `<div class="cuerpo"><p class="nota">Te baja en un instante a los lugares que ya descubriste y al punto donde te recogió la grúa. Cobra $50 por metro. Para subir, la grúa (tecla E).</p>` +
-      (u ? fila('📍', 'Donde te quedaste', `A ${Math.round((u.y + HH) * 2).toLocaleString('es-MX')} m: el punto donde te recogió la grúa o el rescate.`, (u.y + HH) * 2, 'u') : '<div class="fila tengo"><div class="ic">📍</div><div class="t"><b>Donde te quedaste</b><small>Cuando la grúa te suba desde abajo, aquí aparecerá ese punto para regresar.</small></div></div>') +
-      LUGARES.map((L, i) => S.lug[i] ? fila(L.ic, L.n, L.tx, L.m, i) : `<div class="fila tengo"><div class="ic">❔</div><div class="t"><b>Lugar sin descubrir</b><small>Dicen que hay algo cerca de los ${L.m.toLocaleString('es-MX')} m.</small></div></div>`).join('') + '</div>';
+    const tope = Math.floor(S.rec / 10) * 10, def = Math.max(10, Math.min(tope, eleM || tope));
+    h = cab('🛗 El Elevador') + `<div class="cuerpo"><p class="nota">Te baja en un instante: a un lugar que ya descubriste o a los metros que tú digas. Cobra $50 por metro. Para subir, la grúa (tecla E).</p><div class="dos"><div>
+      <h4>A un lugar</h4>` +
+      (u ? fila('📍', 'Donde te quedaste', `A ${Math.round((u.y + HH) * 2).toLocaleString('es-MX')} m: donde te recogió la grúa o el rescate.`, (u.y + HH) * 2, 'u') : '<div class="fila tengo"><div class="ic">📍</div><div class="t"><b>Donde te quedaste</b><small>Cuando la grúa te suba desde abajo, aquí aparecerá ese punto para regresar.</small></div></div>') +
+      LUGARES.map((L, i) => S.lug[i] ? fila(L.ic, L.n, L.tx, L.m, i) : `<div class="fila tengo"><div class="ic">❔</div><div class="t"><b>Lugar sin descubrir</b><small>Dicen que hay algo cerca de los ${L.m.toLocaleString('es-MX')} m.</small></div></div>`).join('') +
+      `</div><div><h4>A los metros que quieras</h4>` + (tope >= 10 ? `<p class="nota">Tan abajo como ya hayas llegado: tu récord es de ${S.rec.toLocaleString('es-MX')} m. Si ahí no hay túnel, el elevador abre un hueco.</p>
+        <div class="metros"><input id="eleM" type="number" inputmode="numeric" min="10" max="${tope}" step="10" value="${def}"><span>m</span></div>
+        <input id="eleR" type="range" min="10" max="${tope}" step="10" value="${def}">
+        <div class="fila"><div class="t"><b id="eleP" class="v">${fmt(costoEle(def))}</b><small>$50 por metro</small></div><button id="eleB" data-a="bajarA" ${S.d >= costoEle(def) ? '' : 'disabled'}>Bajar</button></div>` : '<p class="nota">Todavía no has bajado. Perfora un poco y aquí podrás elegir a cuántos metros volver.</p>') + '</div></div></div>';
   } else if (menu === 'rem') {
     const c = costoRemin(), puedo = cfg.reminTodos || soyCreador;
     h = cab('🌋 La Remineralizadora') + `<div class="cuerpo"><p>Vuelve a llenar de mineral <b>todo el tablero</b>: tierra nueva, minerales nuevos, hallazgos nuevos y peligros en lugares nuevos.</p>
@@ -2548,6 +2554,20 @@ const acciones = {
     cerrar(); chispas(x, y, '#ffb347', 30, 8); tarjeta('🛗 El Elevador · ' + fmt(c), 'Llegaste a ' + Math.round(m).toLocaleString('es-MX') + ' m.');
     return 'no';
   },
+  // Bajar a los metros que el jugador escribió (nunca más abajo de su récord). El elevador llega por su tiro, bajo el edificio;
+  // si a esa altura hay roca, abre un hueco: de preferencia donde ya hay túnel o tierra, sin llevarse mineral ni tesoros.
+  bajarA() {
+    const m = Math.max(10, Math.min(Math.floor(S.rec / 10) * 10, Math.round((+($('#eleM')?.value) || 0) / 10) * 10)), c = costoEle(m);
+    if (!(S.rec >= 10) || S.d < c) return;
+    const fila = Math.round(m / 2) - 1, cols = [66, 65, 67, 64, 68, 63, 69, 62, 70, 61, 71, 60, 72];
+    let x = cols.find((cx) => !solida(cx, fila));
+    if (x === undefined) { x = cols.find((cx) => { const t = celda(cx, fila); return t < 10 && t !== 5; }) ?? 66; if (celda(x, fila) === 5 || celda(x, fila) === 46) return; cavar([[x, fila]]); }
+    let y = fila; for (let k = 0; k < 30 && y < H - 1 && !solida(x, y + 1); k++) y++;
+    if (solida(x, y + 1) === false) y = fila;                         // no hay piso cerca: se queda en el hueco y planea
+    eleM = m; S.d -= c; yo.x = x + 0.5; yo.y = y + 1 - HH; yo.vx = yo.vy = 0; yo.perf = null; vistaLibre = false; son.tele(); sucio = true;
+    cerrar(); chispas(yo.x, yo.y, '#ffb347', 30, 8); tarjeta('🛗 El Elevador · ' + fmt(c), 'Llegaste a ' + m.toLocaleString('es-MX') + ' m.');
+    return 'no';
+  },
   objeto(v) { const o = OBJ[+v], c = o.p * cuantos; if (S.d < c) return; S.d -= c; S.obj[+v] += cuantos; son.compra(); },
   cuantos(v) { cuantos = +v; son.clic(); },
   remin() { if (!conectado || cuentaFin || S.d < costoRemin()) return; enviar({ t: 'remin' }); cerrar(); return 'no'; },
@@ -2591,6 +2611,17 @@ $('#caja').addEventListener('click', (e) => {
   const el = e.target.closest('[data-a]'); if (!el || el.disabled || el.tagName === 'SELECT' || el.tagName === 'INPUT') return;
   const r = acciones[el.dataset.a]?.(el.dataset.v, el);
   sucio = true; if (r !== 'no' && r !== true && menu && menu !== 'inicio') pintarMenu(); pintarHud(true);
+});
+// Los metros del elevador: el número y la barra se mueven juntos y el precio se actualiza al escribir.
+$('#caja').addEventListener('input', (e) => {
+  if (e.target.id !== 'eleM' && e.target.id !== 'eleR') return;
+  const otro = $(e.target.id === 'eleM' ? '#eleR' : '#eleM'), m = Math.max(0, Math.min(+e.target.max, Math.round(+e.target.value || 0)));
+  const m10 = Math.max(10, Math.round(m / 10) * 10);          // se baja de diez en diez metros
+  otro.value = m; eleM = m10; $('#eleP').textContent = fmt(costoEle(m10)); $('#eleB').disabled = m < 10 || S.d < costoEle(m10);
+});
+$('#caja').addEventListener('keydown', (e) => {
+  if (e.target.id !== 'eleM') return;
+  if (e.key === 'Enter') { e.preventDefault(); acciones.bajarA(); pintarHud(true); } else if (e.key === 'Escape') cerrar();
 });
 $('#caja').addEventListener('change', (e) => {
   const el = e.target.closest('[data-a]'); if (!el) return;

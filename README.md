@@ -29,7 +29,7 @@ Gratis, sin registro y sin instalar nada. El juego completo pesa unos 57 KB.
 | `publico/mina.jpg` | Imagen de vista previa de la liga. Se regenera capturando `/?foto=1` a 1200 × 630 |
 | `src/mundo.js` | El servidor: un Durable Object de Cloudflare por mundo |
 | `wrangler.jsonc` | Configuración del Worker y del dominio |
-| `docs/Documento_Maestro_Mina_v11_2026-10-02_0247.md` | Qué está construido, con qué números y qué falta |
+| `docs/Documento_Maestro_Mina_v12_2026-10-02_0255.md` | Qué está construido, con qué números y qué falta |
 | `Prompt_Maestro_Mina_v4_2026-10-01_2336.md` | El diseño completo |
 | `sonidos-fuente/` | El pedido exacto de sonidos y música para ElevenLabs (aún sin generar) |
 

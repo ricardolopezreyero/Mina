@@ -1,4 +1,4 @@
-# DOCUMENTO MAESTRO · «Mina» · v11
+# DOCUMENTO MAESTRO · «Mina» · v12
 
 **Ver en vivo: https://mina.capitaltorreon.com**
 
@@ -436,6 +436,15 @@ Ricardo pidió que al planear hacia abajo salgan hélices chiquitas hacia arriba
 | El viento en tres voces | Brisa (grave y suave, hasta unos 290 km/h), ráfaga (silba y viene por rachas) y rugido (trueno grave con siseo, desde unos 1,100 km/h). Se relevan solas según la velocidad. En el espacio hay silencio. Medido: el volumen medio sube de 0.008 a 0.052 entre planear despacio y la picada más rápida. |
 
 Medido en la simulación: planeando a 3 km se va a 531 km/h; en picada, a 1,380 (Mach 1.1). Volver desde 100 km toma 169 s planeando y 71 s en picada.
+
+### 9.7 El Elevador con dos opciones
+
+Ricardo pidió poder escribir a cuántos metros quiere bajar, además de elegir un lugar. El menú quedó en dos columnas:
+
+- **A un lugar** (izquierda): donde te recogió la grúa y los lugares descubiertos, como antes.
+- **A los metros que quieras** (derecha): un número y una barra que se mueven juntos, de 10 en 10 m, con el precio al momento ($50 por metro). El tope es el récord del jugador: no se puede aparecer más abajo de donde ya se llegó [N]. Enter también baja.
+
+El elevador llega por su tiro, bajo el edificio (columna 66). Si a esa profundidad hay túnel cerca, te deja ahí; si hay roca, abre un hueco de una celda, de preferencia en tierra o piedra y sin llevarse mineral ni tesoros. Si cae en una cueva o en un lugar, te baja hasta el piso (hasta 30 celdas).
 
 ---
 

@@ -146,6 +146,13 @@ body.jugando .hud{visibility:visible}
 label.op{display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:1px solid #ffffff14}
 label.op span{flex:1}
 h4{margin:12px 0 4px;color:var(--ac)}
+.dos{display:grid;grid-template-columns:1.3fr 1fr;gap:6px 22px;align-items:start}.dos h4{margin-top:4px}
+.dos>div+div{border-left:1px solid #ffffff1c;padding-left:22px}
+.metros{display:flex;align-items:baseline;gap:8px;margin:8px 0 6px}
+.metros input{width:100%;font-size:1.7em;font-weight:800;color:var(--ac);text-align:right;padding:.2em .4em}
+.metros span{font-size:1.3em;font-weight:800;color:var(--su)}
+input[type=range]{width:100%;padding:0;accent-color:var(--ac)}
+@media (max-width:640px){.dos{grid-template-columns:1fr}.dos>div+div{border-left:0;padding-left:0}}
 a{color:var(--az)}
 @media (max-width:760px){#metas{top:auto;bottom:calc(150px*var(--f));width:60vw}#avisos{display:none}}
 </style>
