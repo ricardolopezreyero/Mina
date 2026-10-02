@@ -64,6 +64,16 @@ const LUGARES = [
   { ic: '🏛️', n: 'La Ciudad Perdida', m: 5580, x: 37, y: 2815, q: 5e7, tx: 'Alguien vivió aquí. Las casas siguen de pie y cada una guarda sus tesoros.' },
   { ic: '❤️', n: 'El Corazón de la Tierra', m: 9780, x: 40, y: 4915, q: 5e8, tx: 'Late despacio. A su alrededor, la veta madre: la más rica que existe.' },
 ];
+/* ── La colección del mundo: 33 objetos, tres de cada uno (99 en total), repartidos de arriba al fondo.
+   Es del mundo y es de todos: lo que encuentra cualquiera se enciende en la vitrina de todos. ── */
+const COLEC = [['🥾', 'Bota de minero'], ['🔦', 'Linterna vieja'], ['⛏️', 'Pico oxidado'], ['📻', 'Radio de la Compañía'], ['🐚', 'Caracola'], ['⚓', 'Ancla'], ['🧭', 'Brújula'], ['🍄', 'Hongo luminoso'], ['🕯️', 'Vela eterna'], ['🗝️', 'Llave de hierro'], ['🏺', 'Ánfora'],
+  ['📜', 'Mapa del tesoro'], ['🦇', 'Murciélago de obsidiana'], ['🎭', 'Máscara ritual'], ['🔮', 'Bola de cristal'], ['💍', 'Anillo perdido'], ['⚱️', 'Urna'], ['🧿', 'Amuleto'], ['🗿', 'Cabeza de piedra'], ['🏹', 'Arco antiguo'], ['⚔️', 'Espadas cruzadas'], ['🎻', 'Violín'],
+  ['⌛', 'Reloj de arena'], ['🔔', 'Campana de bronce'], ['👑', 'Corona'], ['🏆', 'Copa de oro'], ['🦷', 'Colmillo de dragón'], ['🥚', 'Huevo de dragón'], ['🧬', 'Fósil viviente'], ['☄️', 'Fragmento de cometa'], ['🌋', 'Piedra del volcán'], ['🌟', 'Estrella caída'], ['🐉', 'Dragón dormido']];
+const NCOL = COLEC.length * 3, FRANJA = Math.floor((H - 20) / COLEC.length);            // cada objeto vive en su franja de unos 300 m
+// Lo que paga cada uno: de $500 el de arriba a $500 millones el del fondo. Se buscan por coleccionarlos, pero entre más hondo, más valen.
+const valorCol = (k) => { const v = 500 * Math.pow(1e6, k / (COLEC.length - 1)), u = Math.pow(10, Math.floor(Math.log10(v)) - 1); return Math.round(v / u) * u; };
+const hallados = new Uint8Array(NCOL), colec = new Map();        // cuáles ya encontró el equipo · en qué celda está cada uno
+const nHallados = () => hallados.reduce((a, b) => a + b, 0);
 const AGUA0 = 520, AGUA1 = 620;                  // las filas inundadas del Acuífero (1,040 a 1,240 m)
 
 /* ── Las 6 piezas del equipo: nombre, precio, valor e historia. Dieciséis mejoras por pieza, de $750 a $2,500 millones ── */
@@ -294,7 +304,7 @@ function sanear(e) {
   s.st = { ...b.st, ...(s.st && typeof s.st === 'object' ? s.st : {}) };
   s.st.rec = lista(s.st.rec, MIN.length, 1e9); s.st.vend = lista(s.st.vend, MIN.length, 1e9); s.st.hall = lista(s.st.hall, HALL.length, 1e9);
   s.lug = lista(s.lug, LUGARES.length, 1); s.ult = s.ult && Number.isFinite(s.ult.x) && Number.isFinite(s.ult.y) && typeof s.ult.mu === 'string' ? { x: s.ult.x, y: s.ult.y, mu: s.ult.mu, r: s.ult.r | 0 } : null;
-  for (const k of ['viajes', 'cavadas', 'muertes', 'expl', 'remin', 'comb', 'mejorViaje', 'gruas', 'amigos']) s.st[k] = num(s.st[k], 0);
+  for (const k of ['viajes', 'cavadas', 'muertes', 'expl', 'remin', 'comb', 'mejorViaje', 'gruas', 'amigos', 'col']) s.st[k] = num(s.st[k], 0);
   s.log = Array.isArray(s.log) ? s.log.filter((x) => typeof x === 'string') : [];
   s.fl = s.fl && typeof s.fl === 'object' ? s.fl : {}; s.vj = s.vj && typeof s.vj === 'object' ? s.vj : { dano: 0 };
   const c = s.con && typeof s.con === 'object' ? s.con : {};
@@ -355,7 +365,7 @@ function mineralEn(y, r) {
 function mejorMineral(y) { const m = (y + 1) * 2; let b = 0; for (let i = 0; i < MIN.length; i++) if (MIN[i].a <= m) b = i; return b; }
 function veta(b) { return [3 + Math.floor(azar(b, 0, 11) * (W - 6)), Math.min(H - 3, b * 75 + 8 + Math.floor(azar(b, 1, 12) * 60))]; }
 
-// Tipos: 0 hueco · 1 tierra · 2 piedra · 3 lava · 4 gas · 5 firme · 6 agua · 7 ladrillo antiguo · 10-39 mineral · 40-49 hallazgo
+// Tipos: 0 hueco · 1 tierra · 2 piedra · 3 lava · 4 gas · 5 firme · 6 agua · 7 ladrillo antiguo · 10-39 mineral · 40-49 hallazgo · 50 objeto de la colección
 const ondula = (x, y, k) => 0.1 * Math.sin(x * 0.41 + k) * Math.sin(y * 0.53 + k * 1.7) + 0.06 * Math.sin(x * 0.93 + y * 0.71 + k);
 const elip = (x, y, cx, cy, rx, ry, k) => ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 + ondula(x, y, k);
 // En qué lugar está una celda (-1 si en ninguno). Con «orilla» también cuenta la pared que lo envuelve.
@@ -414,7 +424,8 @@ function gen(x, y) {
   if (x < 0 || x >= W || y >= H) return 5;
   if (y < 0) return 0;
   if (y < 2 && x >= ZX0 && x <= ZX1) return 5;
-  const m = (y + 1) * 2, agua = y >= AGUA0 && y < AGUA1;
+  const m = (y + 1) * 2, agua = y >= AGUA0 && y < AGUA1, co = colec.get(y * W + x);
+  if (co !== undefined && !hallados[co]) return 50;          // un objeto de la colección que nadie ha encontrado
   if (y >= AGUA0) { const t = genLugar(x, y); if (t >= 0) return t; }
   const [vx, vy] = veta(Math.floor(y / 75));
   if (Math.abs(x - vx) <= 1 && Math.abs(y - vy) <= 1) return 10 + mejorMineral(vy);
@@ -447,6 +458,7 @@ function cavar(lista) {            // marca aquí y avisa al mundo
     if (x < 0 || x >= W || y < 0 || y >= H) continue;
     const t = celda(x, y);
     if (t === 0 || t === 5 || t === 6) continue;
+    if (lista.length > 1 && (t === 50 || t === 46)) continue;       // las explosiones no destruyen la colección ni el Corazón
     ponerCavada(y * W + x); c.push(y * W + x);
   }
   if (c.length) { if (conectado) enviar({ t: 'cava', c }); else pendientes.push(...c); }
@@ -454,7 +466,18 @@ function cavar(lista) {            // marca aquí y avisa al mundo
 }
 let pendientes = [];                // celdas cavadas mientras no había conexión
 const recientes = new Map();        // premios recién dados, por si el mundo dice que otro llegó antes
-function nuevaSemilla() { SEM = (seed + remin * 104729) | 0; mapa.fill(255); pesosFila.clear(); }
+function nuevaSemilla() {
+  SEM = (seed + remin * 104729) | 0; mapa.fill(255); pesosFila.clear();
+  // dónde quedó cada objeto de la colección: tres por franja, a distintas alturas y en distintas columnas, fuera de los lugares
+  colec.clear();
+  for (let id = 0; id < NCOL; id++) {
+    const k = Math.floor(id / 3), j = id % 3; let x = 3 + Math.floor(azar(id, 2, 42) * (W - 6)), y = 10 + k * FRANJA + Math.floor((j + 0.15 + 0.7 * azar(id, 1, 41)) * FRANJA / 3);
+    if (y >= AGUA0 && y < AGUA1) y += AGUA1 - AGUA0;                      // ninguno dentro del agua
+    const cavada = () => { const i = y * W + x; return !hallados[id] && (dug[i >> 3] & (1 << (i & 7))); };       // si ahí ya pasó un túnel, se recorre: ninguno queda imposible
+    for (let n = 0; n < 80 && (lugarDe(x, y, true) >= 0 || colec.has(y * W + x) || cavada()); n++) { y++; x = 3 + (x + 7) % (W - 6); }
+    colec.set(y * W + x, id);
+  }
+}
 
 /* ════════ Sonido ════════ RLR */
 // Todo se sintetiza aquí, sin descargar un solo archivo. Cada tipo de sonido tiene su propio canal y su
@@ -764,6 +787,9 @@ const LOGROS = [
   { id: 'catalogo', n: 'Catálogo completo', d: 'Vende todos los minerales y encuentra todos los hallazgos.', ok: () => catalogoCompleto() },
   ...LUGARES.map((L, i) => ({ id: 'lug' + i, n: L.n, d: 'Descubre este lugar.', ok: () => S.lug[i] })),
   { id: 'guero', n: '???', d: 'Secreto.', sec: 'Vecino: encuentra a «El Güero».', ok: () => S.fl.guero },
+  { id: 'col1', n: 'Coleccionista', d: 'Encuentra un objeto de la colección del mundo.', ok: () => (S.st.col || 0) >= 1 },
+  { id: 'col33', n: 'Media vitrina', d: 'Que el equipo junte 50 objetos de la colección.', ok: () => nHallados() >= 50 },
+  { id: 'col99', n: 'Vitrina completa', d: 'Que el equipo junte los 99 objetos de la colección.', ok: () => nHallados() >= NCOL },
   { id: 'diezkm', n: 'Diez kilómetros', d: 'Llega al fondo del mundo: 10,000 m.', ok: () => S.rec >= 9990 },
   { id: 'intacto', n: 'Sin rasguños', d: 'Llega a 500 m sin recibir daño en el viaje.', ok: () => S.fl.intacto },
   { id: 'anfitrion', n: 'Anfitrión', d: 'Tres maquinitas nuevas llegan a un mundo donde estás.', ok: () => (S.st.amigos || 0) >= 3 },
@@ -1048,6 +1074,16 @@ function llegar(p) {
       if (Math.abs(p.tx - vx) <= 1 && Math.abs(p.ty - vy) <= 1 && !S.fl.veta) { S.fl.veta = 1; tarjeta('✨ ¡Veta madre!', 'Un racimo entero del mejor mineral de la zona.'); }
       if (nCarga() === bodega()) { tarjeta('Bodega llena', 'Sube a vender: lo que perfores ahora se pierde.'); son.alarma(); }
     } else { flota(x, p.ty - 0.15, 'Bodega llena · se perdió ' + MIN[i].n, '#ff8a7a'); son.no(); }
+  } else if (t === 50) {
+    const id = colec.get(p.idx), k = Math.floor(id / 3);
+    if (id !== undefined && !hallados[id]) {
+      hallados[id] = 1; enviar({ t: 'col', k: id });
+      const van = hallados[k * 3] + hallados[k * 3 + 1] + hallados[k * 3 + 2], v = valorCol(k) * (van === 3 ? 2 : 1);
+      S.d += v; S.tot += v; S.st.col = (S.st.col || 0) + 1;
+      flota(x, p.ty - 0.15, '+ ' + fmt(v) + ' · ' + COLEC[k][1], '#ffe9a8'); recientes.set(p.idx, [50, Date.now(), v]);
+      tarjeta(`${COLEC[k][0]} ${COLEC[k][1]} · ${van} de 3`, (van === 3 ? '¡Los tres! Paga doble: ' : 'Para la colección del mundo: ') + fmt(v) + `. El equipo lleva ${nHallados()} de ${NCOL}.`, '', 9000);
+      son.logro(); chispas(x, y, '#ffe9a8', 30, 7); onda(x, y, 2, '#ffe9a8', 0.5); difundir(`encontró ${COLEC[k][0]} ${COLEC[k][1]} (${van} de 3)`); pintarHud(true);
+    }
   } else if (t >= 40) {
     const h = HALL[t - 40], v = valorHall(t - 40, p.ty);
     S.d += v; S.tot += v; S.st.hall[t - 40]++;
@@ -1181,6 +1217,7 @@ function recibir(d) {
       son.entra(); ultPos = ''; enviarPos(); return pintarTabla();   // que el recién llegado me vea aunque yo esté quieto
     case 'sale': { const o = otros.get(d.i); if (o) { o.on = 0; o.x = undefined; o.b = []; aviso(o.n + ' salió'); } return pintarTabla(); }
     case 'j': { const o = otros.get(d.i); if (o) { o.rec = d.rec; o.tot = d.tot; } return pintarTabla(); }
+    case 'col': if (d.k >= 0 && d.k < NCOL) { hallados[d.k] = 1; pintarHud(true); if (menu === 'menu') pintarMenu(); } return;
     case 'aviso': return aviso(nombreDe(d.i) + ' ' + d.x);
     case 'senal': senales.push({ x: d.x, y: d.y, t: 10, n: nombreDe(d.i) }); son.senal(); return aviso(nombreDe(d.i) + ' marcó un punto');
     case 'fuel': if (S.fuel <= 0 && d.q > 0) tarjeta('Saliste de la reserva', nombreDe(d.i) + ' te pasó combustible.'); S.fuel = Math.min(tanque(), S.fuel + d.q); son.combustible(); sucio = true; return aviso(nombreDe(d.i) + ' te pasó ' + d.q + ' litros');
@@ -1208,7 +1245,8 @@ function noFueMia(lista) {             // otra maquinita llegó antes a esas cel
     const r = recientes.get(idx);
     if (!r || Date.now() - r[1] > 6000) continue;
     recientes.delete(idx);
-    if (r[0] >= 40) { const v = r[2] || 0; S.d = Math.max(0, S.d - v); S.tot = Math.max(0, S.tot - v); S.st.hall[r[0] - 40] = Math.max(0, S.st.hall[r[0] - 40] - 1); }
+    if (r[0] === 50) { const v = r[2] || 0; S.d = Math.max(0, S.d - v); S.tot = Math.max(0, S.tot - v); }
+    else if (r[0] >= 40) { const v = r[2] || 0; S.d = Math.max(0, S.d - v); S.tot = Math.max(0, S.tot - v); S.st.hall[r[0] - 40] = Math.max(0, S.st.hall[r[0] - 40] - 1); }
     else { const i = r[0] - 10; if (S.carga[i] > 0) S.carga[i]--; S.st.rec[i] = Math.max(0, S.st.rec[i] - 1); }
     aviso('Otra maquinita llegó antes a esa pieza.'); sucio = true;
   }
@@ -1220,6 +1258,8 @@ function iniciarMundo(d) {
   const mias = S && !otraTierra ? dug.slice() : null, faltan = [];
   seed = d.seed; remin = d.remin; cfg = d.cfg; miI = d.i; soyCreador = !!d.creador;
   const b = atob(d.dug); for (let i = 0; i < dug.length; i++) dug[i] = b.charCodeAt(i);
+  const misCol = mias ? hallados.slice() : null; hallados.fill(0); for (const k of d.col || []) if (k >= 0 && k < NCOL) hallados[k] = 1;
+  if (misCol) for (let k = 0; k < NCOL; k++) if (misCol[k] && !hallados[k]) { hallados[k] = 1; enviar({ t: 'col', k }); }      // lo que encontré sin señal también cuenta
   if (mias) for (let i = 0; i < dug.length; i++) { const f = mias[i] & ~dug[i]; if (f) { dug[i] |= f; for (let k = 0; k < 8; k++) if (f & (1 << k)) faltan.push(i * 8 + k); } }
   nuevaSemilla();
   if (otraTierra) { pendientes = []; recientes.clear(); yo.perf = null; if (yo.y > INICIO_Y + 0.01) { yo.x = INICIO_X; yo.y = INICIO_Y; yo.vx = yo.vy = 0; } }
@@ -1381,7 +1421,7 @@ function tile(tipo, zona, vr) {
     q.fillStyle = '#2e2b2a'; for (const [a, b] of [[3, 3], [13, 3], [3, 13], [13, 13]]) { q.beginPath(); q.arc(a * u, b * u, u * 0.8, 0, 7); q.fill(); }
     q.fillStyle = '#ffffff18'; q.fillRect(u * 4, u * 7, u * 8, u * 0.6);
   } else {
-    if (tipo >= 10 && vr) vacio(q, zona, r); else tierra(q, zona, r);        // dentro de un lugar, tesoros y cristales van sobre el hueco, no sobre tierra
+    if (tipo >= 10 && tipo !== 50 && vr) vacio(q, zona, r); else tierra(q, zona, r);        // dentro de un lugar, tesoros y cristales van sobre el hueco, no sobre tierra
     if (tipo === 2) {                               // piedra
       const s = r() * 1000 | 0;
       poligono(q, T / 2, T / 2, u * 7.2, 9, azarDe(s)); q.fillStyle = '#77726d'; q.fill(); q.lineWidth = u * 0.5; q.strokeStyle = '#3b3836'; q.stroke();
@@ -1408,6 +1448,10 @@ function tile(tipo, zona, vr) {
       const i = tipo - 10;
       for (const [a, b] of [[4.6, 5], [11.2, 6.6], [7.4, 11.6]]) gema(q, i, (a + (r() - 0.5) * 1.6) * u, (b + (r() - 0.5) * 1.6) * u, (2.5 + r() * 0.8) * u, r);
       if (op.dalton) { q.fillStyle = '#000c'; q.fillRect(u * 3, u * 4.5, u * 10, u * 7); q.fillStyle = '#fff'; q.font = `bold ${u * 6}px system-ui`; q.textAlign = 'center'; q.textBaseline = 'middle'; q.fillText(MIN[i].s, T / 2, T / 2 + u * 0.2); }
+    } else if (tipo === 50) {                       // objeto de la colección: un medallón dorado con su figura
+      q.shadowColor = '#ffe9a8'; q.shadowBlur = u * 4; q.fillStyle = '#3a2a14'; q.beginPath(); q.arc(T / 2, T / 2, u * 6, 0, 7); q.fill();
+      q.shadowBlur = 0; q.lineWidth = u * 0.9; q.strokeStyle = '#ffd23f'; q.stroke(); q.lineWidth = u * 0.3; q.strokeStyle = '#fff6c9'; q.beginPath(); q.arc(T / 2, T / 2, u * 5.2, 3.6, 5.2); q.stroke();
+      q.font = `${u * 7.4}px system-ui, "Apple Color Emoji", "Segoe UI Emoji", sans-serif`; q.textAlign = 'center'; q.textBaseline = 'middle'; q.fillText(COLEC[vr][0], T / 2, T / 2 + u * 0.4);
     } else if (tipo >= 40) {                        // hallazgo
       const k = tipo - 40; q.shadowColor = '#ffe9a8'; q.shadowBlur = u * 3; q.lineWidth = u * 0.5; q.strokeStyle = '#2a1a14';
       if (k === 0) { q.fillStyle = '#f3ead8'; q.beginPath(); q.roundRect(u * 3.5, u * 7, u * 9, u * 2, u); q.fill(); q.stroke(); for (const [a, b] of [[3.2, 6.6], [3.2, 9.4], [12.8, 6.6], [12.8, 9.4]]) { q.beginPath(); q.arc(a * u, b * u, u * 1.5, 0, 7); q.fill(); q.stroke(); } }
@@ -1878,7 +1922,7 @@ function dibujar() {
       }
       const esGas = t === 4, gasOculto = esGas && cfg.verGas !== 1;
       if (gasOculto) t = 1;
-      const vr = t === 1 ? (x * 7 + y * 13) & 3 : t === 3 ? (celda(x, y - 1) === 3 ? 1 : 0) | (celda(x + 1, y) === 3 ? 2 : 0) | (celda(x, y + 1) === 3 ? 4 : 0) | (celda(x - 1, y) === 3 ? 8 : 0) | (((x * 7 + y * 13) & 3) << 4) : t === 7 ? (x * 7 + y * 13) & 3 : t >= 10 && y >= AGUA1 && lugarDe(x, y) > (t >= 40 ? 0 : 2) ? 1 : 0;
+      const vr = t === 1 ? (x * 7 + y * 13) & 3 : t === 3 ? (celda(x, y - 1) === 3 ? 1 : 0) | (celda(x + 1, y) === 3 ? 2 : 0) | (celda(x, y + 1) === 3 ? 4 : 0) | (celda(x - 1, y) === 3 ? 8 : 0) | (((x * 7 + y * 13) & 3) << 4) : t === 7 ? (x * 7 + y * 13) & 3 : t === 50 ? Math.floor(colec.get(y * W + x) / 3) : t >= 10 && y >= AGUA1 && lugarDe(x, y) > (t >= 40 ? 0 : 2) ? 1 : 0;
       g.drawImage(tile(t, zona, vr), px, py);
       if (t === 3) calor.push(px, py, x, y);
       else if (esGas) { if (!gasOculto || insinua) gases.push(px, py, x, y); }
@@ -2140,6 +2184,7 @@ function queEs() {
   if (!menu && raton.x >= 0 && performance.now() - raton.t < 5000) {
     const t = celda(Math.floor(camX + raton.x * RES / T), Math.floor(camY + raton.y * RES / T));
     if (t >= 10 && t < 40) { const m = MIN[t - 10]; txt = S.st.rec[t - 10] ? `${m.n} · ${fmt(m.v)} · ${m.kg} kg` : 'Mineral sin descubrir'; }
+    else if (t === 50) txt = 'Un objeto para la colección';
     else if (t >= 40) txt = t === 46 ? 'Late…' : 'Algo enterrado…';
     else if (t === 6) txt = 'Agua · aquí flotas';
     else if (t === 7) txt = 'Ladrillo antiguo · se perfora';
@@ -2281,6 +2326,7 @@ function pintarViaje() {
   let h = `<div class="l"><span>Llevas</span><b>${n} de ${bd}${n >= bd ? ' · llena' : ''}</b></div><div class="bar${n >= bd ? ' llena' : ''}"><i style="width:${Math.round(n / bd * 100)}%"></i></div><div class="l"><span>Se vende en</span><b>${fmt(venta().total)}</b></div>` + (n ? `<div class="bod">${S.carga.map((c, i) => [c, i]).filter((a) => a[0]).reverse().map(([c, i]) => `<span title="${MIN[i].n} · ${fmt(MIN[i].v)} la pieza"><i style="background:${MIN[i].col}"></i>${MIN[i].n} ${c}</span>`).join('')}</div>` : '');
   if (abajo) { const c = costoSubir(), mal = c > S.fuel; h += `<div class="l${mal ? ' mal' : ''}"><span>Subir gasta</span><b>${c === Infinity ? 'vas muy pesado' : '≈ ' + Math.ceil(c) + ' L · ' + (mal ? 'no te alcanza' : 'traes ' + Math.floor(S.fuel))}</b></div>`; }
   const sig = RANGOS.find((r) => r[0] > S.rec);
+  h += `<div class="l rec col" title="Ver la colección del mundo"><span>Colección</span><b>${nHallados()} de ${NCOL}</b></div>`;
   h += `<div class="l rec" title="${sig ? 'Sigue: ' + sig[1] + ' a los ' + sig[0].toLocaleString('es-MX') + ' m' : 'Llegaste al último rango'}"><span>Récord</span><b>${S.rec.toLocaleString('es-MX')} m · ${RANGOS[S.rango][1]}</b></div>`;
   poner($('#vjDatos'), h);
   const b = $('#bGrua'), c = lejos ? costoGrua() : 0;
@@ -2635,8 +2681,8 @@ $('#caja').addEventListener('change', (e) => {
 });
 $('#objetos').addEventListener('click', (e) => { const el = e.target.closest('[data-u]'); if (el) { audio(); usar(+el.dataset.u); } });
 $('#bGrua').addEventListener('click', (e) => { audio(); e.currentTarget.blur(); if (listo && !menu && !pausa) grua(); });
-$('#vjDatos').addEventListener('click', () => { audio(); if (listo && !menu) { pestana = 0; abrir('menu'); } });
-$('#contratos').addEventListener('click', () => { audio(); if (listo && !menu) { pestana = 1; abrir('menu'); } });
+$('#vjDatos').addEventListener('click', (e) => { audio(); if (listo && !menu) { pestana = e.target.closest('.col') ? 1 : 0; abrir('menu'); } });
+$('#contratos').addEventListener('click', () => { audio(); if (listo && !menu) { pestana = 2; abrir('menu'); } });
 $('#bInv').addEventListener('click', (e) => { audio(); e.currentTarget.blur(); if (listo && !menu) abrir('inv'); });
 $('#bMenu').addEventListener('click', (e) => { audio(); e.currentTarget.blur(); if (listo && !menu) abrir('menu'); });
 
@@ -2644,27 +2690,33 @@ function sel(k, ops, quien = 'regla') {
   return `<select data-a="${quien}" data-k="${k}" ${soyCreador ? '' : 'disabled'}>${ops.map(([v, t]) => `<option value="${v}" ${cfg[k] == v ? 'selected' : ''}>${t}</option>`).join('')}</select>`;
 }
 function menuPrincipal() {
-  const P = ['Bodega', 'Contratos', 'Logros', 'Catálogo', 'Estadísticas', 'Opciones', 'Mundo', 'Ayuda'];
+  const P = ['Bodega', 'Colección', 'Contratos', 'Logros', 'Catálogo', 'Estadísticas', 'Opciones', 'Mundo', 'Ayuda'];
   let h = cab('☰ ' + esc(cfg.nombre || 'Mina')) + `<div class="pest">${P.map((p, i) => `<button data-a="pest" data-v="${i}" class="${i === pestana ? 'on' : ''}">${p}</button>`).join('')}</div><div class="cuerpo">`;
   if (pestana === 0) {
     h += `<p class="nota">📦 ${nCarga()} de ${bodega()} espacios · ${kgCarga()} kg de carga (tu motor levanta ${Math.round(hp() * 29.5 - 1980)} kg). Tirar piezas libera espacio y peso.</p>` +
       (nCarga() ? S.carga.map((n, i) => n ? `<div class="fila"><div class="t"><b style="color:${MIN[i].col}">${MIN[i].n} × ${n}</b><small>${fmt(MIN[i].v)} · ${MIN[i].kg} kg la pieza</small></div><button class="s" data-a="tirar" data-v="${i}">Tirar una</button></div>` : '').join('') : '<p class="nota">Bodega vacía.</p>') +
       '<h4>Tu equipo</h4>' + PZ.map((p, i) => `<div class="fila"><div class="ic">${p.ic}</div><div class="t"><b>${p.n}: ${p.niv[S.eq[i]][0]}</b><small>${p.niv[S.eq[i]][2]} ${p.u}</small></div></div>`).join('');
   } else if (pestana === 1) {
+    const n = nHallados();
+    h += `<p class="nota">La colección es <b>de este mundo y de todos los que juegan en él</b>: lo que encuentra cualquiera se enciende aquí para todos. Son ${COLEC.length} objetos, tres de cada uno, enterrados de arriba al fondo. Entre más hondo, más vale; el tercero de cada uno paga doble.</p>
+      <p class="grande">${n} de ${NCOL}</p><div class="vitrina">` +
+      COLEC.map(([ic, nom], k) => { const c = hallados[k * 3] + hallados[k * 3 + 1] + hallados[k * 3 + 2], de = Math.round((10 + k * FRANJA) * 2 / 50) * 50, a = Math.round((10 + (k + 1) * FRANJA) * 2 / 50) * 50;
+        return `<div class="${c ? (c === 3 ? 'ok' : '') : 'no'}"><i>${ic}</i><b>${c ? nom : '???'}</b><span>${[0, 1, 2].map((j) => `<u class="${j < c ? 'on' : ''}"></u>`).join('')}</span><small>${de.toLocaleString('es-MX')} a ${a.toLocaleString('es-MX')} m · ${fmt(valorCol(k))}</small></div>`; }).join('') + '</div>';
+  } else if (pestana === 2) {
     h += `<p class="nota">${S.con.tut < TUTORIAL.length ? 'Primeros pasos: cumple cada uno y llega el siguiente.' : 'Trabajos de la Compañía. Al cumplir uno se paga solo y llega otro.'}</p>` +
       S.con.act.map((k) => `<div class="fila"><div class="t"><b>${esc(k.tx)}</b>${k.b > 1 ? `<small>Llevas ${k.pr | 0} de ${k.b}</small>` : ''}</div><div class="v">${fmt(k.pg)}</div></div>`).join('');
-  } else if (pestana === 2) {
+  } else if (pestana === 3) {
     h += `<p class="nota">${S.log.length} de ${LOGROS.length} logros · Rango: <b>${RANGOS[S.rango][1]}</b></p><div class="rej">` +
       LOGROS.map((l) => { const ok = S.log.includes(l.id); return `<div class="${ok ? '' : 'no'}"><b>${ok ? '🏅 ' : ''}${ok && l.sec ? l.sec.split(':')[0] : l.n}</b><small>${ok && l.sec ? l.sec.split(': ')[1] : l.d}</small></div>`; }).join('') + '</div>';
-  } else if (pestana === 3) {
+  } else if (pestana === 4) {
     h += `<p class="nota">De la Corteza al Corazón de la Tierra. Completa la página y todo lo que vendas vale <b>5 % más</b>${catalogoCompleto() ? ' — ¡ya lo tienes!' : ''}.</p><div class="rej">` +
       MIN.map((m, i) => S.st.rec[i] ? `<div><b style="color:${m.col}">${m.n}</b><small>${fmt(m.v)} · ${m.kg} kg · desde ${m.a} m<br>Vendidas: ${S.st.vend[i]}</small></div>` : '<div class="no"><b>???</b><small>Sin descubrir</small></div>').join('') +
       HALL.map((x, i) => S.st.hall[i] ? `<div><b>🏺 ${x.n}</b><small>${fmt(x.v)} · encontrados: ${S.st.hall[i]}</small></div>` : '<div class="no"><b>???</b><small>Hallazgo sin encontrar</small></div>').join('') + '</div>';
-  } else if (pestana === 4) {
+  } else if (pestana === 5) {
     const e = S.st;
     h += `<p><button data-a="menu" data-v="foto">📸 Presume tu maquinita y tus récords</button></p>` + [['Profundidad máxima', S.rec + ' m'], ['Altura máxima', fmtAlto(S.alt)], ['Total ganado', fmt(S.tot)], ['Viajes', e.viajes], ['Mejor viaje', fmt(e.mejorViaje)], ['Celdas perforadas', e.cavadas.toLocaleString('es-MX')], ['Piezas vendidas', e.vend.reduce((a, b) => a + b, 0)], ['Hallazgos', e.hall.reduce((a, b) => a + b, 0)], ['Explosivos usados', e.expl], ['Litros cargados', e.comb], ['Explosiones', e.muertes], ['Rescates gratis usados', S.resc], ['Remineralizaciones', e.remin]]
       .map(([a, b]) => `<div class="fila"><div class="t">${a}</div><div class="v">${b}</div></div>`).join('');
-  } else if (pestana === 5) {
+  } else if (pestana === 6) {
     const chk = (k, t) => `<label class="op"><span>${t}</span><input type="checkbox" data-a="op" data-k="${k}" ${op[k] ? 'checked' : ''}></label>`;
     h += `<p class="nota">El sonido se maneja con la bocina de arriba a la derecha: apagar, bajar, subir y elegir qué tipos se oyen.</p>
       <label class="op"><span>Tamaño del texto</span><button class="s" data-a="texto" data-v="-0.1">A−</button><button class="s" data-a="texto" data-v="0.1">A+</button></label>` +
@@ -2674,7 +2726,7 @@ function menuPrincipal() {
       chk('nombres', 'Mostrar los nombres de las maquinitas') +
       `<label class="op"><span>Cuadros por segundo</span><select data-a="op" data-k="fps">${[[0, 'Lo máximo de tu pantalla'], [60, '60'], [30, '30 (ahorra batería)']].map(([v, t]) => `<option value="${v}" ${op.fps == v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
       <p class="nota">Tu pantalla refresca a <b>${rit.hz} Hz</b> y el juego está mostrando <b>${Math.round(Math.min(rit.fps, rit.hz))} cuadros por segundo</b>, con nitidez al ${Math.round(NITIDEZ[rit.niv] * 100)} %. Señal con el mundo: ${red.rtt ? Math.round(red.rtt) + ' ms' : 'midiendo…'}. El juego se ajusta solo: si tu equipo no alcanza el refresco de su pantalla, baja la nitidez antes que la fluidez.</p>`;
-  } else if (pestana === 6) {
+  } else if (pestana === 7) {
     const o3 = [[0, 'Apagado'], [1, 'Normal'], [2, 'Fuerte']];
     h += `<div class="fila"><div class="t"><b>Invita a tu gente</b><small>${location.origin}/m/${mundoId}</small></div><button class="s" data-a="menu" data-v="inv">Ver código QR</button><button data-a="invitar">Copiar la liga</button></div>
       <h4>Dificultad del mundo ${soyCreador ? '' : '<small style="color:var(--su)">· solo la cambia quien creó el mundo</small>'}</h4>
@@ -2715,6 +2767,7 @@ function menuPrincipal() {
       <p><b>Lava y gas:</b> la lava (desde 410 m) se ve y se rodea. Las bolsas de gas (desde 650 m) se notan por unas burbujitas verdes y por el aviso «Huele a gas». Pon el ratón encima de cualquiera y te dice cuánto casco te quita. Vuélalas con dinamita o lleva casco y radiador suficientes: arriba, en las metas, dice hasta qué profundidad aguantas.</p>
       <p><b>Sonido:</b> la bocina de arriba a la derecha lo apaga, lo baja y lo sube; «♪ Sonidos» deja elegir qué se oye: música, taladro, hélice, motor (viene apagado) y lo demás, cada uno con su interruptor.</p>
       <p><b>Mirar alrededor:</b> la rueda del mouse o dos dedos en el trackpad mueven la vista; cualquier flecha la regresa a tu maquinita.</p>
+      <p><b>La colección:</b> hay 99 objetos enterrados (33 distintos, tres de cada uno), cada uno en su franja de profundidad. Se ven como medallones dorados. Son del mundo: los junta el equipo entero y se van encendiendo en Menú → Colección. Las explosiones no los destruyen.</p>
       <p><b>Diez kilómetros:</b> debajo de la Corteza siguen el Acuífero, las Cavernas, la Cristalera y la Zona de presión, con doce minerales nuevos y cuatro lugares por descubrir. Cada lugar que encuentres queda apuntado en <b>El Elevador</b> (el último edificio), que también te regresa al punto donde te recogió la grúa.</p>
       <p><b>Explosivos:</b> se usan donde sea, también volando: si topas con piedra al subir, X te abre paso.</p>
       <p class="nota">Piedra desde 210 m: no se perfora. Lava desde 410 m: se ve, rodéala. Gas desde 650 m: pocas bolsas, y se notan por sus burbujas.</p>`;

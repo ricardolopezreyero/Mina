@@ -1,4 +1,4 @@
-# DOCUMENTO MAESTRO · «Mina» · v13
+# DOCUMENTO MAESTRO · «Mina» · v14
 
 **Ver en vivo: https://mina.capitaltorreon.com**
 
@@ -460,6 +460,24 @@ El elevador llega por su tiro, bajo el edificio (columna 66). Si a esa profundid
 **Probado.** En local: 12 celdas cavadas con la conexión «muerta», corte y reconexión: las 12 siguieron abiertas y, al recargar la página, el mundo ya las tenía. En producción, con un mundo desechable: lo cavado se conserva tras reconectar y tras dejar el mundo solo 100 s.
 
 **Lo que no se recupera:** el tramo que ya se había cerrado antes de esta corrección. Y quien tenga abierta la versión anterior puede perder hasta 5 s de túnel una vez más, al publicarse esta.
+
+### 9.9 La colección del mundo: 99 objetos, en equipo
+
+Ricardo pidió coleccionables: unos 99 objetos, tres de cada uno, repartidos a distintas alturas y en distintas partes del mapa, que valgan muy distinto (más entre más hondo), que desde el principio se vean todos apagados y se vayan encendiendo, y que la colección sea **del mapa y en equipo**.
+
+| Tema | Cómo quedó |
+|---|---|
+| Cuántos | 33 objetos distintos × 3 = **99**. Cada objeto tiene su franja de 300 m; sus tres copias quedan a distinta altura y en distinta columna. Ninguno cae dentro del agua ni dentro de un lugar, y si un túnel ya pasó por su celda, se recorre. |
+| Cómo se ven | Un medallón dorado con su figura. Se recogen perforándolos. Las explosiones no los destruyen. |
+| Lo que pagan [N] | De $500 (la Bota de minero, arriba) a $500 millones (el Dragón dormido, al fondo): cada objeto vale 1.54 veces el anterior. El tercero de cada uno paga doble. |
+| De quién es | Del mundo. El servidor guarda cuáles se han encontrado (`meta.col`) y se lo dice a todos: lo que encuentra cualquiera se enciende para todos. No se pierde al remineralizar. |
+| La vitrina | Menú → Colección: los 33 desde el principio, apagados y con «???»; al encontrar uno se enciende con su nombre y sus tres focos (1, 2 o 3). Cada uno dice su franja de profundidad y su valor, para saber dónde buscar. |
+| A la vista | El panel del viaje dice «Colección 12 de 99»; un clic abre la vitrina. |
+| Logros | Coleccionista (el primero), Media vitrina (50 entre todos) y Vitrina completa (los 99). |
+
+Los 33, de arriba al fondo: Bota de minero, Linterna vieja, Pico oxidado, Radio de la Compañía, Caracola, Ancla, Brújula, Hongo luminoso, Vela eterna, Llave de hierro, Ánfora, Mapa del tesoro, Murciélago de obsidiana, Máscara ritual, Bola de cristal, Anillo perdido, Urna, Amuleto, Cabeza de piedra, Arco antiguo, Espadas cruzadas, Violín, Reloj de arena, Campana de bronce, Corona, Copa de oro, Colmillo de dragón, Huevo de dragón, Fósil viviente, Fragmento de cometa, Piedra del volcán, Estrella caída y Dragón dormido.
+
+Las figuras son emojis del sistema: se ven un poco distintas en Mac, Windows y teléfono.
 
 ---
 

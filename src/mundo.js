@@ -305,6 +305,16 @@ export class Mundo extends DurableObject {
         if (!otro || otro === ws || !q || !manda(otro, { t: "regalo", i, q })) manda(ws, { t: "devuelve", d: q });
         return;
       }
+      case "col": {              // un objeto de la colección del mundo: es de todos y no se pierde al remineralizar
+        const k = entero(d.k, 0, 98, -1);
+        if (k < 0) return;
+        m.col = m.col || [];
+        if (m.col.includes(k)) return;
+        m.col.push(k);
+        this.sucio.meta = true;
+        this.difundir({ t: "col", k, i }, ws);
+        break;
+      }
       case "cfg":
         if (i !== this.creador()) return;
         m.cfg = cfgLimpia(d.cfg, m.cfg);
@@ -388,7 +398,7 @@ export class Mundo extends DurableObject {
       t: "mundo", i, seed: m.seed, remin: m.remin, cfg: m.cfg, creador: i === this.creador() ? 1 : 0,
       est: this.jug[i].est, cuenta: m.reminAt ? Math.max(0, Math.ceil((m.reminAt - Date.now()) / 1000)) : 0,
       jug: this.jug.map((j, x) => (j ? this.publico(x, on.has(x)) : null)).filter(Boolean),
-      dug: btoa(b),
+      dug: btoa(b), col: m.col || [],
     });
     for (const [x, s] of this.pos) if (x !== i && on.has(x)) manda(ws, s);
     this.difundir({ t: "entra", j: this.publico(i, true), nuevo: estrena ? 1 : 0 }, ws);
