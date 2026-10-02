@@ -73,6 +73,8 @@ body.jugando .hud{visibility:visible}
 #vjDatos .bar i{display:block;height:100%;background:var(--ac);transition:width .2s}
 #vjDatos .bar.llena i{background:var(--ok)}
 #vjDatos{cursor:pointer}
+#vjDatos .l.rec{font-size:.9em;margin-top:3px;padding-top:3px;border-top:1px solid #ffffff1c}
+#vjDatos .l.rec b{color:var(--su);font-weight:600}
 #vjDatos .bod{display:flex;flex-wrap:wrap;gap:3px 9px;margin-top:4px;padding-top:4px;border-top:1px solid #ffffff1c;font-size:.9em;max-height:5.6em;overflow:hidden}
 #vjDatos .bod span{white-space:nowrap}
 #vjDatos .bod i{display:inline-block;width:.62em;height:.62em;border-radius:50%;margin-right:4px;border:1px solid #0008}
@@ -100,6 +102,7 @@ body.jugando .hud{visibility:visible}
 #ojo{display:none;background:#000c;border:1px solid var(--borde);border-radius:5px;padding:2px 8px;font-size:.8em;font-weight:700;white-space:nowrap;z-index:2}
 .foto{position:static;display:inline-block;width:min(420px,78vw);height:auto;border-radius:10px;border:2px solid var(--borde)}
 #pista{left:50%;bottom:16%;white-space:nowrap;transform:translateX(-50%);background:#000a;border-radius:6px;padding:4px 12px;font-weight:700;display:none}
+#pista.dis{bottom:calc(50px*var(--f));font-weight:500;font-size:.8em;background:#0005;padding:2px 10px;color:var(--su)}
 #aviso-red{left:50%;top:40%;transform:translate(-50%,-50%);background:#000d;border:2px solid var(--mal);border-radius:10px;padding:14px 22px;font-weight:800;display:none}
 #cuenta{left:50%;top:14%;transform:translateX(-50%);font-size:2em;font-weight:900;color:var(--ac);display:none;text-align:center}
 #velo{position:fixed;inset:0;background:#000b;display:none;align-items:center;justify-content:center;padding:12px;z-index:5}

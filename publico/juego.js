@@ -717,7 +717,15 @@ function chispas(x, y, col, n = 8, f = 4) {
 let flot = [];
 function flota(x, y, txt, col = '#fff') { flot.push({ x, y, txt, col, t: 1.7 }); if (flot.length > 14) flot.shift(); }
 function temblar(q) { if (op.temblor) temblor = Math.max(temblor, q); }
-let ondas = [], golpeFx = 0;
+let ondas = [], golpeFx = 0, bichos = [], tBicho = -99;
+const natural = (x, y) => { if (x < 0 || x >= W || y < 1 || y >= H) return false; const i = y * W + x; return !(dug[i >> 3] & (1 << (i & 7))) && celda(x, y) === 0; };
+function soltarBichos(x, y) {
+  const k = [0, 0, 0, 0, 1, 1, 2, 3][zonaDe((y + 1) * 2)];           // 0 murciélagos · 1 luciérnagas · 2 mariposas de cristal · 3 brasas
+  for (let i = 0; i < (k === 0 ? 7 : 10); i++) bichos.push({ x: x + 0.5 + (Math.random() - 0.5) * 0.6, y: y + 0.5 + (Math.random() - 0.5) * 0.6, vx: (Math.random() - 0.5) * 3, vy: (Math.random() - 0.5) * 2, t: (k === 0 ? 4 : 7) + Math.random() * 2, k, f: Math.random() * 6 });
+  tBicho = tiempo;
+  if (k === 0) for (let i = 0; i < 4; i++) tono(3000 + Math.random() * 900, 0.045, 'sine', 0.03, 2300, i * 0.07 + Math.random() * 0.03, 'ambiente');
+  else campana(k === 3 ? 660 : 1568, 0.6, 0.025, 'ambiente');
+}
 function onda(x, y, r, col = '#ffe2a8', d = 0.5) { if (op.part) ondas.push({ x, y, r, col, t: 0, d }); }
 function humo(x, y, n = 10) {
   if (!op.part) return;
@@ -748,6 +756,7 @@ const LOGROS = [
   { id: 'remin', n: 'Tierra nueva', d: 'Remineraliza el tablero.', ok: () => S.st.remin >= 1 },
   { id: 'catalogo', n: 'Catálogo completo', d: 'Vende todos los minerales y encuentra todos los hallazgos.', ok: () => catalogoCompleto() },
   ...LUGARES.map((L, i) => ({ id: 'lug' + i, n: L.n, d: 'Descubre este lugar.', ok: () => S.lug[i] })),
+  { id: 'guero', n: '???', d: 'Secreto.', sec: 'Vecino: encuentra a «El Güero».', ok: () => S.fl.guero },
   { id: 'diezkm', n: 'Diez kilómetros', d: 'Llega al fondo del mundo: 10,000 m.', ok: () => S.rec >= 9990 },
   { id: 'intacto', n: 'Sin rasguños', d: 'Llega a 500 m sin recibir daño en el viaje.', ok: () => S.fl.intacto },
   { id: 'anfitrion', n: 'Anfitrión', d: 'Tres maquinitas nuevas llegan a un mundo donde estás.', ok: () => (S.st.amigos || 0) >= 3 },
@@ -1046,6 +1055,7 @@ function llegar(p) {
     danar(danoGas(p.ty), 'una bolsa de gas');
     if (!yo.renace) S.fl.gas = 1;
   }
+  if (tiempo - tBicho > 40 && bichos.length < 20 && p.ty > 20 && Math.random() < 0.6) for (const [a, b] of [[0, 1], [-1, 0], [1, 0], [0, -1]]) if (natural(p.tx + a, p.ty + b)) { soltarBichos(p.tx + a, p.ty + b); break; }
   sucio = true;
 }
 
@@ -1409,6 +1419,14 @@ function sprite(id) {
     q.beginPath(); q.moveTo(u * 8, u * 14); q.bezierCurveTo(u * 1, u * 9, u * 2, u * 2.5, u * 8, u * 5.5); q.bezierCurveTo(u * 14, u * 2.5, u * 15, u * 9, u * 8, u * 14); q.fill(); q.stroke(); q.shadowBlur = 0;
     q.fillStyle = '#ff9a7a'; q.beginPath(); q.moveTo(u * 8, u * 5.5); q.lineTo(u * 5, u * 8); q.lineTo(u * 8, u * 14); q.fill(); q.fillStyle = '#c81e2a'; q.beginPath(); q.moveTo(u * 8, u * 5.5); q.lineTo(u * 11.5, u * 8.5); q.lineTo(u * 8, u * 14); q.fill();
     q.fillStyle = '#fff'; q.beginPath(); q.ellipse(u * 5.2, u * 6, u * 1.2, u * 0.7, -0.6, 0, 7); q.fill();
+  } else if (id[0] === 'f') {                        // lo que crece en el piso de las cuevas naturales
+    const z = +id[1], v = +id[2], u = T / 16; c.width = c.height = T;
+    const hongo = (x, a, copa, tallo) => { q.fillStyle = tallo; q.fillRect((x - 0.4) * u, (16 - a) * u, u * 0.8, a * u); q.fillStyle = copa; q.beginPath(); q.ellipse(x * u, (16 - a) * u, u * (1.1 + a * 0.16), u * (0.7 + a * 0.08), 0, Math.PI, Math.PI * 2); q.fill(); };
+    if (z === 0) { hongo(v ? 4 : 11, 3, '#a8734f', '#d9c7b0'); hongo(v ? 6.5 : 8.5, 2, '#8a5c3e', '#d9c7b0'); }
+    else if (z === 4) { q.strokeStyle = '#3fbf8a'; q.lineWidth = u * 0.8; q.lineCap = 'round'; for (const [x, a, k] of v ? [[4, 9, 1], [7, 6, -1], [12, 8, 1]] : [[5, 7, -1], [10, 10, 1]]) { q.beginPath(); q.moveTo(x * u, 16 * u); q.quadraticCurveTo((x + k * 2) * u, (16 - a / 2) * u, x * u, (16 - a) * u); q.stroke(); } }
+    else if (z === 5) { q.shadowColor = '#5cffd9'; q.shadowBlur = u * 3; hongo(v ? 5 : 10, 5, '#5cffd9', '#bafff0'); hongo(v ? 8 : 6.5, 3, '#39d6c0', '#bafff0'); hongo(v ? 11.5 : 13, 2, '#5cffd9', '#bafff0'); }
+    else if (z === 6) { q.shadowColor = '#8f9bff'; q.shadowBlur = u * 2.5; for (const [x, a, an] of v ? [[5, 6, -0.3], [8, 9, 0.1], [11, 5, 0.4]] : [[6, 8, -0.15], [10, 6, 0.35]]) { q.fillStyle = '#8f9bff'; q.beginPath(); q.moveTo((x - 1.2) * u, 16 * u); q.lineTo((x + an * a) * u, (16 - a) * u); q.lineTo((x + 1.2) * u, 16 * u); q.fill(); q.fillStyle = '#dfe3ff'; q.beginPath(); q.moveTo((x - 1.2) * u, 16 * u); q.lineTo((x + an * a) * u, (16 - a) * u); q.lineTo((x - 0.2) * u, 16 * u); q.fill(); } }
+    else { q.shadowColor = '#ff7a3a'; q.shadowBlur = u * 3; q.strokeStyle = '#ffb347'; q.lineWidth = u * 0.7; q.beginPath(); q.moveTo((v ? 3 : 6) * u, 15.6 * u); q.lineTo(7 * u, 15 * u); q.lineTo(9 * u, 15.7 * u); q.lineTo((v ? 13 : 11) * u, 15.2 * u); q.stroke(); }
   } else if (id === 'vaho') {
     const n = c.width = c.height = Math.ceil(T * 1.6), m = n / 2, gr = q.createRadialGradient(m, m, 0, m, m, m);
     gr.addColorStop(0, 'rgba(120,255,100,0.5)'); gr.addColorStop(1, 'rgba(120,255,100,0)'); q.fillStyle = gr; q.fillRect(0, 0, n, n);
@@ -1572,32 +1590,54 @@ function entre(a, b, k) {          // color entre dos colores
   const x = parseInt(a.slice(1), 16), y = parseInt(b.slice(1), 16), c = (s) => Math.round(((x >> s) & 255) + (((y >> s) & 255) - ((x >> s) & 255)) * k);
   return `rgb(${c(16)},${c(8)},${c(0)})`;
 }
-let lunaC = null;
+let lunaC = null, planetaC = null;
 function luna() {
   if (lunaC) return lunaC;
-  lunaC = document.createElement('canvas'); lunaC.width = lunaC.height = 256;
-  const q = lunaC.getContext('2d'), r = azarDe(77), gr = q.createRadialGradient(100, 96, 10, 128, 128, 126);
-  gr.addColorStop(0, '#f4f1ea'); gr.addColorStop(0.7, '#c9c5bc'); gr.addColorStop(1, '#8e8a84');
-  q.fillStyle = gr; q.beginPath(); q.arc(128, 128, 124, 0, 7); q.fill(); q.save(); q.clip();
-  for (let i = 0; i < 26; i++) { const x = 20 + r() * 216, y = 20 + r() * 216, a = 4 + r() * 22; q.fillStyle = '#00000022'; q.beginPath(); q.arc(x, y, a, 0, 7); q.fill(); q.strokeStyle = '#ffffff30'; q.lineWidth = 2; q.beginPath(); q.arc(x + 1, y + 1, a, 0.6, 2.6); q.stroke(); }
-  q.fillStyle = '#00000030'; q.beginPath(); q.ellipse(150, 110, 44, 30, 0.5, 0, 7); q.ellipse(96, 160, 30, 22, -0.3, 0, 7); q.fill();
+  const L = 512, m = L / 2; lunaC = document.createElement('canvas'); lunaC.width = lunaC.height = L;
+  const q = lunaC.getContext('2d'), r = azarDe(77), gr = q.createRadialGradient(m * 0.78, m * 0.75, m * 0.08, m, m, m * 0.98);
+  gr.addColorStop(0, '#f6f3ec'); gr.addColorStop(0.7, '#cbc7be'); gr.addColorStop(1, '#8e8a84');
+  q.fillStyle = gr; q.beginPath(); q.arc(m, m, m * 0.97, 0, 7); q.fill(); q.save(); q.clip();
+  q.fillStyle = '#00000026'; for (const [x, y, a, b, t] of [[0.6, 0.42, 0.19, 0.13, 0.5], [0.36, 0.62, 0.13, 0.1, -0.3], [0.44, 0.3, 0.1, 0.07, 0.2], [0.68, 0.66, 0.09, 0.06, 0.8]]) { q.beginPath(); q.ellipse(x * L, y * L, a * L, b * L, t, 0, 7); q.fill(); }     // los mares
+  for (let i = 0; i < 60; i++) { const x = L * (0.06 + r() * 0.88), y = L * (0.06 + r() * 0.88), a = L * (0.008 + r() * r() * 0.05); q.fillStyle = '#00000020'; q.beginPath(); q.arc(x, y, a, 0, 7); q.fill(); q.strokeStyle = '#ffffff38'; q.lineWidth = Math.max(1, a * 0.14); q.beginPath(); q.arc(x + a * 0.08, y + a * 0.08, a, 0.6, 2.6); q.stroke(); q.strokeStyle = '#00000030'; q.beginPath(); q.arc(x, y, a, 3.6, 5.6); q.stroke(); }
+  q.strokeStyle = '#ffffff22'; q.lineWidth = 2; for (let i = 0; i < 9; i++) { const a = i * 0.7; q.beginPath(); q.moveTo(L * 0.3, L * 0.78); q.lineTo(L * (0.3 + Math.cos(a) * 0.22), L * (0.78 + Math.sin(a) * 0.22)); q.stroke(); }      // los rayos de un cráter joven
   q.restore();
   return lunaC;
 }
-// El cielo estrellado se pinta una sola vez: estrellas de tres tamaños y la franja de la Vía Láctea.
-function estrellas(w, h) {
-  let c = sprites.get('cielo'); if (c && c.width === w && c.height === h) return c;
-  c = document.createElement('canvas'); c.width = w; c.height = h;
-  const q = c.getContext('2d'), r = azarDe(4211), u = Math.max(1, RES);
-  q.save(); q.translate(w * 0.5, h * 0.42); q.rotate(-0.5);
-  const via = q.createLinearGradient(0, -h * 0.2, 0, h * 0.2); via.addColorStop(0, 'rgba(150,160,255,0)'); via.addColorStop(0.5, 'rgba(170,175,255,0.13)'); via.addColorStop(1, 'rgba(150,160,255,0)');
-  q.fillStyle = via; q.fillRect(-w, -h * 0.2, w * 2, h * 0.4);
-  q.fillStyle = '#fff'; for (let i = 0; i < 520; i++) { q.globalAlpha = 0.15 + r() * 0.45; q.fillRect((r() - 0.5) * w * 1.6, (r() + r() + r() - 1.5) * h * 0.09, u, u); }
+// El planeta visto desde arriba: desierto con manchas, cañones y nubes delgadas.
+function planeta() {
+  if (planetaC) return planetaC;
+  const L = 512, m = L / 2; planetaC = document.createElement('canvas'); planetaC.width = planetaC.height = L;
+  const q = planetaC.getContext('2d'), r = azarDe(912);
+  q.beginPath(); q.arc(m, m, m, 0, 7); q.clip(); q.fillStyle = '#9a6a48'; q.fillRect(0, 0, L, L);
+  for (let i = 0; i < 70; i++) { q.fillStyle = ['#7d5236', '#b07e56', '#6b4630', '#c2946a', '#8a5c3e'][i % 5]; q.globalAlpha = 0.25 + r() * 0.35; q.beginPath(); q.ellipse(r() * L, r() * L, L * (0.03 + r() * 0.12), L * (0.015 + r() * 0.05), r() * 3, 0, 7); q.fill(); }
+  q.globalAlpha = 0.5; q.strokeStyle = '#5a3a26'; q.lineWidth = 2; for (let i = 0; i < 7; i++) { let x = r() * L, y = r() * L; q.beginPath(); q.moveTo(x, y); for (let k = 0; k < 6; k++) { x += (r() - 0.3) * L * 0.07; y += (r() - 0.5) * L * 0.06; q.lineTo(x, y); } q.stroke(); }
+  q.fillStyle = '#fff'; for (let i = 0; i < 26; i++) { q.globalAlpha = 0.16 + r() * 0.2; q.beginPath(); q.ellipse(r() * L, r() * L, L * (0.04 + r() * 0.1), L * (0.006 + r() * 0.016), (r() - 0.5) * 0.7, 0, 7); q.fill(); }
+  q.globalAlpha = 0.6; q.fillStyle = '#f4efe6'; q.beginPath(); q.ellipse(m, L * 0.02, L * 0.3, L * 0.07, 0, 0, 7); q.fill(); q.beginPath(); q.ellipse(m, L * 0.98, L * 0.26, L * 0.06, 0, 0, 7); q.fill();      // los polos
+  return planetaC;
+}
+// Constelaciones: estrellas (x, y) y los trazos que las unen. Se dibujan sobre el cielo, que gira despacio.
+const CONSTELA = [
+  { x: 0.34, y: -0.3, e: [[-1, -2], [1, -2.1], [-0.5, 0], [0, 0.1], [0.5, 0.2], [-0.9, 2.1], [1.1, 2]], t: [[0, 1], [0, 2], [1, 4], [2, 3], [3, 4], [2, 5], [4, 6], [5, 6]] },      // Orión
+  { x: -0.42, y: -0.36, e: [[-3, 0], [-2, -0.4], [-1, -0.3], [0, 0], [0.3, 0.9], [1.6, 1], [1.9, 0.1]], t: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 3]] },             // la Osa Mayor
+  { x: -0.05, y: -0.62, e: [[-2, 0], [-1, 1], [0, 0.2], [1, 1.1], [2, 0]], t: [[0, 1], [1, 2], [2, 3], [3, 4]] },                                                                // Casiopea
+  { x: 0.58, y: 0.22, e: [[0, -1.4], [0, 1.6], [-1, 0.1], [1.1, -0.1]], t: [[0, 1], [2, 3]] },                                                                                  // la Cruz del Sur
+  { x: -0.5, y: 0.2, e: [[-2, -1.5], [-1.6, -0.6], [-1, 0], [-0.4, 0.6], [0.3, 1.3], [1.2, 1.6], [2, 1.2], [2.2, 0.4]], t: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7]] },   // el Escorpión
+];
+// El cielo estrellado se pinta una sola vez, a media resolución y en un cuadro más grande que la pantalla para poder girarlo.
+function estrellas(lado) {
+  const n = Math.ceil(lado / 2); let c = sprites.get('cielo'); if (c && c.width === n) return c;
+  c = document.createElement('canvas'); c.width = c.height = n;
+  const q = c.getContext('2d'), r = azarDe(4211), u = Math.max(1, RES * 0.6);
+  q.save(); q.translate(n * 0.5, n * 0.5); q.rotate(-0.5);
+  const via = q.createLinearGradient(0, -n * 0.13, 0, n * 0.13); via.addColorStop(0, 'rgba(150,160,255,0)'); via.addColorStop(0.5, 'rgba(175,180,255,0.17)'); via.addColorStop(1, 'rgba(150,160,255,0)');
+  q.fillStyle = via; q.fillRect(-n, -n * 0.13, n * 2, n * 0.26);
+  q.fillStyle = '#fff'; for (let i = 0; i < 1400; i++) { q.globalAlpha = 0.15 + r() * 0.5; q.fillRect((r() - 0.5) * n * 1.5, (r() + r() + r() - 1.5) * n * 0.07, u, u); }
+  q.fillStyle = '#1a1030'; q.globalAlpha = 0.22; for (let i = 0; i < 9; i++) { q.beginPath(); q.ellipse((r() - 0.5) * n * 1.2, (r() - 0.5) * n * 0.05, n * (0.02 + r() * 0.05), n * 0.012, r(), 0, 7); q.fill(); }      // las nubes oscuras de la Vía Láctea
   q.restore();
-  for (let i = 0; i < 420; i++) {
-    const x = r() * w, y = r() * h, t = r();
-    q.globalAlpha = 0.35 + r() * 0.65; q.fillStyle = t > 0.93 ? '#ffd9b0' : t > 0.86 ? '#b9d2ff' : '#fff';
-    if (t > 0.975) { q.beginPath(); q.arc(x, y, u * 1.5, 0, 7); q.fill(); } else q.fillRect(x, y, t > 0.8 ? u * 1.6 : u, t > 0.8 ? u * 1.6 : u);
+  for (let i = 0; i < 1500; i++) {
+    const x = r() * n, y = r() * n, t = r();
+    q.globalAlpha = 0.3 + r() * 0.7; q.fillStyle = t > 0.93 ? '#ffd9b0' : t > 0.86 ? '#b9d2ff' : '#fff';
+    if (t > 0.975) { q.beginPath(); q.arc(x, y, u * 1.3, 0, 7); q.fill(); } else q.fillRect(x, y, t > 0.8 ? u * 1.5 : u, t > 0.8 ? u * 1.5 : u);
   }
   return sprites.set('cielo', c), c;
 }
@@ -1610,16 +1650,31 @@ function cielo(w, h, oy) {
   g.fillStyle = gr; g.fillRect(0, 0, w, fondo);
   // dónde queda el horizonte en la pantalla: el suelo si está a la vista; si no, la orilla del planeta
   const lejos = oy > h, s = tope(Math.log10(Math.max(km, 3) / 3) / Math.log10(1000 / 3));
-  const base = lejos ? h - h * 0.06 * tope((oy - h) / (h * 0.5)) - h * 0.24 * s : oy;
-  const R = w * 60 * Math.pow(0.0125, s), cyP = base + R, orilla = (x) => cyP - Math.sqrt(Math.max(0, R * R - (x - w / 2) * (x - w / 2)));
+  const base = lejos ? h - h * 0.06 * tope((oy - h) / (h * 0.5)) - h * 0.34 * s : oy;
+  // Entre más alto, más chico el planeta (a 60 km ya se nota la curva; a 300 km es un domo; a 1,000 km, una bola) y más a la derecha: la vista se va inclinando.
+  const R = w * 60 * Math.pow(0.002, s), cxP = w * (0.5 + 0.2 * suave(60, 1000, km)), cyP = base + R, orilla = (x) => cyP - Math.sqrt(Math.max(0, R * R - (x - cxP) * (x - cxP)));
   const noche = suave(4, 12, km) * (1 - suave(450, 800, km)), aire = tope(1 - km / 90), sube = -yo.vy;
-  // 1 · estrellas: asoman en la hora azul; en el aire titilan, en el espacio no
+  // 1 · estrellas: asoman en la hora azul; en el aire titilan, en el espacio no. El cielo entero gira despacio
+  //     con la altura y con el tiempo, y ya en el espacio se dibujan las constelaciones y asoma un cometa.
   const est = suave(7, 28, km);
   if (est > 0.01) {
-    g.globalAlpha = est; g.drawImage(estrellas(w, h), 0, 0);
+    const lado = Math.ceil(Math.hypot(w, h)) + 4, m = lado / 2, u = lado * 0.021, lin = suave(45, 160, km);
+    g.save(); g.translate(w / 2, h * 0.45); g.rotate(-0.3 + 1.1 * s + reloj * 0.0018);
+    g.globalAlpha = est * (0.62 + 0.38 * suave(40, 200, km)); g.drawImage(estrellas(lado), -m, -m, lado, lado);
     g.fillStyle = '#fff';
-    for (let n = 0; n < 46; n++) { const b = 0.5 + 0.5 * Math.sin(reloj * (1.3 + n % 5) + n * 2.4); g.globalAlpha = est * (1 - (0.75 * aire + 0.15) * b); const t = Math.max(1, Math.round(RES * (n % 9 ? 1.4 : 2.4))); g.fillRect(azar01(n * 1.7) * w, azar01(n * 5.9) * fondo, t, t); }
-    g.globalAlpha = 1;
+    for (let n = 0; n < 46; n++) { const b = 0.5 + 0.5 * Math.sin(reloj * (1.3 + n % 5) + n * 2.4); g.globalAlpha = est * (1 - (0.75 * aire + 0.15) * b); const t = Math.max(1, Math.round(RES * (n % 9 ? 1.4 : 2.4))); g.fillRect((azar01(n * 1.7) - 0.5) * lado, (azar01(n * 5.9) - 0.5) * lado, t, t); }
+    for (const c of CONSTELA) {
+      const px = (i) => c.x * m + c.e[i][0] * u, py = (i) => c.y * m + c.e[i][1] * u;
+      if (lin > 0.01) { g.globalAlpha = est * lin * 0.3; g.strokeStyle = '#bcd0ff'; g.lineWidth = Math.max(1, RES * 0.8); g.beginPath(); for (const [a, b] of c.t) { g.moveTo(px(a), py(a)); g.lineTo(px(b), py(b)); } g.stroke(); }
+      g.globalAlpha = est * (0.75 + 0.25 * lin); g.fillStyle = '#fff'; for (let i = 0; i < c.e.length; i++) { g.beginPath(); g.arc(px(i), py(i), Math.max(1.2, RES * (1.1 + 0.5 * lin)), 0, 7); g.fill(); }
+    }
+    const com = suave(110, 220, km);
+    if (com > 0.01) {                               // el cometa: cabeza brillante y dos colas que apuntan lejos del Sol
+      const cx = -m * 0.05, cy = -m * 0.3, l = lado * 0.11;
+      for (const [an, k, col] of [[-2.5, 1, '190,225,255'], [-2.2, 0.7, '255,240,210']]) { const ex = cx + Math.cos(an) * l * k, ey = cy + Math.sin(an) * l * k, cl = g.createLinearGradient(cx, cy, ex, ey); cl.addColorStop(0, `rgba(${col},${0.55 * com})`); cl.addColorStop(1, `rgba(${col},0)`); g.globalAlpha = est; g.fillStyle = cl; g.beginPath(); g.moveTo(cx, cy); g.lineTo(ex + Math.sin(an) * l * 0.16 * k, ey - Math.cos(an) * l * 0.16 * k); g.lineTo(ex - Math.sin(an) * l * 0.16 * k, ey + Math.cos(an) * l * 0.16 * k); g.fill(); }
+      const cab = g.createRadialGradient(cx, cy, 0, cx, cy, T * 0.55); cab.addColorStop(0, `rgba(255,255,255,${com})`); cab.addColorStop(0.3, `rgba(190,230,255,${0.6 * com})`); cab.addColorStop(1, 'rgba(190,230,255,0)'); g.fillStyle = cab; g.fillRect(cx - T, cy - T, T * 2, T * 2);
+    }
+    g.restore(); g.globalAlpha = 1;
   }
   // 2 · estrellas fugaces: se queman justo donde vas pasando, entre los 30 y los 200 km
   const fug = suave(25, 45, km) * (1 - suave(140, 220, km));
@@ -1648,19 +1703,20 @@ function cielo(w, h, oy) {
     g.globalCompositeOperation = 'lighter';
     for (let n = 0; n < 16; n++) {
       const x = w * (n / 15) + Math.sin(reloj * 0.35 + n * 1.9) * w * 0.03, an = w * (0.13 + 0.05 * Math.sin(reloj * 0.6 + n)), al = h * (0.36 + 0.14 * Math.sin(reloj * 0.45 + n * 0.8));
-      g.globalAlpha = aur * (0.3 + 0.25 * Math.sin(reloj * 0.8 + n * 2.3)); g.drawImage(c, x - an / 2, orilla(x) - al * 0.92, an, al);
+      if (Math.abs(x - cxP) > R * 0.96) continue;
+      const ch = Math.min(1, R / (w * 0.9)); g.globalAlpha = aur * (0.3 + 0.25 * Math.sin(reloj * 0.8 + n * 2.3)); g.drawImage(c, x - an * ch / 2, orilla(x) - al * ch * 0.92, an * ch, al * ch);
     }
     g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1;
   }
   // 5 · la Luna: sale al anochecer y crece hasta llenar la vista a los 1,000 km
   const la = suave(10, 30, km);
-  if (la > 0) { const cre = Math.pow(tope((km - 100) / 900), 0.7), r = h * (0.035 + 0.3 * cre); g.globalAlpha = la; g.drawImage(luna(), w * (0.26 + 0.1 * cre) - r, h * (0.28 + 0.1 * cre) - r, r * 2, r * 2); g.globalAlpha = 1; }
+  if (la > 0) { const cre = Math.pow(s, 2.2), r = h * (0.03 + 0.31 * cre); g.globalAlpha = la; g.drawImage(luna(), w * (0.26 + 0.08 * cre) - r, h * (0.28 + 0.12 * cre) - r, r * 2, r * 2); g.globalAlpha = 1; }
   // 6 · el Sol vuelve a salir por la orilla del planeta, blanco y nítido como se ve en el espacio
   const alba = suave(380, 520, km);
   if (alba > 0.01) {
-    const sal = suave(430, 900, km), sx = w * 0.82, sy = orilla(sx) + T * 1.6 - sal * h * 0.3, rr = w * 0.4;
-    const gl = g.createRadialGradient(sx, orilla(sx), 0, sx, orilla(sx), rr); gl.addColorStop(0, `rgba(255,190,120,${0.6 * alba * (1 - sal * 0.5)})`); gl.addColorStop(0.5, `rgba(120,160,255,${0.2 * alba})`); gl.addColorStop(1, 'rgba(120,160,255,0)');
-    g.fillStyle = gl; g.fillRect(sx - rr, orilla(sx) - rr, rr * 2, rr * 2);
+    const sal = suave(430, 900, km), ox0 = cxP + R * 0.64, oy0 = cyP - R * 0.77, sx = ox0 + sal * w * 0.06, sy = oy0 + T * 1.6 - sal * h * 0.28, rr = w * 0.4;
+    const gl = g.createRadialGradient(ox0, oy0, 0, ox0, oy0, rr); gl.addColorStop(0, `rgba(255,190,120,${0.6 * alba * (1 - sal * 0.5)})`); gl.addColorStop(0.5, `rgba(120,160,255,${0.2 * alba})`); gl.addColorStop(1, 'rgba(120,160,255,0)');
+    g.fillStyle = gl; g.fillRect(ox0 - rr, oy0 - rr, rr * 2, rr * 2);
     disco(sx, sy, T * 3.2, '#ffffff', '#ffffff', 1);
     g.strokeStyle = `rgba(255,255,255,${0.5 * sal})`; g.lineWidth = Math.max(1, RES); g.beginPath(); for (const [a, b] of [[1, 0], [0, 1], [0.7, 0.7], [0.7, -0.7]]) { g.moveTo(sx - a * T * 3.4, sy - b * T * 3.4); g.lineTo(sx + a * T * 3.4, sy + b * T * 3.4); } g.stroke();
   }
@@ -1686,13 +1742,21 @@ function cielo(w, h, oy) {
   // 8 · el paisaje lejano: cerros cuando estás cerca; desde muy alto, la curva del planeta
   const dia = 1 - noche * 0.8;
   if (lejos) {
-    const pl = g.createRadialGradient(w / 2, cyP, R * 0.6, w / 2, cyP, R);
-    pl.addColorStop(0, entre('#120b08', '#5a3a26', dia)); pl.addColorStop(0.9, entre('#1c120d', '#8a5c3e', dia)); pl.addColorStop(1, entre('#2a1b14', '#b9835a', dia));
-    g.fillStyle = pl; g.beginPath(); g.arc(w / 2, cyP, R, 0, 7); g.fill();
+    const pl = g.createRadialGradient(cxP, cyP, R * 0.6, cxP, cyP, R);
+    pl.addColorStop(0, '#5a3a26'); pl.addColorStop(0.9, '#8a5c3e'); pl.addColorStop(1, '#b9835a');
+    g.fillStyle = pl; g.beginPath(); g.arc(cxP, cyP, R, 0, 7); g.fill();
+    const tex = suave(25, 110, km);
+    if (tex > 0.01) { g.save(); g.beginPath(); g.arc(cxP, cyP, R, 0, 7); g.clip(); g.translate(cxP, cyP); g.rotate(reloj * 0.004); g.globalAlpha = tex; g.drawImage(planeta(), -R, -R, R * 2, R * 2); g.restore(); g.globalAlpha = 1; }
+    const borde = g.createRadialGradient(cxP, cyP, R * 0.55, cxP, cyP, R); borde.addColorStop(0, 'rgba(0,0,0,0)'); borde.addColorStop(1, 'rgba(10,5,20,0.45)'); g.fillStyle = borde; g.beginPath(); g.arc(cxP, cyP, R, 0, 7); g.fill();      // el planeta es redondo: la orilla se oscurece
+    if (noche > 0.01 || alba > 0.01) {              // la noche; al amanecer queda iluminado solo el lado del Sol
+      const dx = R * 0.64, dy = -R * 0.77, som = g.createLinearGradient(cxP + dx, cyP + dy, cxP - dx, cyP - dy);
+      som.addColorStop(0, `rgba(6,4,12,${0.82 * noche * (1 - alba)})`); som.addColorStop(0.45, `rgba(6,4,12,${0.82 * Math.max(noche, alba * 0.75)})`); som.addColorStop(1, `rgba(6,4,12,${0.82 * Math.max(noche, alba * 0.9)})`);
+      g.fillStyle = som; g.beginPath(); g.arc(cxP, cyP, R, 0, 7); g.fill();
+    }
     const azul = tope((km - 6) / 30) * (0.55 + 0.45 * dia + 0.5 * alba);
-    for (let n = 0; n < 4 && azul > 0; n++) { g.strokeStyle = `rgba(130,195,255,${Math.min(0.6, azul * (0.42 - n * 0.1))})`; g.lineWidth = T * (0.12 + n * 0.16); g.beginPath(); g.arc(w / 2, cyP, R + g.lineWidth / 2, Math.PI, Math.PI * 2); g.stroke(); }
+    for (let n = 0; n < 4 && azul > 0; n++) { g.strokeStyle = `rgba(130,195,255,${Math.min(0.6, azul * (0.42 - n * 0.1))})`; g.lineWidth = Math.min(T * (0.12 + n * 0.16), R * 0.02 * (1 + n)); g.beginPath(); g.arc(cxP, cyP, R + g.lineWidth / 2, 0, 7); g.stroke(); }
     const pueblo = noche * suave(1.5, 6, km) * (1 - suave(250, 500, km));          // de noche, las luces de la Gasolinera allá abajo
-    if (pueblo > 0.02) { const px = w / 2, py = base + T * (0.5 + 0.4 * (1 - s)), rr = T * (2.2 - 1.4 * s), lz = g.createRadialGradient(px, py, 0, px, py, rr); lz.addColorStop(0, `rgba(255,210,120,${0.85 * pueblo})`); lz.addColorStop(0.25, `rgba(255,170,80,${0.35 * pueblo})`); lz.addColorStop(1, 'rgba(255,170,80,0)'); g.fillStyle = lz; g.fillRect(px - rr, py - rr, rr * 2, rr * 2); }
+    if (pueblo > 0.02) { const px = cxP, py = base + T * (0.5 + 0.4 * (1 - s)), rr = T * (2.2 - 1.4 * s), lz = g.createRadialGradient(px, py, 0, px, py, rr); lz.addColorStop(0, `rgba(255,210,120,${0.85 * pueblo})`); lz.addColorStop(0.25, `rgba(255,170,80,${0.35 * pueblo})`); lz.addColorStop(1, 'rgba(255,170,80,0)'); g.fillStyle = lz; g.fillRect(px - rr, py - rr, rr * 2, rr * 2); }
   }
   const ca = 1 - tope((km - 2) / 6);
   if (ca > 0) {
@@ -1708,13 +1772,23 @@ function cielo(w, h, oy) {
   if (km < 18) capa(0.75, 2, 9, 0.5, 2);
   // 9 · lo que te cruzas en el camino. Cada cosa vive a su altura y pasa por la pantalla mientras la rebasas.
   const cruza = (kmAhi, ancho) => { const d = Math.log(Math.max(km, 1e-4) / kmAhi) / ancho; return d > -1 && d < 1 ? h * (0.5 + d * 0.62) : null; };
-  let y = cruza(0.45, 0.8);
-  if (y !== null) {                                   // una parvada
-    const x0 = ((reloj * 0.03) % 1.3 - 0.15) * w, t = T * 0.22, al = Math.sin(reloj * 9) * t * 0.6;
-    g.strokeStyle = entre('#2a1a22', '#120b12', suave(1, 5, km)); g.lineWidth = Math.max(1.5, T * 0.05); g.lineCap = 'round'; g.beginPath();
-    for (const [a, b] of [[0, 0], [-1.6, 0.9], [-1.5, -1], [-3.2, 1.9], [-3.1, -2], [-4.8, 2.8], [-4.6, -3.1]]) { const x = x0 + a * T * 0.7, yy = y + b * T * 0.55; g.moveTo(x - t, yy - al); g.lineTo(x, yy); g.lineTo(x + t, yy - al); }
-    g.stroke();
-  }
+  const ave = (x, y, t, b, c1, c2, c3, c4) => {     // b: de -0.4 (alas abajo) a 1 (alas arriba)
+    g.fillStyle = c2; g.beginPath(); g.moveTo(x + t * 0.35, y - t * 0.05); g.lineTo(x - t * 0.75, y - t * 1.25 * b - t * 0.1); g.lineTo(x - t * 0.45, y); g.fill();                 // el ala de atrás
+    g.fillStyle = c4; g.beginPath(); g.moveTo(x - t * 0.7, y - t * 0.04); g.lineTo(x - t * 1.3, y - t * 0.18); g.lineTo(x - t * 1.3, y + t * 0.2); g.lineTo(x - t * 0.7, y + t * 0.08); g.fill();   // la cola
+    g.fillStyle = c1; g.beginPath(); g.ellipse(x, y, t * 0.8, t * 0.24, 0, 0, 7); g.fill();
+    g.fillStyle = c3; g.beginPath(); g.arc(x + t * 0.78, y - t * 0.06, t * 0.22, 0, 7); g.fill();
+    g.fillStyle = '#e8b23a'; g.beginPath(); g.moveTo(x + t * 0.95, y - t * 0.12); g.lineTo(x + t * 1.24, y + t * 0.02); g.lineTo(x + t * 0.95, y + t * 0.07); g.fill();
+    g.fillStyle = c1; g.beginPath(); g.moveTo(x + t * 0.45, y); g.lineTo(x - t * 0.55, y - t * 1.45 * b - t * 0.12); g.lineTo(x - t * 0.3, y + t * 0.08); g.fill();                    // el ala de adelante
+  };
+  const V = [[0, 0], [-1, 0.6], [-1, -0.6], [-2, 1.2], [-2, -1.2], [-3, 1.8], [-3, -1.8], [-4, 2.4], [-4, -2.4]], ocaso = suave(1, 6, km) * 0.8;
+  const parvada = (kmAhi, ancho, t, vel, fase, aleteo, planeo, c1, c2, c3, c4) => {
+    const y0 = cruza(kmAhi, ancho); if (y0 === null) return;
+    const x0 = ((reloj * vel + fase) % 1.6 - 0.3) * w, tinta = (c) => entre(c, '#1a1218', ocaso);
+    V.forEach(([a, b], i) => ave(x0 + a * t * 2.5, y0 + b * t * 1.5 + Math.sin(reloj * 1.3 + i) * t * 0.25, t, planeo + (1 - planeo) * Math.sin(reloj * aleteo + i * 0.9), tinta(c1), tinta(c2), tinta(c3), tinta(c4)));
+  };
+  parvada(0.4, 0.75, T * 0.3, 0.05, 0.2, 8, 0.25, '#8a4a2a', '#6b3620', '#9a5a36', '#6b3620');        // nueve halcones: chicos, rojizos, de aleteo rápido
+  parvada(2.2, 0.55, T * 0.46, 0.032, 0.9, 2.2, 0.6, '#3a2a22', '#2a1d17', '#f4f1ea', '#f4f1ea');      // nueve águilas: grandes, de cabeza y cola blancas, casi siempre planeando
+  let y;
   y = cruza(11, 0.3);
   if (y !== null) {                                   // un avión con su estela
     const x = ((reloj * 0.045) % 1.7 - 0.35) * w, l = w * 0.45, st = g.createLinearGradient(x, 0, x - l, 0); st.addColorStop(0, 'rgba(255,225,205,0.8)'); st.addColorStop(1, 'rgba(255,225,205,0)');
@@ -1727,6 +1801,15 @@ function cielo(w, h, oy) {
     g.strokeStyle = '#c9c5bc88'; g.lineWidth = Math.max(1, RES); g.beginPath(); g.moveTo(x, y + T * 0.7); g.lineTo(x + Math.sin(reloj) * T * 0.1, y + T * 1.9); g.stroke();
     const gb = g.createRadialGradient(x - T * 0.25, y - T * 0.25, T * 0.05, x, y, T * 0.75); gb.addColorStop(0, '#ffffff'); gb.addColorStop(1, '#8e94b8'); g.fillStyle = gb; g.beginPath(); g.ellipse(x, y, T * 0.68, T * 0.75, 0, 0, 7); g.fill();
     g.fillStyle = '#d8d2c4'; g.fillRect(x - T * 0.12 + Math.sin(reloj) * T * 0.1, y + T * 1.9, T * 0.24, T * 0.2);
+  }
+  y = cruza(180, 0.2);
+  if (y !== null) {                                   // un satélite
+    const x = w * (0.12 + 0.5 * (y / h)), u = T * 0.11;
+    g.save(); g.translate(x, y); g.rotate(0.5);
+    g.fillStyle = '#2b4f9e'; g.fillRect(-u * 5, -u * 1.1, u * 3.4, u * 2.2); g.fillRect(u * 1.6, -u * 1.1, u * 3.4, u * 2.2); g.fillStyle = '#d9b877'; g.fillRect(-u * 1.5, -u * 1.5, u * 3, u * 3);
+    g.strokeStyle = '#d9dde4'; g.lineWidth = Math.max(1, u * 0.3); g.beginPath(); g.arc(0, -u * 2.6, u * 1.2, 0.3, 2.84); g.stroke();
+    if (Math.sin(reloj * 4) > 0.5) { g.fillStyle = '#6fdc7a'; g.beginPath(); g.arc(0, u * 1.9, u * 0.4, 0, 7); g.fill(); }
+    g.restore();
   }
   y = cruza(408, 0.24);
   if (y !== null) {                                   // la estación en órbita
@@ -1766,7 +1849,9 @@ function dibujar() {
         const lug = y >= AGUA1 ? lugarDe(x, y) : -1;
         g.drawImage(tile(t, zona, ((x * 5 + y * 3) & 1) + (lug > 0 ? lug * 2 : 0)), px, py);
         if (y > 0 && !hueca(x, y - 1)) { g.fillStyle = '#00000055'; g.fillRect(px, py, T, grueso); }             // sombra del techo
-        else if (t === 6 && celda(x, y - 1) === 0) { g.fillStyle = '#bfe9ff77'; g.fillRect(px, py + Math.round(Math.sin(reloj * 2 + x * 0.9) * fino), T, fino * 2); }      // la superficie del agua
+        const ci = y * W + x;                          // en el piso de las cuevas que nadie cavó crece algo, según la zona
+        if (y > 2 && lug < 2 && ((x * 31 + y * 17) & 3) < 2 && !(dug[ci >> 3] & (1 << (ci & 7))) && solida(x, y + 1)) g.drawImage(sprite('f' + (t === 6 ? 4 : zona < 4 ? 0 : zona === 4 ? 5 : zona) + ((x + y) & 1)), px, py);
+        if (t === 6 && celda(x, y - 1) === 0) { g.fillStyle = '#bfe9ff77'; g.fillRect(px, py + Math.round(Math.sin(reloj * 2 + x * 0.9) * fino), T, fino * 2); }      // la superficie del agua
         continue;
       }
       const esGas = t === 4, gasOculto = esGas && cfg.verGas !== 1;
@@ -1856,6 +1941,19 @@ function dibujar() {
     const px = ox + s.x * T, py = oy + s.y * T, r = T * (0.6 + (reloj * 2 % 1) * 0.6);
     g.strokeStyle = '#ffd23f'; g.lineWidth = Math.max(2, T * 0.07); g.beginPath(); g.arc(px, py, r, 0, 7); g.stroke();
     g.fillStyle = '#ffd23f'; g.font = `800 ${Math.max(10 * RES, T * 0.3)}px system-ui`; g.textAlign = 'center'; g.textBaseline = 'bottom'; g.fillText('¡Aquí! · ' + s.n, px, py - T);
+  }
+  for (const b of bichos) {
+    if (!hueca(Math.floor(b.x), Math.floor(b.y))) continue;                   // dentro de la roca no se ven
+    const px = ox + b.x * T, py = oy + b.y * T, a = Math.min(1, b.t), al = Math.sin(b.f * (b.k === 0 ? 26 : 16));
+    g.globalAlpha = a;
+    if (b.k === 0) { const t = T * 0.2; g.fillStyle = '#1b1320'; g.beginPath(); g.ellipse(px, py, t * 0.35, t * 0.5, 0, 0, 7); g.moveTo(px, py - t * 0.2); g.lineTo(px - t * 1.5, py - t * (0.4 + al * 0.9)); g.lineTo(px - t * 0.8, py + t * 0.25); g.lineTo(px, py + t * 0.15); g.lineTo(px + t * 0.8, py + t * 0.25); g.lineTo(px + t * 1.5, py - t * (0.4 + al * 0.9)); g.fill(); }
+    else if (b.k === 2) { const t = T * 0.14; g.fillStyle = b.f % 2 < 1 ? '#8fd0ff' : '#c9a0ff'; g.beginPath(); g.ellipse(px - t * 0.8, py, t * 0.8 * Math.abs(al), t * 1.1, -0.4, 0, 7); g.ellipse(px + t * 0.8, py, t * 0.8 * Math.abs(al), t * 1.1, 0.4, 0, 7); g.fill(); g.fillStyle = '#fff'; g.fillRect(px - 1, py - t * 0.6, 2, t * 1.2); }
+    else { const col = b.k === 1 ? '190,255,120' : '255,150,60', rr = T * (0.22 + 0.05 * al), gl = g.createRadialGradient(px, py, 0, px, py, rr); gl.addColorStop(0, `rgba(255,255,255,${0.9})`); gl.addColorStop(0.25, `rgba(${col},0.75)`); gl.addColorStop(1, `rgba(${col},0)`); g.globalCompositeOperation = 'lighter'; g.fillStyle = gl; g.fillRect(px - rr, py - rr, rr * 2, rr * 2); g.globalCompositeOperation = 'source-over'; }
+  }
+  g.globalAlpha = 1;
+  if (y1 >= 1476 && y0 <= 1518) {                 // «El Güero» sigue en la Gruta de Cristal, esperando a que alguien baje
+    const [gx, gy] = guero(); dibMaq(g, ox + gx * T, oy + gy * T, T, 6, -1, false, 0, op.nombres ? '«El Güero» · maquinita 22' : '', '', gx);
+    if (S && !S.fl.guero) { g.fillStyle = '#ffd23f'; g.font = `900 ${T * 0.5}px system-ui`; g.textAlign = 'center'; g.textBaseline = 'bottom'; g.fillText('!', ox + gx * T, oy + (gy - 0.95 + Math.sin(reloj * 4) * 0.06) * T); }
   }
   // las demás maquinitas y la mía
   for (const o of otros.values()) {
@@ -1964,6 +2062,13 @@ function animar(d) {
   }
   for (const q of parts) { q.x += q.vx * d; q.y += q.vy * d; q.vy += (q.gr ?? 9) * d; q.t -= d; }
   if (yo.agua && op.part && Math.random() < d * 7) parts.push({ x: vis.x + (Math.random() - 0.5) * 0.5, y: vis.y - 0.3, vx: (Math.random() - 0.5) * 0.3, vy: -1 - Math.random(), t: 1 + Math.random() * 0.6, col: '#bfe9ff', g: 1, gr: -1 });
+  for (const b of bichos) {                         // los murciélagos buscan tu túnel y se van hacia arriba; los demás te rondan un rato
+    b.t -= d; b.f += d;
+    if (b.k === 0) { b.vx += ((vis.x - b.x) * 5 + (Math.random() - 0.5) * 30) * d; b.vy += (-7 - b.vy) * 2 * d; b.vx *= Math.pow(0.2, d); }
+    else { b.vx += ((vis.x + Math.sin(b.f * 0.9) * 2.2 - b.x) * 1.6 + (Math.random() - 0.5) * 8) * d; b.vy += ((vis.y - 0.6 + Math.cos(b.f * 0.7) * 1.6 - b.y) * 1.6 + (Math.random() - 0.5) * 8 - (b.k === 3 ? 3 : 0)) * d; b.vx *= Math.pow(0.3, d); b.vy *= Math.pow(0.3, d); }
+    b.x += b.vx * d; b.y += b.vy * d;
+  }
+  if (bichos.length) bichos = bichos.filter((b) => b.t > 0 && b.y > 0);
   for (const o of ondas) o.t += d;
   if (ondas.length) ondas = ondas.filter((o) => o.t < o.d);
   golpeFx *= Math.pow(0.02, d);
@@ -2015,9 +2120,11 @@ function queEs() {
 }
 let tGas = -9, crucero = false, tLatido = -9;
 let pistaDe = null, tAlarma = 0, estabaAbajo = false, tTabla = 0;
-function pista(x) { const p = $('#pista'); if (p._t !== x) { p._t = x; p.textContent = x; p.style.display = x ? 'block' : 'none'; } }
+function pista(x, discreta) { const p = $('#pista'); if (p._t !== x) { p._t = x; p.textContent = x; p.style.display = x ? 'block' : 'none'; p.classList.toggle('dis', !!discreta); } }
 // La grúa te deja en la Gasolinera. Cobra por lo lejos que estás y por lo que pesas.
 function costoGrua() { return Math.max(10, Math.round(0.75 * Math.hypot(yo.x - 41.5, yo.y + HH) * 2 * (1980 + kgCarga()) / 1000)); }
+// Dónde está parado «El Güero»: sobre el piso de la Gruta, del lado derecho.
+function guero() { let y = 1495; while (y < 1520 && !solida(60, y + 1)) y++; return [60.5, y + 1 - HH]; }
 function recordar() { const p = yo.perf, y = p ? p.oy : yo.y; if (y > 2) S.ult = { x: p ? p.ox : yo.x, y, mu: mundoId, r: remin }; }
 function grua() {
   if (!S || (yo.y <= 1 && yo.y > -20)) return;
@@ -2066,12 +2173,19 @@ function cadaTanto() {
   let e = null;
   if (yo.suelo && yo.y < 0) e = EDIF.find((b) => yo.x > b.x + 0.2 && yo.x < b.x + 2.8) || null;
   pistaDe = e;
-  pista(crucero ? '🚀  Subiendo sola · barra espaciadora o ↓ para soltar' : yo.y < -25 && teclas.arr ? 'Barra espaciadora: seguir subiendo sin sostener la tecla' : vistaLibre ? '🖱  Vista libre · pulsa una flecha para volver a tu maquinita' : e ? '↓  Entrar a ' + e.n + ' · ' + e.h.toLowerCase() : '');
+  pista(crucero ? 'Subiendo sola · barra espaciadora o ↓ para soltar' : yo.y < -25 && teclas.arr ? 'Barra espaciadora: seguir subiendo sin sostener la tecla' : vistaLibre ? 'Vista libre · pulsa una flecha para volver a tu maquinita' : e ? '↓  Entrar a ' + e.n + ' · ' + e.h.toLowerCase() : '', !e);      // solo la invitación a entrar a un edificio va destacada
   // los lugares: al entrar por primera vez se celebra y queda apuntado en El Elevador
   const lg = yo.y >= AGUA0 ? lugarDe(Math.floor(yo.x), Math.floor(yo.y)) : -1;
   if (lg >= 0 && !S.lug[lg]) {
     const L = LUGARES[lg]; S.lug[lg] = 1; S.d += L.q; S.tot += L.q; sucio = true; son.espacio();
     tarjeta(`${L.ic} Descubriste ${L.n} · bono de ${fmt(L.q)}`, L.tx + ' Ya puedes volver aquí desde El Elevador.', 'msj', 14000, true); difundir('descubrió ' + L.n); pintarHud(true);
+  }
+  if (yo.y > 1470 && yo.y < 1520 && !S.fl.guero) {
+    const [gx, gy] = guero();
+    if (Math.hypot(yo.x - gx, yo.y - gy) < 2.6) {
+      S.fl.guero = 1; S.d += 5e6; S.tot += 5e6; S.obj[1] += 10; sucio = true; son.logro();
+      tarjeta('📡 Maquinita 22 · «El Güero»', '¡Sabía que alguien iba a bajar! Aquí sigo desde que se me cerró el túnel. Toma: cinco millones y mis nanobots. Yo me quedo: mira nada más qué vista.', 'msj', 15000, true); difundir('encontró a «El Güero»'); pintarHud(true);
+    }
   }
   if (yo.y > 4860 && tiempo - tLatido > 1.15 && celda(48, 4915) === 46) {
     const cerca = 1 - Math.hypot(yo.x - 48.5, yo.y - 4915.5) / 45;
@@ -2097,17 +2211,10 @@ function cadaTanto() {
 
 /* ════════ Pantalla: medidores, metas y tabla ════════ */
 let hudAnt = '';
-function metas() {
+function metas() {             // arriba al centro: solo dónde estás y, si lo hay, un peligro inmediato
   const l = [], lg = yo.y >= AGUA0 ? lugarDe(Math.floor(yo.x), Math.floor(yo.y)) : -1;
   if (lg >= 0) l.push({ ya: 1, tx: LUGARES[lg].ic + ' ' + LUGARES[lg].n, p: 1 });
-  let mejor = null;
-  for (let p = 0; p < 6; p++) { const n = PZ[p].niv[S.eq[p] + 1]; if (n && (!mejor || n[1] < mejor[1])) mejor = n; }
-  if (mejor) l.push(S.d >= mejor[1] ? { ya: 1, tx: `¡Ya te alcanza para ${mejor[0]}! Ve al Taller`, p: 1 } : { tx: `Te faltan ${fmt(mejor[1] - S.d)} para ${mejor[0]}`, p: S.d / mejor[1] });
-  if (cfg.gas && S.rec >= 560) { const sg = gasSeguro(), pr = prof(); l.push(pr > sg ? { mal: 1, tx: `⚠ A esta profundidad una bolsa de gas te explota. Tu equipo la aguanta hasta ${sg < 650 ? 'ninguna' : sg + ' m'}`, p: 1 } : { tx: sg >= H * 2 ? 'Tu equipo aguanta el gas hasta el fondo' : sg < 650 ? '⚠ Con tu equipo, cualquier bolsa de gas te explota (empiezan a los 650 m)' : `Tu equipo aguanta el gas hasta ${sg} m`, p: Math.min(1, pr / Math.max(650, sg)) }); }
-  const b = MSJ.slice(S.msj).find((x) => x.q);
-  if (b) l.push({ tx: `Bono de ${fmt(b.q)} a los ${b.m} m`, p: prof() / b.m });
-  const sig = RANGOS.find((r) => r[0] > S.rec);
-  l.push({ tx: `Récord: ${S.rec} m · ${RANGOS[S.rango][1]}` + (sig ? ` → ${sig[1]} a los ${sig[0]} m` : ''), p: sig ? S.rec / sig[0] : 1 });
+  if (cfg.gas && S.rec >= 560) { const sg = gasSeguro(); if (prof() > sg) l.push({ mal: 1, tx: `⚠ A esta profundidad una bolsa de gas te explota. Tu equipo la aguanta hasta ${sg < 650 ? 'ninguna' : sg + ' m'}`, p: 1 }); }
   return l;
 }
 function pintarHud(forzar) {
@@ -2136,6 +2243,8 @@ function pintarViaje() {
   const n = nCarga(), bd = bodega(), abajo = yo.y > 2.5, lejos = abajo || yo.y < -20;
   let h = `<div class="l"><span>Llevas</span><b>${n} de ${bd}${n >= bd ? ' · llena' : ''}</b></div><div class="bar${n >= bd ? ' llena' : ''}"><i style="width:${Math.round(n / bd * 100)}%"></i></div><div class="l"><span>Se vende en</span><b>${fmt(venta().total)}</b></div>` + (n ? `<div class="bod">${S.carga.map((c, i) => [c, i]).filter((a) => a[0]).reverse().map(([c, i]) => `<span title="${MIN[i].n} · ${fmt(MIN[i].v)} la pieza"><i style="background:${MIN[i].col}"></i>${MIN[i].n} ${c}</span>`).join('')}</div>` : '');
   if (abajo) { const c = costoSubir(), mal = c > S.fuel; h += `<div class="l${mal ? ' mal' : ''}"><span>Subir gasta</span><b>${c === Infinity ? 'vas muy pesado' : '≈ ' + Math.ceil(c) + ' L · ' + (mal ? 'no te alcanza' : 'traes ' + Math.floor(S.fuel))}</b></div>`; }
+  const sig = RANGOS.find((r) => r[0] > S.rec);
+  h += `<div class="l rec" title="${sig ? 'Sigue: ' + sig[1] + ' a los ' + sig[0].toLocaleString('es-MX') + ' m' : 'Llegaste al último rango'}"><span>Récord</span><b>${S.rec.toLocaleString('es-MX')} m · ${RANGOS[S.rango][1]}</b></div>`;
   poner($('#vjDatos'), h);
   const b = $('#bGrua'), c = lejos ? costoGrua() : 0;
   poner(b, lejos ? `<span>🚁 Grúa a la Gasolinera · <b>${fmt(c)}</b>${S.d < c ? ' · no te alcanza' : ''}</span><kbd>E</kbd>` : '');
@@ -2523,7 +2632,7 @@ function menuPrincipal() {
       <p><b>El Taller:</b> cada pieza tiene dieciséis mejoras, de $750 a $2,500 millones. Siempre ves las que ya compraste y las diez que siguen.</p>
       <p><b>Acompañado:</b> G deja una señal que todos ven · T le pasa 5 litros a la maquinita que tengas junto · P pausa tu maquinita.</p>
       <p><b>Tu viaje:</b> abajo a la izquierda ves cuánto llevas, en cuánto se vende y si el combustible te alcanza para subir. Ahí mismo está la <b>grúa</b> (tecla E): te deja en la Gasolinera y cobra según lo lejos que estés y lo que peses.</p>
-      <p><b>Hacia arriba:</b> el cielo también se explora, y subir es todo un viaje: atardece, anochece, salen las estrellas, cruzas la aurora al entrar al espacio (100 km), pasas junto a la estación, la Luna crece y a los 1,000 km el Sol vuelve a salir. Son unos 15 minutos de vuelo. Entre más alto, menos combustible se gasta; con un tanque «Cisterna» alcanza. Pasando los 50 m de altura, la barra espaciadora deja a la maquinita subiendo sola.</p>
+      <p><b>Hacia arriba:</b> el cielo también se explora, y subir es todo un viaje: halcones y águilas, el atardecer, un avión, la noche con sus constelaciones, la aurora al entrar al espacio (100 km), un cometa, la estación, la Luna que crece y el planeta que se achica hasta que, cerca de los 1,000 km, el Sol vuelve a salir. Son unos 15 minutos de vuelo. Entre más alto, menos combustible se gasta; con un tanque «Cisterna» alcanza. Pasando los 50 m de altura, la barra espaciadora deja a la maquinita subiendo sola.</p>
       <p><b>Lava y gas:</b> la lava (desde 410 m) se ve y se rodea. Las bolsas de gas (desde 650 m) se notan por unas burbujitas verdes y por el aviso «Huele a gas». Pon el ratón encima de cualquiera y te dice cuánto casco te quita. Vuélalas con dinamita o lleva casco y radiador suficientes: arriba, en las metas, dice hasta qué profundidad aguantas.</p>
       <p><b>Sonido:</b> la bocina de arriba a la derecha lo apaga, lo baja y lo sube; «♪ Sonidos» deja elegir qué se oye: música, taladro, hélice, motor (viene apagado) y lo demás, cada uno con su interruptor.</p>
       <p><b>Mirar alrededor:</b> la rueda del mouse o dos dedos en el trackpad mueven la vista; cualquier flecha la regresa a tu maquinita.</p>

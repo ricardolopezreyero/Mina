@@ -1,4 +1,4 @@
-# DOCUMENTO MAESTRO · «Mina» · v9
+# DOCUMENTO MAESTRO · «Mina» · v10
 
 **Ver en vivo: https://mina.capitaltorreon.com**
 
@@ -400,6 +400,26 @@ Los nombres y las zonas son los del prompt maestro (sección 6.5). Los valores *
 | Historia y rangos | Nueve mensajes nuevos (hasta $1,000 M de bono al tocar los 10,000 m) y nueve rangos nuevos, hasta «Leyenda de las Profundidades». |
 
 Sin medir todavía: cuánto tarda un jugador real en bajar los 10 km y si los valores hondos dejan la economía pareja. La prueba fue juego simulado con el equipo al máximo.
+
+### 9.5 Décima iteración: pantalla más limpia, el espacio con más vida y detalles hacia abajo
+
+Ricardo subió hasta los 66 km, le encantaron el avión, la aurora y las estrellas fugaces, y pidió: quitar de arriba los avisos del gas y de «ya te alcanza», pasar el récord abajo a la izquierda, hacer más discreto el letrero de «subiendo sola», dos parvadas de nueve aves de distinto tipo que crucen de izquierda a derecha, que el planeta se vea cada vez más chico y la Luna más grande, que las constelaciones se vean mejor y cambie el ángulo, y planear detalles así también hacia abajo.
+
+| Cambio | Cómo quedó |
+|---|---|
+| Arriba al centro | Solo aparece el nombre del lugar donde estás y, si lo hay, el aviso rojo de gas peligroso. Se quitaron «ya te alcanza», «tu equipo aguanta el gas» (sigue en el Taller) y el bono siguiente. |
+| Récord | Pasó al panel del viaje, abajo a la izquierda: «Récord 1,000 m · Leyenda de la Corteza». Al pasar el ratón dice el rango que sigue. |
+| Letreros de ayuda | «Subiendo sola», «barra espaciadora» y «vista libre» van chicos y abajo. Solo la invitación a entrar a un edificio sigue destacada. |
+| Dos parvadas | Nueve halcones (chicos, rojizos, aleteo rápido) cerca de los 400 m y nueve águilas (grandes, cabeza y cola blancas, planeando) cerca de los 2.2 km. Vuelan en V de izquierda a derecha. |
+| El planeta se achica | A 60 km ya se ve la curva; a 300 km es un domo; a 1,000 km, una bola completa. Tiene textura (desierto, cañones, nubes, polos), gira despacio, de noche se oscurece y al amanecer queda iluminado solo del lado del Sol. La vista se inclina: el planeta se va quedando abajo a la derecha. |
+| La Luna | Crece desde que sale (no solo desde los 100 km) y tiene más detalle: mares, 60 cráteres y un cráter joven con rayos. |
+| El cielo gira | El cielo estrellado entero gira con la altura y con el tiempo. Desde los 45 km se van trazando cinco constelaciones (Orión, la Osa Mayor, Casiopea, la Cruz del Sur y el Escorpión). Desde los 110 km asoma un cometa con sus dos colas. |
+| Más encuentros | Un satélite chico a los 180 km, antes de la estación de los 408 km. |
+| Hacia abajo: bichos | Al abrir una cueva natural, a veces sale lo que vivía ahí: murciélagos en la Corteza (buscan tu túnel y se van hacia arriba), luciérnagas en el Acuífero y las Cavernas, mariposas de cristal en la Cristalera y brasas en la Zona de presión. Cada 40 s como mucho. |
+| Hacia abajo: lo que crece | En el piso de las cuevas que nadie cavó: hongos en la Corteza, algas en el agua, hongos que brillan en las Cavernas, cristales en la Cristalera y grietas de brasa al fondo. |
+| «El Güero» | La maquinita 22 de la historia está en la Gruta de Cristal. Al acercarte te habla, te da $5 M y diez nanobots, y queda un logro secreto. |
+
+**Plan hacia abajo (lo que sigue, sin construir todavía):** un fósil gigante cruzando varias celdas cerca de los 700 m; rieles y un carrito de mina viejo en la Corteza; un río subterráneo que cruza el Acuífero; la maquinita 9 de la historia varada cerca del Corazón; raíces y topos en los primeros metros; un eco distinto por zona en el sonido.
 
 ---
 
