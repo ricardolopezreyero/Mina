@@ -172,7 +172,7 @@ function nuevoEstado() {
   return {
     d: 20, eq: [0, 0, 0, 0, 0, 0], carga: Array(10).fill(0), obj: [0, 0, 0, 0, 0, 0],
     fuel: 3, vida: 10, x: INICIO_X, y: INICIO_Y, rec: 0, tot: 0, msj: 0, rango: 0, resc: 0, reminGratis: 1, mejor: -1, alt: 0, msjA: 0, v: 0, mu: '',
-    st: { viajes: 0, cavadas: 0, rec: Array(10).fill(0), vend: Array(10).fill(0), hall: [0, 0, 0, 0], muertes: 0, expl: 0, remin: 0, comb: 0, mejorViaje: 0, gruas: 0 },
+    st: { viajes: 0, cavadas: 0, rec: Array(10).fill(0), vend: Array(10).fill(0), hall: [0, 0, 0, 0], muertes: 0, expl: 0, remin: 0, comb: 0, mejorViaje: 0, gruas: 0, amigos: 0 },
     log: [], fl: {}, vj: { dano: 0 }, con: { tut: 0, act: [] },
   };
 }
@@ -190,7 +190,7 @@ function sanear(e) {
   s.alt = Math.floor(num(s.alt, 0, 0, -TECHO * 2)); s.msjA = Math.floor(num(s.msjA, 0, 0, ALTURAS.length)); s.v = Math.floor(num(s.v, 0)); s.mu = typeof s.mu === 'string' ? s.mu : '';
   s.st = { ...b.st, ...(s.st && typeof s.st === 'object' ? s.st : {}) };
   s.st.rec = lista(s.st.rec, 10, 1e9); s.st.vend = lista(s.st.vend, 10, 1e9); s.st.hall = lista(s.st.hall, 4, 1e9);
-  for (const k of ['viajes', 'cavadas', 'muertes', 'expl', 'remin', 'comb', 'mejorViaje', 'gruas']) s.st[k] = num(s.st[k], 0);
+  for (const k of ['viajes', 'cavadas', 'muertes', 'expl', 'remin', 'comb', 'mejorViaje', 'gruas', 'amigos']) s.st[k] = num(s.st[k], 0);
   s.log = Array.isArray(s.log) ? s.log.filter((x) => typeof x === 'string') : [];
   s.fl = s.fl && typeof s.fl === 'object' ? s.fl : {}; s.vj = s.vj && typeof s.vj === 'object' ? s.vj : { dano: 0 };
   const c = s.con && typeof s.con === 'object' ? s.con : {};
@@ -206,6 +206,7 @@ function sanear(e) {
 const nv = (p) => PZ[p].niv[S.eq[p]][2];
 const pot = () => nv(0), vidaMax = () => nv(1), hp = () => nv(2), tanque = () => nv(3), rad = () => nv(4) / 100, bodega = () => nv(5);
 const nCarga = () => S.carga.reduce((a, b) => a + b, 0);
+const valorCarga = () => S.carga.reduce((a, b, i) => a + b * MIN[i].v, 0);
 const kgCarga = () => S.carga.reduce((a, b, i) => a + b * MIN[i].kg, 0);
 const prof = () => Math.max(0, Math.round((yo.y + HH) * 2));
 const altura = () => Math.max(0, Math.round(-(yo.y + HH) * 2));     // metros sobre el suelo
@@ -503,6 +504,8 @@ function chispas(x, y, col, n = 8, f = 4) {
   n = op.part === 1 ? Math.ceil(n / 3) : n;
   for (let i = 0; i < n && parts.length < 400; i++) parts.push({ x, y, vx: (Math.random() - 0.5) * f, vy: (Math.random() - 0.8) * f, t: 0.5 + Math.random() * 0.4, col });
 }
+let flot = [];
+function flota(x, y, txt, col = '#fff') { flot.push({ x, y, txt, col, t: 1.7 }); if (flot.length > 14) flot.shift(); }
 function temblar(q) { if (op.temblor) temblor = Math.max(temblor, q); }
 
 /* ════════ Logros ════════ RLR */
@@ -528,6 +531,7 @@ const LOGROS = [
   { id: 'remin', n: 'Tierra nueva', d: 'Remineraliza el tablero.', ok: () => S.st.remin >= 1 },
   { id: 'catalogo', n: 'Catálogo completo', d: 'Vende los 10 minerales y encuentra los 4 hallazgos.', ok: () => catalogoCompleto() },
   { id: 'intacto', n: 'Sin rasguños', d: 'Llega a 500 m sin recibir daño en el viaje.', ok: () => S.fl.intacto },
+  { id: 'anfitrion', n: 'Anfitrión', d: 'Tres maquinitas nuevas llegan a un mundo donde estás.', ok: () => (S.st.amigos || 0) >= 3 },
   { id: 'pase', n: 'Buen compañero', d: 'Pásale combustible a otra maquinita.', ok: () => S.fl.pase },
   { id: 'vecino', n: 'Buen vecino', d: 'Regálale dinero a otro jugador.', ok: () => S.fl.regalo },
   { id: 'nubes', n: 'Sobre las nubes', d: 'Vuela a 3,000 m de altura.', ok: () => S.alt >= 3000 },
@@ -772,15 +776,17 @@ function llegar(p) {
     const i = t - 10;
     if (nCarga() < bodega()) {
       S.carga[i]++; S.st.rec[i]++; son.mineral(i); chispas(x, y, MIN[i].col, 12, 5);
+      flota(x, p.ty - 0.15, '+ ' + MIN[i].n + ' · ' + fmt(MIN[i].v), MIN[i].col);
       recientes.set(p.idx, [t, Date.now()]);
       if (S.st.rec[i] === 1) { son.descubre(); tarjeta('¡Descubriste ' + MIN[i].n + '!', 'Vale ' + fmt(MIN[i].v) + ' la pieza.'); difundir('descubrió ' + MIN[i].n); }
       const [vx, vy] = veta(Math.floor(p.ty / 75));
       if (Math.abs(p.tx - vx) <= 1 && Math.abs(p.ty - vy) <= 1 && !S.fl.veta) { S.fl.veta = 1; tarjeta('✨ ¡Veta madre!', 'Un racimo entero del mejor mineral de la zona.'); }
       if (nCarga() === bodega()) { tarjeta('Bodega llena', 'Sube a vender: lo que perfores ahora se pierde.'); son.alarma(); }
-    } else { aviso('Bodega llena: se perdió una pieza de ' + MIN[i].n); son.no(); }
+    } else { flota(x, p.ty - 0.15, 'Bodega llena · se perdió ' + MIN[i].n, '#ff8a7a'); son.no(); }
   } else if (t >= 20) {
     const h = HALL[t - 20];
     S.d += h.v; S.tot += h.v; S.st.hall[t - 20]++;
+    flota(x, p.ty - 0.15, '+ ' + fmt(h.v) + ' · ' + h.n, '#ffd23f');
     recientes.set(p.idx, [t, Date.now()]);
     tarjeta('🏺 ¡' + h.n + '!', 'Hallazgo: ' + fmt(h.v) + ' al instante.'); son.logro(); chispas(x, y, '#ffd23f', 24, 7);
     difundir('encontró ' + h.n); evento('hall');
@@ -902,7 +908,11 @@ function recibir(d) {
     case 'mundo': return iniciarMundo(d);
     case 'cava': for (const i of d.c) ponerCavada(i); return efectoAjeno(d.c);
     case 'no': return noFueMia(d.c);
-    case 'entra': otros.set(d.j.i, { ...otros.get(d.j.i), ...d.j }); aviso(d.j.n + ' entró al mundo'); son.entra(); ultPos = ''; enviarPos(); return pintarTabla();   // que el recién llegado me vea aunque yo esté quieto
+    case 'entra':
+      otros.set(d.j.i, { ...otros.get(d.j.i), ...d.j });
+      if (d.nuevo) { S.d += 500; S.tot += 500; S.st.amigos = (S.st.amigos || 0) + 1; sucio = true; tarjeta('🎉 Llegó ' + d.j.n, 'Maquinita nueva en el mundo: +$500 para cada quien.'); pintarHud(true); }
+      else aviso(d.j.n + ' entró al mundo');
+      son.entra(); ultPos = ''; enviarPos(); return pintarTabla();   // que el recién llegado me vea aunque yo esté quieto
     case 'sale': { const o = otros.get(d.i); if (o) { o.on = 0; o.x = undefined; o.b = []; aviso(o.n + ' salió'); } return pintarTabla(); }
     case 'j': { const o = otros.get(d.i); if (o) { o.rec = d.rec; o.tot = d.tot; } return pintarTabla(); }
     case 'aviso': return aviso(nombreDe(d.i) + ' ' + d.x);
@@ -1376,6 +1386,11 @@ function dibujar() {
     luz.addColorStop(0, 'rgba(10,5,3,0)'); luz.addColorStop(1, `rgba(10,5,3,${a})`);
     g.fillStyle = luz; g.fillRect(0, Math.max(0, oy), w, h);
   }
+  if (flot.length) {                                // lo que vas recogiendo, con su valor
+    g.font = `800 ${Math.max(12 * RES, T * 0.32)}px system-ui`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.lineWidth = Math.max(3, T * 0.09); g.strokeStyle = '#000d'; g.lineJoin = 'round';
+    for (const f of flot) { g.globalAlpha = Math.min(1, f.t * 1.5); g.strokeText(f.txt, ox + f.x * T, oy + f.y * T); g.fillStyle = f.col; g.fillText(f.txt, ox + f.x * T, oy + f.y * T); }
+    g.globalAlpha = 1;
+  }
 }
 
 /* ════════ Ciclo del juego ════════ RLR */
@@ -1448,6 +1463,8 @@ function animar(d) {
   }
   for (const q of parts) { q.x += q.vx * d; q.y += q.vy * d; q.vy += 9 * d; q.t -= d; }
   if (parts.length) parts = parts.filter((q) => q.t > 0);
+  for (const f of flot) { f.t -= d; f.y -= d * 0.7; }
+  if (flot.length) flot = flot.filter((f) => f.t > 0);
   for (const s of senales) s.t -= d;
   if (senales.length) senales = senales.filter((s) => s.t > 0);
   temblor *= Math.pow(0.002, d);
@@ -1470,6 +1487,21 @@ function arrancar() {
 }
 function detener() { corriendo = false; for (const k in teclas) teclas[k] = false; sonarLazos(true); }
 
+const raton = { x: -1, y: -1, t: 0 };
+addEventListener('mousemove', (e) => { raton.x = e.clientX; raton.y = e.clientY; raton.t = performance.now(); });
+function queEs() {
+  const o = $('#ojo'); let txt = '';
+  if (!menu && raton.x >= 0 && performance.now() - raton.t < 5000) {
+    const t = celda(Math.floor(camX + raton.x * RES / T), Math.floor(camY + raton.y * RES / T));
+    if (t >= 10 && t < 20) { const m = MIN[t - 10]; txt = S.st.rec[t - 10] ? `${m.n} · ${fmt(m.v)} · ${m.kg} kg` : 'Mineral sin descubrir'; }
+    else if (t >= 20) txt = 'Algo enterrado…';
+    else if (t === 2) txt = 'Piedra · no se perfora';
+    else if (t === 3) txt = 'Lava · hace daño';
+    else if (t === 4 && cfg.verGas) txt = 'Bolsa de gas';
+  }
+  if (o._t !== txt) { o._t = txt; o.textContent = txt; o.style.display = txt ? 'block' : 'none'; }
+  if (txt) { o.style.left = raton.x + 16 + 'px'; o.style.top = raton.y + 18 + 'px'; }
+}
 let pistaDe = null, tAlarma = 0, estabaAbajo = false, tTabla = 0, tGrua = -9;
 function pista(x) { const p = $('#pista'); if (p._t !== x) { p._t = x; p.textContent = x; p.style.display = x ? 'block' : 'none'; } }
 // La grúa te deja en la Gasolinera. Cobra por lo lejos que estás y por lo que pesas.
@@ -1527,7 +1559,7 @@ function cadaTanto() {
   const c = costoGrua(), ver = (yo.y > 1 || yo.y < -20) && tiempo - tGrua < 3.5, gr = $('#grua');
   const txt = ver ? `🚁 Grúa a la Gasolinera · <b>${fmt(c)}</b> · tecla E${S.d < c ? ' · no te alcanza' : ''}` : '';
   if (gr._h !== txt) { gr._h = txt; gr.innerHTML = txt; gr.style.display = txt ? 'block' : 'none'; }
-  pintarHud();
+  pintarHud(); queEs();
   if (++tTabla % 4 === 0) pintarTabla();
 }
 
@@ -1552,7 +1584,7 @@ function pintarHud(forzar) {
   const bc = $('#bComb'), bv = $('#bCasco');
   bc.firstChild.style.width = f * 100 + '%'; bc.lastChild.textContent = S.fuel.toFixed(1) + ' / ' + tanque() + ' L'; bc.classList.toggle('bajo', f < 0.25);
   bv.firstChild.style.width = v * 100 + '%'; bv.lastChild.textContent = Math.max(0, Math.ceil(S.vida)) + ' / ' + vidaMax(); bv.classList.toggle('bajo', v < 0.3);
-  $('#prof').textContent = donde(yo.y); $('#din').textContent = fmt(S.d); $('#bod').textContent = '📦 ' + nCarga() + '/' + bodega();
+  $('#prof').textContent = donde(yo.y); $('#din').textContent = fmt(S.d); $('#bod').textContent = '📦 ' + nCarga() + '/' + bodega() + (nCarga() ? ' · ' + fmt(valorCarga()) : '');
   poner($('#metas'), metas().map((m) => `<div class="m${m.ya ? ' ya' : ''}"><i style="width:${Math.round(Math.min(100, m.p * 100))}%"></i><span>${esc(m.tx)}</span></div>`).join(''));
   poner($('#objetos'), OBJ.map((o, i) => `<div data-u="${i}" class="${S.obj[i] ? '' : 'n0'}" title="${o.n}: ${o.ef}"><kbd>${o.k}</kbd>${CORTO[i]} ×${S.obj[i]}</div>`).join(''));
   if (forzar) pintarTabla();
@@ -1642,6 +1674,35 @@ function qr(texto) {
   for (let m = 0; m < 8; m++) { const R = arma(m), c = castigo(R); if (c < minimo) { minimo = c; mejor = R; mejor.mascara = m; } }
   return mejor;
 }
+function fotoRecord() {
+  const c = document.createElement('canvas'), L = 1080; c.width = c.height = L;
+  const q = c.getContext('2d'), piso = 600;
+  const gr = q.createLinearGradient(0, 0, 0, piso); gr.addColorStop(0, '#22407a'); gr.addColorStop(0.5, '#5f83bd'); gr.addColorStop(0.86, '#f0a868'); gr.addColorStop(1, '#fbd590');
+  q.fillStyle = gr; q.fillRect(0, 0, L, piso);
+  const sol = q.createRadialGradient(820, 250, 20, 820, 250, 330); sol.addColorStop(0, '#fff8d8'); sol.addColorStop(0.2, '#ffe9a8cc'); sol.addColorStop(1, '#ffe9a800'); q.fillStyle = sol; q.fillRect(480, 0, 600, piso);
+  for (const [col, alt, f] of [['#c79a78', 150, 0.006], ['#a8734f', 105, 0.011], ['#86573b', 62, 0.019]]) { q.fillStyle = col; q.beginPath(); q.moveTo(0, piso); for (let x = 0; x <= L; x += 30) q.lineTo(x, piso - alt * (0.55 + 0.3 * Math.sin(x * f) + 0.15 * Math.sin(x * f * 2.7 + 1))); q.lineTo(L, piso); q.fill(); }
+  const lado = 120;                                  // el suelo, con lo mejor que has descubierto
+  let mejor = 0; for (let i = 0; i < 10; i++) if (S.st.rec[i]) mejor = i;
+  for (let y = 0; y < 4; y++) for (let x = 0; x < 9; x++) {
+    const r = azar(x + 500, y + 700, 5), tipo = y > 0 && r < 0.3 ? 10 + Math.max(0, mejor - Math.floor(r * 13)) : 1;
+    q.drawImage(tile(tipo, Math.min(3, y), tipo === 1 ? (x * 7 + y * 13) & 3 : 0), x * lado, piso + y * lado, lado, lado);
+  }
+  q.fillStyle = '#5c9e3a'; q.fillRect(0, piso, L, 14); q.fillStyle = '#7cc24e'; q.fillRect(0, piso, L, 6);
+  q.fillStyle = '#00000059'; q.fillRect(0, piso + 14, L, L);
+  dibMaq(q, 300, piso - 150, 380, miModelo, 1, false, 0, '', '', 0.4);
+  q.textBaseline = 'alphabetic'; q.lineJoin = 'round';
+  const texto = (s, x, y, tam, col = '#fff', peso = 900, al = 'left') => { q.font = `${peso} ${tam}px system-ui`; q.textAlign = al; q.lineWidth = tam * 0.16; q.strokeStyle = '#000b'; q.strokeText(s, x, y); q.fillStyle = col; q.fillText(s, x, y); };
+  texto('MINA', 60, 130, 110, '#ffd23f');
+  texto(miNombre, 60, 205, 56);
+  texto(RANGOS[S.rango][1], 60, 258, 36, '#f3e6d8', 700);
+  const cifras = [[S.rec + ' m', 'bajo tierra']]; if (S.alt >= 1000) cifras.push([fmtAlto(S.alt), 'de altura']); cifras.push([fmt(S.tot), 'ganados']);
+  cifras.forEach(([a, b], i) => { texto(a, 60, piso + 150 + i * 135, 86, '#ffd23f'); texto(b, 60, piso + 192 + i * 135, 34, '#f3e6d8', 700); });
+  const liga = location.origin + '/m/' + mundoId, cq = document.createElement('canvas');
+  if (pintarQR(cq, liga, 8)) { q.fillStyle = '#fff'; q.beginPath(); q.roundRect(L - 372, piso + 100, 312, 312, 18); q.fill(); q.imageSmoothingEnabled = false; q.drawImage(cq, L - 360, piso + 112, 288, 288); q.imageSmoothingEnabled = true; }
+  texto('Entra a mi mundo', L - 216, piso + 78, 36, '#fff', 800, 'center');
+  texto(location.host, L - 216, piso + 452, 26, '#f3e6d8', 700, 'center');
+  return c;
+}
 function pintarQR(lienzoQR, texto, lado = 8) {
   const R = qr(texto); if (!R) return false;
   const n = R.length, m = 4, q = lienzoQR.getContext('2d');
@@ -1700,8 +1761,12 @@ function pintarMenu() {
     h = cab('👥 Invita a tu gente') + `<div class="cuerpo" style="text-align:center"><p>Quien abra esta liga entra a <b>${esc(cfg.nombre || 'este mundo')}</b> con su propia maquinita. Caben 10 a la vez.</p>
       <a href="${liga}" target="_blank" rel="noopener" title="Abrir la liga"><canvas id="qrLienzo" class="qr" data-t="${liga}"></canvas></a>
       <p><code>${liga}</code></p>
-      <p><button data-a="invitar">Copiar la liga</button> ${navigator.share ? '<button class="s" data-a="compartir">Compartir…</button>' : ''}</p>
+      <p><button data-a="invitar">Copiar la liga</button> ${navigator.share ? '<button class="s" data-a="compartir">Compartir…</button>' : ''} <button class="s" data-a="menu" data-v="foto">📸 Foto para presumir</button></p>
       <p class="nota">Con el teléfono: apunta la cámara al código y se abre el mundo.</p></div>`;
+  } else if (menu === 'foto') {
+    h = cab('📸 Presume tu maquinita') + `<div class="cuerpo" style="text-align:center"><div id="fotoAqui"></div>
+      <p><button data-a="compartirFoto">${navigator.canShare ? 'Compartir la foto' : 'Descargar la foto'}</button> <button class="s" data-a="invitar">Copiar la liga del mundo</button></p>
+      <p class="nota">La foto lleva tu maquinita, tus récords y el código QR de este mundo: quien lo escanee entra a excavar contigo.</p></div>`;
   } else if (menu === 'qrmaq') {
     const liga = location.origin + '/m/' + mundoId + '#maquinita=' + miK;
     h = cab('Tu maquinita en otro equipo') + `<div class="cuerpo" style="text-align:center"><p>Abre este código en tu otro equipo y <b>${esc(miNombre)}</b> llega con todo lo que trae.</p>
@@ -1713,6 +1778,7 @@ function pintarMenu() {
   c.innerHTML = h;
   const cm = $('#miMaq'); if (cm) dibMaq(cm.getContext('2d'), 80, 86, 132, miModelo, 1, false, 0, '', '');
   const ql = $('#qrLienzo'); if (ql) pintarQR(ql, ql.dataset.t, 8);
+  const fa = $('#fotoAqui'); if (fa) { const f = fotoRecord(); f.className = 'foto'; fa.appendChild(f); }
 }
 function venta() {
   const base = S.carga.reduce((a, n, i) => a + n * MIN[i].v, 0), piezas = nCarga();
@@ -1761,6 +1827,13 @@ const acciones = {
   remin() { if (!conectado || cuentaFin || S.d < costoRemin()) return; enviar({ t: 'remin' }); cerrar(); return 'no'; },
   pest(v) { pestana = +v; },
   menu(v) { menu = v; },
+  async compartirFoto() {
+    const blob = await new Promise((r) => fotoRecord().toBlob(r, 'image/png')), liga = location.origin + '/m/' + mundoId;
+    const f = new File([blob], 'mina-' + miNombre.replace(/[^\w]+/g, '-') + '.png', { type: 'image/png' });
+    if (navigator.canShare?.({ files: [f] })) { try { await navigator.share({ files: [f], title: 'Mina', text: `Llevo ${S.rec} m bajo tierra en Mina. Entra a mi mundo: ${liga}` }); return 'no'; } catch {} }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = f.name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    return 'no';
+  },
   compartir() { navigator.share?.({ title: 'Mina', text: 'Entra a excavar a mi mundo', url: location.origin + '/m/' + mundoId }).catch(() => {}); return 'no'; },
   tirar(v) { if (S.carga[+v] > 0) S.carga[+v]--; },
   op(v, el) { const k = el.dataset.k; op[k] = el.type === 'checkbox' ? (el.checked ? 1 : 0) : +el.value; escribir('mina_op', op); aplicarOp(); return 'no'; },
@@ -1821,7 +1894,7 @@ function menuPrincipal() {
       HALL.map((x, i) => S.st.hall[i] ? `<div><b>🏺 ${x.n}</b><small>${fmt(x.v)} · encontrados: ${S.st.hall[i]}</small></div>` : '<div class="no"><b>???</b><small>Hallazgo sin encontrar</small></div>').join('') + '</div>';
   } else if (pestana === 3) {
     const e = S.st;
-    h += [['Profundidad máxima', S.rec + ' m'], ['Total ganado', fmt(S.tot)], ['Viajes', e.viajes], ['Mejor viaje', fmt(e.mejorViaje)], ['Celdas perforadas', e.cavadas.toLocaleString('es-MX')], ['Piezas vendidas', e.vend.reduce((a, b) => a + b, 0)], ['Hallazgos', e.hall.reduce((a, b) => a + b, 0)], ['Explosivos usados', e.expl], ['Litros cargados', e.comb], ['Explosiones', e.muertes], ['Rescates gratis usados', S.resc], ['Remineralizaciones', e.remin]]
+    h += `<p><button data-a="menu" data-v="foto">📸 Presume tu maquinita y tus récords</button></p>` + [['Profundidad máxima', S.rec + ' m'], ['Altura máxima', fmtAlto(S.alt)], ['Total ganado', fmt(S.tot)], ['Viajes', e.viajes], ['Mejor viaje', fmt(e.mejorViaje)], ['Celdas perforadas', e.cavadas.toLocaleString('es-MX')], ['Piezas vendidas', e.vend.reduce((a, b) => a + b, 0)], ['Hallazgos', e.hall.reduce((a, b) => a + b, 0)], ['Explosivos usados', e.expl], ['Litros cargados', e.comb], ['Explosiones', e.muertes], ['Rescates gratis usados', S.resc], ['Remineralizaciones', e.remin]]
       .map(([a, b]) => `<div class="fila"><div class="t">${a}</div><div class="v">${b}</div></div>`).join('');
   } else if (pestana === 4) {
     const chk = (k, t) => `<label class="op"><span>${t}</span><input type="checkbox" data-a="op" data-k="${k}" ${op[k] ? 'checked' : ''}></label>`;
@@ -2019,10 +2092,26 @@ if (ligaMaquinita) { maqLocal = { k: ligaMaquinita }; escribir('mina_maq', maqLo
 aplicarOp(); sonidoUI();
 {
   const r = location.pathname.match(/^\/m\/([2-9A-HJ-NP-Z]{8})\/?$/i);
-  if (r) entrar(r[1].toUpperCase());
+  if (location.search.includes('foto')) escenaDeMuestra();
+  else if (r) entrar(r[1].toUpperCase());
   else if (location.pathname.length > 1) pantallaFinal('Esta liga está incompleta', 'La liga de un mundo termina en 8 letras y números. Pídela otra vez o entra a tus mundos.');
   else if (!mundos.length) crearMundo();
   else pantallaMundos();
+}
+function escenaDeMuestra() {
+  seed = 20261002; remin = 0; nuevaSemilla();
+  S = sanear(null); S.eq = [3, 3, 3, 3, 3, 3]; S.rec = 96; S.st.rec[0] = S.st.rec[1] = S.st.rec[2] = S.st.rec[3] = 1; miNombre = 'Ricardo'; miModelo = 0; mundoId = 'MUESTRA2';
+  const cava = (a, b, c, d) => { for (let x = a; x <= c; x++) for (let y = b; y <= d; y++) ponerCavada(y * W + x); };
+  cava(44, 0, 44, 6); cava(45, 6, 49, 6); cava(49, 7, 49, 9); cava(40, 4, 43, 4);
+  yo.x = 49.5; yo.y = 9.6; yo.dir = 1; yo.perf = { tx: 49, ty: 10, t: 0.1, dur: 0.3, tipo: 1, ox: 49.5, oy: 9.6, idx: 0 }; vis.x = yo.x; vis.y = yo.y;
+  otros.set(1, { i: 1, n: 'Sofi', m: 7, on: 1, x: 41.2, y: 4.6, fl: 0 }); otros.set(2, { i: 2, n: 'Luis', m: 2, on: 1, x: 52.5, y: -2.2, fl: 3 });
+  flot = [{ x: 47.5, y: 5.6, txt: '+ Oro · $250', col: '#ffd23f', t: 1.2 }];
+  rit.niv = 0; rit.sonda = false; listo = true; medir();
+  camX = Math.max(0, 48.5 - cols / 2); camY = 1.4 - filas / 2; reloj = 2.2; dibujar();
+  const d = document.createElement('div');
+  d.style.cssText = 'position:fixed;left:4%;top:5%;font:900 min(12vw,140px)/0.9 system-ui;color:#ffd23f;-webkit-text-stroke:6px #2a1a14;paint-order:stroke fill;text-shadow:0 8px 0 #0006';
+  d.innerHTML = 'MINA<div style="font:800 min(3.4vw,40px)/1.25 system-ui;color:#fff;-webkit-text-stroke:5px #2a1a14;paint-order:stroke fill;margin-top:14px;text-shadow:none">Excava con tus amigos, en el mismo mundo.<br>Gratis, en tu navegador.</div>';
+  document.body.appendChild(d);
 }
 // Para pruebas: window.__mina
 window.__mina = { get S() { return S; }, avanza(seg) { for (let i = 0, n = Math.round(seg * 120); i < n; i++) { tiempo += DT; ant.x = yo.x; ant.y = yo.y; fisica(DT); if (i % 14 === 0) cadaTanto(); } vis.x = yo.x; vis.y = yo.y; }, rit, red, animar, grua, costoGrua, dibujar, llegar, danar, get e() { return { corriendo, menu, pausa, listo, conectado, tiempo, perf: yo.perf, renace: yo.renace }; }, yo, otros, celda, gen, get cfg() { return cfg; }, usar, abrir, cerrar, teclas, enviarEst, veta, LOGROS };

@@ -150,6 +150,9 @@ export class Mundo extends DurableObject {
     return s;
   }
 
+  // Para la vista previa de la liga: cómo se llama el mundo y cuántas maquinitas tiene.
+  async nombre() { const m = await this.cargar(); return m ? { n: m.cfg.nombre || "", j: this.jug.filter(Boolean).length } : null; }
+
   // Mundos anteriores a la llave de dueño: el creador es la primera maquinita.
   creador() { const m = this.m; return m.dueno ? m.creador : 0; }
 
@@ -349,7 +352,9 @@ export class Mundo extends DurableObject {
       return;
     }
     i = this.jug.findIndex((j) => j && j.k === k);            // se vuelve a buscar: mientras se esperaba pudo entrar alguien más
+    let estrena = false;
     if (i < 0) {
+      estrena = this.jug.length > 0 && this.jug.length < 10;   // maquinita nueva en un mundo que ya tiene gente: todos ganan
       if (m.cfg.puerta && this.jug.length) return fin({ t: "cerrado" });
       if (this.jug.length >= MAX_MAQUINITAS) return fin({ t: "lleno" });
       i = this.jug.length;
@@ -381,7 +386,7 @@ export class Mundo extends DurableObject {
       dug: btoa(b),
     });
     for (const [x, s] of this.pos) if (x !== i && on.has(x)) manda(ws, s);
-    this.difundir({ t: "entra", j: this.publico(i, true) }, ws);
+    this.difundir({ t: "entra", j: this.publico(i, true), nuevo: estrena ? 1 : 0 }, ws);
     await this.programar();
   }
 
@@ -442,6 +447,21 @@ export default {
         if (d) return json({ id, d });
       }
       return json({ error: "reintenta" }, 503);
+    }
+
+    // La liga de un mundo lleva su nombre en la vista previa (WhatsApp, iMessage…): se nota quién invita.
+    const liga = u.pathname.match(/^\/m\/([2-9A-HJ-NP-Z]{8})\/?$/i);
+    if (liga && request.method === "GET") {
+      const pagina = await env.ASSETS.fetch(new Request(new URL("/", request.url), request));
+      let info = null;
+      try { info = await env.MUNDO.get(env.MUNDO.idFromName(liga[1].toUpperCase())).nombre(); } catch {}
+      if (!info || !info.n) return pagina;
+      const titulo = info.n + " · entra a excavar conmigo en Mina";
+      const texto = (info.j > 1 ? "Ya somos " + info.j + " maquinitas en este mundo. " : "") + "Bautiza la tuya y baja: un mundo compartido en tiempo real, gratis y sin registro.";
+      return new HTMLRewriter()
+        .on('meta[property="og:title"]', { element(e) { e.setAttribute("content", titulo); } })
+        .on('meta[property="og:description"]', { element(e) { e.setAttribute("content", texto); } })
+        .transform(pagina);
     }
 
     const ws = u.pathname.match(/^\/ws\/([2-9A-HJ-NP-Z]{8})$/);

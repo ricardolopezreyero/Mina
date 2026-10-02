@@ -1,4 +1,4 @@
-# DOCUMENTO MAESTRO · «Mina» · v4
+# DOCUMENTO MAESTRO · «Mina» · v5
 
 **Ver en vivo: https://mina.capitaltorreon.com**
 
@@ -192,7 +192,7 @@ Mensajes por hora de juego de una persona: unos 5,000 si juega sola y unos 41,00
 
 | Tope (sección 9 del prompt) | Medido |
 |---|---|
-| Descarga inicial ≤ 150 KB comprimida | **54.0 KB** (sigue siendo un solo archivo de juego, sin imágenes ni audios) |
+| Descarga inicial ≤ 150 KB comprimida | **56.9 KB** (la imagen de vista previa de la liga, 231 KB, no la baja el juego: solo la piden WhatsApp y similares) |
 | 3 solicitudes o menos | **2** |
 | Trabajo por cuadro < 4 ms | **0.35 a 0.62 ms** de dibujo en un lienzo de 2800 × 1600; la física no llega a 0.01 ms |
 | Guardado de una capa: 6 KB | 6,000 bytes |
@@ -293,7 +293,24 @@ Falta para la visión completa: varias maquinitas por persona, comprarlas, dise�
 
 ---
 
-## 9. Revisión de código del 2 de octubre
+## 9. Quinta iteración: entender lo que recoges y que se comparta solo
+
+**Criterio que dio Ricardo para lo no decidido:** elegir lo mejor a largo plazo para que la gente quede encantada y el juego se comparta, con muchos detalles bien pensados y nada exagerado.
+
+| Detalle | Qué hace |
+|---|---|
+| Letrero flotante al recoger | Sobre la celda sale «+ Oro · $250» con el color del mineral. Con la bodega llena avisa qué pieza se perdió. Los hallazgos muestran lo que pagaron. |
+| Valor de la carga | El medidor de bodega dice cuánto vale lo que llevas: «📦 5/7 · $410». |
+| El ratón dice qué es | Al pasar el cursor por una celda aparece su nombre, valor y peso. Lo que aún no descubres sale como «Mineral sin descubrir». |
+| Vista previa de la liga | Al pegar la liga de un mundo en WhatsApp o iMessage aparece una imagen del juego y el nombre del mundo: «Mundo de Ricardo · entra a excavar conmigo en Mina», con cuántas maquinitas hay. |
+| Foto para presumir | Menú → Estadísticas, o Invitar: una imagen cuadrada con tu maquinita, tu rango, tus récords y el QR de tu mundo. En teléfono se comparte; en computadora se descarga. |
+| Llegó alguien nuevo | Cuando una maquinita nueva entra a un mundo con gente, cada quien recibe $500 [N] (las primeras 9). Logro «Anfitrión» a las tres. |
+
+La imagen de vista previa sale del propio juego: `…/?foto=1` dibuja una escena de muestra sin conectarse, y se captura con Chrome sin ventana a 1200 × 630.
+
+---
+
+## 10. Revisión de código del 2 de octubre
 
 Se revisó todo el código buscando fallas y se corrigieron estas:
 
@@ -323,7 +340,7 @@ Prueba automática: un jugador simulado con teclas al azar durante 40 y 60 minut
 
 ---
 
-## 10. Decisiones que te tocan
+## 11. Decisiones que te tocan
 
 1. **Parado en la superficie no se gasta combustible.** Lo puse porque un jugador nuevo explotaba leyendo la bienvenida. El original sí gasta. Recomiendo dejarlo.
 2. **Se entra a los edificios con ↓**, no al pasar. Con cinco edificios seguidos, entrar al pasar estorbaba. Recomiendo dejarlo.

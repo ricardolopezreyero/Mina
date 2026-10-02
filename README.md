@@ -4,7 +4,7 @@
 
 Juego de minería para navegador, infinito y compartido. Bajas con tu maquinita, llenas la bodega, subes, vendes, mejoras el equipo y bajas más hondo. Mandas la liga de tu mundo y tu gente entra a excavar contigo, en tiempo real.
 
-Gratis, sin registro y sin instalar nada. Toda la descarga pesa unos 54 KB.
+Gratis, sin registro y sin instalar nada. El juego completo pesa unos 57 KB.
 
 ## Cómo se juega
 
@@ -21,9 +21,10 @@ Gratis, sin registro y sin instalar nada. Toda la descarga pesa unos 54 KB.
 | Archivo | Qué es |
 |---|---|
 | `publico/index.html`, `publico/juego.js` | Todo el juego. Sin librerías, imágenes ni audios |
+| `publico/mina.jpg` | Imagen de vista previa de la liga. Se regenera capturando `/?foto=1` a 1200 × 630 |
 | `src/mundo.js` | El servidor: un Durable Object de Cloudflare por mundo |
 | `wrangler.jsonc` | Configuración del Worker y del dominio |
-| `docs/Documento_Maestro_Mina_v4_2026-10-02_0114.md` | Qué está construido, con qué números y qué falta |
+| `docs/Documento_Maestro_Mina_v5_2026-10-02_0127.md` | Qué está construido, con qué números y qué falta |
 | `Prompt_Maestro_Mina_v4_2026-10-01_2336.md` | El diseño completo |
 | `sonidos-fuente/` | El pedido exacto de sonidos y música para ElevenLabs (aún sin generar) |
 
