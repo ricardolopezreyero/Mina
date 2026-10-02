@@ -53,6 +53,7 @@ const HALL = [
   { n: 'Perla gigante', v: 400000, fijo: 1 },              // solo en el lecho del Acuífero
   { n: 'Ídolo de oro', v: 25000000, fijo: 1 },             // solo en la pirámide de la Ciudad Perdida
   { n: 'Corazón de la Tierra', v: 2500000000, fijo: 1 },   // solo uno, a 9,830 m
+  { n: 'Huevo de dragón', v: 60000000, fijo: 1 },          // solo en el Nido del dragón
 ];
 // Un hallazgo vale más entre más hondo: a 1 km lo de siempre; a 10 km, mil veces más.
 const valorHall = (k, y) => (HALL[k].fijo ? HALL[k].v : Math.round(HALL[k].v * Math.max(1, ((y + 1) / 500) ** 3) / 1000) * 1000);
@@ -63,7 +64,23 @@ const LUGARES = [
   { ic: '💎', n: 'La Gruta de Cristal', m: 2950, x: 48, y: 1495, q: 1e7, tx: 'Una cueva enorme con las paredes forradas de metales preciosos. Llévate lo que puedas cargar.' },
   { ic: '🏛️', n: 'La Ciudad Perdida', m: 5580, x: 37, y: 2815, q: 5e7, tx: 'Alguien vivió aquí. Las casas siguen de pie y cada una guarda sus tesoros.' },
   { ic: '❤️', n: 'El Corazón de la Tierra', m: 9780, x: 40, y: 4915, q: 5e8, tx: 'Late despacio. A su alrededor, la veta madre: la más rica que existe.' },
+  // Los rincones: más chicos que los cuatro grandes. t = de qué está hecho; cx, cy, rx, ry = dónde y de qué tamaño.
+  { ic: '⛺', n: 'El Campamento abandonado', m: 350, t: 'camp', cx: 30, cy: 175, rx: 11, ry: 4, q: 5e3, tx: 'Alguien acampó aquí hace años. Dejó su carrito, su lámpara y varios cofres.' },
+  { ic: '🦖', n: 'El Fósil gigante', m: 700, t: 'fosil', cx: 60, cy: 350, rx: 11, ry: 3, q: 5e4, tx: 'Un animal enorme, enterrado entero. Cada hueso es un hallazgo.' },
+  { ic: '🌊', n: 'El Río subterráneo', m: 1700, t: 'rio', cx: 48, cy: 850, rx: 46, ry: 4, q: 2e6, tx: 'Cruza el mundo de lado a lado. Trae peces y, en el lecho, perlas.' },
+  { ic: '🍄', n: 'El Bosque de hongos', m: 2300, t: 'hongos', cx: 40, cy: 1150, rx: 16, ry: 7, q: 5e6, tx: 'Hongos más altos que tu maquinita, y brillan. Entre sus raíces hay reliquias.' },
+  { ic: '⚙️', n: 'El Cementerio de maquinitas', m: 3700, t: 'cemen', cx: 55, cy: 1850, rx: 15, ry: 6, q: 2e7, tx: 'Aquí se quedaron las que bajaron antes que tú. Sus cofres siguen llenos.' },
+  { ic: '♨️', n: 'Las Aguas termales', m: 4400, t: 'termas', cx: 35, cy: 2200, rx: 14, ry: 6, q: 3e7, tx: 'Agua tibia que sale de la roca. Métete: repara el casco sin cobrar.' },
+  { ic: '🗿', n: 'Los Guardianes', m: 5100, t: 'guard', cx: 60, cy: 2550, rx: 15, ry: 6, q: 4e7, tx: 'Cabezas de piedra que cuidan la entrada de la ciudad. A sus pies dejaron ofrendas.' },
+  { ic: '🦋', n: 'El Jardín de cristal', m: 6400, t: 'jardin', cx: 40, cy: 3200, rx: 17, ry: 8, q: 8e7, tx: 'Cristales que crecen como plantas, y mariposas que parecen de vidrio.' },
+  { ic: '🌋', n: 'El Lago de lava', m: 7200, t: 'lava', cx: 52, cy: 3600, rx: 18, ry: 7, q: 1.2e8, tx: 'Sobre cada pilar hay una reliquia. Vuela de uno a otro y no toques el lago.' },
+  { ic: '🏦', n: 'La Bóveda de la Compañía', m: 8000, t: 'boveda', cx: 34, cy: 4000, rx: 11, ry: 4, q: 2e8, tx: 'Doña Chela nunca dijo que existía. Está llena de cofres.' },
+  { ic: '🐉', n: 'El Nido del dragón', m: 8800, t: 'nido', cx: 56, cy: 4400, rx: 16, ry: 7, q: 3e8, tx: 'Duerme. Sus huevos valen una fortuna. No hagas ruido… o sí: no despierta.' },
 ];
+const RINCONES = LUGARES.map((L, i) => ({ ...L, i })).filter((L) => L.t);
+for (const R of RINCONES) { LUGARES[R.i].x = R.t === 'boveda' ? R.cx + 1 : R.cx; LUGARES[R.i].y = R.t === 'boveda' ? R.cy + 1 : R.t === 'fosil' ? R.cy - 1 : R.cy - 1; }
+const ZONA_N = ['La Corteza', 'La Corteza', 'La Corteza', 'La Corteza', 'El Acuífero', 'Las Cavernas', 'La Cristalera', 'La Zona de presión'];
+const ZONA_TX = { 4: 'Roca azulada y húmeda. Aquí empiezan la aguamarina, el zafiro y la perla negra.', 5: 'Roca morada y cuevas con hongos que brillan. Ónix, topacio y jade.', 6: 'Roca índigo, llena de cristales. Amatista, tanzanita y alejandrita.', 7: 'Roca negra y brasas. Lo más duro y lo más valioso: paladio, rodio y osmio.' };
 /* ── La colección del mundo: 33 objetos, tres de cada uno (99 en total), repartidos de arriba al fondo.
    Es del mundo y es de todos: lo que encuentra cualquiera se enciende en la vitrina de todos. ── */
 const COLEC = [['🥾', 'Bota de minero'], ['🔦', 'Linterna vieja'], ['⛏️', 'Pico oxidado'], ['📻', 'Radio de la Compañía'], ['🐚', 'Caracola'], ['⚓', 'Ancla'], ['🧭', 'Brújula'], ['🍄', 'Hongo luminoso'], ['🕯️', 'Vela eterna'], ['🗝️', 'Llave de hierro'], ['🏺', 'Ánfora'],
@@ -256,9 +273,9 @@ const RANGOS = [[0, 'Aprendiz'], [100, 'Peón'], [200, 'Barretero'], [300, 'Perf
 const MODELOS = [['#ffd23f', '#b07a00'], ['#ff6b5a', '#a8322a'], ['#6ec3ff', '#2a6fa8'], ['#6fdc7a', '#2f8a3a'], ['#c05cff', '#7426a8'], ['#ff9f40', '#b05e12'], ['#f3e6d8', '#9a8774'], ['#ff7ac8', '#a8327a']];
 
 const MODOS = {
-  paseo:   { comb: 0, caida: 0, lava: 0, gas: 0, verGas: 1, pierde: 0, rescates: -1 },
-  clasico: { comb: 1, caida: 1, lava: 1, gas: 1, verGas: 2, pierde: 2, rescates: 3 },
-  rudo:    { comb: 1, caida: 2, lava: 2, gas: 2, verGas: 0, pierde: 3, rescates: 0 },
+  paseo:   { comb: 0, caida: 0, lava: 0, gas: 0, verGas: 1, pierde: 0, rescates: -1, pleitos: 0 },
+  clasico: { comb: 1, caida: 1, lava: 1, gas: 1, verGas: 2, pierde: 2, rescates: 3, pleitos: 1 },
+  rudo:    { comb: 1, caida: 2, lava: 2, gas: 2, verGas: 0, pierde: 3, rescates: 0, pleitos: 1 },
 };
 const MULT = [0, 1, 1.5];
 
@@ -370,16 +387,45 @@ const ondula = (x, y, k) => 0.1 * Math.sin(x * 0.41 + k) * Math.sin(y * 0.53 + k
 const elip = (x, y, cx, cy, rx, ry, k) => ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 + ondula(x, y, k);
 // En qué lugar está una celda (-1 si en ninguno). Con «orilla» también cuenta la pared que lo envuelve.
 function lugarDe(x, y, orilla) {
-  if (y < AGUA0) return -1;
+  if (y < AGUA0) { for (const R of RINCONES) if (R.cy < AGUA0 && y >= R.cy - R.ry * 1.25 - 1 && y <= R.cy + R.ry * 1.25 + 1) return enRincon(R, x, y, orilla) ? R.i : -1; return -1; }
   if (y < AGUA1) return 0;
   if (y > 1470 && y < 1520) return elip(x, y, 48, 1495, 38, 19, 1) < (orilla ? 1.4 : 1) ? 1 : -1;
   if (y >= 2790 && y <= 2826) return x >= 10 && x <= 86 ? 2 : -1;
   if (y > 4880 && y < 4950) return elip(x, y, 48, 4915, 34, 24, 3) < (orilla ? 1.45 : 1) ? 3 : -1;
+  for (const R of RINCONES) if (y >= R.cy - R.ry * 1.25 - 1 && y <= R.cy + R.ry * 1.25 + 1) return enRincon(R, x, y, orilla) ? R.i : -1;
   return -1;
+}
+const cauce = (R, x) => R.cy + Math.round(2 * Math.sin(x * 0.15));
+function enRincon(R, x, y, orilla) {
+  if (R.t === 'rio') return x > 1 && x < W - 2 && Math.abs(y - cauce(R, x)) <= (orilla ? 2 : 1);
+  if (R.t === 'fosil' || R.t === 'boveda') return Math.abs(x - R.cx) <= R.rx && Math.abs(y - R.cy) <= R.ry;
+  return elip(x, y, R.cx, R.cy, R.rx, R.ry, R.i) < (orilla ? 1.35 : 1);
+}
+const pisoR = (R, x) => R.cy + R.ry * Math.sqrt(Math.max(0, 1 - ((x - R.cx) / R.rx) ** 2));       // más o menos dónde queda el piso de un rincón
+// Lo que hay en cada celda de un rincón; -1 = la tierra de siempre.
+function genRincon(R, x, y) {
+  const t = R.t, dx = x - R.cx, dy = y - R.cy;
+  if (t === 'rio') { if (x <= 1 || x >= W - 2) return -1; const c = cauce(R, x); return Math.abs(y - c) <= 1 ? 6 : y === c + 2 && azar(x, y, 51) < 0.12 ? 44 : -1; }
+  if (t === 'fosil') {
+    if (dx >= 8 && dx <= 10 && Math.abs(dy) <= 1) return dx === 9 && dy === 0 ? 42 : 40;      // el cráneo
+    if (dy === 0 && dx >= -10 && dx < 8) return 40;                                            // el espinazo y la cola
+    return dy > 0 && dy <= 3 - (Math.abs(dx - 1) > 3 ? 1 : 0) && dx >= -4 && dx <= 6 && dx % 2 === 0 ? 40 : -1;      // las costillas
+  }
+  if (t === 'boveda') { const ax = Math.abs(dx), ay = Math.abs(dy); if (ax > 11 || ay > 4) return -1; if (ax === 11 || ay === 4) return 7; return dx % 2 === 0 && dy % 2 === 0 ? 41 : 0; }
+  const d = elip(x, y, R.cx, R.cy, R.rx, R.ry, R.i);
+  if (d >= 1.35) return -1;
+  if (d >= 1) return azar(x, y, 52) < 0.45 ? 10 + mejorMineral(y) : -1;                        // paredes ricas en lo mejor de la zona
+  const piso = elip(x, y + 1, R.cx, R.cy, R.rx, R.ry, R.i) >= 1, r = azar(x, y, 53);
+  if (t === 'termas') return y > R.cy ? 6 : 0;
+  if (t === 'lava') return y > R.cy + 1 ? (((x % 7) + 7) % 7 === 3 ? 1 : 3) : y === R.cy + 1 && ((x % 7) + 7) % 7 === 3 ? 43 : 0;      // pilares con una reliquia encima
+  if (t === 'jardin') { const gx = x >> 1; return azar(gx, 5, 54) < 0.3 && y > pisoR(R, x) - 2 - azar(gx, 6, 54) * 6 ? 10 + mejorMineral(y) : 0; }
+  if (piso) { const p = { camp: [0.28, 41], hongos: [0.14, 43], cemen: [0.3, 41], guard: [0.25, 43], nido: [0.35, 47] }[t]; if (p && r < p[0]) return p[1]; }
+  return 0;
 }
 const PRECIOSOS = [3, 3, 4, 7, 7, 8, 8, 9, 9, 13, 13, 14, 14, 15];      // lo que forra la Gruta: oro, platino, rubí, diamante, amazonita, ónix, topacio y jade
 // Lo que hay en cada celda de un lugar; -1 = «aquí la tierra es la de siempre».
 function genLugar(x, y) {
+  if (y < AGUA0) { for (const R of RINCONES) if (R.cy < AGUA0 && y >= R.cy - R.ry * 1.25 - 1 && y <= R.cy + R.ry * 1.25 + 1) return genRincon(R, x, y); return -1; }
   if (y < AGUA1) {                                   // El Acuífero: un lago con columnas de roca; en el lecho, perlas
     const d = elip(x, y, 48, 572, 41, 23, 2);
     if (d < 1) {
@@ -418,6 +464,7 @@ function genLugar(x, y) {
     const h = Math.hypot(x - 48, y - 4915);
     return h < 0.5 ? 46 : h < 2.4 ? 31 : 0;
   }
+  for (const R of RINCONES) if (y >= R.cy - R.ry * 1.25 - 1 && y <= R.cy + R.ry * 1.25 + 1) return genRincon(R, x, y);
   return -1;
 }
 function gen(x, y) {
@@ -426,7 +473,7 @@ function gen(x, y) {
   if (y < 2 && x >= ZX0 && x <= ZX1) return 5;
   const m = (y + 1) * 2, agua = y >= AGUA0 && y < AGUA1, co = colec.get(y * W + x);
   if (co !== undefined && !hallados[co]) return 50;          // un objeto de la colección que nadie ha encontrado
-  if (y >= AGUA0) { const t = genLugar(x, y); if (t >= 0) return t; }
+  if (y >= 165) { const t = genLugar(x, y); if (t >= 0) return t; }
   const [vx, vy] = veta(Math.floor(y / 75));
   if (Math.abs(x - vx) <= 1 && Math.abs(y - vy) <= 1) return 10 + mejorMineral(vy);
   const r = azar(x, y, 1);
@@ -883,6 +930,12 @@ function danar(q, causa) {
 }
 let ultGolpe = { q: 0, m: 0 };
 function morir(causa) {
+  if (causa === 'pleito') {          // perder un pleito no cuesta nada: vuelves arriba con todo, y el casco reparado
+    son.boom(); temblar(12); chispas(yo.x, yo.y, '#ffb347', 40, 10); onda(yo.x, yo.y, 4, '#ffd9a0', 0.6); recordar();
+    S.vida = vidaMax(); yo.renace = true; S.st.perdidos = (S.st.perdidos || 0) + 1;
+    tarjeta('⚔️ ' + rival + ' te ganó el pleito', 'Vuelves a la superficie con tu carga y tu dinero completos. El Elevador te regresa a donde estabas.', '', 10000, true);
+    difundir('perdió un pleito contra ' + rival); sucio = true; enviarEst(); return;
+  }
   const tenia = vidaMax(), dondeFue = donde(yo.y); recordar();
   son.boom(); temblar(16); chispas(yo.x, yo.y, '#ffb347', 40, 10); onda(yo.x, yo.y, 4.5, '#ffd9a0', 0.7); humo(yo.x, yo.y, 18);
   S.st.muertes++;
@@ -1010,8 +1063,25 @@ function fisica(dt) {
   yo.y = ny;
   if (yo.renace) return;
 
+  // Entre maquinitas: en el aire rebotan y no pasa nada; en tierra, bajo la superficie, se pelean a taladro.
+  yo.ataca = 0;
+  for (const o of otros.values()) {
+    if (!o.on || o.x === undefined || (o.fl & 8)) continue;
+    const dx = o.x - yo.x, dy = o.y - yo.y, s = dx > 0 ? 1 : -1;
+    if (Math.abs(dx) > 1.2 || Math.abs(dy) > 1.2) continue;
+    if (!yo.suelo && Math.abs(dx) < 0.76 && Math.abs(dy) < 0.8) {               // rebote
+      yo.vx = -s * (3.5 + Math.abs(yo.vx) * 0.6); yo.vy = (dy > 0 ? -1 : 1) * Math.max(3, Math.abs(yo.vy) * 0.6);
+      if (tiempo - tChoque > 0.25) { tChoque = tiempo; son.golpe(); chispas((yo.x + o.x) / 2, (yo.y + o.y) / 2, '#ffffff', 8, 5); }
+    } else if (cfg.pleitos !== 0 && yo.suelo && yo.y > 0.5 && !yo.perf) {
+      const lado = Math.abs(dy) < 0.6 && Math.abs(dx) < 1.1 && ((izq && dx < 0) || (der && dx > 0)), abajo = aba && Math.abs(dx) < 0.6 && dy > 0 && dy < 1.15;
+      if (!lado && !abajo) continue;
+      yo.ataca = abajo ? 2 : s;
+      if (lado) { yo.vx = 0; if (Math.abs(dx) < 0.74) yo.x = o.x - s * 0.74; }  // no se enciman: quedan taladro contra casco
+      if (tiempo - tAtaque > 0.4) { tAtaque = tiempo; enviar({ t: 'golpe', a: o.i, q: pot() }); son.piedra(); chispas(yo.x + (lado ? s * 0.5 : 0), yo.y + (abajo ? 0.5 : 0), '#fff3b0', 10, 6); }
+    }
+  }
   // empezar a perforar
-  if (yo.suelo && !reserva && !arr) {
+  if (yo.suelo && !reserva && !arr && !yo.ataca) {
     const cx = Math.floor(yo.x), cy = Math.floor(yo.y);
     if (aba && !izq && !der) perforar(cx, cy + 1);
     else if (izq && !der && (toca < 0 || yo.x - HW - 0.16 <= cx)) perforar(cx - 1, cy);
@@ -1049,7 +1119,7 @@ function aterrizar(v) {
   danar(d * MULT[cfg.caida], 'una caída');
   if (h >= 46 && !yo.renace && cfg.caida) S.fl.caida = 1;
 }
-let ultNo = 0, tMuerde = 0, tAvisoPiedra = -9;
+let ultNo = 0, tMuerde = 0, tAvisoPiedra = -9, tChoque = -9, tAtaque = -9, rival = '';
 // La piedra: cinco durezas según la zona. Cada una pide un taladro mínimo (nivel de la pieza) y tiene su color.
 const PIEDRA = [[4, 'gris', ['#77726d', '#56524e', '#9a948e', '#3b3836']], [7, 'azulada', ['#5f8196', '#456275', '#8fb0c4', '#26383f']], [9, 'morada', ['#7d6796', '#5d4a74', '#a995c2', '#33263f']], [12, 'índigo', ['#4d5aa3', '#39437d', '#7f8cd6', '#1d2247']], [15, 'negra', ['#3d3438', '#2a2226', '#6b565c', '#120c0e']]];
 const durezaDe = (m) => (m < 1000 ? 0 : m < 2000 ? 1 : m < 4000 ? 2 : m < 8000 ? 3 : 4);
@@ -1156,7 +1226,7 @@ const bufPos = new Uint8Array(8), datoPos = new DataView(bufPos.buffer); let ult
 function enviarPos() {
   if (!conectado || ![...otros.values()].some((o) => o.on)) return;
   const x = Math.round(yo.x * 256), y = Math.round(yo.y * 64);
-  const f = (yo.dir > 0 ? 1 : 0) | (yo.vuela ? 2 : 0) | (yo.planea ? 32 : 0) | (yo.perf ? 4 : 0) | (menu || pausa ? 8 : 0) | (yo.perf && yo.perf.ty > Math.floor(yo.perf.oy) ? 16 : 0);
+  const f = (yo.dir > 0 ? 1 : 0) | (yo.vuela ? 2 : 0) | (yo.planea ? 32 : 0) | (yo.perf || yo.ataca ? 4 : 0) | (menu || pausa ? 8 : 0) | ((yo.perf && yo.perf.ty > Math.floor(yo.perf.oy)) || yo.ataca === 2 ? 16 : 0);
   const k = x + ',' + y + ',' + f;
   if (k === ultPos) return; ultPos = k;
   bufPos[0] = 1; datoPos.setUint16(1, x, true); datoPos.setInt32(3, y, true); bufPos[7] = f;
@@ -1233,6 +1303,12 @@ function recibir(d) {
     case 'sale': { const o = otros.get(d.i); if (o) { o.on = 0; o.x = undefined; o.b = []; aviso(o.n + ' salió'); } return pintarTabla(); }
     case 'j': { const o = otros.get(d.i); if (o) { o.rec = d.rec; o.tot = d.tot; } return pintarTabla(); }
     case 'col': if (d.k >= 0 && d.k < NCOL) { hallados[d.k] = 1; pintarHud(true); if (menu === 'menu') pintarMenu(); } return;
+    case 'golpe': {            // otra maquinita me alcanzó con su taladro: pega según su taladro; lo que aguanto es mi casco
+      if (cfg.pleitos === 0 || yo.y <= 0.5 || yo.renace || !S) return;
+      const o = otros.get(d.i); rival = nombreDe(d.i);
+      if (o && o.x !== undefined) { yo.vx += Math.sign(yo.x - o.x || 1) * 4; yo.vy -= 2; }
+      return danar(Math.max(1, Math.min(500, d.q | 0) * 0.25), 'pleito');
+    }
     case 'aviso': return aviso(nombreDe(d.i) + ' ' + d.x);
     case 'senal': senales.push({ x: d.x, y: d.y, t: 10, n: nombreDe(d.i) }); son.senal(); return aviso(nombreDe(d.i) + ' marcó un punto');
     case 'fuel': if (S.fuel <= 0 && d.q > 0) tarjeta('Saliste de la reserva', nombreDe(d.i) + ' te pasó combustible.'); S.fuel = Math.min(tanque(), S.fuel + d.q); son.combustible(); sucio = true; return aviso(nombreDe(d.i) + ' te pasó ' + d.q + ' litros');
@@ -1476,6 +1552,7 @@ function tile(tipo, zona, vr) {
       else if (k === 3) { q.fillStyle = '#ffd23f'; q.beginPath(); q.moveTo(u * 8, u * 2); q.lineTo(u * 12, u * 6); q.lineTo(u * 10, u * 13.5); q.lineTo(u * 6, u * 13.5); q.lineTo(u * 4, u * 6); q.closePath(); q.fill(); q.stroke(); q.shadowBlur = 0; q.fillStyle = '#fff6c9'; q.beginPath(); q.moveTo(u * 8, u * 2); q.lineTo(u * 9.2, u * 6); q.lineTo(u * 6.2, u * 6); q.fill(); q.fillStyle = '#e0483a'; q.beginPath(); q.arc(u * 8, u * 9, u * 1.3, 0, 7); q.fill(); }
       else if (k === 4) { q.fillStyle = '#cdb9a0'; q.beginPath(); q.ellipse(u * 8, u * 10.5, u * 5.5, u * 3.2, 0, 0, Math.PI); q.fill(); q.stroke(); q.fillStyle = '#e6d6c0'; q.beginPath(); q.ellipse(u * 8, u * 9.5, u * 5.5, u * 4.4, 0, Math.PI, Math.PI * 2); q.fill(); q.stroke(); q.shadowColor = '#fff'; q.shadowBlur = u * 4; q.fillStyle = '#fdfdff'; q.beginPath(); q.arc(u * 8, u * 9.6, u * 2.4, 0, 7); q.fill(); q.shadowBlur = 0; q.fillStyle = '#b8c8ff'; q.beginPath(); q.arc(u * 8.7, u * 10.3, u * 1.2, 0, 7); q.fill(); q.fillStyle = '#fff'; q.beginPath(); q.arc(u * 7.2, u * 8.8, u * 0.7, 0, 7); q.fill(); }
       else if (k === 5) { q.fillStyle = '#ffd23f'; q.beginPath(); q.roundRect(u * 5, u * 7.5, u * 6, u * 6.5, u); q.fill(); q.stroke(); q.beginPath(); q.arc(u * 8, u * 5.2, u * 3, 0, 7); q.fill(); q.stroke(); q.shadowBlur = 0; q.fillStyle = '#2a1a14'; q.fillRect(u * 6.6, u * 4.6, u * 0.9, u * 0.9); q.fillRect(u * 8.6, u * 4.6, u * 0.9, u * 0.9); q.fillRect(u * 7, u * 6.4, u * 2, u * 0.5); q.fillStyle = '#e0483a'; q.beginPath(); q.arc(u * 8, u * 10.5, u * 1.1, 0, 7); q.fill(); q.fillStyle = '#fff6c9'; q.fillRect(u * 5.6, u * 8, u * 0.8, u * 4); }
+      else if (k === 7) { const gh = q.createRadialGradient(u * 6.5, u * 6.5, u, u * 8, u * 8.5, u * 6); gh.addColorStop(0, '#fff3c4'); gh.addColorStop(0.5, '#e0a43a'); gh.addColorStop(1, '#8a4a16'); q.fillStyle = gh; q.beginPath(); q.ellipse(u * 8, u * 8.6, u * 4, u * 5.2, 0, 0, 7); q.fill(); q.stroke(); q.shadowBlur = 0; q.fillStyle = '#7a1f1466'; for (const [a, b] of [[6.5, 7], [9.5, 9], [7.5, 11], [9, 5.5]]) { q.beginPath(); q.arc(a * u, b * u, u * 0.7, 0, 7); q.fill(); } }
       else { q.shadowColor = '#ff5a3a'; q.shadowBlur = u * 6; q.fillStyle = '#ff3d3d'; q.strokeStyle = '#7a0f14'; q.beginPath(); q.moveTo(u * 8, u * 14); q.bezierCurveTo(u * 1, u * 9, u * 2, u * 2.5, u * 8, u * 5.5); q.bezierCurveTo(u * 14, u * 2.5, u * 15, u * 9, u * 8, u * 14); q.fill(); q.stroke(); q.shadowBlur = 0; q.fillStyle = '#ff9a7a'; q.beginPath(); q.moveTo(u * 8, u * 5.5); q.lineTo(u * 5, u * 8); q.lineTo(u * 8, u * 14); q.fill(); q.fillStyle = '#fff'; q.beginPath(); q.ellipse(u * 5.2, u * 6, u * 1.2, u * 0.7, -0.6, 0, 7); q.fill(); }
       q.shadowBlur = 0;
     }
@@ -1928,7 +2005,7 @@ function dibujar() {
     for (let x = x0; x <= x1; x++) {
       let t = celda(x, y); const px = ox + x * T;
       if (t === 0 || t === 6) {
-        const lug = y >= AGUA1 ? lugarDe(x, y) : -1;
+        const lug = y >= 165 ? lugarDe(x, y) : -1;
         g.drawImage(tile(t, zona, ((x * 5 + y * 3) & 1) + (lug > 0 ? lug * 2 : 0)), px, py);
         if (y > 0 && !hueca(x, y - 1)) { g.fillStyle = '#00000055'; g.fillRect(px, py, T, grueso); }             // sombra del techo
         const ci = y * W + x;                          // en el piso de las cuevas que nadie cavó crece algo, según la zona
@@ -1938,7 +2015,7 @@ function dibujar() {
       }
       const esGas = t === 4, gasOculto = esGas && cfg.verGas !== 1;
       if (gasOculto) t = 1;
-      const vr = t === 1 ? (x * 7 + y * 13) & 3 : t === 3 ? (celda(x, y - 1) === 3 ? 1 : 0) | (celda(x + 1, y) === 3 ? 2 : 0) | (celda(x, y + 1) === 3 ? 4 : 0) | (celda(x - 1, y) === 3 ? 8 : 0) | (((x * 7 + y * 13) & 3) << 4) : t === 7 ? (x * 7 + y * 13) & 3 : t === 50 ? Math.floor(colec.get(y * W + x) / 3) : t >= 10 && y >= AGUA1 && lugarDe(x, y) > (t >= 40 ? 0 : 2) ? 1 : 0;
+      const vr = t === 1 ? (x * 7 + y * 13) & 3 : t === 3 ? (celda(x, y - 1) === 3 ? 1 : 0) | (celda(x + 1, y) === 3 ? 2 : 0) | (celda(x, y + 1) === 3 ? 4 : 0) | (celda(x - 1, y) === 3 ? 8 : 0) | (((x * 7 + y * 13) & 3) << 4) : t === 7 ? (x * 7 + y * 13) & 3 : t === 50 ? Math.floor(colec.get(y * W + x) / 3) : t >= 10 && y >= 165 && lugarDe(x, y) > (t >= 40 ? 0 : 2) ? 1 : 0;
       g.drawImage(tile(t, zona, vr), px, py);
       if (t === 3) calor.push(px, py, x, y);
       else if (esGas) { if (!gasOculto || insinua) gases.push(px, py, x, y); }
@@ -1955,6 +2032,30 @@ function dibujar() {
     }
   }
   // lo que vive en cada lugar
+  for (const R of RINCONES) {
+    if (y1 < R.cy - R.ry - 6 || y0 > R.cy + R.ry + 2) continue;
+    const X = (cx) => ox + (cx + 0.5) * T, Y = (cx) => oy + (Math.floor(pisoR(R, cx)) + 1) * T, figura = (em, cx, tam, dy = 0) => { g.font = `${T * tam}px system-ui, "Apple Color Emoji", "Segoe UI Emoji", sans-serif`; g.textAlign = 'center'; g.textBaseline = 'bottom'; g.fillText(em, X(cx), Y(cx) + dy); };
+    g.fillStyle = '#fff';
+    if (R.t === 'camp') { figura('⛺', R.cx + 5, 2.2); figura('🛒', R.cx - 3, 1.1); figura('🏮', R.cx + 1, 1); g.globalCompositeOperation = 'lighter'; g.globalAlpha = 0.7 + 0.2 * Math.sin(reloj * 7); g.drawImage(sprite('res'), X(R.cx + 1) - T * 1.25, Y(R.cx + 1) - T * 1.9); g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1; }
+    else if (R.t === 'hongos') for (const [dx, tam, col] of [[-10, 2.6, '120,255,220'], [-5, 3.6, '255,140,220'], [0, 4.4, '120,255,220'], [6, 3.2, '190,140,255'], [11, 2.4, '120,255,220']]) {      // hongos gigantes: tallo, copa y su luz
+      const x = X(R.cx + dx), yb = Y(R.cx + dx), al = T * tam, an = al * 0.5;
+      g.fillStyle = '#e9e2d3'; g.fillRect(x - al * 0.06, yb - al * 0.8, al * 0.12, al * 0.8);
+      const gl = g.createRadialGradient(x, yb - al * 0.8, 0, x, yb - al * 0.8, an * 1.5); gl.addColorStop(0, `rgba(${col},${0.45 + 0.12 * Math.sin(reloj * 1.7 + dx)})`); gl.addColorStop(1, `rgba(${col},0)`); g.globalCompositeOperation = 'lighter'; g.fillStyle = gl; g.fillRect(x - an * 1.5, yb - al * 0.8 - an * 1.5, an * 3, an * 3); g.globalCompositeOperation = 'source-over';
+      g.fillStyle = `rgb(${col})`; g.beginPath(); g.ellipse(x, yb - al * 0.8, an, al * 0.3, 0, Math.PI, Math.PI * 2); g.fill(); g.fillStyle = '#ffffffaa'; for (const [a, b] of [[-0.5, 0.12], [0.1, 0.2], [0.5, 0.1]]) { g.beginPath(); g.arc(x + a * an, yb - al * 0.8 - b * al, al * 0.035, 0, 7); g.fill(); }
+    }
+    else if (R.t === 'cemen') [[-9, 1, 0.3], [-3, 5, -0.5], [4, 2, 0.15], [10, 7, -0.25]].forEach(([dx, mo, gi]) => { g.save(); g.translate(X(R.cx + dx), Y(R.cx + dx) - T * 0.42); g.rotate(gi); g.globalAlpha = 0.55; dibMaq(g, 0, 0, T, mo, gi > 0 ? 1 : -1, 0, 0, '', ''); g.restore(); });
+    else if (R.t === 'termas') { g.fillStyle = '#ffffff'; for (let n = 0; n < 12; n++) { const sx = R.cx - 11 + n * 2, f = (reloj * 0.35 + n * 0.37) % 1; g.globalAlpha = 0.22 * Math.sin(Math.PI * f); g.beginPath(); g.arc(X(sx) + Math.sin(reloj + n) * T * 0.3, oy + (R.cy + 1 - f * 4) * T, T * (0.25 + 0.5 * f), 0, 7); g.fill(); } g.globalAlpha = 1; }
+    else if (R.t === 'guard') for (const dx of [-10, -4, 3, 9]) figura('🗿', R.cx + dx, 3 + (dx & 1) * 0.6);
+    else if (R.t === 'nido') { figura('🐉', R.cx - 1, 5.5 + 0.12 * Math.sin(reloj * 1.2), T * 0.6); g.globalAlpha = 0.5 + 0.5 * Math.sin(reloj * 1.2); g.font = `800 ${T * 0.5}px system-ui`; g.fillStyle = '#cfe6ff'; g.fillText('z z z', X(R.cx + 3), Y(R.cx - 1) - T * (4.6 + ((reloj * 0.3) % 1))); g.globalAlpha = 1; }
+    else if (R.t === 'boveda') { g.font = `800 ${T * 0.42}px system-ui`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#ffd23f'; g.fillText('COMPAÑÍA MINERA · BÓVEDA 7', X(R.cx), oy + (R.cy - R.ry + 0.5) * T); }
+    else if (R.t === 'fosil' && S && !S.lug[R.i]) { /* nada: los huesos se ven solos */ }
+    else if (R.t === 'rio') for (let n = 0; n < 9; n++) {         // los peces del río
+      const fx = ((reloj * (0.6 + 0.2 * (n % 3)) + n * 11) % (W - 6)) + 3, fy = cauce(R, Math.floor(fx)) + 0.5 + 0.5 * Math.sin(reloj + n);
+      if (celda(Math.floor(fx), Math.floor(fy)) !== 6) continue;
+      const px = ox + fx * T, py = oy + fy * T, t = T * 0.17; g.fillStyle = ['#ffb347', '#7fe3e0', '#ffe27a'][n % 3];
+      g.beginPath(); g.ellipse(px, py, t * 1.5, t * 0.75, 0, 0, 7); g.moveTo(px - t * 1.2, py); g.lineTo(px - t * 2.4, py - t * 0.8); g.lineTo(px - t * 2.4, py + t * 0.8); g.fill();
+    }
+  }
   if (y1 >= AGUA0 && y0 < AGUA1) for (let n = 0; n < 12; n++) {           // los peces del lago
     const a = reloj * (0.05 + 0.02 * (n % 4)) + n * 1.9, fx = 48 + 33 * Math.sin(a), fy = 572 + 15 * Math.sin(a * 0.63 + n);
     if (celda(Math.floor(fx), Math.floor(fy)) !== 6) continue;
@@ -2055,7 +2156,7 @@ function dibujar() {
     g.globalAlpha = 1 - e * 0.85; g.drawImage(tile(3, zonaDe((p.ty + 1) * 2), 0), lx, ly); g.globalAlpha = 1;
     g.globalCompositeOperation = 'lighter'; g.globalAlpha = 0.5 + 0.5 * e; const res = sprite('res'); g.drawImage(res, lx - T * 1.25, ly - T * 1.25, T * 3.5, T * 3.5); g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1;
   }
-  dibMaq(g, mx, my, T, miModelo, yo.dir, yo.vuela ? 1 : yo.planea ? 2 : 0, p ? (p.ty > Math.floor(p.oy) ? 2 : p.tx < Math.floor(p.ox) ? -1 : 1) : 0, op.nombres ? miNombre : '', '', vis.x);
+  dibMaq(g, mx, my, T, miModelo, yo.dir, yo.vuela ? 1 : yo.planea ? 2 : 0, p ? (p.ty > Math.floor(p.oy) ? 2 : p.tx < Math.floor(p.ox) ? -1 : 1) : yo.ataca || 0, op.nombres ? miNombre : '', '', vis.x);
   // el aire como resistencia: al caer rápido se forma un arco bajo la maquinita; muy rápido se pone al rojo y deja estela
   const dens = vis.y < 0 ? Math.max(0, 1 + (vis.y + HH) / 45000) : 0;
   if (yo.vy > 30 && dens > 0.02) {
@@ -2080,7 +2181,7 @@ function dibujar() {
   g.globalAlpha = 1;
   // bajo tierra oscurece poco a poco; la maquinita lleva su luz
   if (vis.y > 0.5 && oy < h) {
-    const a = Math.min(0.62, 0.14 + (vis.y / 500) * 0.6) * (vis.y >= AGUA0 && lugarDe(Math.floor(vis.x), Math.floor(vis.y)) >= 0 ? 0.5 : 1), luz = g.createRadialGradient(mx, my, T * 2, mx, my, T * 11);
+    const a = Math.min(0.62, 0.14 + (vis.y / 500) * 0.6) * (vis.y >= 165 && lugarDe(Math.floor(vis.x), Math.floor(vis.y)) >= 0 ? 0.5 : 1), luz = g.createRadialGradient(mx, my, T * 2, mx, my, T * 11);
     luz.addColorStop(0, 'rgba(10,5,3,0)'); luz.addColorStop(1, `rgba(10,5,3,${a})`);
     g.fillStyle = luz; g.fillRect(0, Math.max(0, oy), w, h);
   }
@@ -2170,6 +2271,10 @@ function animar(d) {
     if (o.fl & 4 && Math.random() < d * 20) chispas(o.x + (o.fl & 16 ? 0 : o.fl & 1 ? 0.5 : -0.5), o.y + (o.fl & 16 ? 0.5 : 0), '#a9744f', 1, 3);
   }
   for (const q of parts) { q.x += q.vx * d; q.y += q.vy * d; q.vy += (q.gr ?? 9) * d; q.t -= d; }
+  if (vis.y > 12 && op.part === 2 && !yo.agua && Math.random() < d * 5) {       // cada zona tiene su aire: polvo, gotas, esporas, destellos, brasas
+    const ax = vis.x + (Math.random() - 0.5) * 16, ay = vis.y + (Math.random() - 0.5) * 9, z = zonaDe((ay + 1) * 2);
+    if (celda(Math.floor(ax), Math.floor(ay)) === 0) parts.push(z < 4 ? { x: ax, y: ay, vx: (Math.random() - 0.5) * 0.3, vy: 0.2, t: 1.6, col: '#c9a37e', gr: 0.2 } : z === 4 ? { x: ax, y: Math.floor(ay) + 0.05, vx: 0, vy: 0.5, t: 0.9, col: '#9fdcff', gr: 9 } : z === 5 ? { x: ax, y: ay, vx: (Math.random() - 0.5) * 0.4, vy: -0.4, t: 2.2, col: '#7dffe0', gr: -0.1 } : z === 6 ? { x: ax, y: ay, vx: 0, vy: 0, t: 0.5, col: '#dfe6ff', gr: 0 } : { x: ax, y: ay, vx: (Math.random() - 0.5) * 0.5, vy: -0.8, t: 1.4, col: '#ff9a4a', gr: -0.5 });
+  }
   if (yo.agua && op.part && Math.random() < d * 7) parts.push({ x: vis.x + (Math.random() - 0.5) * 0.5, y: vis.y - 0.3, vx: (Math.random() - 0.5) * 0.3, vy: -1 - Math.random(), t: 1 + Math.random() * 0.6, col: '#bfe9ff', g: 1, gr: -1 });
   { const pf = yo.perf, enLava = pf && pf.tipo === 3, meta = enLava ? 0.35 + 0.65 * Math.min(1, pf.t / pf.dur) : 0;
     calorFx += (meta - calorFx) * (1 - Math.exp(-(enLava ? 10 : 2) * d));
@@ -2234,7 +2339,7 @@ function queEs() {
   if (o._t !== txt) { o._t = txt; o.textContent = txt; o.style.display = txt ? 'block' : 'none'; }
   if (txt) { o.style.left = raton.x + 16 + 'px'; o.style.top = raton.y + 18 + 'px'; }
 }
-let tGas = -9, crucero = false, tLatido = -9, tMach = -99, eraSonico = false;
+let tGas = -9, crucero = false, tLatido = -9, tMach = -99, eraSonico = false, tTermas = -9;
 let pistaDe = null, tAlarma = 0, estabaAbajo = false, tTabla = 0;
 function pista(x, discreta) { const p = $('#pista'); if (p._t !== x) { p._t = x; p.textContent = x; p.style.display = x ? 'block' : 'none'; p.classList.toggle('dis', !!discreta); } }
 // La grúa te deja en la Gasolinera. Cobra por lo lejos que estás y por lo que pesas.
@@ -2291,11 +2396,13 @@ function cadaTanto() {
   pistaDe = e;
   pista(crucero ? 'Subiendo sola · barra espaciadora o ↓ para soltar' : yo.planea && yo.y < -40 ? '↓ caer en picada · ↑ frenar' : yo.picada ? 'En picada · suelta ↓ para planear' : yo.y < -25 && teclas.arr ? 'Barra espaciadora: seguir subiendo sin sostener la tecla' : vistaLibre ? 'Vista libre · pulsa una flecha para volver a tu maquinita' : e ? '↓  Entrar a ' + e.n + ' · ' + e.h.toLowerCase() : '', !e);      // solo la invitación a entrar a un edificio va destacada
   // los lugares: al entrar por primera vez se celebra y queda apuntado en El Elevador
-  const lg = yo.y >= AGUA0 ? lugarDe(Math.floor(yo.x), Math.floor(yo.y)) : -1;
+  const lg = yo.y >= 165 ? lugarDe(Math.floor(yo.x), Math.floor(yo.y), true) : -1;
   if (lg >= 0 && !S.lug[lg]) {
     const L = LUGARES[lg]; S.lug[lg] = 1; S.d += L.q; S.tot += L.q; sucio = true; son.espacio();
     tarjeta(`${L.ic} Descubriste ${L.n} · bono de ${fmt(L.q)}`, L.tx + ' Ya puedes volver aquí desde El Elevador.', 'msj', 14000, true); difundir('descubrió ' + L.n); pintarHud(true);
   }
+  if (yo.agua && lg >= 0 && LUGARES[lg].t === 'termas' && S.vida < vidaMax()) { S.vida = Math.min(vidaMax(), S.vida + vidaMax() * 0.04); sucio = true; if (tiempo - tTermas > 2.5) { tTermas = tiempo; flota(yo.x, yo.y - 0.9, '♨ el agua repara el casco', '#bfe9ff'); } }
+  { const z = zonaDe(prof()); if (z >= 4 && z > (S.zmax || 3)) { S.zmax = z; sucio = true; son.espacio(); tarjeta('⬇ ' + ZONA_N[z], ZONA_TX[z] + ' La piedra de aquí pide ' + PZ[0].niv[PIEDRA[z - 3][0]][0] + '.', 'msj', 12000, true); } }
   if (yo.y > 1470 && yo.y < 1520 && !S.fl.guero) {
     const [gx, gy] = guero();
     if (Math.hypot(yo.x - gx, yo.y - gy) < 2.6) {
@@ -2333,7 +2440,7 @@ function cadaTanto() {
 /* ════════ Pantalla: medidores, metas y tabla ════════ */
 let hudAnt = '';
 function metas() {             // arriba al centro: solo dónde estás y, si lo hay, un peligro inmediato
-  const l = [], lg = yo.y >= AGUA0 ? lugarDe(Math.floor(yo.x), Math.floor(yo.y)) : -1;
+  const l = [], lg = yo.y >= 165 ? lugarDe(Math.floor(yo.x), Math.floor(yo.y), true) : -1;
   if (lg >= 0) l.push({ ya: 1, tx: LUGARES[lg].ic + ' ' + LUGARES[lg].n, p: 1 });
   if (cfg.gas && S.rec >= 560) { const sg = gasSeguro(); if (prof() > sg) l.push({ mal: 1, tx: `⚠ A esta profundidad una bolsa de gas te explota. Tu equipo la aguanta hasta ${sg < 650 ? 'ninguna' : sg + ' m'}`, p: 1 }); }
   return l;
@@ -2346,7 +2453,7 @@ function pintarHud(forzar) {
   const bc = $('#bComb'), bv = $('#bCasco');
   bc.firstChild.style.width = f * 100 + '%'; bc.lastChild.textContent = S.fuel.toFixed(1) + ' / ' + tanque() + ' L'; bc.classList.toggle('bajo', f < 0.25);
   bv.firstChild.style.width = v * 100 + '%'; bv.lastChild.textContent = Math.max(0, Math.ceil(S.vida)) + ' / ' + vidaMax(); bv.classList.toggle('bajo', v < 0.3);
-  $('#prof').textContent = donde(yo.y); $('#din').textContent = fmt(S.d);
+  $('#prof').textContent = donde(yo.y) + (yo.y > 105 ? ' · ' + ZONA_N[zonaDe(prof())].replace(/^(La|El|Las) /, '') : ''); $('#din').textContent = fmt(S.d);
   pintarViaje();
   poner($('#metas'), metas().map((m) => `<div class="m${m.ya ? ' ya' : ''}${m.mal ? ' mal' : ''}"><i style="width:${Math.round(Math.min(100, m.p * 100))}%"></i><span>${esc(m.tx)}</span></div>`).join(''));
   poner($('#objetos'), OBJ.map((o, i) => `<div data-u="${i}" class="${S.obj[i] ? '' : 'n0'}" title="${o.n}: ${o.ef}"><kbd>${o.k}</kbd>${o.ic} ${CORTO[i]} ×${S.obj[i]}</div>`).join(''));
@@ -2551,7 +2658,7 @@ function pintarMenu() {
     h = cab('🛗 El Elevador') + `<div class="cuerpo"><p class="nota">Te baja en un instante: a un lugar que ya descubriste o a los metros que tú digas. Cobra $50 por metro. Para subir, la grúa (tecla E).</p><div class="dos"><div>
       <h4>A un lugar</h4>` +
       (u ? fila('📍', 'Donde te quedaste', `A ${Math.round((u.y + HH) * 2).toLocaleString('es-MX')} m: donde te recogió la grúa o el rescate.`, (u.y + HH) * 2, 'u') : '<div class="fila tengo"><div class="ic">📍</div><div class="t"><b>Donde te quedaste</b><small>Cuando la grúa te suba desde abajo, aquí aparecerá ese punto para regresar.</small></div></div>') +
-      LUGARES.map((L, i) => S.lug[i] ? fila(L.ic, L.n, L.tx, L.m, i) : `<div class="fila tengo"><div class="ic">❔</div><div class="t"><b>Lugar sin descubrir</b><small>Dicen que hay algo cerca de los ${L.m.toLocaleString('es-MX')} m.</small></div></div>`).join('') +
+      LUGARES.map((L, i) => [L, i]).sort((a, b) => a[0].m - b[0].m).map(([L, i]) => S.lug[i] ? fila(L.ic, L.n, L.tx, L.m, i) : `<div class="fila tengo"><div class="ic">❔</div><div class="t"><b>Lugar sin descubrir</b><small>Dicen que hay algo cerca de los ${L.m.toLocaleString('es-MX')} m.</small></div></div>`).join('') +
       `</div><div><h4>A los metros que quieras</h4>` + (tope >= 10 ? `<p class="nota">Tan abajo como ya hayas llegado: tu récord es de ${S.rec.toLocaleString('es-MX')} m. Si ahí no hay túnel, el elevador abre un hueco.</p>
         <div class="metros"><input id="eleM" type="number" inputmode="numeric" min="10" max="${tope}" step="10" value="${def}"><span>m</span></div>
         <input id="eleR" type="range" min="10" max="${tope}" step="10" value="${def}">
@@ -2585,9 +2692,30 @@ function pintarMenu() {
   c.innerHTML = h;
   const cu = c.querySelector('.cuerpo'), act = menu === 'tal' && c.querySelector('.fila.act');
   if (cu) { if (misma) cu.scrollTop = sube; else if (act) cu.scrollTop = Math.max(0, act.offsetTop - cu.offsetTop - 70); }
+  const mp = $('#mapa'); if (mp) { pintarMapa(mp); c.querySelector('.cuerpo').scrollTop = Math.max(0, mp.offsetTop + Math.max(0, yo.y) / 2 / (mp.height / mp.clientHeight) - 220); }
   const cm = $('#miMaq'); if (cm) dibMaq(cm.getContext('2d'), 80, 86, 132, miModelo, 1, false, 0, '', '');
   const ql = $('#qrLienzo'); if (ql) pintarQR(ql, ql.dataset.t, 8);
   const fa = $('#fotoAqui'); if (fa) { const f = fotoRecord(); f.className = 'foto'; fa.appendChild(f); }
+}
+// El mapa: 3 px por celda a lo ancho y 1 px por cada 2 celdas a lo alto (10 km caben en 2,500 px).
+function pintarMapa(cv) {
+  const A = 3, an = W * A, ex = 230; cv.width = an + ex; cv.height = H / 2;
+  const q = cv.getContext('2d');
+  for (let y = 0; y < H; y += 2) { q.fillStyle = mezcla(TIERRA[zonaDe((y + 1) * 2)][0], -0.55); q.fillRect(0, y / 2, an, 1); }
+  q.fillStyle = '#0c2c44'; q.fillRect(0, AGUA0 / 2, an, (AGUA1 - AGUA0) / 2);
+  q.fillStyle = '#f3e6d8';
+  for (let i = 0; i < dug.length; i++) { const b = dug[i]; if (!b) continue; for (let k = 0; k < 8; k++) if (b & (1 << k)) { const c = i * 8 + k; q.fillRect((c % W) * A, Math.floor(c / W) / 2, A, 1); } }
+  q.font = '600 12px system-ui'; q.textBaseline = 'middle';
+  for (let m = 0; m <= 10000; m += 500) { q.fillStyle = '#ffffff22'; q.fillRect(0, m / 4, an, 1); q.fillStyle = '#c9b29c'; q.fillText(m.toLocaleString('es-MX') + ' m', an + 6, Math.min(cv.height - 8, Math.max(8, m / 4))); }
+  LUGARES.forEach((L, i) => { const y = L.m / 4 + 8; q.fillStyle = S.lug[i] ? '#ffd23f' : '#ffffff55'; q.fillText(S.lug[i] ? L.ic + ' ' + L.n : '❔', an + 70, y); if (S.lug[i]) { q.fillStyle = '#ffd23f55'; q.fillRect(0, y - 8, an, 2); } });
+  for (const o of otros.values()) if (o.on && o.x !== undefined) { q.fillStyle = MODELOS[o.m]?.[0] || '#fff'; q.beginPath(); q.arc(o.x * A, Math.max(0, o.y) / 2, 4, 0, 7); q.fill(); q.fillText(o.n, o.x * A + 7, Math.max(6, o.y / 2)); }
+  q.fillStyle = '#ffd23f'; q.strokeStyle = '#000'; q.lineWidth = 2; q.beginPath(); q.arc(yo.x * A, Math.max(0, yo.y) / 2, 5, 0, 7); q.fill(); q.stroke();
+}
+// El mundo en un archivo: semilla, reglas, todo lo cavado y la colección. Con él se puede abrir una copia idéntica cuando sea.
+function archivoDelMundo() {
+  let fin = dug.length; while (fin > 0 && !dug[fin - 1]) fin--;
+  let b = ''; for (let i = 0; i < fin; i += 8192) b += String.fromCharCode.apply(null, dug.subarray(i, Math.min(fin, i + 8192)));
+  return { formato: 'mina-mundo', version: 1, guardado: new Date().toISOString(), nombre: cfg.nombre || 'Mundo', seed, remin, cfg, col: [...hallados].map((v, i) => (v ? i : -1)).filter((i) => i >= 0), ancho: W, alto: H, dug: btoa(b) };
 }
 function venta() {
   const base = S.carga.reduce((a, n, i) => a + n * MIN[i].v, 0), piezas = nCarga();
@@ -2637,7 +2765,7 @@ const acciones = {
   bajar(v) {
     let x, y, m;
     if (v === 'u') { const u = ultimoPunto(); if (!u) return; x = u.x; y = u.y; m = (y + HH) * 2; }
-    else { const L = LUGARES[+v]; if (!L || !S.lug[+v]) return; let cy = L.y; while (cy < H - 1 && !solida(L.x, cy + 1)) cy++; x = L.x + 0.5; y = cy + 1 - HH; m = L.m; }
+    else { const L = LUGARES[+v]; if (!L || !S.lug[+v]) return; let lx = L.x, cy = L.y; if (solida(lx, cy)) { while (lx < L.x + 6 && (celda(lx, cy) >= 10 || celda(lx, cy) === 5)) lx++; if (solida(lx, cy)) cavar([[lx, cy]]); } while (cy < H - 1 && cy < L.y + 40 && !solida(lx, cy + 1)) cy++; x = lx + 0.5; y = cy + 1 - HH; m = L.m; }
     const c = costoEle(m);
     if (S.d < c || solida(Math.floor(x), Math.floor(y))) return;
     S.d -= c; yo.x = x; yo.y = y; yo.vx = yo.vy = 0; yo.perf = null; vistaLibre = false; son.tele(); sucio = true;
@@ -2687,12 +2815,19 @@ const acciones = {
     return 'no';
   },
   modo(v, el) { if (!conectado || !MODOS[el.value]) return; cfg = { ...cfg, ...MODOS[el.value], modo: el.value }; enviar({ t: 'cfg', cfg }); },
-  regla(v, el) { if (!conectado) return; cfg = { ...cfg, [el.dataset.k]: el.type === 'checkbox' ? (el.checked ? 1 : 0) : +el.value }; if (!['puerta', 'reminTodos', 'regalos'].includes(el.dataset.k)) cfg.modo = 'medida'; enviar({ t: 'cfg', cfg }); },
+  regla(v, el) { if (!conectado) return; cfg = { ...cfg, [el.dataset.k]: el.type === 'checkbox' ? (el.checked ? 1 : 0) : +el.value }; if (!['puerta', 'reminTodos', 'regalos', 'pleitos'].includes(el.dataset.k)) cfg.modo = 'medida'; enviar({ t: 'cfg', cfg }); },
   nombreMundo(v, el) { const n = el.value.trim(); if (n.length < 2 || !conectado) return 'no'; cfg = { ...cfg, nombre: n }; enviar({ t: 'cfg', cfg }); guardarMundo(); return 'no'; },
   regalar(v) {
     const el = $('#cuanto'), q = Math.floor(+el.value);
     if (!(q > 0) || q > S.d || !conectado) return 'no';
     S.d -= q; S.fl.regalo = 1; enviar({ t: 'regalo', a: +v, q }); son.compra(); aviso('Le regalaste ' + fmt(q) + ' a ' + nombreDe(+v));
+  },
+  guardarArchivo() {
+    const f = new Date(), p2 = (n) => String(n).padStart(2, '0'), a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(archivoDelMundo())], { type: 'application/json' }));
+    a.download = `Mina_${(cfg.nombre || 'Mundo').replace(/[^\wáéíóúñÁÉÍÓÚÑ]+/g, '_')}_v1_${f.getFullYear()}-${p2(f.getMonth() + 1)}-${p2(f.getDate())}_${p2(f.getHours())}${p2(f.getMinutes())}.json`;
+    a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); aviso('Mundo guardado en tu carpeta de descargas.');
+    return 'no';
   },
   mundos() { enviarEst(); location.href = '/'; },
   desechar() { desechar(mundoId, soyCreador); },
@@ -2721,7 +2856,7 @@ $('#caja').addEventListener('change', (e) => {
 $('#objetos').addEventListener('click', (e) => { const el = e.target.closest('[data-u]'); if (el) { audio(); usar(+el.dataset.u); } });
 $('#bGrua').addEventListener('click', (e) => { audio(); e.currentTarget.blur(); if (listo && !menu && !pausa) grua(); });
 $('#vjDatos').addEventListener('click', (e) => { audio(); if (listo && !menu) { pestana = e.target.closest('.col') ? 1 : 0; abrir('menu'); } });
-$('#contratos').addEventListener('click', () => { audio(); if (listo && !menu) { pestana = 2; abrir('menu'); } });
+$('#contratos').addEventListener('click', () => { audio(); if (listo && !menu) { pestana = 3; abrir('menu'); } });
 $('#bInv').addEventListener('click', (e) => { audio(); e.currentTarget.blur(); if (listo && !menu) abrir('inv'); });
 $('#bMenu').addEventListener('click', (e) => { audio(); e.currentTarget.blur(); if (listo && !menu) abrir('menu'); });
 
@@ -2729,7 +2864,7 @@ function sel(k, ops, quien = 'regla') {
   return `<select data-a="${quien}" data-k="${k}" ${soyCreador ? '' : 'disabled'}>${ops.map(([v, t]) => `<option value="${v}" ${cfg[k] == v ? 'selected' : ''}>${t}</option>`).join('')}</select>`;
 }
 function menuPrincipal() {
-  const P = ['Bodega', 'Colección', 'Contratos', 'Logros', 'Catálogo', 'Estadísticas', 'Opciones', 'Mundo', 'Ayuda'];
+  const P = ['Bodega', 'Colección', 'Mapa', 'Contratos', 'Logros', 'Catálogo', 'Estadísticas', 'Opciones', 'Mundo', 'Ayuda'];
   let h = cab('☰ ' + esc(cfg.nombre || 'Mina')) + `<div class="pest">${P.map((p, i) => `<button data-a="pest" data-v="${i}" class="${i === pestana ? 'on' : ''}">${p}</button>`).join('')}</div><div class="cuerpo">`;
   if (pestana === 0) {
     h += `<p class="nota">📦 ${nCarga()} de ${bodega()} espacios · ${kgCarga()} kg de carga (tu motor levanta ${Math.round(hp() * 29.5 - 1980)} kg). Tirar piezas libera espacio y peso.</p>` +
@@ -2742,20 +2877,22 @@ function menuPrincipal() {
       COLEC.map(([ic, nom], k) => { const c = hallados[k * 3] + hallados[k * 3 + 1] + hallados[k * 3 + 2], de = Math.round((10 + k * FRANJA) * 2 / 50) * 50, a = Math.round((10 + (k + 1) * FRANJA) * 2 / 50) * 50;
         return `<div class="${c ? (c === 3 ? 'ok' : '') : 'no'}"><i>${ic}</i><b>${c ? nom : '???'}</b><span>${[0, 1, 2].map((j) => `<u class="${j < c ? 'on' : ''}"></u>`).join('')}</span><small>${de.toLocaleString('es-MX')} a ${a.toLocaleString('es-MX')} m · ${fmt(valorCol(k))}</small></div>`; }).join('') + '</div>';
   } else if (pestana === 2) {
+    h += `<p class="nota">Todo el mundo, de la superficie a los 10,000 m. En claro, los túneles que ya abrió el equipo: así no repites camino. Tú eres el punto amarillo; las demás maquinitas, los puntos de su color.</p><canvas id="mapa" class="mapa"></canvas>`;
+  } else if (pestana === 3) {
     h += `<p class="nota">${S.con.tut < TUTORIAL.length ? 'Primeros pasos: cumple cada uno y llega el siguiente.' : 'Trabajos de la Compañía. Al cumplir uno se paga solo y llega otro.'}</p>` +
       S.con.act.map((k) => `<div class="fila"><div class="t"><b>${esc(k.tx)}</b>${k.b > 1 ? `<small>Llevas ${k.pr | 0} de ${k.b}</small>` : ''}</div><div class="v">${fmt(k.pg)}</div></div>`).join('');
-  } else if (pestana === 3) {
+  } else if (pestana === 4) {
     h += `<p class="nota">${S.log.length} de ${LOGROS.length} logros · Rango: <b>${RANGOS[S.rango][1]}</b></p><div class="rej">` +
       LOGROS.map((l) => { const ok = S.log.includes(l.id); return `<div class="${ok ? '' : 'no'}"><b>${ok ? '🏅 ' : ''}${ok && l.sec ? l.sec.split(':')[0] : l.n}</b><small>${ok && l.sec ? l.sec.split(': ')[1] : l.d}</small></div>`; }).join('') + '</div>';
-  } else if (pestana === 4) {
+  } else if (pestana === 5) {
     h += `<p class="nota">De la Corteza al Corazón de la Tierra. Completa la página y todo lo que vendas vale <b>5 % más</b>${catalogoCompleto() ? ' — ¡ya lo tienes!' : ''}.</p><div class="rej">` +
       MIN.map((m, i) => S.st.rec[i] ? `<div><b style="color:${m.col}">${m.n}</b><small>${fmt(m.v)} · ${m.kg} kg · desde ${m.a} m<br>Vendidas: ${S.st.vend[i]}</small></div>` : '<div class="no"><b>???</b><small>Sin descubrir</small></div>').join('') +
       HALL.map((x, i) => S.st.hall[i] ? `<div><b>🏺 ${x.n}</b><small>${fmt(x.v)} · encontrados: ${S.st.hall[i]}</small></div>` : '<div class="no"><b>???</b><small>Hallazgo sin encontrar</small></div>').join('') + '</div>';
-  } else if (pestana === 5) {
+  } else if (pestana === 6) {
     const e = S.st;
     h += `<p><button data-a="menu" data-v="foto">📸 Presume tu maquinita y tus récords</button></p>` + [['Profundidad máxima', S.rec + ' m'], ['Altura máxima', fmtAlto(S.alt)], ['Total ganado', fmt(S.tot)], ['Viajes', e.viajes], ['Mejor viaje', fmt(e.mejorViaje)], ['Celdas perforadas', e.cavadas.toLocaleString('es-MX')], ['Piezas vendidas', e.vend.reduce((a, b) => a + b, 0)], ['Hallazgos', e.hall.reduce((a, b) => a + b, 0)], ['Explosivos usados', e.expl], ['Litros cargados', e.comb], ['Explosiones', e.muertes], ['Rescates gratis usados', S.resc], ['Remineralizaciones', e.remin]]
       .map(([a, b]) => `<div class="fila"><div class="t">${a}</div><div class="v">${b}</div></div>`).join('');
-  } else if (pestana === 6) {
+  } else if (pestana === 7) {
     const chk = (k, t) => `<label class="op"><span>${t}</span><input type="checkbox" data-a="op" data-k="${k}" ${op[k] ? 'checked' : ''}></label>`;
     h += `<p class="nota">El sonido se maneja con la bocina de arriba a la derecha: apagar, bajar, subir y elegir qué tipos se oyen.</p>
       <label class="op"><span>Tamaño del texto</span><button class="s" data-a="texto" data-v="-0.1">A−</button><button class="s" data-a="texto" data-v="0.1">A+</button></label>` +
@@ -2765,7 +2902,7 @@ function menuPrincipal() {
       chk('nombres', 'Mostrar los nombres de las maquinitas') +
       `<label class="op"><span>Cuadros por segundo</span><select data-a="op" data-k="fps">${[[0, 'Lo máximo de tu pantalla'], [60, '60'], [30, '30 (ahorra batería)']].map(([v, t]) => `<option value="${v}" ${op.fps == v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
       <p class="nota">Tu pantalla refresca a <b>${rit.hz} Hz</b> y el juego está mostrando <b>${Math.round(Math.min(rit.fps, rit.hz))} cuadros por segundo</b>, con nitidez al ${Math.round(NITIDEZ[rit.niv] * 100)} %. Señal con el mundo: ${red.rtt ? Math.round(red.rtt) + ' ms' : 'midiendo…'}. El juego se ajusta solo: si tu equipo no alcanza el refresco de su pantalla, baja la nitidez antes que la fluidez.</p>`;
-  } else if (pestana === 7) {
+  } else if (pestana === 8) {
     const o3 = [[0, 'Apagado'], [1, 'Normal'], [2, 'Fuerte']];
     h += `<div class="fila"><div class="t"><b>Invita a tu gente</b><small>${location.origin}/m/${mundoId}</small></div><button class="s" data-a="menu" data-v="inv">Ver código QR</button><button data-a="invitar">Copiar la liga</button></div>
       <h4>Dificultad del mundo ${soyCreador ? '' : '<small style="color:var(--su)">· solo la cambia quien creó el mundo</small>'}</h4>
@@ -2782,6 +2919,7 @@ function menuPrincipal() {
       <label class="op"><span>Cerrar la puerta (no entran maquinitas nuevas)</span>${sel('puerta', [[0, 'Abierta'], [1, 'Cerrada']])}</label>
       <label class="op"><span>Quién puede remineralizar</span>${sel('reminTodos', [[1, 'Cualquiera'], [0, 'Solo quien creó el mundo']])}</label>
       <label class="op"><span>Regalos de dinero</span>${sel('regalos', [[1, 'Sí'], [0, 'No']])}</label>
+      <label class="op"><span>Pleitos entre maquinitas (bajo tierra)</span>${sel('pleitos', [[1, 'Sí'], [0, 'No']])}</label>
       <h4>Jugadores</h4>` +
       ([...otros.values()].length ? `<label class="op"><span>Cantidad para regalar (en la superficie)</span><input id="cuanto" type="number" min="1" value="${Math.min(1000, Math.floor(S.d))}" style="width:9em"></label>` +
         [...otros.values()].map((o) => `<div class="fila"><div class="t"><b>${esc(o.n)}</b><small>${o.on ? 'Conectado' : 'Desconectado'} · récord ${o.rec || 0} m · ganado ${fmt(o.tot || 0)}</small></div>${o.on && cfg.regalos && yo.y < 0 ? `<button class="s" data-a="regalar" data-v="${o.i}">Regalar</button>` : ''}</div>`).join('') : '<p class="nota">Estás solo en este mundo. Copia la liga y mándala.</p>') +
@@ -2793,6 +2931,7 @@ function menuPrincipal() {
         <small>Objetos: ${OBJ.map((o, i) => S.obj[i] ? CORTO[i] + ' ×' + S.obj[i] : '').filter(Boolean).join(' · ') || 'ninguno'}</small></div></div>
       <p class="nota"><b>Tu maquinita es tuya.</b> Entra contigo a cualquier mundo con todo lo que trae, y no se pierde aunque un mundo se borre. Para seguir con ella en otra computadora o en el teléfono, abre allá su liga o su código QR. <b>No los compartas:</b> quien los abra maneja tu maquinita.</p>
       <div class="fila"><div class="t"><small>Código: <code>${esc(miK)}</code></small></div><button class="s" data-a="menu" data-v="qrmaq">Ver su código QR</button><button data-a="ligaMaq">Copiar su liga</button></div>
+      <div class="fila"><div class="t"><b>Guardar este mundo en un archivo</b><small>Semilla, reglas, todos los túneles y la colección. Desde «Mis mundos» puedes abrirlo cuando quieras como un mundo nuevo, idéntico.</small></div><button data-a="guardarArchivo">💾 Guardar archivo</button></div>
       <div class="fila"><div class="t"></div><button class="s" data-a="mundos">Mis mundos</button><button class="mal" data-a="desechar">Desechar este mundo</button></div>`;
   } else {
     h += `<p><b>Moverte:</b> flechas o WASD. <b>↑</b> vuela. <b>↓</b> perfora hacia abajo. <b>← →</b> contra una pared, perfora de lado. Nunca se perfora hacia arriba.</p>
@@ -2807,6 +2946,8 @@ function menuPrincipal() {
       <p><b>Sonido:</b> la bocina de arriba a la derecha lo apaga, lo baja y lo sube; «♪ Sonidos» deja elegir qué se oye: música, taladro, hélice, motor (viene apagado) y lo demás, cada uno con su interruptor.</p>
       <p><b>Mirar alrededor:</b> la rueda del mouse o dos dedos en el trackpad mueven la vista; cualquier flecha la regresa a tu maquinita.</p>
       <p><b>La colección:</b> hay 99 objetos enterrados (33 distintos, tres de cada uno), cada uno en su franja de profundidad. Se ven como medallones dorados. Son del mundo: los junta el equipo entero y se van encendiendo en Menú → Colección. Las explosiones no los destruyen.</p>
+      <p><b>Pleitos:</b> en el aire las maquinitas rebotan y no pasa nada. Bajo tierra, si empujas tu taladro contra otra (← → a su lado, o ↓ encima de ella), le pegas: tu taladro contra su casco. La que pierde vuelve a la superficie sin perder nada. En el pueblo no hay pleitos, y quien creó el mundo puede apagarlos.</p>
+      <p><b>Mapa y archivo:</b> Menú → Mapa muestra todos los túneles abiertos. Menú → Mundo → Guardar archivo descarga el mundo completo; desde «Mis mundos» se abre como una copia idéntica.</p>
       <p><b>Diez kilómetros:</b> debajo de la Corteza siguen el Acuífero, las Cavernas, la Cristalera y la Zona de presión, con doce minerales nuevos y cuatro lugares por descubrir. Cada lugar que encuentres queda apuntado en <b>El Elevador</b> (el último edificio), que también te regresa al punto donde te recogió la grúa.</p>
       <p><b>Explosivos:</b> se usan donde sea, también volando: si topas con piedra al subir, X te abre paso.</p>
       <p><b>Piedra:</b> se perfora si tu taladro alcanza. Hay cinco durezas, cada una de un color, según la zona; el Taller dice qué taladro pide cada una. Con el justo tarda 1.5 s; con uno mejor, hasta 0.6 s.</p>
@@ -2886,8 +3027,14 @@ function pantallaMundos() {
     (maqLocal && maqLocal.n ? `<p class="nota">Tu maquinita <b>${esc(maqLocal.n)}</b> entra contigo al mundo que elijas, con todo lo que trae.</p>` : '') +
     mundos.map((m) => `<div class="fila"><div class="t"><b>${esc(m.nombre)}</b><small>${m.maq ? 'Tu maquinita: ' + esc(m.maq) + ' · ' : ''}${new Date(m.ult).toLocaleDateString('es-MX', { day: 'numeric', month: 'long' })} · ${m.id}</small></div>
       <button data-ir="${m.id}">Continuar</button><button class="s" data-des="${m.id}">Desechar</button></div>`).join('') +
-    `<p style="margin-top:14px"><button id="bNuevo">＋ Mundo nuevo</button></p><p class="nota">Cada mundo nace con una semilla distinta y se guarda solo. Para jugar acompañado, entra y copia su liga.</p></div>`);
-  $('#bNuevo').onclick = crearMundo;
+    `<p style="margin-top:14px"><button id="bNuevo">＋ Mundo nuevo</button> <button id="bAbrir" class="s">📂 Abrir un mundo guardado</button><input id="fArchivo" type="file" accept=".json,application/json" hidden></p><p class="nota">Cada mundo nace con una semilla distinta y se guarda solo. Para jugar acompañado, entra y copia su liga.</p></div>`);
+  $('#bNuevo').onclick = () => crearMundo();
+  $('#bAbrir').onclick = () => $('#fArchivo').click();
+  $('#fArchivo').onchange = async (e) => {
+    const f = e.target.files[0]; if (!f) return;
+    try { const a = JSON.parse(await f.text()); if (a.formato !== 'mina-mundo' || !Number.isFinite(a.seed) || typeof a.dug !== 'string') throw 0; crearMundo(a); }
+    catch { pantallaFinal('Ese archivo no es un mundo de Mina', 'Elige un archivo .json guardado desde Menú → Mundo → Guardar archivo.'); }
+  };
   $('#caja').querySelectorAll('[data-ir]').forEach((b) => (b.onclick = () => (location.href = '/m/' + b.dataset.ir)));
   $('#caja').querySelectorAll('[data-des]').forEach((b) => (b.onclick = () => { const m = mundos.find((x) => x.id === b.dataset.des); desechar(m.id, m.creador, m.k); }));
 }
@@ -2902,10 +3049,10 @@ function desechar(id, creador, k) {
   s.onmessage = (e) => { if (typeof e.data === 'string' && e.data.includes('"t":"mundo"')) { s.send('{"t":"borrar"}'); setTimeout(fin, 400); } };
   s.onerror = fin; setTimeout(fin, 4000);
 }
-async function crearMundo() {
-  inicio('<header><h2>Creando tu mundo…</h2></header><div class="cuerpo"><p class="nota">Semilla nueva, tierra nueva.</p></div>');
+async function crearMundo(archivo) {
+  inicio(archivo ? '<header><h2>Abriendo tu mundo guardado…</h2></header><div class="cuerpo"><p class="nota">Con sus túneles, sus reglas y su colección.</p></div>' : '<header><h2>Creando tu mundo…</h2></header><div class="cuerpo"><p class="nota">Semilla nueva, tierra nueva.</p></div>');
   try {
-    const r = await fetch('/api/mundo', { method: 'POST' }), d = await r.json();
+    const r = await fetch('/api/mundo', archivo ? { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ archivo }) } : { method: 'POST' }), d = await r.json();
     if (!d.id) throw 0;
     if (d.d) { duenos[d.id] = d.d; escribir('mina_duenos', duenos); }
     history.replaceState(null, '', '/m/' + d.id); entrar(d.id);

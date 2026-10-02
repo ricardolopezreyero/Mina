@@ -18,7 +18,7 @@ const MUNDOS_POR_DIA = 20;
 
 const CFG_BASE = {
   modo: "clasico", comb: 1, caida: 1, lava: 1, gas: 1, verGas: 2,
-  pierde: 2, rescates: 3, nombre: "", puerta: 0, reminTodos: 1, regalos: 1,
+  pierde: 2, rescates: 3, nombre: "", puerta: 0, reminTodos: 1, regalos: 1, pleitos: 1,
 };
 
 const json = (o, status = 200) =>
@@ -58,6 +58,7 @@ function cfgLimpia(c, antes) {
     puerta: entero(c.puerta, 0, 1, antes.puerta),
     reminTodos: entero(c.reminTodos, 0, 1, antes.reminTodos),
     regalos: entero(c.regalos, 0, 1, antes.regalos),
+    pleitos: entero(c.pleitos, 0, 1, antes.pleitos ?? 1),
   };
 }
 
@@ -117,12 +118,15 @@ export class Mundo extends DurableObject {
     return n <= MUNDOS_POR_DIA;
   }
 
-  async crear(id) {
+  // Un mundo nuevo. Con «base» (un archivo guardado) nace con esa semilla, esas reglas, esos túneles y esa colección.
+  async crear(id, base) {
     if (await this.ctx.storage.get("meta")) return false;
-    const seed = crypto.getRandomValues(new Uint32Array(1))[0];
+    const seed = base ? base.seed : crypto.getRandomValues(new Uint32Array(1))[0];
     const dueno = [...crypto.getRandomValues(new Uint8Array(16))].map((b) => b.toString(16).padStart(2, "0")).join("");
     const meta = { seed, remin: 0, reminAt: 0, cfg: { ...CFG_BASE }, creado: Date.now(), visto: Date.now(), n: 0, dueno, creador: -1, id };
-    await this.ctx.storage.put({ meta, dug: new Uint8Array(BYTES) });
+    const dug = new Uint8Array(BYTES);
+    if (base) { meta.remin = base.remin; meta.cfg = cfgLimpia(base.cfg, CFG_BASE); meta.col = base.col; dug.set(base.dug.subarray(0, BYTES)); }
+    await this.ctx.storage.put({ meta, dug });
     await this.ctx.storage.setAlarm(Date.now() + DIA);   // si nadie llega a bautizarse, se borra en un día
     this.m = null;
     return dueno;
@@ -287,6 +291,12 @@ export class Mundo extends DurableObject {
         }
         this.sucio.jug.add(i);
         break;
+      }
+      case "golpe": {            // un pleito: se le avisa a la maquinita alcanzada; ella calcula su daño
+        if (m.cfg.pleitos === 0) return;
+        const otro = this.socketDe(entero(d.a, 0, MAX_MAQUINITAS, -1));
+        if (otro && otro !== ws) manda(otro, { t: "golpe", i, q: entero(d.q, 1, 1000, 20) });
+        return;
       }
       case "aviso":
         this.difundir({ t: "aviso", i, x: limpio(d.x, 90) }, ws);
@@ -456,9 +466,20 @@ export default {
       const quien = request.headers.get("CF-Connecting-IP") || "local";
       const portero = env.MUNDO.get(env.MUNDO.idFromName("~portero"));
       if (!(await portero.permiso(quien))) return json({ error: "limite" }, 429);
+      // Si viene un archivo guardado, se revisa y el mundo nace igual a como se guardó.
+      let base = null;
+      if ((request.headers.get("content-type") || "").includes("json")) {
+        try {
+          const a = (await request.json()).archivo;
+          if (!a || a.formato !== "mina-mundo" || typeof a.dug !== "string" || a.dug.length > BYTES * 1.4) return json({ error: "archivo" }, 400);
+          const bin = atob(a.dug), dug = new Uint8Array(Math.min(BYTES, bin.length));
+          for (let k = 0; k < dug.length; k++) dug[k] = bin.charCodeAt(k);
+          base = { seed: entero(a.seed, -2147483648, 4294967295, 1), remin: entero(a.remin, 0, 1e9, 0), cfg: a.cfg, col: (Array.isArray(a.col) ? a.col : []).map((k) => entero(k, 0, 98, -1)).filter((k) => k >= 0).slice(0, 99), dug };
+        } catch { return json({ error: "archivo" }, 400); }
+      }
       for (let n = 0; n < 5; n++) {
         const id = nuevoId();
-        const d = await env.MUNDO.get(env.MUNDO.idFromName(id)).crear(id);
+        const d = await env.MUNDO.get(env.MUNDO.idFromName(id)).crear(id, base);
         if (d) return json({ id, d });
       }
       return json({ error: "reintenta" }, 503);

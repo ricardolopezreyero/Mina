@@ -1,4 +1,4 @@
-# DOCUMENTO MAESTRO · «Mina» · v16
+# DOCUMENTO MAESTRO · «Mina» · v17
 
 **Ver en vivo: https://mina.capitaltorreon.com**
 
@@ -505,6 +505,48 @@ Ricardo pidió poder atravesar las piedras desde cierto taladro, tardando entre 
 - Mientras se perfora, la piedra se queda a la vista, se agrieta y se desvanece.
 - Si el taladro no alcanza, rebota como antes y un letrero dice qué taladro pide. La dinamita la sigue volando.
 - El ratón sobre una piedra dice si tu taladro la pasa y en cuánto; la pestaña Taladro del Taller lista qué pide cada piedra.
+
+### 9.12 Pleitos, mapa, archivo del mundo y algo que ver cada 600 a 900 m
+
+Ricardo pidió: que las maquinitas se puedan atacar (en el aire rebotan; en tierra pelean según taladro y escudo, y la que pierde vuelve arriba), poder ver los caminos ya abiertos, guardar el mundo en un archivo y seguir jugándolo, que no pasen más de 600 a 900 m entre una cosa entretenida y la siguiente, y más personalidad en las zonas.
+
+**Pleitos.**
+
+- En el aire: si dos maquinitas se tocan, rebotan. Sin daño.
+- Bajo tierra, tocando suelo: empujar el taladro contra otra (← → a su lado, o ↓ encima) le pega cada 0.4 s. El golpe es la cuarta parte de la potencia del taladro de quien ataca [N]; lo que aguanta es el casco de la otra. Recibir un golpe empuja hacia atrás, así que se puede huir.
+- Quien pierde vuelve a la superficie con su carga y su dinero completos y el casco reparado. El Elevador lo regresa a donde estaba.
+- En el pueblo (la superficie) no hay pleitos. Quien creó el mundo puede apagarlos en Menú → Mundo; en modo Paseo vienen apagados.
+- El servidor solo pasa el aviso del golpe; el daño lo calcula quien lo recibe.
+
+**Mapa.** Menú → Mapa: el mundo entero (3 px por celda de ancho, 1 px por cada 2 celdas de alto), con los túneles abiertos en claro, las zonas por color, los lugares descubiertos con su nombre, y un punto por cada maquinita.
+
+**Archivo del mundo.** Menú → Mundo → Guardar archivo descarga un `.json` (formato `mina-mundo`, versión 1) con semilla, remineralizaciones, reglas, la colección y todo lo cavado. Pesa unos 80 KB con el mundo muy cavado. En «Mis mundos», «Abrir un mundo guardado» crea un mundo **nuevo e idéntico** a partir del archivo (el original no se toca). La maquinita no va en el archivo: es del jugador y entra con él.
+
+**Once rincones nuevos.** Con los cuatro lugares grandes son quince; la distancia entre uno y el siguiente va de 340 a 980 m.
+
+| A los | Rincón | Qué tiene |
+|---|---|---|
+| 350 m | ⛺ El Campamento abandonado | Tienda, carrito, lámpara y cofres. |
+| 700 m | 🦖 El Fósil gigante | Un esqueleto de 21 celdas de largo: cada hueso es un hallazgo. |
+| 1,040 m | 💧 El Acuífero | (ya estaba) |
+| 1,700 m | 🌊 El Río subterráneo | Cruza todo el mundo; peces y perlas en el lecho. |
+| 2,300 m | 🍄 El Bosque de hongos | Hongos gigantes que brillan; reliquias en el piso. |
+| 2,950 m | 💎 La Gruta de Cristal | (ya estaba) |
+| 3,700 m | ⚙️ El Cementerio de maquinitas | Maquinitas viejas y sus cofres. |
+| 4,400 m | ♨️ Las Aguas termales | El agua repara el casco gratis. |
+| 5,100 m | 🗿 Los Guardianes | Cabezas de piedra con ofrendas a sus pies. |
+| 5,580 m | 🏛️ La Ciudad Perdida | (ya estaba) |
+| 6,400 m | 🦋 El Jardín de cristal | Columnas de cristal del mejor mineral de la zona. |
+| 7,200 m | 🌋 El Lago de lava | Pilares sobre la lava, cada uno con una reliquia. |
+| 8,000 m | 🏦 La Bóveda de la Compañía | Un cuarto de ladrillo lleno de cofres. |
+| 8,800 m | 🐉 El Nido del dragón | Un dragón dormido y huevos de $60 M. |
+| 9,780 m | ❤️ El Corazón de la Tierra | (ya estaba) |
+
+Cada uno da bono al descubrirlo y queda en El Elevador. Las paredes de los rincones son 45 % mineral del mejor de su zona.
+
+**Personalidad de las zonas.** Junto a la profundidad dice la zona. Al entrar por primera vez a una zona sale un letrero que la presenta y dice qué taladro pide su piedra. En los túneles flota algo distinto en cada una: polvo en la Corteza, gotas en el Acuífero, esporas en las Cavernas, destellos en la Cristalera y brasas en la Zona de presión.
+
+Sin probar: un pleito entre dos personas reales (se probó con una maquinita simulada).
 
 ---
 
