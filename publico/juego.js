@@ -368,7 +368,7 @@ function desempacar(u) {
   mundoGen = u[3]; geodas.fill(0); colec.clear();
   for (let i = 0; i < NB; i++) { const t = u[4 + i]; if (t === 9) { base[i] = 2; geodas[i >> 3] |= 1 << (i & 7); } else base[i] = t; }
   const d = new DataView(u.buffer, u.byteOffset + 4 + NB); for (let id = 0; id < NCOL; id++) colec.set(d.getUint32(id * 4, true), id);
-  mapa.fill(255); return true;
+  mapa.fill(255); bloques.clear(); return true;
 }
 // El terreno también se guarda en este equipo, por su huella: la siguiente vez abre sin pedir nada, incluso sin internet.
 async function leerMapaLocal(h) { try { const c = await caches.open('mina-mapas'), r = await c.match('/mapa-local/' + h); return r ? new Uint8Array(await r.arrayBuffer()) : null; } catch { return null; } }
@@ -625,7 +625,12 @@ function celda(x, y) {
   return t;
 }
 const hueca = (x, y) => { const t = celda(x, y); return t === 0 || t === 6; };
-function ponerCavada(i) { dugCambios++; dug[i >> 3] |= 1 << (i & 7); mapa[i] = vacia(Math.floor(i / W)); }
+function ponerCavada(i) {
+  dugCambios++; dug[i >> 3] |= 1 << (i & 7);
+  const x = i % W, y = (i - x) / W; mapa[i] = vacia(y);
+  // se repinta el bloque de la celda y los de sus cuatro vecinas, que cambian de sombra
+  ensuciar(x, y); ensuciar((x + W - 1) % W, y); ensuciar((x + 1) % W, y); if (y > 0) ensuciar(x, y - 1); if (y < H - 1) ensuciar(x, y + 1);
+}
 function cavar(lista) {            // marca aquí y avisa al mundo
   const c = [];
   for (let [x, y] of lista) {
@@ -641,7 +646,7 @@ function cavar(lista) {            // marca aquí y avisa al mundo
 }
 let pendientes = [];                // celdas cavadas mientras no había conexión
 const recientes = new Map();        // premios recién dados, por si el mundo dice que otro llegó antes
-function nuevaSemilla() { SEM = (seed + remin * 104729) | 0; mapa.fill(255); pesosFila.clear(); litos.fill(255); }
+function nuevaSemilla() { SEM = (seed + remin * 104729) | 0; mapa.fill(255); pesosFila.clear(); litos.fill(255); bloques.clear(); }
 // Fabricar el terreno completo con el generador de esta versión. Solo pasa cuando nace un mundo, cuando se remineraliza,
 // o la primera vez que se abre un mundo de antes de que el terreno se guardara.
 function terrenoProcedural() {
@@ -656,7 +661,7 @@ function terrenoProcedural() {
   }
   geodas.fill(0);
   for (let y = 0, i = 0; y < H; y++) for (let x = 0; x < W; x++, i++) { const t = gen(x, y); base[i] = t; if (t === 2 && azar(x, y, 61) < 0.07) geodas[i >> 3] |= 1 << (i & 7); }
-  mundoGen = GEN; mapa.fill(255);
+  mundoGen = GEN; mapa.fill(255); bloques.clear();
   const u = empacar(); mapaHash = huellaMapa(u); mapaDe = seed + '|' + remin; guardarMapaLocal(mapaHash, u);
 }
 
@@ -1541,6 +1546,7 @@ function recibePos(b) {
   // Cada posición se guarda con su hora de llegada; se dibuja un instante atrás, entre dos posiciones reales.
   const dato = new DataView(b.buffer, b.byteOffset), t = performance.now(), x = dato.getUint16(2, true) / 256, y = dato.getInt32(4, true) / 64, fl = b[8];
   const q = o.b || (o.b = []), u = q[q.length - 1];
+  if (u && t - u.t < 300) o.iv = o.iv ? o.iv * 0.85 + (t - u.t) * 0.15 : t - u.t;      // cada cuánto llegan sus posiciones: de eso depende qué tan «en vivo» se le puede dibujar
   if (u && t - u.t > 400) q.push({ t: t - 66, x: u.x, y: u.y, fl: u.fl });      // estuvo quieta: que no se deslice desde lejos
   q.push({ t, x, y, fl }); if (q.length > 24) q.shift();
   o.on = 1; if (o.x === undefined) { o.x = x; o.y = y; o.fl = fl; }
@@ -1594,7 +1600,7 @@ function recibir(d) {
       son.entra(); ultPos = ''; enviarPos(); return pintarTabla();   // que el recién llegado me vea aunque yo esté quieto
     case 'sale': { const o = otros.get(d.i); if (o) { o.on = 0; o.x = undefined; o.b = []; aviso(o.n + ' salió'); } return pintarTabla(); }
     case 'j': { const o = otros.get(d.i); if (o) { o.rec = d.rec; o.tot = d.tot; } return pintarTabla(); }
-    case 'col': if (d.k >= 0 && d.k < NCOL) { hallados[d.k] = 1; dugCambios++; pintarHud(true); if (menu === 'menu') pintarMenu(); } return;
+    case 'col': if (d.k >= 0 && d.k < NCOL) { hallados[d.k] = 1; dugCambios++; mapa.fill(255); bloques.clear(); pintarHud(true); if (menu === 'menu') pintarMenu(); } return;
     case 'golpe': {            // otra maquinita me alcanzó con su taladro: pega según su taladro y la clase de golpe; lo que aguanto es mi casco
       if (!S) return;
       if (d.v) {               // …o me avisa que le gané
@@ -1616,7 +1622,7 @@ function recibir(d) {
     case 'fuel': if (S.fuel <= 0 && d.q > 0) tarjeta('Saliste de la reserva', nombreDe(d.i) + ' te pasó combustible.'); S.fuel = Math.min(tanque(), S.fuel + d.q); son.combustible(); sucio = true; return aviso(nombreDe(d.i) + ' te pasó ' + d.q + ' litros');
     case 'regalo': S.d += d.q; son.compra(); sucio = true; return tarjeta('🎁 ' + nombreDe(d.i) + ' te regaló ' + fmt(d.q));
     case 'devuelve': sucio = true; if (d.d) S.d += d.d; if (d.fuel) S.fuel = Math.min(tanque(), S.fuel + d.fuel); return aviso('No se pudo entregar: esa maquinita no está conectada.');
-    case 'cfg': cfg = d.cfg; dugCambios++; tiles.clear(); if (listo) guardarMundo(); if (d.i !== miI) aviso(nombreDe(d.i) + ' cambió las reglas del mundo'); if (menu) pintarMenu(); return;
+    case 'cfg': cfg = d.cfg; dugCambios++; tiles.clear(); bloques.clear(); if (listo) guardarMundo(); if (d.i !== miI) aviso(nombreDe(d.i) + ' cambió las reglas del mundo'); if (menu) pintarMenu(); return;
     case 'cuenta':
       cuentaFin = Date.now() + d.s * 1000; son.alarma();
       if (d.i === miI) { S.d -= Math.min(S.d, costoRemin()); S.reminGratis = 0; S.st.remin++; sucio = true; pediRemin = true; pintarHud(true); }   // se cobra hasta que el mundo confirma
@@ -1702,6 +1708,56 @@ let DPR = 1, RES = 1, T = 40, cols = 32, filas = 20, camX = 0, camY = -12, reloj
 let panX = 0, panY = 0, vistaLibre = false;       // vista libre con la rueda o el trackpad
 const vis = { x: INICIO_X, y: INICIO_Y };         // dónde se dibuja mi maquinita (entre dos pasos de física)
 const tiles = new Map(), casas = new Map();
+// ── Bloques. El terreno casi nunca cambia, así que no se arma en cada cuadro: se compone una vez en bloques de 4 × 4 celdas
+//    (tierra, mineral, sombras de orilla, plantas) y cada cuadro solo estampa los bloques que se ven: unas 60 estampas en vez
+//    de unas 1,500 órdenes de dibujo. Cuando se cava una celda, se repinta su bloque (y el de junto, si le cambia la sombra).
+//    Lo que se mueve (destellos, lava, burbujas de gas, la superficie del agua) se pinta encima con las listas de cada bloque.
+const BL = 4, BW = W / BL, bloques = new Map(), bloquesLibres = [];
+let cuadroN = 0, bloquesTope = 120;
+function ensuciar(x, y) { const b = bloques.get((y >> 2) * BW + (x >> 2)); if (b) b.sucio = true; }
+function bloque(bx, by) {
+  const k = by * BW + bx; let b = bloques.get(k);
+  if (!b) {
+    b = bloquesLibres.pop();
+    if (!b || b.c.width !== BL * T) { const c = document.createElement('canvas'); c.width = c.height = BL * T; b = { c, q: c.getContext('2d', { alpha: false }), lava: [], gas: [], brillo: [], agua: [], u: 0, sucio: true }; }
+    b.sucio = true; bloques.set(k, b);
+  }
+  if (b.sucio) pintarBloque(b, bx, by);
+  b.u = cuadroN; return b;
+}
+function pintarBloque(b, bx, by) {
+  const q = b.q, fino = Math.max(1, Math.round(T * 0.07)), grueso = Math.max(2, Math.round(T * 0.13));
+  b.lava.length = b.gas.length = b.brillo.length = b.agua.length = 0; b.sucio = false;
+  for (let j = 0; j < BL; j++) {
+    const y = by * BL + j, m = (y + 1) * 2, zona = zonaDe(m), py = j * T;
+    for (let i = 0; i < BL; i++) {
+      const x = bx * BL + i, px = i * T; let t = celda(x, y);
+      if (t === 0 || t === 6) {
+        const lug = y >= 165 ? lugarDe(x, y) : -1;
+        q.drawImage(tile(t, zona, ((x * 5 + y * 3) & 1) + (lug > 0 ? lug * 2 : 0)), px, py);
+        if (y > 0 && !hueca(x, y - 1)) { q.fillStyle = '#00000055'; q.fillRect(px, py, T, grueso); }             // sombra del techo
+        const ci = y * W + x;                          // en el piso de las cuevas que nadie cavó crece algo, según la zona
+        if (y > 2 && lug < 2 && ((x * 31 + y * 17) & 3) < 2 && !(dug[ci >> 3] & (1 << (ci & 7))) && solida(x, y + 1)) q.drawImage(sprite('f' + (t === 6 ? 4 : zona < 4 ? 0 : zona === 4 ? 5 : zona) + ((x + y) & 1)), px, py);
+        if (t === 6 && celda(x, y - 1) === 0) b.agua.push(x, y);      // la superficie del agua se mueve: va encima, en cada cuadro
+        continue;
+      }
+      const esGas = t === 4, gasOculto = esGas && cfg.verGas !== 1;
+      if (gasOculto) t = 1;
+      const vt = litoDe(x, y) * 16 + h16(x, y);
+      const vr = t === 1 ? vt : t === 3 ? (celda(x, y - 1) === 3 ? 1 : 0) | (celda(x + 1, y) === 3 ? 2 : 0) | (celda(x, y + 1) === 3 ? 4 : 0) | (celda(x - 1, y) === 3 ? 8 : 0) | (((x * 7 + y * 13) & 3) << 4) : t === 7 ? (x * 7 + y * 13) & 3 : t === 50 ? Math.floor(colec.get(y * W + x) / 3) : t >= 10 && y >= 165 && lugarDe(x, y) > (t >= 40 ? 0 : 2) ? 1 : 0;
+      if (t !== 1 && t !== 5 && t !== 7 && !(t >= 10 && t !== 50 && vr)) q.drawImage(tile(1, zona, vt), px, py);       // la tierra de la celda, debajo de lo que tenga
+      q.drawImage(tile(t, zona, vr), px, py);
+      if (t === 2 && esGeoda(x, y)) q.drawImage(sprite('geo'), px, py);
+      if (t === 3) b.lava.push(x, y); else if (esGas) b.gas.push(x, y); else if (t >= 10) b.brillo.push(x, y);
+      // bordes: lo que da al túnel se sombrea, y arriba se ilumina
+      if (y === 0) { if (t !== 5) { q.fillStyle = '#5c9e3a'; q.fillRect(px, py, T, grueso); q.fillStyle = '#7cc24e'; q.fillRect(px, py, T, fino); } }
+      else if (hueca(x, y - 1)) { q.fillStyle = '#ffffff26'; q.fillRect(px, py, T, fino); }
+      if (y < H - 1 && hueca(x, y + 1)) { q.fillStyle = '#00000059'; q.fillRect(px, py + T - grueso, T, grueso); }
+      if (x > 0 && hueca(x - 1, y)) { q.fillStyle = '#00000038'; q.fillRect(px, py, fino, T); }
+      if (x < W - 1 && hueca(x + 1, y)) { q.fillStyle = '#00000038'; q.fillRect(px + T - fino, py, fino, T); }
+    }
+  }
+}
 const TIERRA = [['#8f5d3b', '#7b4e31', '#a06c48', '#6b422a'], ['#7d4c31', '#6b3f28', '#8d5a3c', '#5a3421'], ['#6c3f2b', '#5b3222', '#7c4b35', '#4b291c'], ['#57322b', '#472621', '#673c34', '#3a1f1b'],
   ['#4f6470', '#43565f', '#5d7480', '#36464e'], ['#5a4a5e', '#4b3d50', '#6a586f', '#3b2f40'], ['#3c4466', '#313856', '#495278', '#262b45'], ['#3a2a2c', '#2f2123', '#4a3436', '#221718']];
 const HUECO = [['#2c1b13', '#33211a', '#24150f'], ['#27170f', '#2e1c15', '#1f120c'], ['#22130e', '#291813', '#1a0e0a'], ['#1d100d', '#241512', '#150b09'],
@@ -1721,7 +1777,8 @@ function medir() {
   if (lienzo.height !== h) lienzo.height = h;
   T = Math.max(Math.round(12 * RES), Math.round(w / [26, 32, 40][op.zoom]));
   cols = w / T; filas = h / T;                    // lo que de verdad cabe, aunque la ventana sea angosta
-  tiles.clear(); casas.clear(); sprites.clear();
+  tiles.clear(); casas.clear(); sprites.clear(); bloques.clear(); bloquesLibres.length = 0;
+  bloquesTope = (Math.ceil(cols / BL) + 1) * (Math.ceil(filas / BL) + 1) + 6;        // lo que cabe en pantalla y unos pocos más
   if (listo && !corriendo) dibujar();
 }
 
@@ -1816,7 +1873,7 @@ function tile(tipo, zona, vr) {
   const key = tipo * 1000 + zona * 100 + vr; let c = tiles.get(key);
   if (c) return c;
   // Las celdas dibujadas se guardan para no repintarlas, pero no para siempre: al pasar de 280 se sueltan las de zonas lejanas.
-  if (tiles.size > 280) for (const k of tiles.keys()) if (Math.abs((Math.floor(k / 100) % 10) - zona) > 1) tiles.delete(k);
+  if (tiles.size > 200) for (const k of tiles.keys()) if (Math.abs((Math.floor(k / 100) % 10) - zona) > 1) tiles.delete(k);
   c = document.createElement('canvas'); c.width = c.height = T;
   const q = c.getContext('2d'), r = azarDe(key * 7919 + 13), u = T / 16;
   if (tipo === 0) {                                 // fondo de túnel y de cueva
@@ -2331,41 +2388,22 @@ function dibujar() {
   const x0 = Math.max(0, Math.floor(camX)), x1 = Math.min(W - 1, Math.ceil(camX + cols));
   const y0 = Math.max(0, Math.floor(camY)), y1 = Math.min(H - 1, Math.ceil(camY + filas));
   const fino = Math.max(1, Math.round(T * 0.07)), grueso = Math.max(2, Math.round(T * 0.13)), insinua = pistaGas();
-  calor.length = gases.length = 0;
-  for (let y = y0; y <= y1; y++) {
-    const m = (y + 1) * 2, zona = zonaDe(m), py = oy + y * T;
-    for (let x = x0; x <= x1; x++) {
-      let t = celda(x, y); const px = ox + x * T;
-      if (t === 0 || t === 6) {
-        const lug = y >= 165 ? lugarDe(x, y) : -1;
-        g.drawImage(tile(t, zona, ((x * 5 + y * 3) & 1) + (lug > 0 ? lug * 2 : 0)), px, py);
-        if (y > 0 && !hueca(x, y - 1)) { g.fillStyle = '#00000055'; g.fillRect(px, py, T, grueso); }             // sombra del techo
-        const ci = y * W + x;                          // en el piso de las cuevas que nadie cavó crece algo, según la zona
-        if (y > 2 && lug < 2 && ((x * 31 + y * 17) & 3) < 2 && !(dug[ci >> 3] & (1 << (ci & 7))) && solida(x, y + 1)) g.drawImage(sprite('f' + (t === 6 ? 4 : zona < 4 ? 0 : zona === 4 ? 5 : zona) + ((x + y) & 1)), px, py);
-        if (t === 6 && celda(x, y - 1) === 0) { g.fillStyle = '#bfe9ff77'; g.fillRect(px, py + Math.round(Math.sin(reloj * 2 + x * 0.9) * fino), T, fino * 2); }      // la superficie del agua
-        continue;
-      }
-      const esGas = t === 4, gasOculto = esGas && cfg.verGas !== 1;
-      if (gasOculto) t = 1;
-      const vt = litoDe(x, y) * 16 + h16(x, y);
-      const vr = t === 1 ? vt : t === 3 ? (celda(x, y - 1) === 3 ? 1 : 0) | (celda(x + 1, y) === 3 ? 2 : 0) | (celda(x, y + 1) === 3 ? 4 : 0) | (celda(x - 1, y) === 3 ? 8 : 0) | (((x * 7 + y * 13) & 3) << 4) : t === 7 ? (x * 7 + y * 13) & 3 : t === 50 ? Math.floor(colec.get(y * W + x) / 3) : t >= 10 && y >= 165 && lugarDe(x, y) > (t >= 40 ? 0 : 2) ? 1 : 0;
-      if (t !== 1 && t !== 5 && t !== 7 && !(t >= 10 && t !== 50 && vr)) g.drawImage(tile(1, zona, vt), px, py);       // la tierra de la celda, debajo de lo que tenga
-      g.drawImage(tile(t, zona, vr), px, py);
-      if (t === 2 && esGeoda(x, y)) g.drawImage(sprite('geo'), px, py);
-      if (t === 3) calor.push(px, py, x, y);
-      else if (esGas) { if (!gasOculto || insinua) gases.push(px, py, x, y); }
-      else if (t >= 10) {                       // destello
-        const s = Math.sin(reloj * 1.9 + ((x * 73 + y * 151) % 97));
-        if (s > 0.9) { const k = (s - 0.9) * 10, bx = px + T * (0.25 + ((x * 31 + y * 17) % 50) / 100), by = py + T * (0.25 + ((x * 13 + y * 29) % 50) / 100), l = T * 0.16 * k; g.fillStyle = '#fff'; g.fillRect(bx - l, by - fino / 2, l * 2, fino); g.fillRect(bx - fino / 2, by - l, fino, l * 2); }
-      }
-      // bordes: lo que da al túnel se sombrea, y arriba se ilumina
-      if (y === 0) { if (t !== 5) { g.fillStyle = '#5c9e3a'; g.fillRect(px, py, T, grueso); g.fillStyle = '#7cc24e'; g.fillRect(px, py, T, fino); } }
-      else if (hueca(x, y - 1)) { g.fillStyle = '#ffffff26'; g.fillRect(px, py, T, fino); }
-      if (y < H - 1 && hueca(x, y + 1)) { g.fillStyle = '#00000059'; g.fillRect(px, py + T - grueso, T, grueso); }
-      if (x > 0 && hueca(x - 1, y)) { g.fillStyle = '#00000038'; g.fillRect(px, py, fino, T); }
-      if (x < W - 1 && hueca(x + 1, y)) { g.fillStyle = '#00000038'; g.fillRect(px + T - fino, py, fino, T); }
+  calor.length = gases.length = 0; cuadroN++;
+  const gasVisible = cfg.verGas === 1 || insinua, T4 = BL * T;
+  for (let by = y0 >> 2, by1 = y1 >> 2; by <= by1; by++) for (let bx = x0 >> 2, bx1 = x1 >> 2; bx <= bx1; bx++) {
+    const b = bloque(bx, by);
+    g.drawImage(b.c, ox + bx * T4, oy + by * T4);
+    const L = b.lava, G = b.gas, A = b.agua, M = b.brillo;
+    for (let i = 0; i < L.length; i += 2) calor.push(ox + L[i] * T, oy + L[i + 1] * T, L[i], L[i + 1]);
+    if (gasVisible) for (let i = 0; i < G.length; i += 2) gases.push(ox + G[i] * T, oy + G[i + 1] * T, G[i], G[i + 1]);
+    if (A.length) { g.fillStyle = '#bfe9ff77'; for (let i = 0; i < A.length; i += 2) g.fillRect(ox + A[i] * T, oy + A[i + 1] * T + Math.round(Math.sin(reloj * 2 + A[i] * 0.9) * fino), T, fino * 2); }
+    for (let i = 0; i < M.length; i += 2) {                       // destello
+      const x = M[i], y = M[i + 1], s = Math.sin(reloj * 1.9 + ((x * 73 + y * 151) % 97));
+      if (s > 0.9) { const k = (s - 0.9) * 10, cx = ox + x * T + T * (0.25 + ((x * 31 + y * 17) % 50) / 100), cy = oy + y * T + T * (0.25 + ((x * 13 + y * 29) % 50) / 100), l = T * 0.16 * k; g.fillStyle = '#fff'; g.fillRect(cx - l, cy - fino / 2, l * 2, fino); g.fillRect(cx - fino / 2, cy - l, fino, l * 2); }
     }
   }
+  // Los bloques que ya no se ven se sueltan en cuanto sobran: repintar uno cuesta casi nada, y así la memoria no crece.
+  if (bloques.size > bloquesTope) for (const [k, v] of bloques) if (v.u !== cuadroN) { bloques.delete(k); if (bloquesLibres.length < 8) bloquesLibres.push(v); }
   // lo que vive en cada lugar
   for (const R of RINCONES) {
     if (y1 < R.cy - R.ry - 6 || y0 > R.cy + R.ry + 2) continue;
@@ -2576,7 +2614,7 @@ const NITIDEZ = [1, 0.75, 0.5];          // escalones de nitidez: se baja solo s
 const RITMOS = [30, 48, 50, 60, 72, 75, 90, 100, 120, 144, 165, 240];
 const rit = { hz: 60, fps: 60, niv: NITIDEZ.length - 1, sonda: true, d: [], lento: 0, bien: 0, veto: 0, sube: 0, peor: 0, lentos: 0, n: 0, t0: 0, ult: null };
 const ant = { x: INICIO_X, y: INICIO_Y };
-let ult = 0, acum = 0, tHud = 0, tPos = 0, tBip = 0, cicloId = 0;
+let ult = 0, acum = 0, tHud = 0, tPos = 0, tBip = 0, cicloId = 0, tCerca = 0, hayCerca = false;
 
 function medirRitmo(ms) {
   const d = rit.d; d.push(ms); if (d.length < 40) return;
@@ -2619,7 +2657,10 @@ function ciclo(t, id) {
   animar(d);
   dibujar();
   sonarLazos(false); gotear(d);                            // el sonido sigue a la maquinita cuadro por cuadro
-  if ((tPos += d) >= (red.lenta ? 0.125 : 0.066)) { tPos = 0; enviarPos(); }
+  // La posición se manda 30 veces por segundo cuando hay alguien cerca (o mirando), para que se vea en tiempo real,
+  // y 10 cuando los demás andan lejos, donde no hace falta.
+  if ((tCerca += d) > 0.3) { tCerca = 0; hayCerca = mirones > 0; if (!hayCerca) for (const o of otros.values()) if (o.on && o.x !== undefined && Math.abs(o.x - yo.x) < 30 && Math.abs(o.y - yo.y) < 18) { hayCerca = true; break; } }
+  if ((tPos += d) >= (red.lenta ? 0.125 : hayCerca ? 0.033 : 0.1)) { tPos = 0; enviarPos(); }
   if (Math.abs(yo.y - R_HONGOS.cy) < 14) cantarHongos();
   if (jardin.m.length && Math.abs(camY + filas / 2 - R_JARDIN.cy) < 60) mariposas(d, Math.abs(yo.y - R_JARDIN.cy) < 14 && enRincon(R_JARDIN, Math.floor(yo.x), Math.floor(yo.y), true));      // solo se mueven cuando se pueden ver
   if ((tHud += d) > 0.12) { tHud = 0; cadaTanto(); }
@@ -2711,9 +2752,14 @@ function animarTop(c) {
 }
 
 function animar(d) {
-  const ahora = performance.now() - red.retraso;
+  const ya = performance.now();
   for (const o of otros.values()) {
     const b = o.b; if (!o.on || !b || !b.length) continue;
+    // Cada maquinita se dibuja un instante atrás, entre dos posiciones reales. Ese instante se ajusta a su ritmo:
+    // unas 80 milésimas cuando está cerca y manda 30 por segundo; más si su señal viene lenta o espaciada.
+    const meta = red.lenta ? 250 : Math.max(75, Math.min(260, (o.iv || 66) * 1.7 + 22 + red.rtt * 0.1));
+    o.ret = o.ret ? o.ret + (meta - o.ret) * Math.min(1, d * 1.5) : meta;
+    const ahora = ya - o.ret;
     while (b.length > 2 && b[1].t <= ahora) b.shift();
     const A = b[0], B = b[1];
     if (!B || ahora <= A.t) { o.x = A.x; o.y = A.y; o.fl = A.fl; continue; }
@@ -3523,7 +3569,7 @@ function menuPrincipal() {
       chk('nombres', 'Mostrar los nombres de las maquinitas') +
       `<label class="op"><span>Cuadros por segundo</span><select data-a="op" data-k="fps">${[[0, 'Lo máximo de tu pantalla'], [60, '60'], [30, '30 (ahorra batería)']].map(([v, t]) => `<option value="${v}" ${op.fps == v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
       <p class="nota">Tu pantalla refresca a <b>${rit.hz} Hz</b> y el juego está mostrando <b>${Math.round(Math.min(rit.fps, rit.hz))} cuadros por segundo</b>, con nitidez al ${Math.round(NITIDEZ[rit.niv] * 100)} %. Señal con el mundo: ${red.rtt ? Math.round(red.rtt) + ' ms' : 'midiendo…'}. El juego se ajusta solo: si tu equipo no alcanza el refresco de su pantalla, baja la nitidez antes que la fluidez.</p>
-      <p class="nota">${rit.ult ? `En el último minuto de juego: <b>${rit.ult.lentos} de ${rit.ult.n.toLocaleString('es-MX')}</b> cuadros salieron lentos (${(rit.ult.lentos / Math.max(1, rit.ult.n) * 100).toFixed(2)} %) y el más lento tardó <b>${Math.round(rit.ult.peor)} ms</b> (lo ideal en tu pantalla: ${Math.round(1000 / rit.hz)} ms).` : 'Juega un minuto y aquí sale cuántos cuadros lentos hubo.'} En memoria hay ${tiles.size} celdas dibujadas (${(tiles.size * T * T * 4 / 1e6).toFixed(0)} MB).</p>`;
+      <p class="nota">${rit.ult ? `En el último minuto de juego: <b>${rit.ult.lentos} de ${rit.ult.n.toLocaleString('es-MX')}</b> cuadros salieron lentos (${(rit.ult.lentos / Math.max(1, rit.ult.n) * 100).toFixed(2)} %) y el más lento tardó <b>${Math.round(rit.ult.peor)} ms</b> (lo ideal en tu pantalla: ${Math.round(1000 / rit.hz)} ms).` : 'Juega un minuto y aquí sale cuántos cuadros lentos hubo.'} El terreno está compuesto en ${bloques.size} bloques (${((bloques.size + bloquesLibres.length) * BL * BL * T * T * 4 / 1e6 + tiles.size * T * T * 4 / 1e6).toFixed(0)} MB de imágenes).</p>`;
   } else if (pestana === 8) {
     const o3 = [[0, 'Apagado'], [1, 'Normal'], [2, 'Fuerte']];
     h += `<div class="fila"><div class="t"><b>Invita a tu gente</b><small>${mundoId ? location.origin + '/m/' + mundoId : 'Tu mundo se está creando…'}</small></div><button class="s" data-a="menu" data-v="inv">Ver código QR</button><button data-a="invitar">Copiar la liga</button></div>

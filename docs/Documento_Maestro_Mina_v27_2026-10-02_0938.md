@@ -705,7 +705,7 @@ El cálculo no es el cuello de botella. Lo que sí crecía sin tope era la memor
 - **Guardar la copia local** se hace cuando el navegador tiene un respiro, y **las imágenes de liga** se dibujan cuando la maquinita está quieta en el pueblo, no a media bajada.
 - **Medidor:** Menú → Opciones dice, del último minuto jugado, cuántos cuadros salieron lentos, cuánto tardó el peor y cuánta memoria ocupan las celdas. Sirve para saber con datos cómo va en cada equipo.
 
-**Lo que no se tocó, a propósito.** Juntar todas las celdas en una sola imagen grande (un «atlas») podría aligerar a la tarjeta de video, pero toca la parte más delicada del dibujo y aquí no hay forma de medir su efecto en una pantalla real. Si el medidor de Opciones muestra cuadros lentos en algún equipo, ese es el siguiente paso.
+**Lo que quedó pendiente entonces** (aligerar a la tarjeta de video) se hizo después, y mejor que con un atlas: ver 9.22.
 
 ### 9.21 Los mundos son para siempre, y su terreno queda fijo
 
@@ -728,6 +728,43 @@ El cálculo no es el cuello de botella. Lo que sí crecía sin tope era la memor
 **Piezas.** Juego: `base` y `geodas` (terreno cargado), `terrenoProcedural`, `empacar`/`desempacar`, `huellaMapa`, `conMapa`, `traerMapa`, `ponerTerreno`, `subirMapa`, `cambiarMapa`, caché `mina-mapas`. Mundo: `mapaValido`, `recibirMapa`, `mapa()`, `GET /api/mapa/ID` y `/api/mapa/ver/FICHA`, mensaje binario 4, campos `mapaR` y `mapaH`.
 
 **Costo.** Cada mundo ocupa entre 0.2 y 0.8 MB guardado (terreno, túneles e imágenes de liga). Mil mundos son menos de 1 GB.
+
+### 9.22 El terreno en bloques, y el tiempo real entre dos maquinitas
+
+**El dibujo del terreno.** Antes, cada cuadro armaba la pantalla celda por celda: la tierra, el mineral encima, hasta cinco sombras de orilla y el destello. Con unas 600 celdas a la vista eran alrededor de 1,500 órdenes de dibujo por cuadro, cada una con su propia imagen.
+
+La idea original era un «atlas» (todas las celdas en una sola imagen grande). Eso solo ahorra cambios de imagen: las 1,500 órdenes siguen ahí. Se hizo algo mejor:
+
+- **El terreno se compone una sola vez en bloques de 4 × 4 celdas** (`bloque`, `pintarBloque`): tierra, mineral, piedra, lava, sombras, pasto y plantas quedan ya pintados en el bloque.
+- **Cada cuadro solo estampa los bloques que se ven:** unas 60 estampas en vez de 1,500 órdenes.
+- **Al cavar una celda** se repinta su bloque y los de las celdas vecinas a las que les cambia la sombra (`ensuciar`, desde `ponerCavada`). Son 16 celdas: no se nota.
+- **Lo que se mueve va encima,** con listas que cada bloque guarda: destellos de mineral, resplandor y burbujas de la lava, burbujas del gas y la superficie del agua.
+- **La memoria está acotada:** solo existen los bloques que caben en pantalla y seis más; los que salen de la vista se sueltan y su lienzo se reutiliza.
+
+| Medición (ventana de 1400×800 a doble densidad) | Antes | Ahora |
+|---|---|---|
+| Órdenes de dibujo del terreno por cuadro | ~1,500 | ~60 |
+| Cálculo por cuadro, parado o a paso normal | 0.5 a 1.2 ms | 0.2 a 0.5 ms |
+| Cálculo por cuadro, bajando en picada (bloques nuevos en cada cuadro) | ~1.05 ms | ~1.0 ms |
+| Bloques vivos, tope | — | 60 |
+| Imágenes guardadas del terreno | 10 a 14 MB | unos 40 MB |
+
+El costo es memoria: los bloques ocupan alrededor de una pantalla y media de imagen. En un teléfono son unos 15 MB; en una ventana grande de alta densidad, unos 50. Se cambia memoria por trabajo de la tarjeta de video en cada cuadro, que es lo que más pesa en los teléfonos.
+
+**Dos maquinitas cerca.** La posición de cada maquinita viajaba 15 veces por segundo y las demás la dibujaban unas 135 milésimas atrás. Ahora:
+
+- **30 veces por segundo** cuando hay otra maquinita a la vista (o alguien mirando); **10** cuando las demás andan lejos, donde no hace falta.
+- **El retraso se ajusta a cada maquinita** según el ritmo con que llegan sus posiciones (`o.iv`, `o.ret`): unas 80 milésimas a 30 por segundo.
+
+| Posiciones por segundo | Retraso con que se dibuja | Variación |
+|---|---|---|
+| 30 (cerca) | 80 ms | 3.3 ms |
+| 15 (como estaba) | 134 ms | 6.9 ms |
+| 10 (lejos) | 190 ms | 14 ms |
+
+Medido en local, sin la latencia de internet. En la red real hay que sumar el viaje de ida y vuelta al servidor.
+
+**Sin medir todavía:** el efecto en una pantalla real y en un teléfono real. Para eso está el medidor de Menú → Opciones (cuadros lentos del último minuto).
 
 ## 10. Revisión de código del 2 de octubre
 
