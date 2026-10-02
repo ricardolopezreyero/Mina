@@ -660,6 +660,23 @@ Quien mira ve el juego completo sin tablero, con una barra arriba: a quién ve, 
 
 **Límite que conviene saber.** El total lo reporta el navegador de cada jugador (pendiente desde el principio: el servidor confía en el dinero que le dicen). Alguien con conocimientos puede inflar su número y aparecer en la tabla. Mientras se juegue entre conocidos no pasa nada; antes de abrirlo al público hay que hacer que el servidor lleve la cuenta, o al menos poder borrar un renglón de la tabla.
 
+### 9.19 Diez mejoras más por pieza, Remineralizadora al 5 % y el mundo que da la vuelta
+
+**El Taller.** Cada pieza pasa de 16 a 26 mejoras. Las diez nuevas cuestan $6,000 M, $15,000 M, $40,000 M, $100,000 M, $250,000 M, $600,000 M, $1.5 T, $4 T, $10 T y $25 T (T = billón, un millón de millones).
+
+| Pieza | Antes (nivel 16) | Ahora (nivel 26) | Nota |
+|---|---|---|---|
+| Taladro | 470 de potencia | 1,900 | Con 1,900 se llega al tope de velocidad (0.07 s por celda) en el fondo del mundo |
+| Casco | 3,200 de vida | 45,000 | |
+| Motor | 2,200 caballos | 80,000 | Crece más rápido que las demás: con el último ya se levanta la última bodega llena de Osmio |
+| Tanque | 1,600 litros | 16,000 | |
+| Radiador | 98 % | 99.8 % | Nunca llega a 100 |
+| Bodega | 1,050 espacios | 6,000 | |
+
+**La Remineralizadora** ya no es gratis la primera vez ni depende del mejor mineral vendido: cuesta el **5 % de todo lo que la maquinita ha ganado en su vida** (`S.tot`), con un mínimo de $500. Como el total nunca baja, el precio sube para siempre. La pantalla dice cuánto llevas ganado y cuánto te falta.
+
+**El mundo da la vuelta.** La columna que sigue a la última es la primera: si sales por la derecha entras por la izquierda y al revés, volando o perforando. `celda()` y `cavar()` envuelven la columna, así que también los choques, los túneles y las explosiones cruzan la orilla. `darVuelta()` corre después de cada paso de física: recorre a la maquinita 96 columnas, con todo y la perforación que llevaba a medias, y brinca la cámara. La primera vez sale una tarjeta que lo explica. La cámara no gira: al cruzar, la vista salta al otro lado.
+
 ## 10. Revisión de código del 2 de octubre
 
 Se revisó todo el código buscando fallas y se corrigieron estas:

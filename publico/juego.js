@@ -93,7 +93,7 @@ const hallados = new Uint8Array(NCOL), colec = new Map();        // cuáles ya e
 const nHallados = () => hallados.reduce((a, b) => a + b, 0);
 const AGUA0 = 520, AGUA1 = 620;                  // las filas inundadas del Acuífero (1,040 a 1,240 m)
 
-/* ── Las 6 piezas del equipo: nombre, precio, valor e historia. Dieciséis mejoras por pieza, de $750 a $2,500 millones ── */
+/* ── Las 6 piezas del equipo: nombre, precio, valor e historia. Veintiséis mejoras por pieza, de $750 a $25 billones ── */
 const PZ = [
   { n: 'Taladro', ic: '🔩', u: 'de potencia', que: 'Con qué muerdes la tierra: menos tiempo y menos combustible por celda.', niv: [
     ['Broca de fábrica', 0, 20, 'Venía con el equipo. Muerde tierra suelta y se queja con todo lo demás.'],
@@ -113,6 +113,16 @@ const PZ = [
     ['Lanza de Estrella', 500000000, 360, 'Forjada con el núcleo de una estrella apagada. Todavía está tibia.'],
     ['Devoradora de Mundos', 1000000000, 410, 'Los mineros viejos dicen que no hay que encenderla viendo hacia arriba.'],
     ['La Última Broca', 2500000000, 470, 'Después de esta no hay otra. Eso dijeron también de la anterior.'],
+    ['La Penúltima Broca', 6000000000, 540, 'Resultó que sí había otra. El Taller pide una disculpa y cobra igual.'],
+    ['Broca de Materia Oscura', 15000000000, 620, 'No se ve, no se toca y nadie sabe qué es. Perfora de maravilla.'],
+    ['Colmillo de Agujero Negro', 40000000000, 710, 'La roca no se rompe: se cae hacia adentro de la punta y ya no vuelve.'],
+    ['Taladro del Tiempo', 100000000000, 810, 'Llega a la celda un instante antes que tú y te la deja abierta.'],
+    ['Aguja de Cuerdas', 250000000000, 920, 'Desafina las cuerdas de las que está hecha la roca. La roca se deshace sola.'],
+    ['Broca Supernova', 600000000000, 1050, 'Cada giro es una estrella que estalla en chiquito. Úsese con lentes oscuros.'],
+    ['Lanza del Vacío', 1500000000000, 1200, 'Donde apunta, deja de haber algo. Ni polvo queda.'],
+    ['Devoradora de Galaxias', 4000000000000, 1370, 'La hermana mayor de la Devoradora de Mundos. Come más y pregunta menos.'],
+    ['Broca del Big Bang', 10000000000000, 1560, 'Gira desde el principio del universo. Nadie la ha visto detenerse.'],
+    ['La de Veras Última', 25000000000000, 1900, 'Ahora sí no hay otra. El Taller lo firmó ante notario.'],
   ] },
   { n: 'Casco', ic: '🛡️', u: 'de vida', que: 'Cuánto castigo aguantas: más margen para caídas, lava y gas.', niv: [
     ['Lámina de fábrica', 0, 10, 'Aguanta un tropezón. No dos.'],
@@ -132,6 +142,16 @@ const PZ = [
     ['Escudo de Fase', 500000000, 1850, 'Por un instante la maquinita no está ahí. El golpe pasa de largo.'],
     ['Escudo Estelar', 1000000000, 2400, 'El mismo campo que protege a una estrella de sí misma.'],
     ['Égida', 2500000000, 3200, 'El escudo del que hablan los mitos. Resulta que sí existía.'],
+    ['Manto de Aurora', 6000000000, 4200, 'La misma luz que cuida al planeta del Sol, puesta alrededor de tu maquinita.'],
+    ['Coraza de Materia Oscura', 15000000000, 5500, 'Los golpes no la encuentran. Tú tampoco, pero ahí está.'],
+    ['Escudo de Horizonte', 40000000000, 7200, 'Como el borde de un agujero negro: lo que entra no llega a tocarte.'],
+    ['Armadura del Tiempo', 100000000000, 9400, 'El golpe te da ayer, cuando no estabas.'],
+    ['Capullo de Cuerdas', 250000000000, 12000, 'Tejido con las cuerdas más finas del universo. No se rompe: se afina.'],
+    ['Escudo Supernova', 600000000000, 15500, 'Devuelve cada golpe con intereses.'],
+    ['Burbuja de Vacío', 1500000000000, 20000, 'Entre tú y el peligro pone un tramo de nada. La nada no pasa el daño.'],
+    ['Coraza Galáctica', 4000000000000, 26000, 'Cien mil millones de soles haciendo guardia.'],
+    ['Escudo del Big Bang', 10000000000000, 34000, 'Aguantó la explosión más grande que ha habido. Una bolsa de gas le da ternura.'],
+    ['Intocable', 25000000000000, 45000, 'El Taller garantiza que nada te toca. La garantía no cubre regaños de Doña Chela.'],
   ] },
   { n: 'Motor', ic: '⚙️', u: 'caballos', que: 'Cuánto peso subes y qué tan rápido: regresas cargado sin arrastrarte.', niv: [
     ['Motor de fábrica', 0, 150, 'Sube. Despacio, pero sube.'],
@@ -151,6 +171,16 @@ const PZ = [
     ['«Atlas» antigravedad', 500000000, 1250, 'No levanta el peso: lo convence de que no pesa.'],
     ['«Fénix» de antimateria', 1000000000, 1650, 'Un gramo de combustible, un año de trabajo.'],
     ['«Infinito»', 2500000000, 2200, 'Nadie sabe cómo funciona. Funciona.'],
+    ['«Infinito y Medio»', 6000000000, 3200, 'Los matemáticos protestaron. El motor arrancó de todos modos.'],
+    ['«Sombra» de materia oscura', 15000000000, 4800, 'Empuja con algo que nadie ha visto. La maquinita tampoco pregunta.'],
+    ['«Horizonte»', 40000000000, 7200, 'Se cae hacia arriba. Así de simple.'],
+    ['«Mañana»', 100000000000, 11000, 'Llegas antes de salir. La Báscula ya te estaba esperando.'],
+    ['«Arpa» de cuerdas', 250000000000, 16000, 'Toca una nota y el peso se queda atrás, escuchando.'],
+    ['«Supernova»', 600000000000, 23000, 'Un estallido continuo, muy bien educado, bajo el cofre.'],
+    ['«Vacío» cuántico', 1500000000000, 32000, 'Saca la fuerza de la nada. Literalmente.'],
+    ['«Vía Láctea»', 4000000000000, 44000, 'Gira con toda la galaxia. Solo hay que agarrarse.'],
+    ['«Génesis»', 10000000000000, 60000, 'El primer empujón que hubo, todavía con fuerza.'],
+    ['«Porque Sí»', 25000000000000, 80000, 'No tiene explicación ni la necesita. Sube lo que sea, a donde sea.'],
   ] },
   { n: 'Tanque', ic: '⛽', u: 'litros', que: 'Cuánto tiempo puedes estar abajo: viajes más largos y más hondos.', niv: [
     ['Bidón de fábrica', 0, 10, 'Treinta segundos perforando. No le quites el ojo al medidor.'],
@@ -170,6 +200,16 @@ const PZ = [
     ['«Agujero Blanco»', 500000000, 1000, 'Mil litros. La Gasolinera te manda felicitación en Navidad.'],
     ['«Eterno»', 1000000000, 1250, 'Los mineros lo heredan a sus nietos todavía a medio tanque.'],
     ['«Big Bang»', 2500000000, 1600, 'Todo el combustible del principio del universo, en un tanque.'],
+    ['«Otro Big Bang»', 6000000000, 2000, 'Resulta que hubo dos. Este es el segundo, sin estrenar.'],
+    ['«Niebla» de materia oscura', 15000000000, 2500, 'Combustible que no se ve. El medidor lo cuenta de memoria.'],
+    ['«Singularidad»', 40000000000, 3200, 'Todo el combustible en un punto. Un punto muy, muy lleno.'],
+    ['«Ayer»', 100000000000, 4000, 'Se llena con lo que no gastaste ayer. No lo pienses mucho.'],
+    ['«Sinfonía»', 250000000000, 5000, 'Cada cuerda del universo guarda una gota.'],
+    ['«Enana Blanca»', 600000000000, 6400, 'Una estrella exprimida. Una cucharada mueve a la maquinita un mes.'],
+    ['«Mar del Vacío»', 1500000000000, 8000, 'El vacío no está vacío. El Taller encontró cómo ordeñarlo.'],
+    ['«Andrómeda»', 4000000000000, 10000, 'Diez mil litros. La Gasolinera le pone tu nombre a una bomba.'],
+    ['«Multiverso»', 10000000000000, 12500, 'Cuando se acaba, toma prestado del tanque de otra maquinita igualita, en otro universo.'],
+    ['«Ya Estuvo»', 25000000000000, 16000, 'Dieciséis mil litros. Si te lo acabas, cuéntanos cómo.'],
   ] },
   { n: 'Radiador', ic: '❄️', u: '% menos daño de lava y gas', que: 'Cuánto calor te quitas de encima.', niv: [
     ['Sin radiador', 0, 0, 'El calor entra completo.'],
@@ -189,6 +229,16 @@ const PZ = [
     ['«Bajo Cero Absoluto»', 500000000, 96, 'Los físicos dicen que es imposible. El Taller lo vende igual.'],
     ['«Noche del Espacio»', 1000000000, 97, 'El frío que hay entre las estrellas, enlatado.'],
     ['«Corazón de Cometa»', 2500000000, 98, 'Hielo con más años que el Sol. La lava le hace los mandados.'],
+    ['«Nevada de Plutón»', 6000000000, 98.3, 'Nieve de nitrógeno traída del borde del sistema solar.'],
+    ['«Sombra Fría»', 15000000000, 98.6, 'Materia oscura helada. No se ve el frío, pero se siente.'],
+    ['«Aliento de Agujero Negro»', 40000000000, 98.8, 'Lo más frío que existe: ni el calor se le escapa.'],
+    ['«Invierno de Ayer»', 100000000000, 99, 'Manda el calor al pasado. Allá que se las arreglen.'],
+    ['«Cuerda Helada»', 250000000000, 99.2, 'Una sola cuerda del universo, quieta. Lo demás se enfría de verla.'],
+    ['«Ceniza de Supernova»', 600000000000, 99.4, 'Lo que queda cuando una estrella se apaga del todo.'],
+    ['«Vacío Perfecto»', 1500000000000, 99.5, 'Sin nada que caliente, nada se calienta.'],
+    ['«Noche entre Galaxias»', 4000000000000, 99.6, 'El lugar más solo y más frío que hay. Enlatado, como el otro.'],
+    ['«Antes del Big Bang»', 10000000000000, 99.7, 'De cuando todavía no existía el calor.'],
+    ['«Paleta de Hielo»', 25000000000000, 99.8, 'El Taller se quedó sin nombres serios. Enfría más que todos los anteriores.'],
   ] },
   { n: 'Bodega', ic: '📦', u: 'espacios', que: 'Cuánto te llevas por viaje: más dinero por cada bajada.', niv: [
     ['Canasta', 0, 7, 'Siete piezas y a subir.'],
@@ -208,6 +258,16 @@ const PZ = [
     ['Bodega Agujero Negro', 500000000, 780, 'Todo cabe. Sacarlo era otra historia, pero la Báscula ya aprendió.'],
     ['Arca', 1000000000, 900, 'Cabe una veta madre con todo y sus alrededores.'],
     ['Bodega Sin Fin', 2500000000, 1050, 'El letrero dice «cupo limitado». Nadie ha encontrado el límite.'],
+    ['Bodega Sin Fin, ampliada', 6000000000, 1250, 'Le encontraron el límite. Lo movieron más lejos.'],
+    ['Costal de Materia Oscura', 15000000000, 1500, 'La carga se guarda donde nadie la ve. La Báscula sí la encuentra, descuida.'],
+    ['Bodega Horizonte', 40000000000, 1800, 'Lo que entraba ya no salía. La Báscula ya aprendió a sacarlo.'],
+    ['Bodega de Ayer', 100000000000, 2150, 'Guardas hoy en el espacio que te sobró ayer.'],
+    ['Baúl de Cuerdas', 250000000000, 2550, 'Dobla el espacio once veces. En cada doblez cabe una veta.'],
+    ['Bodega Nebulosa', 600000000000, 3000, 'Del tamaño de una nube de estrellas, plegada con paciencia.'],
+    ['Almacén del Vacío', 1500000000000, 3600, 'Todo ese espacio que hay entre los átomos, por fin aprovechado.'],
+    ['Bodega Galáctica', 4000000000000, 4300, 'Aquí cabría el pueblo entero, con todo y Gasolinera.'],
+    ['Arca del Big Bang', 10000000000000, 5100, 'En esto venía empacado el universo.'],
+    ['Bodega «Échale»', 25000000000000, 6000, 'Seis mil espacios. Tú échale; ya veremos cómo lo subes.'],
   ] },
 ];
 
@@ -490,8 +550,10 @@ function gen(x, y) {
 }
 const vacia = (y) => (y >= AGUA0 && y < AGUA1 ? 6 : 0);       // lo que queda al cavar: aire, o agua en el Acuífero
 function celda(x, y) {
-  if (x < 0 || x >= W || y >= H) return 5;
+  if (y >= H) return 5;
   if (y < 0) return 0;
+  if (x < 0) x += W; else if (x >= W) x -= W;      // el mundo da la vuelta: la columna que sigue a la última es la primera
+  if (x < 0 || x >= W) return 5;
   const i = y * W + x;
   let t = mapa[i];
   if (t === 255) t = mapa[i] = (dug[i >> 3] & (1 << (i & 7))) ? vacia(y) : gen(x, y);
@@ -501,7 +563,8 @@ const hueca = (x, y) => { const t = celda(x, y); return t === 0 || t === 6; };
 function ponerCavada(i) { dugCambios++; dug[i >> 3] |= 1 << (i & 7); mapa[i] = vacia(Math.floor(i / W)); }
 function cavar(lista) {            // marca aquí y avisa al mundo
   const c = [];
-  for (const [x, y] of lista) {
+  for (let [x, y] of lista) {
+    if (x < 0) x += W; else if (x >= W) x -= W;
     if (x < 0 || x >= W || y < 0 || y >= H) continue;
     const t = celda(x, y);
     if (t === 0 || t === 5 || t === 6) continue;
@@ -1074,6 +1137,14 @@ function morir(causa) {
 
 /* ════════ Física ════════ RLR */
 const solida = (x, y) => { const t = celda(x, y); return t !== 0 && t !== 6; };
+// Al cruzar la orilla, la maquinita aparece del otro lado con todo y lo que venía haciendo.
+function darVuelta() {
+  const d = yo.x < 0 ? W : yo.x >= W ? -W : 0; if (!d) return;
+  yo.x += d; ant.x += d; vis.x += d; if (yo.perf) { yo.perf.ox += d; yo.perf.tx += d; }
+  camX = Math.max(0, Math.min(W - cols, yo.x - cols / 2)); panX = 0;
+  campana(880, 0.5, 0.03, 'otros'); campana(1320, 0.6, 0.02, 'otros', 0.07);
+  if (S && !S.fl.vuelta) { S.fl.vuelta = 1; sucio = true; tarjeta('🌎 El mundo da la vuelta', 'Saliste por un lado y entraste por el otro. Todo está conectado: también los túneles y las explosiones.', 'msj', 10000); }
+}
 function fisica(dt) {
   if (yo.renace) { yo.renace = false; yo.x = INICIO_X; yo.y = INICIO_Y; yo.vx = yo.vy = 0; yo.perf = null; return; }
   const p = yo.perf;
@@ -1266,7 +1337,7 @@ function perforar(x, y) {
   let dur = Math.max(0.07, 0.6 * (20 / pot()) * (1 + 4 * Math.min(m, 1000) / 1000 + Math.max(0, m - 1000) / 1500));
   if (t === 2) dur = tp;                             // la piedra tarda lo suyo, sin importar la profundidad dentro de su zona
   if (t === 3) { dur = Math.max(0.6, dur * (cfg.lava ? 1.6 : 3)); son.lava(); }          // cortar lava toma su tiempo: al menos 0.6 s, para que se vea
-  yo.perf = { tx: x, ty: y, t: 0, dur, tipo: t, ox: yo.x, oy: yo.y, idx: y * W + x };
+  yo.perf = { tx: x, ty: y, t: 0, dur, tipo: t, ox: yo.x, oy: yo.y, idx: y * W + (x + W) % W };
   cavar([[x, y]]); if (tiempo - tMuerde > 0.11) { tMuerde = tiempo; son.muerde((t >= 10 && t < 40) || t === 2); }
   S.st.cavadas++;
 }
@@ -2455,7 +2526,7 @@ function ciclo(t, id) {
   let n = 0;
   while (acum >= DT) {
     ant.x = yo.x; ant.y = yo.y;
-    fisica(DT); tiempo += DT; acum -= DT;
+    fisica(DT); darVuelta(); tiempo += DT; acum -= DT;
     if (++n >= 14) { acum = 0; break; }                    // si la máquina se atrasa, no se intenta alcanzar: se suelta
   }
   const a = acum / DT, salto = Math.abs(yo.x - ant.x) > 1.5 || Math.abs(yo.y - ant.y) > 1.5;
@@ -3042,7 +3113,8 @@ function pintarMenu() {
     const c = costoRemin(), puedo = cfg.reminTodos || soyCreador;
     h = cab('🌋 La Remineralizadora') + `<div class="cuerpo"><p>Vuelve a llenar de mineral <b>todo el tablero</b>: tierra nueva, minerales nuevos, hallazgos nuevos y peligros en lugares nuevos.</p>
       <p class="nota">Los túneles se cierran. Tu dinero, tu equipo, tus objetos y tus récords no se tocan. Todos ven una cuenta regresiva de 10 segundos y quien esté bajo tierra sube a salvo con su carga.</p>
-      <p class="grande">${c ? fmt(c) : 'Gratis la primera vez'}</p>
+      <p class="grande">${fmt(c)}</p>
+      <p class="nota">Cuesta el <b>5 % de todo lo que has ganado</b> (llevas ${fmt(S.tot)}). Entre más ganes, más cuesta.${S.d < c ? ' Te faltan ' + fmt(c - S.d) + '.' : ''}</p>
       <button data-a="remin" ${!puedo || S.d < c || cuentaFin ? 'disabled' : ''}>${puedo ? 'Remineralizar el tablero' : 'Solo quien creó el mundo puede hacerlo'}</button></div>`;
   } else if (menu === 'inv') {
     const liga = location.origin + '/m/' + mundoId;
@@ -3105,7 +3177,8 @@ function venta() {
 }
 const costoEle = (m) => Math.max(500, Math.round(m * 50));
 function ultimoPunto() { const u = S.ult; return u && u.mu === mundoId && u.r === remin && !solida(Math.floor(u.x), Math.floor(u.y)) ? u : null; }
-function costoRemin() { return S.reminGratis ? 0 : S.mejor < 0 ? 300 : MIN[S.mejor].v * 10; }
+// Remineralizar cuesta el 5 % de todo lo que esta maquinita ha ganado en su vida: entre más llevas, más cuesta, para siempre.
+function costoRemin() { return Math.max(500, Math.ceil(S.tot * 0.05)); }
 
 const acciones = {
   cerrar,
@@ -3375,7 +3448,7 @@ function menuPrincipal() {
     h += `<p><b>Moverte:</b> flechas o WASD. <b>↑</b> vuela. <b>↓</b> perfora hacia abajo. <b>← →</b> contra una pared, perfora de lado. Nunca se perfora hacia arriba.</p>
       <p><b>El ciclo:</b> baja, llena la bodega, sube, vende en La Báscula, carga combustible y mejora tu equipo en El Taller. En la superficie, párate frente a un edificio y pulsa ↓.</p>
       <p><b>Objetos:</b> F tanque de reserva · R nanobots · X dinamita · C explosivo plástico · Q teletransportador · M transmisor. En El Almacén se compran de a 1, 5, 10, 50 o 100.</p>
-      <p><b>El Taller:</b> cada pieza tiene dieciséis mejoras, de $750 a $2,500 millones. Siempre ves las que ya compraste y las diez que siguen.</p>
+      <p><b>El Taller:</b> cada pieza tiene veintiséis mejoras, de $750 a $25 billones ($25 T). Siempre ves las que ya compraste y las diez que siguen.</p>
       <p><b>Acompañado:</b> G deja una señal que todos ven · T le pasa 5 litros a la maquinita que tengas junto · P pausa tu maquinita.</p>
       <p><b>Tu viaje:</b> abajo a la izquierda ves cuánto llevas, en cuánto se vende y si el combustible te alcanza para subir. Ahí mismo está la <b>grúa</b> (tecla E): te deja en la Gasolinera y cobra según lo lejos que estés y lo que peses.</p>
       <p><b>De regreso:</b> sin tocar nada, la maquinita planea con sus rotorcitos. Con <b>↓</b> los guarda y cae en picada, tres veces más rápido; con <b>↑</b> frena. El velocímetro de la izquierda dice a cuánto vas, y si pasas de Mach 1 dentro del aire, truena.</p>
@@ -3391,6 +3464,8 @@ function menuPrincipal() {
       <p><b>Sin internet y como aplicación:</b> Mina se puede instalar (Menú → Opciones) y abre aunque no haya señal. Lo que caves y ganes sin internet se queda en tu equipo y se manda al mundo cuando la señal vuelve. En pantallas táctiles, arrastra el dedo para moverte y da un toque frente a un edificio para entrar.</p>
       <p><b>Tu nombre y tus ligas:</b> la maquinita nace bautizada para que empieces a jugar sin llenar nada; el nombre y el modelo se cambian en Menú → Mundo. Hay dos ligas: la del mundo (invita a excavar) y la tuya (presume tu maquinita); cada una lleva su imagen al mandarla por WhatsApp.</p>
       <p><b>Top 20 y público:</b> Menú → Top 20 enseña las veinte maquinitas que más han ganado en todos los mundos, en vivo. A la que esté jugando se le puede ir a ver: quien mira entra con una liga propia, no puede jugar ni conoce la liga del mundo. Tu liga para que te vean está en Menú → Mundo, y ahí mismo quien creó el mundo puede cerrarlo al público.</p>
+      <p><b>El mundo da la vuelta:</b> si sales por la orilla derecha entras por la izquierda, y al revés, perforando o volando. Todo está conectado.</p>
+      <p><b>La Remineralizadora:</b> cuesta el 5 % de todo lo que has ganado en la vida de tu maquinita. Entre más llevas, más cuesta.</p>
       <p><b>Explosivos:</b> se usan donde sea, también volando: si topas con piedra al subir, X te abre paso.</p>
       <p><b>Piedra:</b> se perfora si tu taladro alcanza. Hay cinco durezas, cada una de un color, según la zona; el Taller dice qué taladro pide cada una. Con el justo tarda 1.5 s; con uno mejor, hasta 0.6 s.</p>
       <p class="nota">Piedra desde 210 m. Lava desde 410 m: se ve, rodéala. Gas desde 650 m: pocas bolsas, y se notan por sus burbujas.</p>`;
@@ -3669,5 +3744,5 @@ window.__mina = { get S() { return S; },
     const n = Math.min(8, Math.ceil(seg)), paso = Math.floor(b.length / n);
     return { todo: tramo(0, b.length), tramos: Array.from({ length: n }, (_, i) => tramo(i * paso, (i + 1) * paso)) };
   },
-  son, sonarLazos, componer, piano, get op() { return op; }, avanza(seg) { for (let i = 0, n = Math.round(seg * 120); i < n; i++) { tiempo += DT; ant.x = yo.x; ant.y = yo.y; fisica(DT); if (i % 14 === 0) cadaTanto(); } vis.x = yo.x; vis.y = yo.y; }, rit, red, animar, grua, costoGrua, dibujar, llegar, danar, get e() { return { corriendo, menu, pausa, listo, conectado, tiempo, perf: yo.perf, renace: yo.renace }; }, yo, otros, celda, gen, get cfg() { return cfg; }, usar, abrir, cerrar, teclas, enviarEst, veta, LOGROS };
+  son, sonarLazos, componer, piano, get op() { return op; }, avanza(seg) { for (let i = 0, n = Math.round(seg * 120); i < n; i++) { tiempo += DT; ant.x = yo.x; ant.y = yo.y; fisica(DT); darVuelta(); if (i % 14 === 0) cadaTanto(); } vis.x = yo.x; vis.y = yo.y; }, rit, red, animar, grua, costoGrua, dibujar, llegar, danar, get e() { return { corriendo, menu, pausa, listo, conectado, tiempo, perf: yo.perf, renace: yo.renace }; }, yo, otros, celda, gen, get cfg() { return cfg; }, usar, abrir, cerrar, teclas, enviarEst, veta, LOGROS };
 /* RLR · Ricardo López Reyero · fin */
