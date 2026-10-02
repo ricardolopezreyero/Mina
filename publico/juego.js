@@ -164,6 +164,30 @@ function nuevoEstado() {
   };
 }
 
+// Un estado guardado puede venir viejo o incompleto: se endereza antes de usarlo.
+function sanear(e) {
+  const b = nuevoEstado(), num = (v, d, min = 0, max = Infinity) => (Number.isFinite(v) ? Math.max(min, Math.min(max, v)) : d);
+  const lista = (a, n, max) => Array.from({ length: n }, (_, i) => Math.floor(num(a && a[i], 0, 0, max)));
+  const s = { ...b, ...(e && typeof e === 'object' ? e : {}) };
+  s.eq = lista(s.eq, 6, 6); s.carga = lista(s.carga, 10, 999); s.obj = lista(s.obj, 6, 9999);
+  s.d = num(s.d, 20); s.tot = num(s.tot, 0); s.rec = Math.floor(num(s.rec, 0, 0, H * 2));
+  s.msj = Math.floor(num(s.msj, 0, 0, MSJ.length)); s.rango = Math.floor(num(s.rango, 0, 0, RANGOS.length - 1));
+  s.resc = Math.floor(num(s.resc, 0)); s.mejor = Math.floor(num(s.mejor, -1, -1, 9)); s.reminGratis = s.reminGratis ? 1 : 0;
+  s.x = num(s.x, INICIO_X, HW, W - HW); s.y = num(s.y, INICIO_Y, -14, H);
+  s.st = { ...b.st, ...(s.st && typeof s.st === 'object' ? s.st : {}) };
+  s.st.rec = lista(s.st.rec, 10, 1e9); s.st.vend = lista(s.st.vend, 10, 1e9); s.st.hall = lista(s.st.hall, 4, 1e9);
+  for (const k of ['viajes', 'cavadas', 'muertes', 'expl', 'remin', 'comb', 'mejorViaje']) s.st[k] = num(s.st[k], 0);
+  s.log = Array.isArray(s.log) ? s.log.filter((x) => typeof x === 'string') : [];
+  s.fl = s.fl && typeof s.fl === 'object' ? s.fl : {}; s.vj = s.vj && typeof s.vj === 'object' ? s.vj : { dano: 0 };
+  const c = s.con && typeof s.con === 'object' ? s.con : {};
+  s.con = { tut: Math.floor(num(c.tut, 0, 0, TUTORIAL.length)), act: (Array.isArray(c.act) ? c.act : []).filter((k) => k && typeof k.tp === 'string' && typeof k.tx === 'string' && Number.isFinite(k.pg)).slice(0, 3) };
+  const tq = PZ[3].niv[s.eq[3]][2], vm = PZ[1].niv[s.eq[1]][2], bd = PZ[5].niv[s.eq[5]][2];
+  s.fuel = num(s.fuel, 3, 0, tq); s.vida = num(s.vida, vm, 1, vm);
+  let sobra = s.carga.reduce((a, x) => a + x, 0) - bd;
+  for (let i = 0; i < 10 && sobra > 0; i++) { const q = Math.min(sobra, s.carga[i]); s.carga[i] -= q; sobra -= q; }
+  return s;
+}
+
 /* ── Lo que da cada pieza ── */
 const nv = (p) => PZ[p].niv[S.eq[p]][2];
 const pot = () => nv(0), vidaMax = () => nv(1), hp = () => nv(2), tanque = () => nv(3), rad = () => nv(4) / 100, bodega = () => nv(5);
@@ -171,8 +195,14 @@ const nCarga = () => S.carga.reduce((a, b) => a + b, 0);
 const kgCarga = () => S.carga.reduce((a, b, i) => a + b * MIN[i].kg, 0);
 const prof = () => Math.max(0, Math.round((yo.y + HH) * 2));
 
+const ESC = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ESC[c]);
+// Solo toca el DOM si el contenido cambió: así un clic nunca cae sobre un elemento recién reemplazado.
+function poner(el, h) { if (el._h !== h) { el._h = h; el.innerHTML = h; } }
+
 function fmt(n) {
   n = Math.floor(n);
+  if (!Number.isFinite(n)) return '$0';
   if (n < 1e6) return '$' + n.toLocaleString('es-MX');
   const u = [[1e24, 'ad'], [1e21, 'ac'], [1e18, 'ab'], [1e15, 'aa'], [1e12, 'T'], [1e9, 'B'], [1e6, 'M']];
   for (const [v, s] of u) if (n >= v) return '$' + (n / v).toFixed(2).replace(/\.?0+$/, '') + ' ' + s;
@@ -238,9 +268,11 @@ function cavar(lista) {            // marca aquí y avisa al mundo
     if (t === 0 || t === 5) continue;
     ponerCavada(y * W + x); c.push(y * W + x);
   }
-  if (c.length) enviar({ t: 'cava', c });
+  if (c.length) { if (conectado) enviar({ t: 'cava', c }); else pendientes.push(...c); }
   return c;
 }
+let pendientes = [];                // celdas cavadas mientras no había conexión
+const recientes = new Map();        // premios recién dados, por si el mundo dice que otro llegó antes
 function nuevaSemilla() { SEM = (seed + remin * 104729) | 0; mapa.fill(255); pesosFila.clear(); }
 
 /* ════════ Sonido sintetizado ════════ */
@@ -285,9 +317,15 @@ function tarjeta(t, x, clase = '', ms = 4500) {
   const d = document.createElement('div'); if (clase) d.className = clase;
   const h = document.createElement('h3'); h.textContent = t; d.appendChild(h);
   if (x) { const p = document.createElement('p'); p.textContent = x; d.appendChild(p); }
-  const c = $('#tarjeta'); c.appendChild(d);
-  while (c.children.length > 2) c.firstChild.remove();
-  setTimeout(() => d.remove(), ms);
+  colaTarjetas.push([d, ms]); sacarTarjeta();
+}
+const colaTarjetas = [];
+function sacarTarjeta() {
+  const c = $('#tarjeta');
+  while (c.children.length < 2 && colaTarjetas.length) {
+    const [d, ms] = colaTarjetas.shift(); c.appendChild(d);
+    setTimeout(() => { d.remove(); sacarTarjeta(); }, colaTarjetas.length > 2 ? Math.min(ms, 2500) : ms);
+  }
 }
 function difundir(x) { enviar({ t: 'aviso', x }); }
 function chispas(x, y, col, n = 8, f = 4) {
@@ -380,7 +418,7 @@ function evento(tp, d) {
     else if (k.tp === 'sindano' && tp === 'prof') ok = d >= k.a && !S.vj.dano;
     else if (k.tp === 'llena' && tp === 'venta') ok = d.llena;
     else if (k.tp === 'viajeV' && tp === 'venta') ok = d.total >= k.a;
-    else if (k.tp === 'vende' && tp === 'venta') { k.pr += d.n[k.a]; ok = k.pr >= k.b; cambio = true; }
+    else if (k.tp === 'vende' && tp === 'venta') { k.pr = (k.pr | 0) + (d.n[k.a] | 0); ok = k.pr >= k.b; cambio = true; }
     if (!ok) continue;
     c.act.splice(i, 1); cambio = true;
     S.d += k.pg; S.tot += k.pg;
@@ -390,8 +428,8 @@ function evento(tp, d) {
   if (cambio) { sucio = true; surtirContratos(); }
 }
 function pintarContratos() {
-  $('#contratos').innerHTML = S.con.act.map((k) =>
-    `<div class="c">${k.tx}${k.b > 1 ? ` (${k.pr}/${k.b})` : ''} · <small>${fmt(k.pg)}</small></div>`).join('');
+  poner($('#contratos'), S.con.act.map((k) =>
+    `<div class="c">${esc(k.tx)}${k.b > 1 ? ` (${k.pr | 0}/${k.b})` : ''} · <small>${fmt(k.pg)}</small></div>`).join(''));
 }
 
 /* ════════ Daño, muerte y rescate ════════ */
@@ -435,6 +473,8 @@ function fisica(dt) {
     if (e >= 1) { yo.perf = null; yo.vx = yo.vy = 0; llegar(p); }
     return;
   }
+  // Red de seguridad: si el terreno cambió y quedé dentro de la tierra, salgo a la superficie.
+  if (solida(Math.floor(yo.x), Math.floor(yo.y))) { yo.x = INICIO_X; yo.y = INICIO_Y; yo.vx = yo.vy = 0; yo.suelo = true; aviso('El terreno cambió: tu maquinita salió a la superficie.'); return; }
   const reserva = S.fuel <= 0;                // solo pasa en mundos donde no explota
   const k = reserva ? 0.5 : 1;
   const izq = teclas.izq, der = teclas.der, arr = teclas.arr, aba = teclas.aba;
@@ -458,25 +498,54 @@ function fisica(dt) {
 
   // eje X
   let nx = yo.x + yo.vx * dt, toca = 0;
-  const y0 = Math.floor(yo.y - HH + 0.02), y1 = Math.floor(yo.y + HH - 0.02);
-  if (yo.vx > 0) { const cx = Math.floor(nx + HW); for (let y = y0; y <= y1; y++) if (solida(cx, y)) { nx = cx - HW - 0.001; yo.vx = 0; toca = 1; break; } }
-  else if (yo.vx < 0) { const cx = Math.floor(nx - HW); for (let y = y0; y <= y1; y++) if (solida(cx, y)) { nx = cx + 1 + HW + 0.001; yo.vx = 0; toca = -1; break; } }
+  if (yo.vx !== 0) {
+    const s = yo.vx > 0 ? 1 : -1, cx = Math.floor(nx + s * HW);
+    const y0 = Math.floor(yo.y - HH + 0.02), y1 = Math.floor(yo.y + HH - 0.02);
+    let choca = false;
+    for (let y = y0; y <= y1; y++) if (solida(cx, y)) { choca = true; break; }
+    if (choca) {
+      const cyc = Math.floor(yo.y);
+      if (y0 !== y1 && !solida(cx, cyc)) {
+        // El túnel está a la altura del centro: la maquinita se acomoda sola y entra.
+        if (yo.vy > 0) aterrizar(yo.vy);
+        if (yo.renace) return;
+        yo.y = Math.max(cyc + HH + 0.001, Math.min(cyc + 1 - HH, yo.y)); yo.vy = 0;
+      } else { nx = s > 0 ? cx - HW - 0.001 : cx + 1 + HW + 0.001; yo.vx = 0; toca = s; }
+    }
+  }
   yo.x = nx;
   // eje Y
   let ny = yo.y + yo.vy * dt;
   const x0 = Math.floor(yo.x - HW + 0.02), x1 = Math.floor(yo.x + HW - 0.02);
   const antes = yo.suelo; yo.suelo = false;
+  const cxc = Math.floor(yo.x), alCentro = cxc + 0.5 - yo.x;
+  const seAleja = (izq && alCentro > 0) || (der && alCentro < 0);      // el jugador empuja hacia el lado que sí lo sostiene
+  let resbala = false;
   if (yo.vy > 0) {
     const cy = Math.floor(ny + HH);
-    for (let x = x0; x <= x1; x++) if (solida(x, cy)) {
-      ny = cy - HH; yo.suelo = true;
-      if (!antes) aterrizar(yo.vy);
-      yo.vy = 0; break;
+    let apoyo = false;
+    for (let x = x0; x <= x1; x++) if (solida(x, cy)) { apoyo = true; break; }
+    if (apoyo) {
+      ny = cy - HH;
+      if (!antes && !yo.resbala) aterrizar(yo.vy);
+      yo.vy = 0;
+      if (!solida(cxc, cy) && !seAleja) {
+        // El centro quedó sobre un hueco: resbala hacia él y cae, en vez de quedarse colgada de la orilla.
+        resbala = true; yo.vx = 0; yo.x += Math.sign(alCentro) * Math.min(Math.abs(alCentro), 7 * dt);
+      } else yo.suelo = true;
     }
   } else if (yo.vy < 0) {
     const cy = Math.floor(ny - HH);
-    for (let x = x0; x <= x1; x++) if (solida(x, cy)) { ny = cy + 1 + HH + 0.001; yo.vy = 0; break; }
+    let tope = false;
+    for (let x = x0; x <= x1; x++) if (solida(x, cy)) { tope = true; break; }
+    if (tope) {
+      ny = cy + 1 + HH + 0.001;
+      // Si el tiro está justo arriba del centro, se acomoda y sigue subiendo; si no, topa.
+      if (!solida(cxc, cy) && !seAleja) yo.x += Math.sign(alCentro) * Math.min(Math.abs(alCentro), 7 * dt);
+      else yo.vy = 0;
+    }
   }
+  yo.resbala = resbala;
   if (ny < -14) { ny = -14; yo.vy = Math.max(0, yo.vy); }
   yo.y = ny;
   if (yo.renace) return;
@@ -520,6 +589,7 @@ function llegar(p) {
     const i = t - 10;
     if (nCarga() < bodega()) {
       S.carga[i]++; S.st.rec[i]++; son.mineral(i); chispas(x, y, MIN[i].col, 12, 5);
+      recientes.set(p.idx, [t, Date.now()]);
       if (S.st.rec[i] === 1) { tarjeta('¡Descubriste ' + MIN[i].n + '!', 'Vale ' + fmt(MIN[i].v) + ' la pieza.'); difundir('descubrió ' + MIN[i].n); }
       const [vx, vy] = veta(Math.floor(p.ty / 75));
       if (Math.abs(p.tx - vx) <= 1 && Math.abs(p.ty - vy) <= 1 && !S.fl.veta) { S.fl.veta = 1; tarjeta('✨ ¡Veta madre!', 'Un racimo entero del mejor mineral de la zona.'); }
@@ -528,6 +598,7 @@ function llegar(p) {
   } else if (t >= 20) {
     const h = HALL[t - 20];
     S.d += h.v; S.tot += h.v; S.st.hall[t - 20]++;
+    recientes.set(p.idx, [t, Date.now()]);
     tarjeta('🏺 ¡' + h.n + '!', 'Hallazgo: ' + fmt(h.v) + ' al instante.'); son.logro(); chispas(x, y, '#ffd23f', 24, 7);
     difundir('encontró ' + h.n); evento('hall');
   } else if (t === 3 && cfg.lava) {
@@ -566,11 +637,11 @@ function usar(i) {
 }
 
 /* ════════ Red: el mundo compartido ════════ RLR */
-let ws = null, reintento = 500, bautizo = null, tCaido = 0;
+let ws = null, reintento = 500, bautizo = null, tCaido = 0, llaveAntes = '';
 function enviar(o) { if (ws && ws.readyState === 1) ws.send(JSON.stringify(o)); }
 function enviarEst() {
   if (!S || !conectado) return;
-  S.x = yo.x; S.y = yo.perf ? yo.perf.oy : yo.y;
+  if (yo.renace) { S.x = INICIO_X; S.y = INICIO_Y; } else { S.x = yo.x; S.y = yo.perf ? yo.perf.oy : yo.y; }
   enviar({ t: 'est', e: S, rec: S.rec, tot: Math.floor(S.tot) });
   sucio = false;
 }
@@ -611,7 +682,10 @@ function recibePos(b) {
 const nombreDe = (i) => (i === miI ? miNombre : otros.get(i)?.n || 'Alguien');
 function recibir(d) {
   switch (d.t) {
-    case 'nuevo': return pantallaBautizo(d);
+    case 'nuevo':
+      pantallaBautizo(d);
+      if (llaveAntes) { miK = llaveAntes; llaveAntes = ''; const n = $('#caja .nota'); if (n) n.textContent = 'Ese código no es de una maquinita de este mundo. Revísalo o bautiza una nueva.'; }
+      return;
     case 'noexiste': quitarMundo(mundoId); return pantallaFinal('Este mundo no existe', 'Puede que lo hayan borrado o que la liga esté incompleta.');
     case 'cerrado': return pantallaFinal('Este mundo cerró la puerta', 'Quien lo creó ya no admite maquinitas nuevas.');
     case 'lleno': return pantallaFinal('Este mundo está lleno', 'Hay un tope de 10 jugadores a la vez.');
@@ -619,42 +693,64 @@ function recibir(d) {
     case 'borrado': quitarMundo(mundoId); detener(); return pantallaFinal('Este mundo fue borrado', 'Quien lo creó lo desechó.');
     case 'mundo': return iniciarMundo(d);
     case 'cava': for (const i of d.c) ponerCavada(i); return;
-    case 'no': if (yo.perf && d.c.includes(yo.perf.idx)) yo.perf.tipo = 1; return;   // alguien llegó antes: sin premio y sin castigo
-    case 'entra': otros.set(d.j.i, { ...otros.get(d.j.i), ...d.j }); aviso(d.j.n + ' entró al mundo'); return pintarTabla();
+    case 'no': return noFueMia(d.c);
+    case 'entra': otros.set(d.j.i, { ...otros.get(d.j.i), ...d.j }); aviso(d.j.n + ' entró al mundo'); ultPos = ''; enviarPos(); return pintarTabla();   // que el recién llegado me vea aunque yo esté quieto
     case 'sale': { const o = otros.get(d.i); if (o) { o.on = 0; o.x = undefined; aviso(o.n + ' salió'); } return pintarTabla(); }
     case 'j': { const o = otros.get(d.i); if (o) { o.rec = d.rec; o.tot = d.tot; } return pintarTabla(); }
     case 'aviso': return aviso(nombreDe(d.i) + ' ' + d.x);
     case 'senal': senales.push({ x: d.x, y: d.y, t: 10, n: nombreDe(d.i) }); son.bip(); return aviso(nombreDe(d.i) + ' marcó un punto');
-    case 'fuel': S.fuel = Math.min(tanque(), S.fuel + d.q); son.compra(); sucio = true; return aviso(nombreDe(d.i) + ' te pasó ' + d.q + ' litros');
+    case 'fuel': if (S.fuel <= 0 && d.q > 0) tarjeta('Saliste de la reserva', nombreDe(d.i) + ' te pasó combustible.'); S.fuel = Math.min(tanque(), S.fuel + d.q); son.compra(); sucio = true; return aviso(nombreDe(d.i) + ' te pasó ' + d.q + ' litros');
     case 'regalo': S.d += d.q; son.compra(); sucio = true; return tarjeta('🎁 ' + nombreDe(d.i) + ' te regaló ' + fmt(d.q));
     case 'devuelve': if (d.d) S.d += d.d; if (d.fuel) S.fuel = Math.min(tanque(), S.fuel + d.fuel); return aviso('No se pudo entregar: esa maquinita no está conectada.');
-    case 'cfg': cfg = d.cfg; tiles.clear(); if (d.i !== miI) aviso(nombreDe(d.i) + ' cambió las reglas del mundo'); if (menu) pintarMenu(); return;
-    case 'cuenta': cuentaFin = Date.now() + d.s * 1000; son.alarma(); return aviso(nombreDe(d.i) + ' activó la Remineralizadora');
+    case 'cfg': cfg = d.cfg; tiles.clear(); if (listo) guardarMundo(); if (d.i !== miI) aviso(nombreDe(d.i) + ' cambió las reglas del mundo'); if (menu) pintarMenu(); return;
+    case 'cuenta':
+      cuentaFin = Date.now() + d.s * 1000; son.alarma();
+      if (d.i === miI) { S.d -= Math.min(S.d, costoRemin()); S.reminGratis = 0; S.st.remin++; sucio = true; pintarHud(true); }   // se cobra hasta que el mundo confirma
+      if (menu === 'rem') pintarMenu();
+      return aviso(nombreDe(d.i) + ' activó la Remineralizadora');
     case 'remin': {
-      remin = d.remin; dug.fill(0); nuevaSemilla(); cuentaFin = 0;
-      if (yo.y > 0) { yo.x = INICIO_X; yo.y = INICIO_Y; yo.vx = yo.vy = 0; yo.perf = null; }
+      remin = d.remin; dug.fill(0); nuevaSemilla(); cuentaFin = 0; pendientes = []; recientes.clear();
+      yo.perf = null;
+      if (yo.y > INICIO_Y + 0.01) { yo.x = INICIO_X; yo.y = INICIO_Y; yo.vx = yo.vy = 0; yo.suelo = true; }
+      if (menu) pintarMenu(); else if (!corriendo) dibujar();
       tarjeta('🌋 Tablero remineralizado', 'Tierra nueva y minerales nuevos en toda la capa.'); son.logro(); temblar(12);
       return;
     }
   }
 }
+function noFueMia(lista) {             // otra maquinita llegó antes a esas celdas: sin premio y sin castigo
+  for (const idx of lista) {
+    if (yo.perf && yo.perf.idx === idx) { yo.perf.tipo = 1; continue; }
+    const r = recientes.get(idx);
+    if (!r || Date.now() - r[1] > 6000) continue;
+    recientes.delete(idx);
+    if (r[0] >= 20) { const v = HALL[r[0] - 20].v; S.d = Math.max(0, S.d - v); S.tot = Math.max(0, S.tot - v); S.st.hall[r[0] - 20] = Math.max(0, S.st.hall[r[0] - 20] - 1); }
+    else { const i = r[0] - 10; if (S.carga[i] > 0) S.carga[i]--; S.st.rec[i] = Math.max(0, S.st.rec[i] - 1); }
+    aviso('Otra maquinita llegó antes a esa pieza.'); sucio = true;
+  }
+}
 function iniciarMundo(d) {
+  const otraTierra = !!S && (d.remin !== remin || d.seed !== seed);
   seed = d.seed; remin = d.remin; cfg = d.cfg; miI = d.i; soyCreador = !!d.creador;
   const b = atob(d.dug); for (let i = 0; i < dug.length; i++) dug[i] = b.charCodeAt(i);
   nuevaSemilla();
+  if (otraTierra) { pendientes = []; recientes.clear(); yo.perf = null; if (yo.y > INICIO_Y + 0.01) { yo.x = INICIO_X; yo.y = INICIO_Y; yo.vx = yo.vy = 0; } }
   otros.clear();
   for (const j of d.jug) { if (j.i === miI) { miNombre = j.n; miModelo = j.m; } else otros.set(j.i, j); }
-  if (!S) {
-    S = d.est ? { ...nuevoEstado(), ...d.est } : nuevoEstado();
-    S.st = { ...nuevoEstado().st, ...S.st };
-    yo.x = S.x; yo.y = S.y;
-    const cx = Math.floor(yo.x), cy = Math.floor(yo.y);
-    if (solida(cx, cy)) { yo.x = INICIO_X; yo.y = INICIO_Y; }   // el mundo cambió mientras no estaba
-  }
+  const primera = !S;
+  if (primera) {
+    S = sanear(d.est);
+    yo.x = S.x; yo.y = S.y; yo.vx = yo.vy = 0;
+    if (solida(Math.floor(yo.x), Math.floor(yo.y))) { yo.x = INICIO_X; yo.y = INICIO_Y; }   // el mundo cambió mientras no estaba
+  } else sucio = true;                 // al reconectar manda lo que pasó mientras tanto
   if (d.cuenta) cuentaFin = Date.now() + d.cuenta * 1000;
   if (soyCreador && !cfg.nombre) { cfg.nombre = 'Mundo de ' + miNombre; enviar({ t: 'cfg', cfg }); }
   guardarMundo();
-  conectado = true; tCaido = 0; listo = true; bautizo = null;
+  conectado = true; tCaido = 0; listo = true; bautizo = null; llaveAntes = '';
+  // lo que se cavó sin conexión: se vuelve a marcar aquí y se le avisa al mundo
+  if (pendientes.length) { const c = pendientes; pendientes = []; for (const i of c) ponerCavada(i); for (let i = 0; i < c.length; i += 30) enviar({ t: 'cava', c: c.slice(i, i + 30) }); }
+  if (primera) { medir(); camX = Math.max(0, Math.min(W - cols, yo.x - cols / 2)); camY = Math.max(-filas * 0.68, yo.y - filas * 0.5); }
+  ultPos = '';
   $('#aviso-red').style.display = 'none';
   if (menu === 'inicio') { menu = null; $('#velo').classList.remove('on'); }
   document.body.classList.add('jugando');
@@ -805,13 +901,15 @@ function dibujar() {
 }
 
 /* ════════ Ciclo del juego ════════ */
-let ult = 0, tHud = 0, tPos = 0, tBip = 0;
-function ciclo(t) {
-  if (!corriendo) return;
-  requestAnimationFrame(ciclo);
+let ult = 0, tHud = 0, tPos = 0, tBip = 0, cicloId = 0;
+const PAUSA = {};
+function ciclo(t, id) {
+  if (!corriendo || id !== cicloId) return;
+  requestAnimationFrame((x) => ciclo(x, id));
   if (op.ahorro && t - ult < 30) return;
-  const dt = Math.min(0.05, (t - ult) / 1000); ult = t; tiempo += dt;
-  fisica(dt / 2); fisica(dt / 2);
+  const dt = Math.max(0, Math.min(0.05, (t - ult) / 1000)); ult = t; tiempo += dt;
+  const pasos = Math.max(1, Math.ceil(dt * 120));   // pasos cortos y parejos: el movimiento se siente igual a 30 o a 144 cuadros
+  for (let i = 0; i < pasos; i++) fisica(dt / pasos);
   for (const o of otros.values()) if (o.on && o.x !== undefined) { const k = Math.min(1, dt * 14); o.x += (o.tx - o.x) * k; o.y += (o.ty - o.y) * k; }
   for (const q of parts) { q.x += q.vx * dt; q.y += q.vy * dt; q.vy += 9 * dt; q.t -= dt; }
   if (parts.length) parts = parts.filter((q) => q.t > 0);
@@ -831,11 +929,12 @@ function ciclo(t) {
 }
 function arrancar() {
   if (corriendo || !listo || menu || pausa || !conectado) return;   // con la pestaña oculta el navegador ya no llama al ciclo
-  corriendo = true; ult = performance.now(); requestAnimationFrame(ciclo);
+  corriendo = true; ult = performance.now(); const id = ++cicloId; requestAnimationFrame((x) => ciclo(x, id));
+  if (pistaDe === PAUSA) pistaDe = undefined;
 }
 function detener() { corriendo = false; for (const k in teclas) teclas[k] = false; }
 
-let pistaDe = null, tAlarma = 0;
+let pistaDe = null, tAlarma = 0, estabaAbajo = false, tTabla = 0;
 function cadaTanto() {
   const m = prof();
   if (m > S.rec) {
@@ -850,9 +949,12 @@ function cadaTanto() {
       S.rango = r; const regalo = [0, 2, 1][r % 3]; S.obj[regalo]++;
       tarjeta('⛏️ Nuevo rango: ' + RANGOS[r][1], 'Regalo: ' + OBJ[regalo].n + '.'); son.logro(); difundir('subió a ' + RANGOS[r][1]);
     }
-    if (m >= 500 && !S.vj.dano) S.fl.intacto = 1;
-    if (m >= 300 && S.eq.every((e) => e === 0)) S.fl.tacano = 1;
   }
+  const abajo = yo.y > 0.3;
+  if (abajo && !estabaAbajo && nCarga() === 0) S.vj.dano = 0;        // viaje nuevo: el daño de antes ya no cuenta
+  estabaAbajo = abajo;
+  if (m >= 500 && !S.vj.dano) S.fl.intacto = 1;
+  if (m >= 300 && S.eq.every((e) => e === 0)) S.fl.tacano = 1;
   if (m >= 500 && [...otros.values()].filter((o) => o.on && o.y > 250).length >= 2) S.fl.equipo3 = 1;
   if (m > 0) evento('prof', m);
   if (S.fuel / tanque() < 0.25 && S.fuel > 0 && tiempo - tAlarma > 1) { tAlarma = tiempo; son.alarma(); }
@@ -862,6 +964,7 @@ function cadaTanto() {
   if (yo.suelo && yo.y < 0) e = EDIF.find((b) => yo.x > b.x + 0.2 && yo.x < b.x + 2.8) || null;
   if (e !== pistaDe) { pistaDe = e; const p = $('#pista'); p.style.display = e ? 'block' : 'none'; if (e) p.textContent = '↓  Entrar a ' + e.n; }
   pintarHud();
+  if (++tTabla % 4 === 0) pintarTabla();
 }
 
 /* ════════ Pantalla: medidores, metas y tabla ════════ */
@@ -886,29 +989,34 @@ function pintarHud(forzar) {
   bc.firstChild.style.width = f * 100 + '%'; bc.lastChild.textContent = S.fuel.toFixed(1) + ' / ' + tanque() + ' L'; bc.classList.toggle('bajo', f < 0.25);
   bv.firstChild.style.width = v * 100 + '%'; bv.lastChild.textContent = Math.max(0, Math.ceil(S.vida)) + ' / ' + vidaMax(); bv.classList.toggle('bajo', v < 0.3);
   $('#prof').textContent = prof() + ' m'; $('#din').textContent = fmt(S.d); $('#bod').textContent = '📦 ' + nCarga() + '/' + bodega();
-  $('#metas').innerHTML = metas().map((m) => `<div class="m${m.ya ? ' ya' : ''}"><i style="width:${Math.min(100, m.p * 100)}%"></i><span>${m.tx}</span></div>`).join('');
-  $('#objetos').innerHTML = OBJ.map((o, i) => `<div data-u="${i}" class="${S.obj[i] ? '' : 'n0'}" title="${o.n}: ${o.ef}"><kbd>${o.k}</kbd>${CORTO[i]} ×${S.obj[i]}</div>`).join('');
-  pintarTabla();
+  poner($('#metas'), metas().map((m) => `<div class="m${m.ya ? ' ya' : ''}"><i style="width:${Math.round(Math.min(100, m.p * 100))}%"></i><span>${esc(m.tx)}</span></div>`).join(''));
+  poner($('#objetos'), OBJ.map((o, i) => `<div data-u="${i}" class="${S.obj[i] ? '' : 'n0'}" title="${o.n}: ${o.ef}"><kbd>${o.k}</kbd>${CORTO[i]} ×${S.obj[i]}</div>`).join(''));
+  if (forzar) pintarTabla();
 }
 function pintarTabla() {
   if (!S) return;
   const l = [{ n: miNombre, m: miModelo, rec: S.rec, on: 1, yo: 1, y: prof() }, ...[...otros.values()].map((o) => ({ ...o, y: o.on && o.ty !== undefined ? Math.max(0, Math.round((o.ty + HH) * 2)) : null }))];
   l.sort((a, b) => (b.rec || 0) - (a.rec || 0));
-  $('#tabla').innerHTML = l.map((j) => `<div class="${j.on ? '' : 'off'}"><i style="background:${MODELOS[j.m]?.[0]}"></i><b>${j.n}${j.yo ? ' (tú)' : ''}</b><span>${j.on && j.y !== null ? j.y + ' m · ' : ''}récord ${j.rec || 0} m</span></div>`).join('');
+  poner($('#tabla'), l.map((j) => `<div class="${j.on ? '' : 'off'}"><i style="background:${MODELOS[j.m]?.[0] || '#888'}"></i><b>${esc(j.n)}${j.yo ? ' (tú)' : ''}</b><span>${j.on && j.y !== null ? j.y + ' m · ' : ''}récord ${j.rec || 0} m</span></div>`).join(''));
 }
 
 /* ════════ Menús ════════ RLR */
 let pestana = 0, pieza = 0;
-function abrir(id) { menu = id; detener(); $('#velo').classList.add('on'); pintarMenu(); enviarPos(); }
-function cerrar() { if (menu === 'inicio') return; menu = null; $('#velo').classList.remove('on'); arrancar(); if (sucio) enviarEst(); }
+function abrir(id) {
+  if (!S) return;
+  menu = id; detener(); $('#velo').classList.add('on');
+  if (id === 'gas' && S.fuel >= tanque() - 0.001) evento('comb');   // llegar con el tanque lleno también cuenta
+  pintarMenu(); ultPos = ''; enviarPos();
+}
+function cerrar() { if (menu === 'inicio') return; menu = null; $('#velo').classList.remove('on'); document.activeElement?.blur?.(); arrancar(); ultPos = ''; enviarPos(); if (sucio) enviarEst(); }
 const cab = (t, sinX) => `<header><h2>${t}</h2><span class="d">${S ? fmt(S.d) : ''}</span>${sinX ? '' : '<button class="s" data-a="cerrar">Cerrar (Esc)</button>'}</header>`;
 function pintarMenu() {
   const c = $('#caja'); let h = '';
   if (menu === 'gas') {
-    const falta = Math.ceil(tanque() - S.fuel), paga = Math.min(falta, Math.floor(S.d));
+    const falta = Math.ceil(tanque() - S.fuel - 0.001), paga = Math.min(falta, Math.floor(S.d)), fiado = paga < 1 && S.fuel < 3;
     h = cab('⛽ Gasolinera') + `<div class="cuerpo"><p class="grande">${S.fuel.toFixed(1)} / ${tanque()} litros</p>
       <p class="nota">$1 por litro. Sin combustible, ${cfg.comb ? 'la maquinita explota' : 'entras en reserva: avanzas despacio y no perforas'}.</p>
-      <button data-a="llenar" ${paga < 1 ? 'disabled' : ''}>${falta < 1 ? 'Tanque lleno' : paga < falta ? `Cargar ${paga} L (${fmt(paga)}): es lo que te alcanza` : `Llenar el tanque (${fmt(falta)})`}</button></div>`;
+      <button data-a="llenar" ${paga < 1 && !fiado ? 'disabled' : ''}>${falta < 1 ? 'Tanque lleno' : fiado ? 'No traes dinero: te fiamos 5 litros' : paga < falta ? `Cargar ${paga} L (${fmt(paga)}): es lo que te alcanza` : `Llenar el tanque (${fmt(falta)})`}</button></div>`;
   } else if (menu === 'bas') {
     const v = venta();
     h = cab('⚖️ La Báscula') + `<div class="cuerpo">` + (v.piezas ? S.carga.map((n, i) => n ? `<div class="fila"><div class="t"><b style="color:${MIN[i].col}">${MIN[i].n} × ${n}</b><small>${fmt(MIN[i].v)} la pieza</small></div><div class="v">${fmt(n * MIN[i].v)}</div></div>` : '').join('') +
@@ -926,7 +1034,7 @@ function pintarMenu() {
   } else if (menu === 'alm') {
     const dano = vidaMax() - S.vida, costo = Math.ceil(dano * 15), puede = Math.min(costo, Math.floor(S.d));
     h = cab('🧰 El Almacén') + `<div class="cuerpo"><div class="fila"><div class="t"><b>Reparar el casco</b><small>${Math.ceil(S.vida)} / ${vidaMax()} de vida · $15 por punto</small></div>
-      <div class="v">${dano > 0 ? fmt(costo) : ''}</div><button data-a="reparar" ${dano <= 0 || puede < 15 ? 'disabled' : ''}>${dano <= 0 ? 'Intacto' : 'Reparar'}</button></div>` +
+      <div class="v">${dano > 0.01 ? fmt(costo) : ''}</div><button data-a="reparar" ${dano <= 0.01 || puede < 1 ? 'disabled' : ''}>${dano <= 0.01 ? 'Intacto' : puede < costo ? 'Reparar lo que alcance' : 'Reparar'}</button></div>` +
       OBJ.map((o, i) => `<div class="fila"><div class="t"><b>${o.n} <small style="display:inline">· tecla ${o.k} · tienes ${S.obj[i]}</small></b><small>${o.h}</small><small>${o.ef}</small></div>
       <div class="v">${fmt(o.p)}</div><button data-a="objeto" data-v="${i}" ${S.d < o.p ? 'disabled' : ''}>Comprar</button></div>`).join('') + '</div>';
   } else if (menu === 'rem') {
@@ -949,8 +1057,8 @@ function costoRemin() { return S.reminGratis ? 0 : S.mejor < 0 ? 300 : MIN[S.mej
 const acciones = {
   cerrar,
   llenar() {
-    const antes = S.fuel / tanque(), l = Math.min(Math.ceil(tanque() - S.fuel), Math.floor(S.d));
-    if (l < 1) return;
+    const antes = S.fuel / tanque(), l = Math.min(Math.ceil(tanque() - S.fuel - 0.001), Math.floor(S.d));
+    if (l < 1) { if (S.fuel >= 3) return; S.fuel = Math.min(tanque(), S.fuel + 5); son.compra(); evento('comb'); return; }   // fiado
     S.d -= l; S.fuel = Math.min(tanque(), S.fuel + l); S.st.comb += l; son.compra();
     if (antes < 0.1) evento('filo'); if (antes < 0.05) S.fl.filo = 1;
     evento('comb');
@@ -977,20 +1085,29 @@ const acciones = {
     if (pieza === 1) S.vida = vidaMax(); if (pieza === 3) S.fuel = tanque();
     son.compra(); tarjeta('🔧 ' + n[0], n[3]); difundir('compró ' + n[0]); evento('mejora');
   },
-  reparar() { const p = Math.min(Math.ceil((vidaMax() - S.vida) * 15), Math.floor(S.d)); if (p < 15) return; S.d -= p; S.vida = Math.min(vidaMax(), S.vida + p / 15); son.compra(); },
+  reparar() {
+    const costo = Math.ceil((vidaMax() - S.vida) * 15), paga = Math.min(costo, Math.floor(S.d));
+    if (paga < 1) return;
+    S.d -= paga; S.vida = paga >= costo ? vidaMax() : Math.min(vidaMax(), S.vida + paga / 15); son.compra();
+  },
   objeto(v) { const o = OBJ[+v]; if (S.d < o.p) return; S.d -= o.p; S.obj[+v]++; son.compra(); },
-  remin() { const c = costoRemin(); if (S.d < c) return; S.d -= c; S.reminGratis = 0; S.st.remin++; enviar({ t: 'remin' }); cerrar(); },
+  remin() { if (!conectado || cuentaFin || S.d < costoRemin()) return; enviar({ t: 'remin' }); cerrar(); return 'no'; },
   pest(v) { pestana = +v; },
   tirar(v) { if (S.carga[+v] > 0) S.carga[+v]--; },
   op(v, el) { const k = el.dataset.k; op[k] = el.type === 'checkbox' ? (el.checked ? 1 : 0) : +el.value; escribir('mina_op', op); aplicarOp(); return 'no'; },
   texto(v) { op.texto = Math.max(0.85, Math.min(1.5, op.texto + +v)); escribir('mina_op', op); aplicarOp(); },
-  invitar(v, el) { navigator.clipboard?.writeText(location.origin + '/m/' + mundoId); el.textContent = '¡Liga copiada!'; return 'no'; },
-  modo(v, el) { cfg = { ...cfg, ...MODOS[el.value], modo: el.value }; enviar({ t: 'cfg', cfg }); },
-  regla(v, el) { cfg = { ...cfg, [el.dataset.k]: el.type === 'checkbox' ? (el.checked ? 1 : 0) : +el.value }; if (!['puerta', 'reminTodos', 'regalos'].includes(el.dataset.k)) cfg.modo = 'medida'; enviar({ t: 'cfg', cfg }); },
-  nombreMundo(v, el) { const n = el.value.trim(); if (n.length < 2) return 'no'; cfg = { ...cfg, nombre: n }; enviar({ t: 'cfg', cfg }); guardarMundo(); return 'no'; },
+  invitar(v, el) {
+    const liga = location.origin + '/m/' + mundoId;
+    const hecho = () => { el.textContent = '¡Liga copiada!'; }, aMano = () => window.prompt('Copia la liga de tu mundo:', liga);
+    if (navigator.clipboard?.writeText) navigator.clipboard.writeText(liga).then(hecho, aMano); else aMano();
+    return 'no';
+  },
+  modo(v, el) { if (!conectado || !MODOS[el.value]) return; cfg = { ...cfg, ...MODOS[el.value], modo: el.value }; enviar({ t: 'cfg', cfg }); },
+  regla(v, el) { if (!conectado) return; cfg = { ...cfg, [el.dataset.k]: el.type === 'checkbox' ? (el.checked ? 1 : 0) : +el.value }; if (!['puerta', 'reminTodos', 'regalos'].includes(el.dataset.k)) cfg.modo = 'medida'; enviar({ t: 'cfg', cfg }); },
+  nombreMundo(v, el) { const n = el.value.trim(); if (n.length < 2 || !conectado) return 'no'; cfg = { ...cfg, nombre: n }; enviar({ t: 'cfg', cfg }); guardarMundo(); return 'no'; },
   regalar(v) {
     const el = $('#cuanto'), q = Math.floor(+el.value);
-    if (!(q > 0) || q > S.d) return 'no';
+    if (!(q > 0) || q > S.d || !conectado) return 'no';
     S.d -= q; S.fl.regalo = 1; enviar({ t: 'regalo', a: +v, q }); son.compra(); aviso('Le regalaste ' + fmt(q) + ' a ' + nombreDe(+v));
   },
   mundos() { enviarEst(); location.href = '/'; },
@@ -1007,14 +1124,14 @@ $('#caja').addEventListener('change', (e) => {
   if (r !== 'no' && menu && menu !== 'inicio') pintarMenu();
 });
 $('#objetos').addEventListener('click', (e) => { const el = e.target.closest('[data-u]'); if (el) { audio(); usar(+el.dataset.u); } });
-$('#bMenu').addEventListener('click', () => { audio(); if (listo && !menu) abrir('menu'); });
+$('#bMenu').addEventListener('click', (e) => { audio(); e.currentTarget.blur(); if (listo && !menu) abrir('menu'); });
 
 function sel(k, ops, quien = 'regla') {
   return `<select data-a="${quien}" data-k="${k}" ${soyCreador ? '' : 'disabled'}>${ops.map(([v, t]) => `<option value="${v}" ${cfg[k] == v ? 'selected' : ''}>${t}</option>`).join('')}</select>`;
 }
 function menuPrincipal() {
   const P = ['Bodega', 'Logros', 'Catálogo', 'Estadísticas', 'Opciones', 'Mundo', 'Ayuda'];
-  let h = cab('☰ ' + (cfg.nombre || 'Mina')) + `<div class="pest">${P.map((p, i) => `<button data-a="pest" data-v="${i}" class="${i === pestana ? 'on' : ''}">${p}</button>`).join('')}</div><div class="cuerpo">`;
+  let h = cab('☰ ' + esc(cfg.nombre || 'Mina')) + `<div class="pest">${P.map((p, i) => `<button data-a="pest" data-v="${i}" class="${i === pestana ? 'on' : ''}">${p}</button>`).join('')}</div><div class="cuerpo">`;
   if (pestana === 0) {
     h += `<p class="nota">📦 ${nCarga()} de ${bodega()} espacios · ${kgCarga()} kg de carga (tu motor levanta ${Math.round(hp() * 29.5 - 1980)} kg). Tirar piezas libera espacio y peso.</p>` +
       (nCarga() ? S.carga.map((n, i) => n ? `<div class="fila"><div class="t"><b style="color:${MIN[i].col}">${MIN[i].n} × ${n}</b><small>${fmt(MIN[i].v)} · ${MIN[i].kg} kg la pieza</small></div><button class="s" data-a="tirar" data-v="${i}">Tirar una</button></div>` : '').join('') : '<p class="nota">Bodega vacía.</p>') +
@@ -1051,14 +1168,14 @@ function menuPrincipal() {
       <label class="op"><span>Qué se pierde al explotar</span>${sel('pierde', [[0, 'Nada'], [1, 'La carga'], [2, 'La carga y la reparación'], [3, 'Carga, reparación y 10 % del dinero']])}</label>
       <label class="op"><span>Rescates gratis</span>${sel('rescates', [[0, 'Ninguno'], [3, 'Los 3 primeros'], [-1, 'Sin límite']])}</label>
       <h4>El mundo</h4>
-      <label class="op"><span>Nombre</span><input data-a="nombreMundo" maxlength="24" value="${cfg.nombre.replace(/"/g, '')}" ${soyCreador ? '' : 'disabled'}></label>
+      <label class="op"><span>Nombre</span><input data-a="nombreMundo" maxlength="24" value="${esc(cfg.nombre)}" ${soyCreador ? '' : 'disabled'}></label>
       <label class="op"><span>Cerrar la puerta (no entran maquinitas nuevas)</span>${sel('puerta', [[0, 'Abierta'], [1, 'Cerrada']])}</label>
       <label class="op"><span>Quién puede remineralizar</span>${sel('reminTodos', [[1, 'Cualquiera'], [0, 'Solo quien creó el mundo']])}</label>
       <label class="op"><span>Regalos de dinero</span>${sel('regalos', [[1, 'Sí'], [0, 'No']])}</label>
       <h4>Jugadores</h4>` +
       ([...otros.values()].length ? `<label class="op"><span>Cantidad para regalar (en la superficie)</span><input id="cuanto" type="number" min="1" value="${Math.min(1000, Math.floor(S.d))}" style="width:9em"></label>` +
-        [...otros.values()].map((o) => `<div class="fila"><div class="t"><b>${o.n}</b><small>${o.on ? 'Conectado' : 'Desconectado'} · récord ${o.rec || 0} m · ganado ${fmt(o.tot || 0)}</small></div>${o.on && cfg.regalos && yo.y < 0 ? `<button class="s" data-a="regalar" data-v="${o.i}">Regalar</button>` : ''}</div>`).join('') : '<p class="nota">Estás solo en este mundo. Copia la liga y mándala.</p>') +
-      `<h4>Mi maquinita</h4><p class="nota">Para seguir con esta maquinita en otro dispositivo, abre la liga del mundo allá y pega este código:</p><p><code>${miK}</code></p>
+        [...otros.values()].map((o) => `<div class="fila"><div class="t"><b>${esc(o.n)}</b><small>${o.on ? 'Conectado' : 'Desconectado'} · récord ${o.rec || 0} m · ganado ${fmt(o.tot || 0)}</small></div>${o.on && cfg.regalos && yo.y < 0 ? `<button class="s" data-a="regalar" data-v="${o.i}">Regalar</button>` : ''}</div>`).join('') : '<p class="nota">Estás solo en este mundo. Copia la liga y mándala.</p>') +
+      `<h4>Mi maquinita</h4><p class="nota">Para seguir con esta maquinita en otro dispositivo, abre la liga del mundo allá y pega este código:</p><p><code>${esc(miK)}</code></p>
       <div class="fila"><div class="t"></div><button class="s" data-a="mundos">Mis mundos</button><button class="mal" data-a="desechar">Desechar este mundo</button></div>`;
   } else {
     h += `<p><b>Moverte:</b> flechas o WASD. <b>↑</b> vuela. <b>↓</b> perfora hacia abajo. <b>← →</b> contra una pared, perfora de lado. Nunca se perfora hacia arriba.</p>
@@ -1083,11 +1200,16 @@ addEventListener('keydown', (e) => {
   const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
   if (k === 'Escape') { if (menu && menu !== 'inicio') cerrar(); else if (listo && !menu) abrir('menu'); return; }
   if (!listo || menu) return;
-  if (k === 'p') { pausa = !pausa; if (pausa) { detener(); tarjeta('Pausa', 'Tu maquinita no gasta. Pulsa P para seguir.', '', 2500); enviarPos(); } else arrancar(); return; }
+  if (k === 'p') {
+    pausa = !pausa; const l = $('#pista');
+    if (pausa) { detener(); pistaDe = PAUSA; l.textContent = '⏸  Pausa · tu maquinita no gasta · pulsa P para seguir'; l.style.display = 'block'; ultPos = ''; enviarPos(); }
+    else { l.style.display = 'none'; arrancar(); }
+    return;
+  }
   if (pausa) return;
   if (MAPA[k]) {
     e.preventDefault();
-    if (MAPA[k] === 'aba' && !e.repeat && pistaDe) return abrir(pistaDe.id);
+    if (MAPA[k] === 'aba' && !e.repeat && pistaDe && pistaDe.id && yo.suelo && yo.y < 0) return abrir(pistaDe.id);
     teclas[MAPA[k]] = true; return;
   }
   const i = 'frxcqm'.indexOf(k);
@@ -1101,6 +1223,7 @@ function pasarCombustible() {
   let cerca = null;
   for (const o of otros.values()) if (o.on && o.x !== undefined && Math.hypot(o.x - yo.x, o.y - yo.y) < 1.6) cerca = o;
   if (!cerca) return aviso('No hay ninguna maquinita junto a ti.');
+  if (!conectado) return;
   if (S.fuel <= 6) return aviso('No te alcanza para pasar combustible.');
   S.fuel -= 5; S.fl.pase = 1; sucio = true; enviar({ t: 'fuel', a: cerca.i, q: 5 }); aviso('Le pasaste 5 litros a ' + cerca.n); son.compra();
 }
@@ -1121,7 +1244,7 @@ function pantallaFinal(t, x) {
 }
 function pantallaMundos() {
   inicio(`<header><h2>⛏️ Mina · Mis mundos</h2></header><div class="cuerpo">` +
-    mundos.map((m) => `<div class="fila"><div class="t"><b>${m.nombre}</b><small>${m.maq ? 'Tu maquinita: ' + m.maq + ' · ' : ''}${new Date(m.ult).toLocaleDateString('es-MX', { day: 'numeric', month: 'long' })} · ${m.id}</small></div>
+    mundos.map((m) => `<div class="fila"><div class="t"><b>${esc(m.nombre)}</b><small>${m.maq ? 'Tu maquinita: ' + esc(m.maq) + ' · ' : ''}${new Date(m.ult).toLocaleDateString('es-MX', { day: 'numeric', month: 'long' })} · ${m.id}</small></div>
       <button data-ir="${m.id}">Continuar</button><button class="s" data-des="${m.id}">Desechar</button></div>`).join('') +
     `<p style="margin-top:14px"><button id="bNuevo">＋ Mundo nuevo</button></p><p class="nota">Cada mundo nace con una semilla distinta y se guarda solo. Para jugar acompañado, entra y copia su liga.</p></div>`);
   $('#bNuevo').onclick = crearMundo;
@@ -1149,7 +1272,7 @@ async function crearMundo() {
 }
 function pantallaBautizo(d) {
   let modelo = Math.floor(Math.random() * 8);
-  inicio(`<header><h2>⛏️ ${d.nombre || 'Mundo nuevo'}</h2></header><div class="cuerpo">
+  inicio(`<header><h2>⛏️ ${esc(d.nombre || 'Mundo nuevo')}</h2></header><div class="cuerpo">
     <p class="nota">${d.hay ? `Ya ${d.hay === 1 ? 'juega 1 maquinita' : 'juegan ' + d.hay + ' maquinitas'} en este mundo. ` : ''}Escoge tu maquinita y bautízala: ese nombre lo verán todos.</p>
     <div class="maqs">${MODELOS.map((m, i) => `<button data-m="${i}"><canvas width="112" height="112"></canvas></button>`).join('')}</div>
     <p><input id="nom" maxlength="14" placeholder="Nombre de tu maquinita" style="width:100%;font-size:1.2em" autocomplete="off"></p>
@@ -1165,14 +1288,14 @@ function pantallaBautizo(d) {
   nom.oninput = () => (be.disabled = nom.value.trim().length < 2);
   const entra = () => { if (nom.value.trim().length < 2) return; audio(); bautizo = { n: nom.value.trim(), m: modelo }; enviar({ t: 'hola', k: miK, ...bautizo }); };
   be.onclick = entra; nom.onkeydown = (e) => { if (e.key === 'Enter') entra(); };
-  $('#bCod').onclick = () => { const c = $('#cod').value.trim(); if (c.length >= 16) { miK = c; enviar({ t: 'hola', k: miK }); } };
+  $('#bCod').onclick = () => { const c = $('#cod').value.trim(); if (c.length >= 16 && c !== miK) { llaveAntes = miK; miK = c; enviar({ t: 'hola', k: miK }); } };
   nom.focus();
 }
 function entrar(id) {
   mundoId = id;
   const m = mundos.find((x) => x.id === id);
   miK = m ? m.k : llave();
-  inicio('<header><h2>Entrando al mundo…</h2></header><div class="cuerpo"><p class="nota">' + id + '</p></div>');
+  inicio('<header><h2>Entrando al mundo…</h2></header><div class="cuerpo"><p class="nota">' + esc(id) + '</p></div>');
   conectar();
 }
 
@@ -1191,6 +1314,7 @@ aplicarOp();
 {
   const r = location.pathname.match(/^\/m\/([2-9A-HJ-NP-Z]{8})\/?$/i);
   if (r) entrar(r[1].toUpperCase());
+  else if (location.pathname.length > 1) pantallaFinal('Esta liga está incompleta', 'La liga de un mundo termina en 8 letras y números. Pídela otra vez o entra a tus mundos.');
   else if (!mundos.length) crearMundo();
   else pantallaMundos();
 }

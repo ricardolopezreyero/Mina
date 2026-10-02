@@ -24,6 +24,10 @@ const CFG_BASE = {
 const json = (o, status = 200) =>
   new Response(JSON.stringify(o), { status, headers: { "content-type": "application/json" } });
 
+// Mandar nunca debe tumbar al mundo: un socket que se está cerrando solo devuelve false.
+const crudo = (o) => typeof o === "string" || o instanceof ArrayBuffer || ArrayBuffer.isView(o);
+const manda = (ws, o) => { try { ws.send(crudo(o) ? o : JSON.stringify(o)); return true; } catch { return false; } };
+
 const entero = (v, min, max, def) => {
   v = Math.floor(Number(v));
   return Number.isFinite(v) && v >= min && v <= max ? v : def;
@@ -84,7 +88,7 @@ export class Mundo extends DurableObject {
     const seed = crypto.getRandomValues(new Uint32Array(1))[0];
     const meta = { seed, remin: 0, reminAt: 0, cfg: { ...CFG_BASE }, creado: Date.now(), visto: Date.now(), n: 0 };
     await this.ctx.storage.put({ meta, dug: new Uint8Array(BYTES) });
-    await this.ctx.storage.setAlarm(Date.now() + CADUCA);
+    await this.ctx.storage.setAlarm(Date.now() + DIA);   // si nadie llega a bautizarse, se borra en un día
     this.m = null;
     return true;
   }
@@ -117,10 +121,10 @@ export class Mundo extends DurableObject {
   }
 
   difundir(msg, menos) {
-    const s = typeof msg === "string" || msg instanceof ArrayBuffer || ArrayBuffer.isView(msg) ? msg : JSON.stringify(msg);
+    const s = crudo(msg) ? msg : JSON.stringify(msg);
     for (const ws of this.ctx.getWebSockets()) {
       if (ws === menos || !ws.deserializeAttachment()) continue;
-      try { ws.send(s); } catch {}
+      manda(ws, s);
     }
   }
 
@@ -135,7 +139,7 @@ export class Mundo extends DurableObject {
   async programar() {
     const m = this.m;
     if (!m) return;
-    let cuando = m.visto + CADUCA;
+    let cuando = this.jug.length ? m.visto + CADUCA : m.creado + DIA;
     if (this.sucio.meta || this.sucio.dug || this.sucio.jug.size) cuando = Math.min(cuando, Date.now() + 8000);
     if (m.reminAt) cuando = Math.min(cuando, m.reminAt);
     const actual = await this.ctx.storage.getAlarm();
@@ -197,13 +201,13 @@ export class Mundo extends DurableObject {
           si.push(idx);
         }
         if (si.length) { this.sucio.dug = true; this.difundir({ t: "cava", i, c: si }, ws); }
-        if (no.length) ws.send(JSON.stringify({ t: "no", c: no }));
+        if (no.length) manda(ws, { t: "no", c: no });
         break;
       }
       case "est": {
         if (!d.e || typeof d.e !== "object") return;
         yo.est = d.e;
-        const rec = entero(d.rec, 0, 1e9, yo.rec || 0), tot = Number(d.tot) >= 0 ? Number(d.tot) : yo.tot || 0;
+        const rec = entero(d.rec, 0, H * 2, yo.rec || 0), tot = Number.isFinite(d.tot) && d.tot >= 0 ? d.tot : yo.tot || 0;
         if (rec !== yo.rec || tot !== yo.tot) {
           yo.rec = rec; yo.tot = tot;
           this.difundir({ t: "j", i, rec, tot }, ws);
@@ -218,16 +222,14 @@ export class Mundo extends DurableObject {
         this.difundir({ t: "senal", i, x: Number(d.x) || 0, y: Number(d.y) || 0 }, ws);
         return;
       case "fuel": {
-        const otro = this.socketDe(entero(d.a, 0, MAX_MAQUINITAS, -1));
-        if (otro) otro.send(JSON.stringify({ t: "fuel", i, q: entero(d.q, 1, 50, 5) }));
-        else ws.send(JSON.stringify({ t: "devuelve", fuel: entero(d.q, 1, 50, 5) }));
+        const otro = this.socketDe(entero(d.a, 0, MAX_MAQUINITAS, -1)), q = entero(d.q, 1, 50, 5);
+        if (!otro || otro === ws || !manda(otro, { t: "fuel", i, q })) manda(ws, { t: "devuelve", fuel: q });
         return;
       }
       case "regalo": {
         const q = Number(d.q) > 0 ? Math.floor(Number(d.q)) : 0;
         const otro = m.cfg.regalos ? this.socketDe(entero(d.a, 0, MAX_MAQUINITAS, -1)) : null;
-        if (otro && q) otro.send(JSON.stringify({ t: "regalo", i, q }));
-        else ws.send(JSON.stringify({ t: "devuelve", d: q }));
+        if (!otro || otro === ws || !q || !manda(otro, { t: "regalo", i, q })) manda(ws, { t: "devuelve", d: q });
         return;
       }
       case "cfg":
@@ -239,7 +241,7 @@ export class Mundo extends DurableObject {
       case "remin":
         if (m.reminAt || (!m.cfg.reminTodos && i !== 0)) return;
         m.reminAt = Date.now() + 10000;
-        this.sucio.meta = true;
+        await this.ctx.storage.put("meta", m);
         this.difundir({ t: "cuenta", s: 10, i });
         break;
       case "borrar":
@@ -258,31 +260,33 @@ export class Mundo extends DurableObject {
 
   async hola(ws, d) {
     const m = this.m;
-    const fin = (o) => { try { ws.send(JSON.stringify(o)); ws.close(4002, o.t); } catch {} };
+    const fin = (o) => { manda(ws, o); try { ws.close(4002, o.t); } catch {} };
     if (!m) return fin({ t: "noexiste" });
     const k = limpio(d.k, 64);
     if (k.length < 16) return fin({ t: "noexiste" });
     let i = this.jug.findIndex((j) => j && j.k === k);
+    const previo = ws.deserializeAttachment();
+    if (previo && previo.i !== i) { ws.serializeAttachment(null); this.pos.delete(previo.i); this.difundir({ t: "sale", i: previo.i }, ws); }
     const on = this.conectados();
+    // el tope de conectados se revisa antes de registrar a nadie
+    if ((i < 0 || !on.has(i)) && on.size >= MAX_CONECTADOS) return fin({ t: "lleno" });
 
     if (i < 0) {
       const n = limpio(d.n, 14);
       if (n.length < 2) {
-        ws.send(JSON.stringify({ t: "nuevo", nombre: m.cfg.nombre, puerta: m.cfg.puerta, hay: this.jug.filter(Boolean).length }));
+        manda(ws, { t: "nuevo", nombre: m.cfg.nombre, puerta: m.cfg.puerta, hay: this.jug.filter(Boolean).length });
         return;
       }
       if (m.cfg.puerta && this.jug.length) return fin({ t: "cerrado" });
       if (this.jug.length >= MAX_MAQUINITAS) return fin({ t: "lleno" });
       i = this.jug.length;
       this.jug[i] = { k, n, m: entero(d.m, 0, 7, 0), est: null, rec: 0, tot: 0, alta: Date.now() };
-      this.sucio.jug.add(i);
       m.n = this.jug.length;
+      await this.ctx.storage.put({ ["j:" + i]: this.jug[i], meta: m });
     }
-    if (!on.has(i) && on.size >= MAX_CONECTADOS) return fin({ t: "lleno" });
-
     // La misma maquinita en otra pestaña: se queda la más reciente.
     const viejo = this.socketDe(i);
-    if (viejo && viejo !== ws) { try { viejo.send('{"t":"otra"}'); viejo.close(4000, "otra"); } catch {} }
+    if (viejo && viejo !== ws) { manda(viejo, '{"t":"otra"}'); viejo.serializeAttachment(null); try { viejo.close(4000, "otra"); } catch {} }
 
     ws.serializeAttachment({ i });
     on.add(i);
@@ -291,18 +295,19 @@ export class Mundo extends DurableObject {
 
     let b = "";
     for (let x = 0; x < BYTES; x++) b += String.fromCharCode(this.dug[x]);
-    ws.send(JSON.stringify({
+    manda(ws, {
       t: "mundo", i, seed: m.seed, remin: m.remin, cfg: m.cfg, creador: i === 0 ? 1 : 0,
       est: this.jug[i].est, cuenta: m.reminAt ? Math.max(0, Math.ceil((m.reminAt - Date.now()) / 1000)) : 0,
       jug: this.jug.map((j, x) => (j ? this.publico(x, on.has(x)) : null)).filter(Boolean),
       dug: btoa(b),
-    }));
-    for (const [x, s] of this.pos) if (x !== i && on.has(x)) ws.send(s);
+    });
+    for (const [x, s] of this.pos) if (x !== i && on.has(x)) manda(ws, s);
     this.difundir({ t: "entra", j: this.publico(i, true) }, ws);
     await this.programar();
   }
 
-  async webSocketClose(ws) {
+  async webSocketClose(ws, code) {
+    try { ws.close(code > 1000 && code < 5000 && code !== 1005 && code !== 1006 ? code : 1000); } catch {}
     const att = ws.deserializeAttachment();
     const m = await this.cargar();
     if (!m || !att) return;
@@ -318,7 +323,7 @@ export class Mundo extends DurableObject {
     await this.programar();
   }
 
-  async webSocketError(ws) { return this.webSocketClose(ws); }
+  async webSocketError(ws) { return this.webSocketClose(ws, 1011); }
 
   async alarm() {
     const m = await this.cargar();
@@ -332,7 +337,8 @@ export class Mundo extends DurableObject {
       this.difundir({ t: "remin", remin: m.remin });
     }
     await this.guardar();
-    if (!this.ctx.getWebSockets().length && ahora - m.visto >= CADUCA) {
+    const caduco = this.jug.length ? ahora - m.visto >= CADUCA : ahora - m.creado >= DIA;
+    if (!this.ctx.getWebSockets().length && caduco) {
       await this.ctx.storage.deleteAll();
       this.m = false;
       return;
