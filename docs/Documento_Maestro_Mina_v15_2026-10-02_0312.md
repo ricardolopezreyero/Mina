@@ -1,4 +1,4 @@
-# DOCUMENTO MAESTRO · «Mina» · v14
+# DOCUMENTO MAESTRO · «Mina» · v15
 
 **Ver en vivo: https://mina.capitaltorreon.com**
 
@@ -478,6 +478,16 @@ Ricardo pidió coleccionables: unos 99 objetos, tres de cada uno, repartidos a d
 Los 33, de arriba al fondo: Bota de minero, Linterna vieja, Pico oxidado, Radio de la Compañía, Caracola, Ancla, Brújula, Hongo luminoso, Vela eterna, Llave de hierro, Ánfora, Mapa del tesoro, Murciélago de obsidiana, Máscara ritual, Bola de cristal, Anillo perdido, Urna, Amuleto, Cabeza de piedra, Arco antiguo, Espadas cruzadas, Violín, Reloj de arena, Campana de bronce, Corona, Copa de oro, Colmillo de dragón, Huevo de dragón, Fósil viviente, Fragmento de cometa, Piedra del volcán, Estrella caída y Dragón dormido.
 
 Las figuras son emojis del sistema: se ven un poco distintas en Mac, Windows y teléfono.
+
+### 9.10 Cruzar la lava
+
+Ricardo recordaba del original que, al atravesar lava, todo se ponía rojo, el radiador aventaba el calor y luego salías del otro lado. Antes aquí la lava desaparecía al empezar a perforarla y el golpe llegaba al final, sin nada en medio.
+
+- La lava se queda a la vista mientras la cortas: se va abriendo y brilla cada vez más.
+- Toda la pantalla se pone al rojo conforme avanzas, con un resplandor alrededor de la maquinita.
+- El radiador saca vapor por atrás todo el tiempo; entre mejor radiador, más vapor.
+- Al salir del otro lado: una bocanada de vapor con su siseo, el golpe al casco de siempre, y el rojo se va en poco más de un segundo.
+- Cortar lava dura al menos 0.6 s (1.6 veces lo que la tierra), para que el efecto se alcance a ver aun con el mejor taladro.
 
 ---
 

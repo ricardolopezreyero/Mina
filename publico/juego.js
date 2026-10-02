@@ -747,7 +747,7 @@ function chispas(x, y, col, n = 8, f = 4) {
 let flot = [];
 function flota(x, y, txt, col = '#fff') { flot.push({ x, y, txt, col, t: 1.7 }); if (flot.length > 14) flot.shift(); }
 function temblar(q) { if (op.temblor) temblor = Math.max(temblor, q); }
-let ondas = [], golpeFx = 0, bichos = [], tBicho = -99;
+let ondas = [], golpeFx = 0, bichos = [], tBicho = -99, calorFx = 0;
 const natural = (x, y) => { if (x < 0 || x >= W || y < 1 || y >= H) return false; const i = y * W + x; return !(dug[i >> 3] & (1 << (i & 7))) && celda(x, y) === 0; };
 function soltarBichos(x, y) {
   const k = [0, 0, 0, 0, 1, 1, 2, 3][zonaDe((y + 1) * 2)];           // 0 murciélagos · 1 luciérnagas · 2 mariposas de cristal · 3 brasas
@@ -1056,7 +1056,7 @@ function perforar(x, y) {
   if (t === 2 || t === 5) { if (tiempo - ultNo > 0.4) { son.piedra(); ultNo = tiempo; if (t === 2 && !S.fl.piedra) { S.fl.piedra = 1; tarjeta('Piedra', 'El taladro no entra. Rodéala o vuélala con dinamita (X).'); } } return; }
   const m = (y + 1) * 2;
   let dur = Math.max(0.07, 0.6 * (20 / pot()) * (1 + 4 * Math.min(m, 1000) / 1000 + Math.max(0, m - 1000) / 1500));
-  if (t === 3 && !cfg.lava) dur *= 3;
+  if (t === 3) { dur = Math.max(0.6, dur * (cfg.lava ? 1.6 : 3)); son.lava(); }          // cortar lava toma su tiempo: al menos 0.6 s, para que se vea
   yo.perf = { tx: x, ty: y, t: 0, dur, tipo: t, ox: yo.x, oy: yo.y, idx: y * W + x };
   cavar([[x, y]]); if (tiempo - tMuerde > 0.11) { tMuerde = tiempo; son.muerde(t >= 10 && t < 40); }
   S.st.cavadas++;
@@ -1094,7 +1094,8 @@ function llegar(p) {
     difundir('encontró ' + h.n); evento('hall');
   } else if (t === 3 && cfg.lava) {
     danar((Math.random() < 0.5 ? 58 : 41) * (1 - rad()) * MULT[cfg.lava], 'la lava');
-    son.lava(); chispas(x, y, '#ff7a1a', 20, 6); onda(x, y, 1.3, '#ffb347', 0.35);
+    ruido(0.8, 0.16, 'peligro', 4200, 'highpass', 0.7, 0, 9000); chispas(x, y, '#ff7a1a', 20, 6); onda(x, y, 1.3, '#ffb347', 0.35);
+    if (op.part) for (let i = 0; i < 16; i++) parts.push({ x: yo.x + (Math.random() - 0.5) * 0.6, y: yo.y - 0.2, vx: (Math.random() - 0.5) * 3, vy: -1.5 - Math.random() * 2.5, t: 0.7 + Math.random() * 0.6, col: '#f3ead8', g: 2, gr: -1.5 });      // el radiador avienta el calor
     if (!yo.renace) S.fl.lava = 1;
   } else if (t === 4 && cfg.gas) {
     const lista = [];
@@ -2027,6 +2028,11 @@ function dibujar() {
     dibMaq(g, ox + o.x * T, oy + o.y * T, T, o.m, o.fl & 1 ? 1 : -1, o.fl & 2 ? 1 : o.fl & 32 ? 2 : 0, o.fl & 4 ? (o.fl & 16 ? 2 : o.fl & 1 ? 1 : -1) : 0, op.nombres ? o.n : '', o.fl & 8 ? 'en pausa' : '', o.x);
   }
   const p = yo.perf, mx = ox + vis.x * T, my = oy + vis.y * T;
+  if (p && p.tipo === 3) {                         // la lava que estás cortando sigue ahí, cada vez más abierta y más brillante
+    const e = Math.min(1, p.t / p.dur), lx = ox + p.tx * T, ly = oy + p.ty * T;
+    g.globalAlpha = 1 - e * 0.85; g.drawImage(tile(3, zonaDe((p.ty + 1) * 2), 0), lx, ly); g.globalAlpha = 1;
+    g.globalCompositeOperation = 'lighter'; g.globalAlpha = 0.5 + 0.5 * e; const res = sprite('res'); g.drawImage(res, lx - T * 1.25, ly - T * 1.25, T * 3.5, T * 3.5); g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1;
+  }
   dibMaq(g, mx, my, T, miModelo, yo.dir, yo.vuela ? 1 : yo.planea ? 2 : 0, p ? (p.ty > Math.floor(p.oy) ? 2 : p.tx < Math.floor(p.ox) ? -1 : 1) : 0, op.nombres ? miNombre : '', '', vis.x);
   // el aire como resistencia: al caer rápido se forma un arco bajo la maquinita; muy rápido se pone al rojo y deja estela
   const dens = vis.y < 0 ? Math.max(0, 1 + (vis.y + HH) / 45000) : 0;
@@ -2060,6 +2066,11 @@ function dibujar() {
     g.font = `800 ${Math.max(12 * RES, T * 0.32)}px system-ui`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.lineWidth = Math.max(3, T * 0.09); g.strokeStyle = '#000d'; g.lineJoin = 'round';
     for (const f of flot) { g.globalAlpha = Math.min(1, f.t * 1.5); g.strokeText(f.txt, ox + f.x * T, oy + f.y * T); g.fillStyle = f.col; g.fillText(f.txt, ox + f.x * T, oy + f.y * T); }
     g.globalAlpha = 1;
+  }
+  if (calorFx > 0.02) {                             // al cruzar lava todo se pone al rojo; al salir del otro lado se va enfriando
+    g.fillStyle = `rgba(255,45,10,${0.3 * calorFx})`; g.fillRect(0, 0, w, h);
+    const rr = T * (3 + 3 * calorFx), br = g.createRadialGradient(mx, my, 0, mx, my, rr); br.addColorStop(0, `rgba(255,170,60,${0.6 * calorFx})`); br.addColorStop(1, 'rgba(255,90,20,0)');
+    g.globalCompositeOperation = 'lighter'; g.fillStyle = br; g.fillRect(mx - rr, my - rr, rr * 2, rr * 2); g.globalCompositeOperation = 'source-over';
   }
   if (golpeFx > 0.02) {                             // un golpe enrojece las orillas de la pantalla un instante
     const v = g.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.3, w / 2, h / 2, Math.hypot(w, h) * 0.55);
@@ -2138,6 +2149,12 @@ function animar(d) {
   }
   for (const q of parts) { q.x += q.vx * d; q.y += q.vy * d; q.vy += (q.gr ?? 9) * d; q.t -= d; }
   if (yo.agua && op.part && Math.random() < d * 7) parts.push({ x: vis.x + (Math.random() - 0.5) * 0.5, y: vis.y - 0.3, vx: (Math.random() - 0.5) * 0.3, vy: -1 - Math.random(), t: 1 + Math.random() * 0.6, col: '#bfe9ff', g: 1, gr: -1 });
+  { const pf = yo.perf, enLava = pf && pf.tipo === 3, meta = enLava ? 0.35 + 0.65 * Math.min(1, pf.t / pf.dur) : 0;
+    calorFx += (meta - calorFx) * (1 - Math.exp(-(enLava ? 10 : 2) * d));
+    if (enLava && op.part && Math.random() < d * (14 + 30 * rad())) {      // el radiador va sacando el calor por atrás: entre mejor radiador, más vapor
+      const dx = pf.tx + 0.5 - pf.ox, dy = pf.ty + 0.5 - pf.oy;
+      parts.push({ x: vis.x - Math.sign(dx) * 0.3 + (Math.random() - 0.5) * 0.3, y: vis.y - 0.25, vx: -Math.sign(dx) * (1.5 + Math.random() * 2) + (Math.random() - 0.5), vy: (dy > 0.5 ? -3 : -1) - Math.random() * 1.5, t: 0.5 + Math.random() * 0.5, col: Math.random() < 0.5 ? '#ffd9a0' : '#f3ead8', g: 2, gr: -1.5 });
+    } }
   for (const b of bichos) {                         // los murciélagos buscan tu túnel y se van hacia arriba; los demás te rondan un rato
     b.t -= d; b.f += d;
     if (b.k === 0) { b.vx += ((vis.x - b.x) * 5 + (Math.random() - 0.5) * 30) * d; b.vy += (-7 - b.vy) * 2 * d; b.vx *= Math.pow(0.2, d); }
