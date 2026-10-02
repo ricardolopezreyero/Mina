@@ -878,6 +878,48 @@ Cada menú lleva al pie un renglón con sus teclas, y los botones principales tr
 
 **Lo que todavía pide ratón:** mirar alrededor (rueda) y la regla de profundidad, las opciones de sonido, y los botones secundarios dentro de los menús (aunque Tab y Enter del navegador los alcanzan).
 
+### 9.27 El cierre: el Jardín del Fondo
+
+**Lo que pidió Ricardo.** Un cierre real para el fondo del mundo: sin guerra ni pleitos, con un mensaje de abundancia («hay para todos, todo está bien»), que aparezca al quitar la roca, como un lienzo que se va descubriendo, y que dé todavía una hora de juego.
+
+**Cómo quedó.** Los últimos 240 m del mundo (de 9,760 a 10,000 m; 11,520 celdas) guardan un jardín pintado detrás de la roca.
+
+- **Se descubre quitando roca.** Ahí abajo, una celda abierta no deja un hueco oscuro: deja ver el pedazo de jardín que le toca. Es el único lugar del mundo donde el fondo es otro.
+- **La primera ventana es el Corazón.** La caverna del Corazón de la Tierra ya está abierta, así que al llegar se ve a través de ella un cielo dorado: el Corazón es el sol de ese jardín. De entrada va a la vista alrededor de la cuarta parte.
+- **Entre todos.** El avance es del mundo, no de cada quien. Arriba al centro dice «El Jardín del Fondo · 37 % a la vista», y hay avisos al 40, 60, 80 y 95 %.
+- **Las últimas celdas** (cuando faltan 40 o menos) quedan marcadas con un aro amarillo, para que nadie se quede buscando una piedra perdida.
+- **Para llegar al 100 %** hay que quitar todo: tierra, mineral, piedra, lava, gas, los objetos de la colección que haya ahí y el Corazón mismo.
+
+**Qué hay pintado** (de arriba abajo, 96 × 120 celdas, todo dibujado por código):
+
+| Franja | Qué se ve |
+|---|---|
+| Arriba | La noche, estrellas, y las raíces de todo lo de arriba colgando, cada una con una lucecita en la punta |
+| El sol | El Corazón, con sus rayos; amanecer, nubes, parvadas y globos de papel que suben |
+| El mensaje | **HAY PARA TODOS** en letras de diez celdas de alto, y debajo «Siempre hubo. Todo está bien.» |
+| La sierra | Dos sierras, cascadas, un arcoíris que nace de una de ellas |
+| El valle | Árboles con fruta, milpas, flores, casitas con su lumbre, dos ríos |
+| El centro | Un árbol enorme con faroles y, debajo, una mesa larga ya puesta. Junto a ella, las maquinitas de ese mundo, cada una con su nombre |
+| El lago | Trajineras, peces que brincan, el reflejo del sol |
+
+**El final.** Al quitar la última piedra:
+
+1. El jardín cobra vida: pájaros que cruzan, pétalos que caen, luciérnagas entre las raíces, destellos en el lago, los rayos del sol girando despacio.
+2. La música cambia a una pieza en tono mayor, que solo suena ahí.
+3. Sale el jardín entero a pantalla completa: baja despacio desde las raíces hasta el lago (15 s) y luego se aleja para verse todo de una vez. Cualquier tecla regresa al juego; después, la tecla **V** lo vuelve a mostrar estando en el jardín.
+4. A cada maquinita le toca su parte: $1,000 M, una vez por mundo. También a quien no estaba conectado: la recibe al volver a bajar.
+5. Queda el logro «Hay para todos», y el mundo apunta cuándo se completó y quién quitó la última piedra.
+
+**Decisiones.**
+
+- **El mundo no se alargó.** Ricardo propuso llevarlo a 10,060 o 10,330 m. El terreno de cada mundo quedó fijo a 10,000 m (9.21), así que el cierre se hizo dentro de lo que ya existe y sirve también para los mundos ya creados.
+- **Remineralizar vuelve a cubrir el jardín.** Se puede descubrir otra vez, y se celebra otra vez, pero el regalo es uno por mundo.
+- **Con explosivos se va más rápido.** A taladro, quitar todo toma alrededor de una hora con equipo medio; con explosivo plástico (25 celdas cada uno) se puede en mucho menos.
+
+**Piezas.** `EDEN0`, `armarEden` (unas 450 piezas con su recuadro; cada bloque del terreno dibuja solo las que le tocan, 0.04 a 0.2 ms por bloque), `pintarEden`, `medirEden`, `jardinDelFondo`, `finDelMundo`, `vidaEden`, `verJardin`. Mundo: mensaje `fin`, campo `fin` en la meta.
+
+**Sin probar con personas:** el recorrido completo de una hora y el cierre con varios jugadores conectados a la vez. Se probó cavando por código y con un solo jugador.
+
 ## 10. Revisión de código del 2 de octubre
 
 Se revisó todo el código buscando fallas y se corrigieron estas:

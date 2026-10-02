@@ -546,6 +546,10 @@ export class Mundo extends DurableObject {
       case "chatAntes":
         this.chatMas(ws, d);
         return;
+      case "fin":                // el Jardín del Fondo quedó completo: se apunta la primera vez y se le avisa a todos
+        if (!m.fin) { m.fin = { t: Date.now(), i }; this.sucio.meta = true; }
+        this.difundir({ t: "fin", i }, ws);
+        break;
       case "aviso":
         this.difundir({ t: "aviso", i, x: limpio(d.x, 90) }, ws);
         return;
@@ -666,7 +670,7 @@ export class Mundo extends DurableObject {
       t: "mundo", i, seed: m.seed, remin: m.remin, cfg: m.cfg, creador: i === this.creador() ? 1 : 0,
       est: this.jug[i].est, cuenta: m.reminAt ? Math.max(0, Math.ceil((m.reminAt - Date.now()) / 1000)) : 0,
       jug: this.jug.map((j, x) => (j ? this.publico(x, on.has(x)) : null)).filter(Boolean),
-      dug: btoa(b), col: m.col || [], chat: this.chatUltimos(60), mapa: this.mapaDe(m), pid: yo.pid, ver: m.cfg.mirar === 0 ? "" : m.ver, obs: this.ctx.getWebSockets("mira").length,
+      dug: btoa(b), col: m.col || [], chat: this.chatUltimos(60), fin: m.fin || null, mapa: this.mapaDe(m), pid: yo.pid, ver: m.cfg.mirar === 0 ? "" : m.ver, obs: this.ctx.getWebSockets("mira").length,
     });
     for (const [x, s] of this.pos) if (x !== i && on.has(x)) manda(ws, s);
     this.avisarTabla(i, true, true);

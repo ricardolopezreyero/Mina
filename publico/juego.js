@@ -63,7 +63,7 @@ const LUGARES = [
   { ic: '💧', n: 'El Acuífero', m: 1040, x: 48, y: 556, q: 1e6, tx: 'Un lago enterrado. Aquí se flota: el agua te sostiene y nada quema. En el lecho hay perlas.' },
   { ic: '💎', n: 'La Gruta de Cristal', m: 2950, x: 48, y: 1495, q: 1e7, tx: 'Una cueva enorme con las paredes forradas de metales preciosos. Llévate lo que puedas cargar.' },
   { ic: '🏛️', n: 'La Ciudad Perdida', m: 5580, x: 37, y: 2815, q: 5e7, tx: 'Alguien vivió aquí. Las casas siguen de pie y cada una guarda sus tesoros.' },
-  { ic: '❤️', n: 'El Corazón de la Tierra', m: 9780, x: 40, y: 4915, q: 5e8, tx: 'Late despacio. A su alrededor, la veta madre: la más rica que existe.' },
+  { ic: '❤️', n: 'El Corazón de la Tierra', m: 9780, x: 40, y: 4915, q: 5e8, tx: 'Late despacio. A su alrededor, la veta madre: la más rica que existe. Y detrás de la roca, algo más.' },
   // Los rincones: más chicos que los cuatro grandes. t = de qué está hecho; cx, cy, rx, ry = dónde y de qué tamaño.
   { ic: '⛺', n: 'El Campamento abandonado', m: 350, t: 'camp', cx: 30, cy: 175, rx: 11, ry: 4, q: 5e3, tx: 'Alguien acampó aquí hace años. Dejó su carrito, su lámpara y varios cofres.' },
   { ic: '🦖', n: 'El Fósil gigante', m: 700, t: 'fosil', cx: 60, cy: 350, rx: 11, ry: 3, q: 5e4, tx: 'Un animal enorme, enterrado entero. Cada hueso es un hallazgo.' },
@@ -312,7 +312,7 @@ const MSJ = [
   { m: 5700, de: 'Doña Chela, la Compañía', x: 'Una ciudad entera bajo tierra. Y nosotros creyendo que éramos los primeros.', q: 50000000 },
   { m: 8000, de: 'Maquinita 9', x: 'La presión… el casco cruje. Pero lo vi: late. Hay algo que late allá abajo.', q: 100000000 },
   { m: 9900, de: 'El Corazón de la Tierra', x: 'Llegaste. Late despacio, como si te hubiera estado esperando.', q: 500000000 },
-  { m: 10000, de: 'El fondo del mundo', x: 'Diez kilómetros. Hasta aquí llega el mapa… por ahora. Lo que sigue, lo vamos a construir.', q: 1000000000 },
+  { m: 10000, de: 'El fondo del mundo', x: 'Diez kilómetros. Debajo ya no hay roca. Pero fíjate en lo que quedó detrás de la que quitaste: quítenla toda.', q: 1000000000 },
 ];
 
 // Lo que pasa al volar hacia arriba: mensajes y bonos por altura.
@@ -853,6 +853,7 @@ const ZONAS = {     // raíz en Hz, segundos por tiempo, octava de la melodía, 
   mina:       { raiz: 110, paso: 0.92, oct: 2, bajo: 1, calla: 0.25, cola: 3.8, ac: [[0, 3, 7, 14], [-4, 0, 3, 7], [3, 7, 10, 17], [-2, 2, 5, 10]] },
   fondo:      { raiz: 82.41, paso: 1.2, oct: 2, bajo: 1, calla: 0.4, cola: 5, ac: [[0, 3, 7, 14], [-4, 0, 3, 7], [5, 8, 12, 15], [7, 10, 14, 17]] },
   cielo:      { raiz: 196, paso: 0.95, oct: 2, calla: 0.25, cola: 4, ac: [[0, 4, 7, 11], [2, 6, 9, 14], [-3, 0, 4, 7], [5, 9, 12, 16]] },
+  jardin:     { raiz: 196, paso: 0.72, oct: 2, calla: 0.08, cola: 3.6, ac: [[0, 4, 7, 12], [5, 9, 12, 16], [-3, 0, 4, 9], [7, 11, 14, 19]] },      // con el jardín completo, la música se abre en mayor
   espacio:    { raiz: 130.81, paso: 1.5, oct: 2, calla: 0.35, cola: 7, ac: [[0, 4, 7, 14], [-3, 0, 4, 11], [5, 9, 12, 16], [7, 11, 14, 16]] },
 };
 // cada frase: [tiempo dentro del acorde (0 a 8), cuál nota del acorde, octava de más]
@@ -874,7 +875,7 @@ function acordeAhora() {
   if (m) return m;
   const z = ZONAS[zonaMusical()]; return { ac: z.ac[0], base: z.raiz * z.oct };
 }
-function zonaMusical() { const km = Math.max(0, -(yo.y + HH)) / 500; return km > 40 ? 'espacio' : km > 0.4 ? 'cielo' : yo.y < 2 ? 'superficie' : yo.y < 325 ? 'mina' : 'fondo'; }
+function zonaMusical() { const km = Math.max(0, -(yo.y + HH)) / 500; return km > 40 ? 'espacio' : km > 0.4 ? 'cielo' : yo.y < 2 ? 'superficie' : yo.y < 325 ? 'mina' : edenVivo && yo.y > EDEN0 - 6 ? 'jardin' : 'fondo'; }
 function componer(adelante = 0.8) {           // se llama varias veces por segundo y deja programado el acorde que sigue
   if (!AC || !S || op.mudo || !op.son.musica || (document.hidden && adelante < 1)) { musica.t = 0; return; }
   const ahora = AC.currentTime;
@@ -958,6 +959,205 @@ function onda(x, y, r, col = '#ffe2a8', d = 0.5) { if (op.part) ondas.push({ x, 
 function humo(x, y, n = 10) {
   if (!op.part) return;
   for (let i = 0; i < n && parts.length < 400; i++) parts.push({ x: x + (Math.random() - 0.5) * 1.4, y: y + (Math.random() - 0.5) * 1.4, vx: (Math.random() - 0.5) * 1.2, vy: -0.5 - Math.random() * 1.2, t: 0.9 + Math.random() * 0.9, col: Math.random() < 0.5 ? '#4a4441' : '#6b6360', g: 2 + (Math.random() * 2 | 0), gr: -0.6 });
+}
+
+/* ════════ El Jardín del Fondo ════════ RLR */
+// El cierre del mundo. Los últimos 240 m (de 9,760 a 10,000) guardan otra cosa detrás de la roca: cada celda que se quita ahí
+// no deja un hueco oscuro, deja ver un pedazo de un jardín pintado, con su cielo de adentro, su sol (el Corazón de la Tierra)
+// y un mensaje. Se descubre entre todos, celda por celda. Cuando no queda nada que quitar, el jardín cobra vida.
+// El jardín se pinta por código, pieza por pieza; cada bloque del terreno dibuja solo las piezas que le tocan.
+const EDEN0 = 4880, EDEN_H = H - EDEN0, EDEN_N = W * EDEN_H, EDEN_SOL = [48.5, 35.5];
+let edenE = null, edenFirma = '', edenPct = 0, edenVivo = false, edenT = -9, edenFaltan = [], edenQuedan = EDEN_N;
+const edenSuelo = (x) => 91 + 1.6 * Math.sin(x * 0.21 + 1.3) + 1.1 * Math.sin(x * 0.07 + 0.4), edenLago = (x) => 109.6 + 0.9 * Math.sin(x * 0.17 + 2);
+const edenGente = () => [{ i: miI, n: miNombre, m: miModelo }, ...[...otros.values()].map((o) => ({ i: o.i, n: o.n, m: o.m }))].filter((j) => j.n).sort((a, b) => a.i - b.i).slice(0, 12);
+function armarEden() {
+  const E = [], r = azarDe((seed >>> 0) % 233280), R = (a, b) => a + r() * (b - a), de = (l) => l[Math.floor(r() * l.length)];
+  const pon = (x0, y0, x1, y1, f) => E.push([x0, y0, x1, y1, f]);
+  const bola = (q, x, y, rad) => { q.beginPath(); q.arc(x, y, rad, 0, 7); q.fill(); };
+  const brillo = (q, x, y, rad, col) => { const g = q.createRadialGradient(x, y, 0, x, y, rad); g.addColorStop(0, `rgba(${col},.95)`); g.addColorStop(0.3, `rgba(${col},.45)`); g.addColorStop(1, `rgba(${col},0)`); q.fillStyle = g; q.fillRect(x - rad, y - rad, rad * 2, rad * 2); };
+  const [SX, SY] = EDEN_SOL;
+  // ── el cielo de adentro: noche arriba, donde cuelgan las raíces; amanecer a la altura del Corazón; día claro hacia abajo
+  pon(0, 0, 96, 120, (q) => { const g = q.createLinearGradient(0, 0, 0, 96); [[0, '#120d30'], [0.1, '#2a1b5e'], [0.2, '#6b3a8c'], [0.29, '#e58f6a'], [0.37, '#ffd9a0'], [0.5, '#c4e9f6'], [0.72, '#8fd3f0'], [0.88, '#dcf1f6'], [1, '#dcf1f6']].forEach(([k, c]) => g.addColorStop(k, c)); q.fillStyle = g; q.fillRect(0, 0, 96, 120); });
+  pon(SX - 44, SY - 44, SX + 44, SY + 44, (q) => { const g = q.createRadialGradient(SX, SY, 0, SX, SY, 44); g.addColorStop(0, 'rgba(255,250,225,1)'); g.addColorStop(0.09, 'rgba(255,238,180,.95)'); g.addColorStop(0.3, 'rgba(255,214,140,.5)'); g.addColorStop(1, 'rgba(255,214,140,0)'); q.fillStyle = g; q.fillRect(SX - 44, SY - 44, 88, 88); });
+  pon(SX - 46, SY - 46, SX + 46, SY + 46, (q) => { q.fillStyle = 'rgba(255,244,205,.075)'; for (let k = 0; k < 18; k++) { const a = k * 0.349 + 0.1, l = 30 + (k % 3) * 8; q.beginPath(); q.moveTo(SX, SY); q.lineTo(SX + Math.cos(a - 0.05) * l, SY + Math.sin(a - 0.05) * l); q.lineTo(SX + Math.cos(a + 0.05) * l, SY + Math.sin(a + 0.05) * l); q.fill(); } });
+  // estrellas, arriba
+  for (let k = 0; k < 180; k++) { const x = R(0, 96), y = R(0, 26) * R(0.3, 1), t = R(0.05, 0.15), a = (1 - y / 27) * R(0.5, 1), c = r() < 0.25 ? '255,236,170' : '255,255,255'; pon(x - 0.5, y - 0.5, x + 0.5, y + 0.5, (q) => { q.fillStyle = `rgba(${c},${a.toFixed(2)})`; bola(q, x, y, t); if (t > 0.12) { q.fillRect(x - t * 3, y - t * 0.2, t * 6, t * 0.4); q.fillRect(x - t * 0.2, y - t * 3, t * 0.4, t * 6); } }); }
+  // las raíces de todo lo de arriba, con una lucecita en cada punta
+  for (let k = 0; k < 30; k++) {
+    const x0 = 1.5 + k * 3.2 + R(-1, 1), largo = R(4, 16), pts = [[x0, -0.5]]; let x = x0;
+    for (let y = 1.2; y < largo; y += 1.2) { x += R(-0.7, 0.7); pts.push([x, y]); }
+    const fin = pts[pts.length - 1], col = de(['255,226,140', '255,170,190', '170,235,255', '200,255,170']), xs = pts.map((p) => p[0]);
+    pon(Math.min(...xs) - 1.6, -1, Math.max(...xs) + 1.6, largo + 1.6, (q) => {
+      q.lineCap = q.lineJoin = 'round';
+      for (const [c, d] of [['#2a1a10', 0], ['#6a4526', -0.12]]) { q.strokeStyle = c; for (let i = 1; i < pts.length; i++) { q.lineWidth = Math.max(0.1, (0.75 - 0.6 * i / pts.length) * (d ? 0.45 : 1)); q.beginPath(); q.moveTo(pts[i - 1][0] + d, pts[i - 1][1]); q.lineTo(pts[i][0] + d, pts[i][1]); q.stroke(); } }
+      brillo(q, fin[0], fin[1] + 0.2, 1.3, col); q.fillStyle = '#fffbe8'; bola(q, fin[0], fin[1] + 0.2, 0.16);
+    });
+  }
+  // un arcoíris que nace de la cascada
+  pon(0, 60, 54, 100, (q) => { q.lineWidth = 0.62; ['255,90,90', '255,160,70', '255,225,90', '120,215,120', '90,180,255', '150,120,240'].forEach((c, k) => { q.strokeStyle = `rgba(${c},.34)`; q.beginPath(); q.arc(22, 99, 32 - k * 0.62, Math.PI, Math.PI * 2); q.stroke(); }); });
+  // nubes
+  for (let k = 0; k < 17; k++) { const x = R(3, 93), y = R(22, 58), t = R(1.4, 3), n = 4 + Math.floor(r() * 3), ps = Array.from({ length: n }, (_, i) => [x + (i - n / 2) * t * 0.72, y + R(-0.3, 0.3) * t, t * R(0.6, 1)]); if (Math.hypot(x - SX, y - SY) < 9) continue; pon(x - t * 3.5, y - t * 1.6, x + t * 3.5, y + t * 1.6, (q) => { q.fillStyle = y < 38 ? 'rgba(255,214,190,.72)' : 'rgba(255,255,255,.82)'; for (const [a, b, c] of ps) { q.beginPath(); q.ellipse(a, b, c * 1.25, c * 0.7, 0, 0, 7); q.fill(); } q.fillStyle = 'rgba(255,255,255,.5)'; for (const [a, b, c] of ps) { q.beginPath(); q.ellipse(a - c * 0.2, b - c * 0.25, c * 0.7, c * 0.32, 0, 0, 7); q.fill(); } }); }
+  // globos de papel que suben con su velita
+  for (let k = 0; k < 18; k++) { const x = R(4, 92), y = R(18, 60), t = R(0.5, 0.95), c = de(['#ff9a3d', '#ffb347', '#ff7a59', '#ffd166']); pon(x - 2, y - 2, x + 2, y + 2.4, (q) => { brillo(q, x, y, t * 2.2, '255,190,90'); q.fillStyle = c; q.beginPath(); q.moveTo(x - t * 0.5, y + t * 0.75); q.quadraticCurveTo(x - t * 0.95, y - t * 0.3, x - t * 0.5, y - t * 0.8); q.quadraticCurveTo(x, y - t * 1.1, x + t * 0.5, y - t * 0.8); q.quadraticCurveTo(x + t * 0.95, y - t * 0.3, x + t * 0.5, y + t * 0.75); q.closePath(); q.fill(); q.fillStyle = '#fff4c2'; q.fillRect(x - t * 0.3, y + t * 0.45, t * 0.6, t * 0.3); }); }
+  // parvadas
+  for (let f = 0; f < 6; f++) { const cx = R(8, 88), cy = R(26, 57), n = 4 + Math.floor(r() * 5), bs = Array.from({ length: n }, (_, i) => [cx + (i - n / 2) * 1.5 + R(-0.4, 0.4), cy + Math.abs(i - n / 2) * 0.7 + R(-0.3, 0.3), R(0.35, 0.6)]); pon(cx - 8, cy - 2, cx + 8, cy + 6, (q) => { q.strokeStyle = 'rgba(40,44,70,.7)'; q.lineWidth = 0.1; q.lineCap = 'round'; for (const [a, b, t] of bs) { q.beginPath(); q.moveTo(a - t, b - t * 0.4); q.quadraticCurveTo(a - t * 0.4, b - t * 0.7, a, b); q.quadraticCurveTo(a + t * 0.4, b - t * 0.7, a + t, b - t * 0.4); q.stroke(); } }); }
+  // ── el mensaje
+  pon(1, 58, 95, 80, (q) => {
+    const F = 'system-ui,-apple-system,"Segoe UI",Roboto,sans-serif';
+    q.textAlign = 'center'; q.textBaseline = 'alphabetic'; q.lineJoin = 'round';
+    q.font = '900 10.5px ' + F; const k = Math.min(1, 88 / q.measureText('HAY PARA TODOS').width);
+    q.save(); q.translate(48, 71.4); q.scale(k, k);
+    for (const [a, c] of [[3, 'rgba(255,190,90,.16)'], [2.1, 'rgba(255,180,80,.2)'], [1.4, 'rgba(255,170,70,.28)']]) { q.strokeStyle = c; q.lineWidth = a; q.strokeText('HAY PARA TODOS', 0, 0); }
+    q.strokeStyle = '#b5651d'; q.lineWidth = 0.75; q.strokeText('HAY PARA TODOS', 0, 0);
+    const g = q.createLinearGradient(0, -8, 0, 0); g.addColorStop(0, '#ffffff'); g.addColorStop(1, '#ffe9a8'); q.fillStyle = g; q.fillText('HAY PARA TODOS', 0, 0); q.restore();
+    q.font = '800 3.5px ' + F; q.strokeStyle = 'rgba(30,90,130,.85)'; q.lineWidth = 0.42; q.strokeText('Siempre hubo. Todo está bien.', 48, 77.4); q.fillStyle = '#ffffff'; q.fillText('Siempre hubo. Todo está bien.', 48, 77.4);
+  });
+  // ── la tierra: sierra lejana, sierra cercana con sus cascadas, el valle, los ríos y el lago
+  const sierra = (base, alt, f, fase) => { const p = []; for (let x = -1; x <= 97; x += 1.5) p.push([x, base - alt * (0.55 + 0.3 * Math.sin(x * f + fase) + 0.15 * Math.sin(x * f * 2.7 + fase * 2))]); return p; };
+  const s1 = sierra(88, 7.5, 0.33, 1), s2 = sierra(92, 6, 0.19, 4);
+  pon(0, 78, 96, 96, (q) => { q.fillStyle = '#93addb'; q.beginPath(); q.moveTo(-1, 97); for (const [x, y] of s1) q.lineTo(x, y); q.lineTo(97, 97); q.fill(); q.fillStyle = 'rgba(255,255,255,.55)'; for (let i = 1; i < s1.length - 1; i++) if (s1[i][1] < s1[i - 1][1] && s1[i][1] < s1[i + 1][1]) { const [x, y] = s1[i]; q.beginPath(); q.moveTo(x, y); q.lineTo(x - 1.5, y + 1.5); q.lineTo(x - 0.4, y + 1.1); q.lineTo(x + 0.3, y + 1.7); q.lineTo(x + 1.5, y + 1.4); q.fill(); } });
+  pon(0, 84, 96, 100, (q) => { const g = q.createLinearGradient(0, 84, 0, 98); g.addColorStop(0, '#6fb58c'); g.addColorStop(1, '#8fd08a'); q.fillStyle = g; q.beginPath(); q.moveTo(-1, 100); for (const [x, y] of s2) q.lineTo(x, y); q.lineTo(97, 100); q.fill(); });
+  pon(0, 88, 96, 120, (q) => { const g = q.createLinearGradient(0, 89, 0, 112); g.addColorStop(0, '#a6e08e'); g.addColorStop(0.5, '#7fcb78'); g.addColorStop(1, '#5fb26a'); q.fillStyle = g; q.beginPath(); q.moveTo(-1, 121); for (let x = -1; x <= 97; x += 1) q.lineTo(x, edenSuelo(x)); q.lineTo(97, 121); q.fill();
+    q.fillStyle = 'rgba(255,255,255,.1)'; for (let k = 0; k < 4; k++) { q.beginPath(); q.moveTo(-1, 121); for (let x = -1; x <= 97; x += 1) q.lineTo(x, 96 + k * 3.4 + 1.3 * Math.sin(x * 0.16 + k * 1.9)); q.lineTo(97, 121); q.fill(); } });
+  const rios = [[30, 40], [70, 60]], rioX = (k, y) => rios[k][0] + (rios[k][1] - rios[k][0]) * Math.pow(tope((y - 90) / 20), 1.4) + Math.sin(y * 0.55 + k * 2) * 1.1;
+  for (let k = 0; k < 2; k++) {
+    const x0 = rios[k][0], cima = s2.reduce((a, p) => (Math.abs(p[0] - x0) < Math.abs(a[0] - x0) ? p : a), s2[0]);
+    pon(x0 - 2, cima[1] - 1, x0 + 2, 94, (q) => { const g = q.createLinearGradient(0, cima[1], 0, 93); g.addColorStop(0, 'rgba(255,255,255,.95)'); g.addColorStop(1, 'rgba(160,225,250,.95)'); q.fillStyle = g; q.beginPath(); q.moveTo(x0 - 0.35, cima[1] + 0.6); q.lineTo(x0 + 0.35, cima[1] + 0.6); q.lineTo(x0 + 0.9, 93); q.lineTo(x0 - 0.9, 93); q.fill(); q.fillStyle = 'rgba(255,255,255,.8)'; for (let i = 0; i < 5; i++) bola(q, x0 + (i - 2) * 0.5, 93.1, 0.5); });
+    pon(Math.min(...rios[k]) - 4, 91, Math.max(...rios[k]) + 4, 112, (q) => { q.lineCap = 'round'; for (const [c, a] of [['#57b9de', 1.7], ['#8fdcf5', 0.9]]) { q.strokeStyle = c; q.lineWidth = a; q.beginPath(); for (let y = 92.5; y <= 111; y += 0.6) q.lineTo(rioX(k, y), y); q.stroke(); } });
+  }
+  pon(0, 107, 96, 120, (q) => { const g = q.createLinearGradient(0, 108, 0, 120); g.addColorStop(0, '#86daf2'); g.addColorStop(1, '#3f97cc'); q.fillStyle = g; q.beginPath(); q.moveTo(-1, 121); for (let x = -1; x <= 97; x += 1) q.lineTo(x, edenLago(x)); q.lineTo(97, 121); q.fill();
+    q.fillStyle = 'rgba(255,246,200,.5)'; for (let i = 0; i < 16; i++) { const y = 110.4 + i * 0.6, a = 4.2 - i * 0.2; q.fillRect(48.5 - a / 2 + Math.sin(i * 1.7) * 0.7, y, a, 0.16); } });
+  // dónde hay tierra firme para sembrar: ni en el lago ni en los ríos ni bajo el árbol grande
+  const lugar = (x, y) => y > edenSuelo(x) + 1.2 && y < edenLago(x) - 0.9 && Math.abs(x - rioX(0, y)) > 1.8 && Math.abs(x - rioX(1, y)) > 1.8 && !(Math.abs(x - 48) < 10.5 && y > 100);
+  const sembrar = () => { for (let n = 0; n < 60; n++) { const x = R(1, 95), y = R(92, 109); if (lugar(x, y)) return [x, y]; } return null; };
+  // milpas
+  for (let k = 0; k < 6; k++) { const p = sembrar(); if (!p) continue; const [x, y] = p; pon(x - 2.4, y - 1.4, x + 2.4, y + 0.6, (q) => { q.lineCap = 'round'; for (let f = 0; f < 3; f++) for (let i = 0; i < 9; i++) { const a = x - 2 + i * 0.5 + f * 0.15, b = y - f * 0.42; q.strokeStyle = '#3f9148'; q.lineWidth = 0.1; q.beginPath(); q.moveTo(a, b); q.lineTo(a, b - 0.6); q.stroke(); q.fillStyle = '#ffd85a'; bola(q, a, b - 0.62, 0.09); } }); }
+  // flores, a montones
+  const FLOR = ['#ff9a1f', '#ff9a1f', '#ffb52e', '#ff5fa2', '#ffffff', '#b98cff', '#ffe14d', '#ff6b5a'];
+  for (let gk = 0; gk < 22; gk++) { const p = sembrar(); if (!p) continue; const fs = []; for (let i = 0; i < 20; i++) { const x = p[0] + R(-2.6, 2.6), y = p[1] + R(-1.1, 1.1); if (lugar(x, y - 0.5) || y > edenSuelo(x) + 0.6 && y < edenLago(x) - 0.3) fs.push([x, y, R(0.09, 0.17), de(FLOR)]); } pon(p[0] - 3, p[1] - 1.5, p[0] + 3, p[1] + 1.5, (q) => { for (const [x, y, t, c] of fs) { q.fillStyle = '#4a9e52'; q.fillRect(x - 0.02, y, 0.04, t * 2); q.fillStyle = c; bola(q, x, y, t); q.fillStyle = 'rgba(255,255,255,.6)'; bola(q, x - t * 0.3, y - t * 0.3, t * 0.35); } }); }
+  // casitas con su lumbre
+  for (let k = 0; k < 7; k++) { const p = sembrar(); if (!p) continue; const [x, y] = p, s = 0.7 + (y - 92) / 26, c = de(['#f6e7c8', '#ffd7b0', '#fbe3a8', '#f2c6b4']); pon(x - 1.6 * s, y - 3.4 * s, x + 2.2 * s, y + 0.2, (q) => { q.fillStyle = c; q.fillRect(x - 1.1 * s, y - 1.3 * s, 2.2 * s, 1.3 * s); q.fillStyle = '#d9603a'; q.beginPath(); q.moveTo(x - 1.4 * s, y - 1.25 * s); q.lineTo(x, y - 2.3 * s); q.lineTo(x + 1.4 * s, y - 1.25 * s); q.fill(); q.fillStyle = '#8a5a36'; q.fillRect(x - 0.22 * s, y - 0.75 * s, 0.44 * s, 0.75 * s); q.fillStyle = '#ffd76a'; q.fillRect(x + 0.45 * s, y - 0.95 * s, 0.4 * s, 0.4 * s); q.fillStyle = 'rgba(255,255,255,.55)'; for (let i = 0; i < 3; i++) bola(q, x + 0.7 * s + i * 0.25 * s, y - (2.3 + i * 0.5) * s, (0.2 + i * 0.09) * s); }); }
+  // árboles con fruta
+  const VERDE = ['#3f9b52', '#56b765', '#2f8546', '#7cc86a'], FRUTA = ['#ff5a4d', '#ffb02e', '#ffe14d', '#ff7ac8', '#ff8a3d'], arboles = [];
+  for (let k = 0; k < 95; k++) { const p = sembrar(); if (p) arboles.push(p); }
+  arboles.sort((a, b) => a[1] - b[1]);
+  for (const [x, y] of arboles) { const s = 0.75 + (y - 92) / 22, f = de(FRUTA), cs = Array.from({ length: 3 }, () => [x + R(-0.55, 0.55) * s, y - (1.25 + R(0, 0.6)) * s, R(0.62, 0.95) * s, de(VERDE)]), fr = Array.from({ length: 6 }, () => [x + R(-0.9, 0.9) * s, y - (1.1 + R(0, 0.9)) * s]); pon(x - 1.7 * s, y - 2.9 * s, x + 1.7 * s, y + 0.2, (q) => { q.fillStyle = 'rgba(0,0,0,.12)'; q.beginPath(); q.ellipse(x, y, 0.9 * s, 0.2 * s, 0, 0, 7); q.fill(); q.fillStyle = '#6b4a2a'; q.fillRect(x - 0.13 * s, y - 1.1 * s, 0.26 * s, 1.1 * s); for (const [a, b, c, d] of cs) { q.fillStyle = d; bola(q, a, b, c); } q.fillStyle = 'rgba(255,255,255,.14)'; bola(q, cs[0][0] - 0.2 * s, cs[0][1] - 0.25 * s, 0.4 * s); q.fillStyle = f; for (const [a, b] of fr) bola(q, a, b, 0.12 * s); }); }
+  // el árbol grande, con faroles, y la mesa larga puesta debajo: hay lugar para todos
+  { const hojas = Array.from({ length: 22 }, () => [48 + R(-8.5, 8.5), 95.6 + R(-2.6, 2.4), R(2, 3.3), de(VERDE)]).sort((a, b) => a[1] - b[1]), faroles = Array.from({ length: 13 }, (_, i) => [40.4 + i * 1.27, 99.4 + R(0, 1.3), de(['255,200,90', '255,150,170', '170,230,255', '255,235,150'])]);
+    pon(37, 90, 59, 107, (q) => {
+      q.fillStyle = 'rgba(0,0,0,.14)'; q.beginPath(); q.ellipse(48, 106.4, 9.5, 0.8, 0, 0, 7); q.fill();
+      q.fillStyle = '#6b4a2a'; q.beginPath(); q.moveTo(46.3, 106.3); q.quadraticCurveTo(47.4, 102, 46.9, 97); q.lineTo(49.1, 97); q.quadraticCurveTo(48.6, 102, 49.7, 106.3); q.fill();
+      q.strokeStyle = '#6b4a2a'; q.lineWidth = 0.5; q.lineCap = 'round'; for (const [a, b] of [[43, 96.5], [53, 96.3], [45.5, 95], [50.8, 94.8]]) { q.beginPath(); q.moveTo(48, 99); q.lineTo(a, b); q.stroke(); }
+      for (const [a, b, c, d] of hojas) { q.fillStyle = d; bola(q, a, b, c); }
+      q.fillStyle = 'rgba(255,255,255,.1)'; for (const [a, b, c] of hojas) bola(q, a - c * 0.25, b - c * 0.3, c * 0.5);
+      for (const [a, b, c] of faroles) { q.strokeStyle = 'rgba(60,40,20,.6)'; q.lineWidth = 0.05; q.beginPath(); q.moveTo(a, 97.5); q.lineTo(a, b); q.stroke(); brillo(q, a, b + 0.25, 0.9, c); q.fillStyle = `rgb(${c})`; q.beginPath(); q.ellipse(a, b + 0.25, 0.2, 0.27, 0, 0, 7); q.fill(); }
+    });
+    pon(40, 104, 56, 107, (q) => { q.fillStyle = '#7a5230'; for (const x of [41.4, 45.6, 50.4, 54.6]) q.fillRect(x - 0.1, 105.6, 0.2, 0.8); q.fillStyle = '#c08a52'; q.beginPath(); q.roundRect(40.8, 105.1, 14.4, 0.62, 0.2); q.fill(); q.fillStyle = '#e0b07a'; q.fillRect(40.9, 105.1, 14.2, 0.16);
+      for (let i = 0; i < 12; i++) { const x = 41.6 + i * 1.16; q.fillStyle = '#ffffff'; q.beginPath(); q.ellipse(x, 105.12, 0.3, 0.1, 0, 0, 7); q.fill(); q.fillStyle = FRUTA[i % 5]; bola(q, x, 105, 0.13); }
+      q.fillStyle = '#8a5a36'; q.fillRect(41, 106.25, 14, 0.14); });
+  }
+  // las maquinitas de este mundo, descansando junto a la mesa, cada una con su nombre
+  { const g = edenGente(), n = g.length, paso = Math.min(1.9, 17 / Math.max(1, n)), x0 = 48 - ((n - 1) * paso) / 2;
+    g.forEach((j, k) => { const x = x0 + k * paso, y = 107.6; pon(x - 2.2, y - 1.2, x + 2.2, y + 1.9, (q) => { const m = q.getTransform(); q.save(); q.setTransform(1, 0, 0, 1, 0, 0); dibMaq(q, x * m.a + m.e, y * m.d + m.f, 1.5 * m.a, j.m, k % 2 ? -1 : 1, false, 0, '', '', 0.4); q.restore(); q.font = `800 ${n > 6 ? 0.36 : 0.42}px system-ui,sans-serif`; q.textAlign = 'center'; q.textBaseline = 'top'; q.lineJoin = 'round'; q.strokeStyle = 'rgba(20,60,30,.85)'; q.lineWidth = 0.12; const yn = y + 0.72 + (n > 6 && k % 2 ? 0.5 : 0); q.strokeText(j.n, x, yn); q.fillStyle = '#fff'; q.fillText(j.n, x, yn); }); }); }
+  // trajineras en el lago
+  for (let k = 0; k < 7; k++) { const x = 7 + k * 13.5 + R(-3, 3), y = R(112, 118), c = de(['#ff5a4d', '#ffb02e', '#3fb7a0', '#ff7ac8', '#6a8dff']), c2 = de(['#ffe14d', '#ffffff', '#ff9a1f']); if (Math.abs(x - 48.5) < 4 && y < 114) continue; pon(x - 2.2, y - 2, x + 2.2, y + 1.2, (q) => { q.fillStyle = 'rgba(20,70,110,.25)'; q.beginPath(); q.ellipse(x, y + 0.45, 1.9, 0.25, 0, 0, 7); q.fill(); q.fillStyle = c; q.beginPath(); q.moveTo(x - 1.8, y - 0.15); q.lineTo(x + 1.8, y - 0.15); q.lineTo(x + 1.45, y + 0.35); q.lineTo(x - 1.45, y + 0.35); q.fill(); q.strokeStyle = '#7a5230'; q.lineWidth = 0.08; for (const a of [-1, 1]) { q.beginPath(); q.moveTo(x + a, y - 0.15); q.lineTo(x + a, y - 1.1); q.stroke(); } q.strokeStyle = c2; q.lineWidth = 0.36; q.beginPath(); q.arc(x, y - 1.05, 1.02, Math.PI, Math.PI * 2); q.stroke(); q.fillStyle = c; for (let i = 0; i < 6; i++) bola(q, x + Math.cos(Math.PI + (i + 0.5) * 0.524) * 1.02, y - 1.05 + Math.sin(Math.PI + (i + 0.5) * 0.524) * 1.02, 0.12); }); }
+  // peces que brincan
+  for (let k = 0; k < 8; k++) { const x = R(4, 92), y = R(112.5, 118.5); pon(x - 1.5, y - 1.6, x + 1.5, y + 0.5, (q) => { q.strokeStyle = 'rgba(255,255,255,.6)'; q.lineWidth = 0.06; for (const a of [0.7, 1.1]) { q.beginPath(); q.ellipse(x, y, a, a * 0.22, 0, 0, 7); q.stroke(); } q.fillStyle = de(['#ff9a3d', '#ffd166', '#ff7a59']); q.save(); q.translate(x + 0.2, y - 0.8); q.rotate(-0.7); q.beginPath(); q.ellipse(0, 0, 0.36, 0.16, 0, 0, 7); q.moveTo(-0.3, 0); q.lineTo(-0.62, -0.2); q.lineTo(-0.62, 0.2); q.fill(); q.restore(); }); }
+  // mariposas
+  for (let k = 0; k < 30; k++) { const p = sembrar(); if (!p) continue; const x = p[0], y = p[1] - R(0.6, 3), c = de(['#ffffff', '#ffe14d', '#ff9a1f', '#8fd0ff', '#ff7ac8']), a = R(-0.6, 0.6); pon(x - 0.5, y - 0.5, x + 0.5, y + 0.5, (q) => { q.fillStyle = c; q.save(); q.translate(x, y); q.rotate(a); q.beginPath(); q.ellipse(-0.17, 0, 0.17, 0.25, -0.5, 0, 7); q.ellipse(0.17, 0, 0.17, 0.25, 0.5, 0, 7); q.fill(); q.fillStyle = '#3a2a1e'; q.fillRect(-0.025, -0.2, 0.05, 0.4); q.restore(); }); }
+  return E;
+}
+function pintarEden(q, bx, by) {              // el pedazo de jardín que le toca a un bloque (ya recortado a sus celdas abiertas)
+  const firma = seed + '|' + edenGente().map((j) => j.n + j.m).join(',');
+  if (!edenE || firma !== edenFirma) { edenFirma = firma; edenE = armarEden(); }
+  const x0 = bx * BL, y0 = by * BL - EDEN0, x1 = x0 + BL, y1 = y0 + BL;
+  q.setTransform(T, 0, 0, T, -x0 * T, -y0 * T);
+  for (const e of edenE) if (e[0] < x1 && e[2] > x0 && e[1] < y1 && e[3] > y0) { q.save(); e[4](q); q.restore(); }
+  q.setTransform(1, 0, 0, 1, 0, 0);
+}
+// Cuánto del jardín está a la vista: las celdas abiertas entre todas las del fondo.
+function medirEden() {
+  let n = 0; const f = [];
+  for (let y = EDEN0; y < H; y++) for (let x = 0; x < W; x++) { if (hueca(x, y)) n++; else if (f.length < 80) f.push(x, y); }
+  edenQuedan = EDEN_N - n; edenFaltan = edenQuedan <= 40 ? f : []; return n / EDEN_N;
+}
+function jardinDelFondo() {
+  const p = medirEden(), clave = mundoId + '|' + remin; edenPct = p; edenVivo = p >= 1;
+  if (soloVer || !mundoId) return;
+  if (S.fl.edenM !== clave) { S.fl.edenM = clave; S.fl.edenH = 0; }
+  if (yo.y >= EDEN0 && !S.fl.eden1) { S.fl.eden1 = 1; sucio = true; son.descubre(); tarjeta('🌱 Hay algo detrás de la roca', 'Aquí abajo, cada celda que quitas no deja un hueco: deja ver un pedazo de otra cosa. Quítenla toda, entre todos, y verán qué es.', 'msj', 14000, true); }
+  const hito = [[0.95, 'Casi. Las últimas celdas quedan marcadas con un aro amarillo.'], [0.8, 'Falta poco. Lo que queda suele ser roca dura: con taladro bueno o con dinamita.'], [0.6, 'Ya asoman letras. Sigan quitando.'], [0.4, 'Ya se alcanza a ver el cielo de adentro.']].find(([h]) => p >= h);
+  if (hito && p < 1 && (S.fl.edenH || 0) < hito[0]) { S.fl.edenH = hito[0]; sucio = true; son.logro(); tarjeta(`🌱 El Jardín del Fondo · ${Math.floor(p * 100)} % a la vista`, hito[1], 'msj', 10000); }
+  if (p >= 1 && !(S.fl.edenF && S.fl.edenF[clave])) { enviar({ t: 'fin' }); finDelMundo(miI); }      // cada maquinita celebra una vez cada cierre
+}
+// El cierre: ya no queda nada que quitar. El jardín cobra vida y a cada maquinita le toca su parte, porque hay para todos.
+function finDelMundo(quien) {
+  const F = S.fl.edenF || (S.fl.edenF = {}), g = edenGente().map((j) => j.n);
+  edenVivo = edenPct >= 1; musica.z = ''; musica.quedan = 0;
+  for (const [f, k] of [[392, 0], [494, 0.18], [587, 0.36], [784, 0.6], [988, 0.9], [1175, 1.25]]) piano(f, 4, 0.08, k, 'avisos');
+  if (op.part) for (let k = 0; k < 5; k++) chispas(yo.x + (k - 2) * 1.5, yo.y - 1, ['#ffd23f', '#ff7ac8', '#6ec3ff', '#6fdc7a', '#ffffff'][k], 16, 8);
+  const regalo = F[mundoId] ? 0 : 1e9; F[mundoId] = 1; F[mundoId + '|' + remin] = 1; if (regalo) { S.d += regalo; S.tot += regalo; }      // la parte de cada quien, una vez por mundo
+  sucio = true;
+  if (yo.y > EDEN0 - 60 && !soloVer) setTimeout(verJardin, 900);
+  tarjeta('🌳 El Jardín del Fondo, completo', `Quitaron hasta la última piedra, y esto era lo que había debajo de todo. Hay para todos. Siempre hubo. Todo está bien.${regalo ? ' Tu parte: ' + fmt(regalo) + '.' : ''} Lo descubrieron: ${g.join(', ')}.`, 'msj', 30000, true);
+  if (quien !== miI) aviso(nombreDe(quien) + ' quitó la última piedra del Jardín del Fondo');
+  pintarHud(true);
+}
+// El jardín entero, a pantalla completa: baja despacio desde las raíces hasta el lago y al final se aleja para verse todo de
+// una vez. Sale solo al quitar la última piedra, y después con la tecla V estando en el jardín.
+let cine = null;
+function verJardin() {
+  if (cine || !S) return;
+  const px = Math.max(6, Math.min(24, Math.ceil(Math.min(2300, innerWidth * (window.devicePixelRatio || 1)) / W)));
+  edenFirma = seed + '|' + edenGente().map((j) => j.n + j.m).join(','); edenE = armarEden();
+  const c = document.createElement('canvas'); c.width = W * px; c.height = EDEN_H * px;
+  const q = c.getContext('2d'); q.setTransform(px, 0, 0, px, 0, 0); for (const e of edenE) { q.save(); e[4](q); q.restore(); }
+  const d = document.createElement('div'); d.id = 'cine';
+  d.innerHTML = `<small>El Jardín del Fondo · ${esc(cfg.nombre || 'Mina')} · cualquier tecla para volver</small>`; d.prepend(c);
+  document.body.appendChild(d); requestAnimationFrame(() => d.classList.add('on'));
+  cine = { d, c, t0: performance.now(), dur: 26000 };
+  d.addEventListener('pointerdown', cerrarCine);
+  const paso = (t) => { if (!cine) return; cuadroCine(t - cine.t0); if (t - cine.t0 > cine.dur) return cerrarCine(); requestAnimationFrame(paso); };
+  cuadroCine(0); requestAnimationFrame(paso);
+}
+function cuadroCine(ms) {
+  const c = cine.c, A = innerWidth, B = innerHeight, sA = A / c.width, sB = Math.min(B / c.height, A / c.width), suave = (k) => k * k * (3 - 2 * k);
+  const baja = suave(tope((ms - 1200) / 15000)), aleja = suave(tope((ms - 17000) / 3500));       // 15 s bajando, 3.5 s alejándose, y el resto quieto
+  const yBaja = -Math.max(0, c.height * sA - B) * baja, sc = sA + (sB - sA) * aleja;
+  const x = (A - c.width * sc) / 2 * aleja, y = yBaja * (1 - aleja) + (B - c.height * sc) / 2 * aleja;
+  c.style.transform = `translate(${x.toFixed(1)}px,${y.toFixed(1)}px) scale(${sc.toFixed(5)})`;
+}
+function cerrarCine() { if (!cine) return; const d = cine.d; cine = null; d.classList.remove('on'); setTimeout(() => d.remove(), 600); }
+// Con el jardín completo, vive: pájaros que cruzan, pétalos que caen, luciérnagas entre las raíces, destellos en el lago y el sol girando despacio.
+function vidaEden(ox, oy, y0, y1) {
+  const X = (x) => ox + x * T, Y = (y) => oy + (EDEN0 + y) * T, ve = (y) => EDEN0 + y >= y0 - 2 && EDEN0 + y <= y1 + 2;
+  if (edenFaltan.length) { g.strokeStyle = '#ffd23f'; g.lineWidth = Math.max(2, T * 0.06); for (let i = 0; i < edenFaltan.length; i += 2) { const k = 0.5 + 0.5 * Math.sin(reloj * 5 + i); g.globalAlpha = 0.5 + 0.5 * k; g.beginPath(); g.arc(ox + (edenFaltan[i] + 0.5) * T, oy + (edenFaltan[i + 1] + 0.5) * T, T * (0.7 + 0.25 * k), 0, 7); g.stroke(); } g.globalAlpha = 1; }
+  if (!edenVivo) return;
+  if (ve(EDEN_SOL[1]) || ve(EDEN_SOL[1] - 20) || ve(EDEN_SOL[1] + 20)) { g.save(); g.translate(X(EDEN_SOL[0]), Y(EDEN_SOL[1])); g.rotate(reloj * 0.05); g.globalCompositeOperation = 'lighter'; g.fillStyle = `rgba(255,236,170,${0.05 + 0.02 * Math.sin(reloj * 0.8)})`; for (let k = 0; k < 12; k++) { const a = k * 0.5236; g.beginPath(); g.moveTo(0, 0); g.lineTo(Math.cos(a - 0.07) * T * 34, Math.sin(a - 0.07) * T * 34); g.lineTo(Math.cos(a + 0.07) * T * 34, Math.sin(a + 0.07) * T * 34); g.fill(); } g.restore(); }
+  g.lineCap = 'round';
+  for (let k = 0; k < 12; k++) {          // pájaros
+    const y = 26 + k * 2.6 + Math.sin(reloj * 0.6 + k) * 1.4; if (!ve(y)) continue;
+    const x = ((reloj * (1.4 + (k % 4) * 0.35) + k * 17.3) % 108) - 6, t = T * 0.42, al = Math.sin(reloj * 7 + k * 2) * 0.5;
+    g.strokeStyle = 'rgba(40,44,70,.8)'; g.lineWidth = Math.max(1.5, T * 0.08); g.beginPath(); g.moveTo(X(x) - t, Y(y) - t * (0.3 + al)); g.quadraticCurveTo(X(x) - t * 0.4, Y(y) - t * 0.5, X(x), Y(y)); g.quadraticCurveTo(X(x) + t * 0.4, Y(y) - t * 0.5, X(x) + t, Y(y) - t * (0.3 + al)); g.stroke();
+  }
+  for (let k = 0; k < 46; k++) {          // pétalos
+    const y = (reloj * (0.9 + (k % 5) * 0.22) + k * 7.31) % 120; if (!ve(y)) continue;
+    const x = ((k * 37.7) % 96) + Math.sin(reloj * 0.9 + k) * 1.6; g.fillStyle = ['rgba(255,190,215,.85)', 'rgba(255,255,255,.85)', 'rgba(255,214,120,.85)'][k % 3];
+    g.beginPath(); g.ellipse(X(x), Y(y), T * 0.11, T * 0.06, reloj * 1.5 + k, 0, 7); g.fill();
+  }
+  g.globalCompositeOperation = 'lighter';
+  for (let k = 0; k < 26; k++) {          // luciérnagas entre las raíces
+    const y = 2 + ((k * 5.3) % 20) + Math.sin(reloj * 0.7 + k * 1.3) * 0.8; if (!ve(y)) continue;
+    const x = ((k * 23.9) % 96) + Math.cos(reloj * 0.5 + k) * 1.2, a = 0.35 + 0.65 * Math.abs(Math.sin(reloj * 1.6 + k * 2.1)), rr = T * 0.3, gl = g.createRadialGradient(X(x), Y(y), 0, X(x), Y(y), rr);
+    gl.addColorStop(0, `rgba(255,255,220,${a})`); gl.addColorStop(0.3, `rgba(220,255,150,${a * 0.6})`); gl.addColorStop(1, 'rgba(220,255,150,0)'); g.fillStyle = gl; g.fillRect(X(x) - rr, Y(y) - rr, rr * 2, rr * 2);
+  }
+  g.fillStyle = '#fff';
+  for (let k = 0; k < 34; k++) {          // destellos en el lago
+    const y = 110.5 + ((k * 3.7) % 9); if (!ve(y)) continue;
+    const s = Math.sin(reloj * 2.2 + k * 1.9); if (s < 0.6) continue;
+    const x = (k * 29.3) % 96, l = T * 0.2 * (s - 0.6) * 2.5, f = Math.max(1, T * 0.035); g.globalAlpha = 0.8; g.fillRect(X(x) - l, Y(y) - f / 2, l * 2, f); g.fillRect(X(x) - f / 2, Y(y) - l, f, l * 2);
+  }
+  g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
 }
 
 /* ════════ Tres sorpresas para quien se detiene ════════ RLR */
@@ -1091,6 +1291,7 @@ const LOGROS = [
   { id: 'col99', n: 'Vitrina completa', d: 'Que el equipo junte los 99 objetos de la colección.', ok: () => nHallados() >= NCOL },
   { id: 'pleito', n: 'Taladro bravo', d: 'Gana un pleito contra otra maquinita.', ok: () => (S.st.pleitos || 0) >= 1 },
   { id: 'diezkm', n: 'Diez kilómetros', d: 'Llega al fondo del mundo: 10,000 m.', ok: () => S.rec >= 9990 },
+  { id: 'jardin', n: 'Hay para todos', d: 'Descubran completo el Jardín del Fondo: quiten toda la roca de los últimos 240 m.', ok: () => S.fl.edenF && Object.keys(S.fl.edenF).length > 0 },
   { id: 'intacto', n: 'Sin rasguños', d: 'Llega a 500 m sin recibir daño en el viaje.', ok: () => S.fl.intacto },
   { id: 'anfitrion', n: 'Anfitrión', d: 'Tres maquinitas nuevas llegan a un mundo donde estás.', ok: () => (S.st.amigos || 0) >= 3 },
   { id: 'pase', n: 'Buen compañero', d: 'Pásale combustible a otra maquinita.', ok: () => S.fl.pase },
@@ -1494,7 +1695,7 @@ function usar(i) {
 /* ════════ Red: el mundo compartido ════════ RLR */
 let ws = null, reintento = 500, bautizo = null, tCaido = 0, llaveAntes = '';
 // Mirar sin jugar: se entra por una ficha (no por la liga del mundo), se ve todo en vivo y no se manda nada.
-let soloVer = false, verFicha = '', veo = -1, verFallos = 0, miPid = '', miVer = '', mirones = 0;
+let soloVer = false, verFicha = '', veo = -1, verFallos = 0, miPid = '', miVer = '', mirones = 0, finMundo = null;
 function enviar(o) { if (!soloVer && ws && ws.readyState === 1) ws.send(JSON.stringify(o)); }
 function enviarEst() {
   if (!S || !conectado) return;
@@ -1580,11 +1781,13 @@ function recibir(d) {
         const viejo = miNombre; miNombre = d.n; miModelo = d.m; guardarMundo(); dugCambios++;
         if (soyCreador && cfg.nombre === 'Mundo de ' + viejo) { cfg = { ...cfg, nombre: 'Mundo de ' + d.n }; enviar({ t: 'cfg', cfg }); }
       } else { const o = otros.get(d.i); if (o) { o.n = d.n; o.m = d.m; } }
+      edenE = null; bloques.clear();
       pintarTabla(); if (menu === 'menu' && document.activeElement?.tagName !== 'INPUT') pintarMenu();
       return;
     }
     case 'noexiste': quitarMundo(mundoId); if (deCasa) return location.replace('/'); return pantallaFinal('Este mundo no existe', 'Puede que lo hayan borrado o que la liga esté incompleta.');
     case 'mira': return conMapa(d, iniciarVer);
+    case 'fin': if (S && !soloVer && !(S.fl.edenF && S.fl.edenF[mundoId + '|' + remin])) { edenPct = medirEden(); if (edenPct >= 1) finDelMundo(d.i); } return;
     case 'chat': if (d.id && typeof d.x === 'string') agregarChat(d); return;
     case 'chatMas': return chatViejos(d.l);
     case 'chatNo': return aviso('Vas muy rápido: espera un momento para escribir otra vez.');
@@ -1602,7 +1805,7 @@ function recibir(d) {
       otros.set(d.j.i, { ...otros.get(d.j.i), ...d.j });
       if (d.nuevo) { S.d += 500; S.tot += 500; S.st.amigos = (S.st.amigos || 0) + 1; sucio = true; tarjeta('🎉 Llegó ' + d.j.n, 'Maquinita nueva en el mundo: +$500 para cada quien.'); pintarHud(true); }
       else aviso(d.j.n + ' entró al mundo');
-      notaChat(d.j.n + (d.nuevo ? ' llegó al mundo por primera vez' : ' entró')); pintarChatQuien();
+      notaChat(d.j.n + (d.nuevo ? ' llegó al mundo por primera vez' : ' entró')); pintarChatQuien(); if (d.nuevo) { edenE = null; bloques.clear(); }
       son.entra(); ultPos = ''; enviarPos(); return pintarTabla();   // que el recién llegado me vea aunque yo esté quieto
     case 'sale': { const o = otros.get(d.i); if (o) { o.on = 0; o.x = undefined; o.b = []; aviso(o.n + ' salió'); notaChat(o.n + ' salió'); pintarChatQuien(); } return pintarTabla(); }
     case 'j': { const o = otros.get(d.i); if (o) { o.rec = d.rec; o.tot = d.tot; } return pintarTabla(); }
@@ -1664,7 +1867,8 @@ function iniciarMundo(d, local) {
   // o el mundo se reinició antes de guardar) se conserva aquí y se le vuelve a mandar. Solo una remineralización cierra túneles.
   const mias = S && !otraTierra ? dug.slice() : null, faltan = [];
   seed = d.seed; remin = d.remin; cfg = d.cfg; miI = d.i; soyCreador = !!d.creador;
-  if (!local) { miPid = d.pid || ''; miVer = d.ver || ''; mirones = d.obs | 0; }
+  if (!local) { miPid = d.pid || ''; miVer = d.ver || ''; mirones = d.obs | 0; finMundo = d.fin || null; }
+  edenE = null; edenT = -9;
   const b = atob(d.dug); for (let i = 0; i < dug.length; i++) dug[i] = b.charCodeAt(i);
   const misCol = mias ? hallados.slice() : null; hallados.fill(0); for (const k of d.col || []) if (k >= 0 && k < NCOL) hallados[k] = 1;
   if (misCol) for (let k = 0; k < NCOL; k++) if (misCol[k] && !hallados[k]) { hallados[k] = 1; enviar({ t: 'col', k }); }      // lo que encontré sin señal también cuenta
@@ -1734,11 +1938,19 @@ function bloque(bx, by) {
 function pintarBloque(b, bx, by) {
   const q = b.q, fino = Math.max(1, Math.round(T * 0.07)), grueso = Math.max(2, Math.round(T * 0.13));
   b.lava.length = b.gas.length = b.brillo.length = b.agua.length = 0; b.sucio = false;
+  const eden = by * BL >= EDEN0;
+  if (eden) {                                  // el Jardín del Fondo: se recorta a las celdas ya abiertas de este bloque y ahí se pinta
+    let n = 0; q.save(); q.beginPath();
+    for (let j = 0; j < BL; j++) for (let i = 0; i < BL; i++) if (hueca(bx * BL + i, by * BL + j)) { q.rect(i * T, j * T, T, T); n++; }
+    if (n) { q.clip(); pintarEden(q, bx, by); }
+    q.restore();
+  }
   for (let j = 0; j < BL; j++) {
     const y = by * BL + j, m = (y + 1) * 2, zona = zonaDe(m), py = j * T;
     for (let i = 0; i < BL; i++) {
       const x = bx * BL + i, px = i * T; let t = celda(x, y);
       if (t === 0 || t === 6) {
+        if (eden) continue;                         // ahí ya está pintado el jardín
         const lug = y >= 165 ? lugarDe(x, y) : -1;
         q.drawImage(tile(t, zona, ((x * 5 + y * 3) & 1) + (lug > 0 ? lug * 2 : 0)), px, py);
         if (y > 0 && !hueca(x, y - 1)) { q.fillStyle = '#00000055'; q.fillRect(px, py, T, grueso); }             // sombra del techo
@@ -2408,6 +2620,7 @@ function dibujar() {
       if (s > 0.9) { const k = (s - 0.9) * 10, cx = ox + x * T + T * (0.25 + ((x * 31 + y * 17) % 50) / 100), cy = oy + y * T + T * (0.25 + ((x * 13 + y * 29) % 50) / 100), l = T * 0.16 * k; g.fillStyle = '#fff'; g.fillRect(cx - l, cy - fino / 2, l * 2, fino); g.fillRect(cx - fino / 2, cy - l, fino, l * 2); }
     }
   }
+  if (y1 >= EDEN0) vidaEden(ox, oy, y0, y1);
   // Los bloques que ya no se ven se sueltan en cuanto sobran: repintar uno cuesta casi nada, y así la memoria no crece.
   if (bloques.size > bloquesTope) for (const [k, v] of bloques) if (v.u !== cuadroN) { bloques.delete(k); if (bloquesLibres.length < 8) bloquesLibres.push(v); }
   // lo que vive en cada lugar
@@ -2689,7 +2902,7 @@ function cicloVer(t, id) {
   const o = otros.get(veo);
   if (o && o.on && o.x !== undefined) { const lejos = Math.abs(o.x - yo.x) > 12 || Math.abs(o.y - yo.y) > 12; yo.x = vis.x = o.x; yo.y = vis.y = o.y; if (lejos) { camX = Math.max(0, Math.min(W - cols, o.x - cols / 2)); camY = o.y - filas * 0.5; } }
   animar(d); dibujar(); gotear(d);
-  if ((tHud += d) > 0.25) { tHud = 0; pintarVer(); }
+  if ((tHud += d) > 0.25) { tHud = 0; pintarVer(); if (yo.y > EDEN0 - 60 && tiempo - edenT > 1) { edenT = tiempo; jardinDelFondo(); } }
 }
 function iniciarVer(d) {
   const primera = !listo;
@@ -3011,6 +3224,7 @@ function grua() {
 }
 function cadaTanto() {
   const m = prof();
+  if (yo.y > EDEN0 - 60 && tiempo - edenT > 1) { edenT = tiempo; jardinDelFondo(); }
   if (m > S.rec) {
     S.rec = m; sucio = true;
     while (S.msj < MSJ.length && MSJ[S.msj].m <= m) {
@@ -3101,6 +3315,7 @@ let hudAnt = '';
 function metas() {             // arriba al centro: solo dónde estás y, si lo hay, un peligro inmediato
   const l = [], lg = yo.y >= 165 ? lugarDe(Math.floor(yo.x), Math.floor(yo.y), true) : -1;
   if (lg >= 0) l.push({ ya: 1, tx: LUGARES[lg].ic + ' ' + LUGARES[lg].n, p: 1 });
+  if (yo.y >= EDEN0 - 4) l.push({ ya: 1, tx: edenPct >= 1 ? '🌳 El Jardín del Fondo · completo · V para verlo entero' : `🌱 El Jardín del Fondo · ${Math.floor(edenPct * 100)} % a la vista` + (edenQuedan <= 300 ? ` · faltan ${edenQuedan} ${edenQuedan === 1 ? 'celda' : 'celdas'}` : ''), p: 1 });
   if (cfg.gas && S.rec >= 560) { const sg = gasSeguro(); if (prof() > sg) l.push({ mal: 1, tx: `⚠ A esta profundidad una bolsa de gas te explota. Tu equipo la aguanta hasta ${sg < 650 ? 'ninguna' : sg + ' m'}`, p: 1 }); }
   return l;
 }
@@ -3751,6 +3966,7 @@ function menuPrincipal() {
       <p><b>Pleitos:</b> en el aire las maquinitas rebotan y no pasa nada. Bajo tierra, si empujas tu taladro contra otra (← → a su lado, o ↓ encima de ella), le pegas: tu taladro contra su casco. Por la espalda o desde arriba pega 50 % más; taladro contra taladro pega la mitad y los dos salen rebotados. La que pierde vuelve a la superficie sin perder nada. En el pueblo no hay pleitos, y quien creó el mundo puede apagarlos.</p>
       <p><b>Mapa y archivo:</b> Menú → Mapa muestra todos los túneles abiertos. Menú → Mundo → Guardar archivo descarga el mundo completo; desde «Mis mundos» se abre como una copia idéntica.</p>
       <p><b>Ojo de minero:</b> una de cada catorce piedras es una geoda: búscale el brillo morado. Cuando la flama de tu lámpara se pone azul, hay grisú al lado. Y tres lugares guardan una sorpresa para quien se detiene a mirar, a tocar o a quedarse quieto.</p>
+      <p><b>El fondo:</b> los últimos 240 m guardan algo detrás de la roca. Cada celda que se quita ahí deja ver un pedazo. Se descubre entre todos.</p>
       <p><b>Diez kilómetros:</b> debajo de la Corteza siguen el Acuífero, las Cavernas, la Cristalera y la Zona de presión, con doce minerales nuevos y cuatro lugares por descubrir. Cada lugar que encuentres queda apuntado en <b>El Elevador</b> (el último edificio), que también te regresa al punto donde te recogió la grúa.</p>
       <p><b>Sin internet y como aplicación:</b> Mina se puede instalar (Menú → Opciones) y abre aunque no haya señal. Lo que caves y ganes sin internet se queda en tu equipo y se manda al mundo cuando la señal vuelve. En pantallas táctiles, arrastra el dedo para moverte y da un toque frente a un edificio para entrar.</p>
       <p><b>Tu nombre y tus ligas:</b> la maquinita nace bautizada para que empieces a jugar sin llenar nada; el nombre y el modelo se cambian en Menú → Mundo. Hay dos ligas: la del mundo (invita a excavar) y la tuya (presume tu maquinita); cada una lleva su imagen al mandarla por WhatsApp.</p>
@@ -3790,6 +4006,7 @@ const TECLAS_MENU = { gas: '<kbd>Enter</kbd> carga', bas: '<kbd>Enter</kbd> vend
 // Chat, Señal, Ayudar, Grúa, Menú. Para moverse, las flechas. Por eso ya no hay W A S D: esas letras tienen dueño.
 const MAPA = { ArrowLeft: 'izq', ArrowRight: 'der', ArrowUp: 'arr', ArrowDown: 'aba' };
 addEventListener('keydown', (e) => {
+  if (cine) { e.preventDefault(); return cerrarCine(); }      // cualquier tecla regresa del jardín entero al juego
   if (e.target.tagName === 'INPUT' || e.metaKey || e.ctrlKey) return;
   audio(); nacer();
   if ((e.key === 'c' || e.key === 'C') && listo && !menu && !e.repeat) { e.preventDefault(); return chat.abierto ? cerrarChat() : abrirChat(true); }      // C abre y cierra el chat, con el cursor listo para escribir
@@ -3816,6 +4033,7 @@ addEventListener('keydown', (e) => {
   if (k === 'a') pasarCombustible();                // Ayudar: 5 litros a la maquinita de junto
   if (k === 'g') grua();                            // Grúa
   if (k === 'i') abrir('inv');                      // Invitar
+  if (k === 'v' && edenVivo && yo.y > EDEN0 - 6) verJardin();      // Ver el jardín entero
   if (k === ' ') { e.preventDefault(); if (crucero) crucero = false; else if (yo.y < -25) { crucero = true; son.clic(); } }
 });
 // La rueda o el trackpad mueven la vista para mirar alrededor; cualquier flecha la regresa a la maquinita.
@@ -4061,5 +4279,6 @@ window.__mina = { get S() { return S; },
     const n = Math.min(8, Math.ceil(seg)), paso = Math.floor(b.length / n);
     return { todo: tramo(0, b.length), tramos: Array.from({ length: n }, (_, i) => tramo(i * paso, (i + 1) * paso)) };
   },
-  son, sonarLazos, componer, piano, get op() { return op; }, avanza(seg) { for (let i = 0, n = Math.round(seg * 120); i < n; i++) { tiempo += DT; ant.x = yo.x; ant.y = yo.y; fisica(DT); darVuelta(); if (i % 14 === 0) cadaTanto(); } vis.x = yo.x; vis.y = yo.y; }, rit, red, animar, grua, costoGrua, dibujar, llegar, danar, get e() { return { corriendo, menu, pausa, listo, conectado, tiempo, perf: yo.perf, renace: yo.renace }; }, yo, otros, celda, gen, get cfg() { return cfg; }, usar, abrir, cerrar, teclas, enviarEst, veta, LOGROS };
+  son, sonarLazos, componer, piano, get op() { return op; },
+  eden(px = 8) { edenFirma = ''; edenE = armarEden(); const c = document.createElement('canvas'); c.width = W * px; c.height = EDEN_H * px; const q = c.getContext('2d'); q.setTransform(px, 0, 0, px, 0, 0); for (const e of edenE) { q.save(); e[4](q); q.restore(); } return c; }, avanza(seg) { for (let i = 0, n = Math.round(seg * 120); i < n; i++) { tiempo += DT; ant.x = yo.x; ant.y = yo.y; fisica(DT); darVuelta(); if (i % 14 === 0) cadaTanto(); } vis.x = yo.x; vis.y = yo.y; }, rit, red, animar, grua, costoGrua, dibujar, llegar, danar, get e() { return { corriendo, menu, pausa, listo, conectado, tiempo, perf: yo.perf, renace: yo.renace }; }, yo, otros, celda, gen, get cfg() { return cfg; }, usar, abrir, cerrar, teclas, enviarEst, veta, LOGROS };
 /* RLR · Ricardo López Reyero · fin */
