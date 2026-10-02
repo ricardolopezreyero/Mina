@@ -514,7 +514,7 @@ function cavar(lista) {            // marca aquí y avisa al mundo
 let pendientes = [];                // celdas cavadas mientras no había conexión
 const recientes = new Map();        // premios recién dados, por si el mundo dice que otro llegó antes
 function nuevaSemilla() {
-  SEM = (seed + remin * 104729) | 0; mapa.fill(255); pesosFila.clear();
+  SEM = (seed + remin * 104729) | 0; mapa.fill(255); pesosFila.clear(); litos.fill(255);
   // dónde quedó cada objeto de la colección: tres por franja, a distintas alturas y en distintas columnas, fuera de los lugares
   colec.clear();
   for (let id = 0; id < NCOL; id++) {
@@ -1442,17 +1442,49 @@ function medir() {
 }
 
 /* ── Celdas ── */
-function tierra(q, zona, r) {
-  const B = TIERRA[zona], u = T / 16;
+// ── La tierra. Cada celda sale de tres cosas: la zona (su color de base), el tipo de roca del lugar (cuatro, repartidos
+//    en capas que siguen el echado y se cortan en las fallas) y una de dieciséis variantes con sus propias manchas,
+//    grano, fisuras, piedritas y rarezas. Son 8 × 4 × 16 = 512 celdas distintas, y encima van los estratos y las pintas.
+const LITO = [['#000000', 0, 'tierra'], ['#e6c592', 0.15, 'arenisca'], ['#1c1524', 0.18, 'lutita'], ['#a86f55', 0.13, 'conglomerado']];
+const litos = new Uint8Array(W * H).fill(255), liso = (t) => t * t * (3 - 2 * t);
+const h16 = (x, y) => ((Math.imul(x, 73856093) ^ Math.imul(y, 19349663)) >>> 3) & 15;
+function litoDe(x, y) {
+  const i = y * W + x; if (litos[i] !== 255) return litos[i];
+  const u = x * 0.05, v = (y - 0.12 * x - (x > 30 ? 1.3 : 0) + (x > 66 ? 0.9 : 0)) * 0.17, iu = Math.floor(u), iv = Math.floor(v), fu = liso(u - iu), fv = liso(v - iv);
+  const n = (azar(iu, iv, 71) * (1 - fu) + azar(iu + 1, iv, 71) * fu) * (1 - fv) + (azar(iu, iv + 1, 71) * (1 - fu) + azar(iu + 1, iv + 1, 71) * fu) * fv;
+  return (litos[i] = n < 0.3 ? 3 : n < 0.44 ? 1 : n < 0.62 ? 0 : 2);
+}
+function tierra(q, zona, r, lito = 0) {
+  const u = T / 16, tin = LITO[lito], B = TIERRA[zona].map((c) => (tin[1] ? entre(c, tin[0], tin[1]) : c)), cl = Math.floor, luz = r() - 0.5;
   q.fillStyle = B[0]; q.fillRect(0, 0, T, T);
-  for (let i = 0; i < 34; i++) { q.fillStyle = B[1 + (i % 3)]; q.globalAlpha = 0.35 + r() * 0.5; q.fillRect(Math.floor(r() * 16) * u, Math.floor(r() * 16) * u, u * (1 + Math.floor(r() * 2)), u); }
-  q.globalAlpha = 0.12; q.fillStyle = '#000'; q.fillRect(0, (3 + r() * 9) * u, T, u * 0.7); q.fillStyle = '#fff'; q.fillRect(0, (2 + r() * 11) * u, T, u * 0.5);
-  q.globalAlpha = 1;
-  for (let i = 0; i < 3; i++) {                   // piedritas
+  q.fillStyle = luz > 0 ? '#fff' : '#000'; q.globalAlpha = Math.abs(luz) * 0.06; q.fillRect(0, 0, T, T);                // cada celda, un poco más clara o más oscura
+  for (let i = 0; i < 3; i++) { q.globalAlpha = 0.1 + r() * 0.12; q.fillStyle = i % 2 ? B[2] : B[3]; q.beginPath(); q.ellipse(r() * T, r() * T, u * (3 + r() * 5), u * (2 + r() * 3), r() * 3, 0, 7); q.fill(); }      // manchas suaves
+  for (let i = 0, n = lito === 1 ? 16 : 26 + cl(r() * 14); i < n; i++) { q.fillStyle = B[1 + (i % 3)]; q.globalAlpha = 0.3 + r() * 0.5; q.fillRect(cl(r() * 16) * u, cl(r() * 16) * u, u * (1 + cl(r() * 2)), u); }      // grano
+  q.globalAlpha = 1; q.lineJoin = q.lineCap = 'round';
+  if (lito === 1) for (let i = 0; i < 5; i++) {     // arenisca: láminas finas que siguen el echado
+    const y = (0.8 + i * 3.1 + r() * 1.4) * u; q.strokeStyle = i % 2 ? '#0000001f' : '#ffffff22'; q.lineWidth = Math.max(1, u * (0.3 + r() * 0.35)); q.beginPath(); q.moveTo(0, y); q.lineTo(T, y + T * 0.12); q.stroke();
+  } else if (lito === 2) {                          // lutita: se parte en bloques
+    q.strokeStyle = '#00000040'; q.lineWidth = Math.max(1, u * 0.45);
+    for (let i = 0, n = 2 + cl(r() * 2); i < n; i++) { let x = r() * T, y = r() * T; q.beginPath(); q.moveTo(x, y); for (let k = 0; k < 3; k++) { if (k % 2) x += (r() - 0.5) * u * 10; else y += (r() - 0.5) * u * 10; q.lineTo(x, y); } q.stroke(); }
+  } else if (lito === 3) {                          // conglomerado: guijarros de colores pegados
+    const G = ['#9a948e', '#b98a6a', '#6f6a66', '#c9b29c', '#7a5a4a'];
+    for (let i = 0, n = 5 + cl(r() * 4); i < n; i++) { const x = r() * T, y = r() * T, a = (0.8 + r() * 1.5) * u; q.globalAlpha = 0.8; q.fillStyle = G[cl(r() * 5)]; q.beginPath(); q.ellipse(x, y, a * 1.3, a, r() * 3, 0, 7); q.fill(); q.globalAlpha = 1; q.fillStyle = '#ffffff38'; q.beginPath(); q.ellipse(x - a * 0.3, y - a * 0.3, a * 0.5, a * 0.3, 0, 0, 7); q.fill(); q.fillStyle = '#0000002a'; q.beginPath(); q.ellipse(x + a * 0.2, y + a * 0.5, a, a * 0.3, 0, 0, 7); q.fill(); }
+  }
+  if (lito !== 3) for (let i = 0, n = 1 + cl(r() * 3); i < n; i++) {      // piedritas
     const x = (2 + r() * 12) * u, y = (2 + r() * 12) * u, a = (0.7 + r() * 0.9) * u;
     q.fillStyle = B[3]; q.beginPath(); q.ellipse(x, y, a * 1.3, a, r() * 3, 0, 7); q.fill();
     q.fillStyle = '#ffffff22'; q.beginPath(); q.ellipse(x - a * 0.3, y - a * 0.3, a * 0.6, a * 0.4, 0, 0, 7); q.fill();
   }
+  if (r() < (lito === 2 ? 0.2 : 0.4)) {             // una fisura: trazo oscuro quebrado con su filo de luz
+    const pts = []; let x = r() * T, y = r() * T * 0.4; for (let k = 0; k < 4; k++) { pts.push([x, y]); x += (r() - 0.5) * u * 6; y += u * (2 + r() * 3); }
+    for (const [dx, col, an] of [[u * 0.35, '#ffffff1e', 0.4], [0, '#0000004d', 0.5]]) { q.strokeStyle = col; q.lineWidth = Math.max(1, u * an); q.beginPath(); pts.forEach(([a, b], k) => q[k ? 'lineTo' : 'moveTo'](a + dx, b)); q.stroke(); }
+  }
+  const d = r();                                     // rarezas: pocas, para quien se fije
+  if (d < 0.07 && zona < 4) { q.strokeStyle = '#f3ead870'; q.lineWidth = Math.max(1, u * 0.45); const x = (4 + r() * 8) * u, y = (4 + r() * 8) * u; q.beginPath(); for (let a = 0; a < 9; a += 0.5) q.lineTo(x + Math.cos(a) * a * u * 0.28, y + Math.sin(a) * a * u * 0.28); q.stroke(); }      // un caracol fósil
+  else if (d < 0.16) { q.fillStyle = '#ffffff90'; for (let i = 0; i < 3; i++) q.fillRect(r() * 15 * u, r() * 15 * u, u * 0.6, u * 0.6); }                                                          // brillitos de mica
+  else if (d < 0.22) { q.fillStyle = '#00000030'; q.beginPath(); q.ellipse(r() * T, r() * T, u * 2.6, u * 1.8, r() * 3, 0, 7); q.fill(); }                                                         // un nódulo oscuro
+  else if (d < 0.3 && zona >= 5) { for (let i = 0; i < 3; i++) { q.fillStyle = ['#b9a0ff90', '#7fe3e090', '#ff9ad090'][cl(r() * 3)]; const x = r() * 14 * u, y = r() * 14 * u; q.beginPath(); q.moveTo(x, y); q.lineTo(x + u * 0.7, y + u * 1.6); q.lineTo(x - u * 0.7, y + u * 1.6); q.fill(); } }      // esquirlas de cristal en las zonas hondas
+  else if (d < 0.34) { q.strokeStyle = '#3a2a1e55'; q.lineWidth = Math.max(1, u * 0.35); let x = r() * T, y = 0; q.beginPath(); q.moveTo(x, y); for (let k = 0; k < 5; k++) { x += (r() - 0.5) * u * 4; y += u * 2.5; q.lineTo(x, y); } q.stroke(); }                         // una raicilla o vetilla oscura
 }
 function poligono(q, x, y, a, n, r, ach = 1) {
   q.beginPath();
@@ -1544,7 +1576,8 @@ function tile(tipo, zona, vr) {
     q.fillStyle = '#2e2b2a'; for (const [a, b] of [[3, 3], [13, 3], [3, 13], [13, 13]]) { q.beginPath(); q.arc(a * u, b * u, u * 0.8, 0, 7); q.fill(); }
     q.fillStyle = '#ffffff18'; q.fillRect(u * 4, u * 7, u * 8, u * 0.6);
   } else {
-    if (tipo >= 10 && tipo !== 50 && vr) vacio(q, zona, r); else tierra(q, zona, r);        // dentro de un lugar, tesoros y cristales van sobre el hueco, no sobre tierra
+    // Solo la tierra pinta fondo; lo demás (piedra, lava, mineral, tesoros) va transparente y se dibuja encima de la tierra de su celda.
+    if (tipo >= 10 && tipo !== 50 && vr) vacio(q, zona, r); else if (tipo === 1) tierra(q, zona, r, vr >> 4);        // dentro de un lugar, tesoros y cristales van sobre el hueco, no sobre tierra
     if (tipo === 2) {                               // piedra
       const s = r() * 1000 | 0;
       const C = PIEDRA[[0, 0, 0, 0, 1, 2, 3, 4][zona]][2];           // gris en la Corteza; más abajo, más dura y de otro color
@@ -2065,7 +2098,9 @@ function dibujar() {
       }
       const esGas = t === 4, gasOculto = esGas && cfg.verGas !== 1;
       if (gasOculto) t = 1;
-      const vr = t === 1 ? (x * 7 + y * 13) & 3 : t === 3 ? (celda(x, y - 1) === 3 ? 1 : 0) | (celda(x + 1, y) === 3 ? 2 : 0) | (celda(x, y + 1) === 3 ? 4 : 0) | (celda(x - 1, y) === 3 ? 8 : 0) | (((x * 7 + y * 13) & 3) << 4) : t === 7 ? (x * 7 + y * 13) & 3 : t === 50 ? Math.floor(colec.get(y * W + x) / 3) : t >= 10 && y >= 165 && lugarDe(x, y) > (t >= 40 ? 0 : 2) ? 1 : 0;
+      const vt = litoDe(x, y) * 16 + h16(x, y);
+      const vr = t === 1 ? vt : t === 3 ? (celda(x, y - 1) === 3 ? 1 : 0) | (celda(x + 1, y) === 3 ? 2 : 0) | (celda(x, y + 1) === 3 ? 4 : 0) | (celda(x - 1, y) === 3 ? 8 : 0) | (((x * 7 + y * 13) & 3) << 4) : t === 7 ? (x * 7 + y * 13) & 3 : t === 50 ? Math.floor(colec.get(y * W + x) / 3) : t >= 10 && y >= 165 && lugarDe(x, y) > (t >= 40 ? 0 : 2) ? 1 : 0;
+      if (t !== 1 && t !== 5 && t !== 7 && !(t >= 10 && t !== 50 && vr)) g.drawImage(tile(1, zona, vt), px, py);       // la tierra de la celda, debajo de lo que tenga
       g.drawImage(tile(t, zona, vr), px, py);
       if (t === 1) {
         // Los estratos: capas con echado (bajan hacia la derecha) y dos fallas que las desplazan, en las columnas 31 y 67.
@@ -2668,7 +2703,7 @@ function fotoRecord() {
   let mejor = 0; for (let i = 0; i < MIN.length; i++) if (S.st.rec[i]) mejor = i;
   for (let y = 0; y < 4; y++) for (let x = 0; x < 9; x++) {
     const r = azar(x + 500, y + 700, 5), tipo = y > 0 && r < 0.3 ? 10 + Math.max(0, mejor - Math.floor(r * 13)) : 1;
-    q.drawImage(tile(tipo, zonaDe(S.rec), tipo === 1 ? (x * 7 + y * 13) & 3 : 0), x * lado, piso + y * lado, lado, lado);
+    q.drawImage(tile(1, zonaDe(S.rec), ((x + y) & 3) * 16 + h16(x, y)), x * lado, piso + y * lado, lado, lado); if (tipo !== 1) q.drawImage(tile(tipo, zonaDe(S.rec), 0), x * lado, piso + y * lado, lado, lado);
   }
   q.fillStyle = '#5c9e3a'; q.fillRect(0, piso, L, 14); q.fillStyle = '#7cc24e'; q.fillRect(0, piso, L, 6);
   q.fillStyle = '#00000059'; q.fillRect(0, piso + 14, L, L);

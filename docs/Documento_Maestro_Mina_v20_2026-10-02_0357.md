@@ -1,4 +1,4 @@
-# DOCUMENTO MAESTRO · «Mina» · v19
+# DOCUMENTO MAESTRO · «Mina» · v20
 
 **Ver en vivo: https://mina.capitaltorreon.com**
 
@@ -581,6 +581,20 @@ Ricardo pidió que lo que va a vender se vea completo en una pantalla (el total 
 **Pleitos con todo.** Mientras dura el contacto salen chispas sin parar, las dos maquinitas vibran y sacan sus rotorcitos, y cada golpe deja un anillo, un temblor y el número de daño sobre la rival. Cuatro clases de golpe [N]: de frente (normal), por la espalda (+50 %), desde arriba (+50 %) y taladro contra taladro (la mitad, con campanazo, y las dos salen rebotadas). Quien gana recibe su celebración y lleva la cuenta de pleitos ganados.
 
 **Crear mundo.** «Crear mundo nuevo» ofrece dos caminos: de cero, o cargar un archivo de mundo. Cargar siempre crea un mundo nuevo con su propia liga; nunca reemplaza uno existente. Así se comparte un mundo: se manda el archivo y quien lo recibe lo carga. La maquinita no va en el archivo: se mueve con su liga o su código QR.
+
+### 9.15 La tierra: 512 celdas distintas, armadas por un algoritmo
+
+Ricardo pidió que la roca se vea más real sin dejar de ser caricatura: más contrastes, colores, fisuras, que cada pedazo sea más único y que haya patrones. Dio «100 tipos» como referencia y aceptó que fuera un algoritmo.
+
+Cada celda de tierra sale de tres cosas:
+
+1. **La zona** (8 paletas, por profundidad): el color de base.
+2. **El tipo de roca del lugar** (4): tierra, arenisca (más clara, con láminas finas que siguen el echado), lutita (más oscura, partida en bloques) y conglomerado (guijarros de colores pegados). No van celda por celda: forman **capas** de 3 a 6 celdas de grueso que bajan hacia la derecha y se cortan en las mismas dos fallas que los estratos (`litoDe`, ruido suave estirado a lo largo del echado).
+3. **Una de 16 variantes**, elegida por la posición: cada una con sus manchas suaves, su grano, de una a tres piedritas, a veces una fisura con su filo de luz, y de vez en cuando una rareza (un caracol fósil en la Corteza, brillitos de mica, un nódulo oscuro, esquirlas de cristal en las zonas hondas, una vetilla).
+
+Son 8 × 4 × 16 = **512 celdas distintas**, y encima siguen yendo los estratos y las pintas junto al mineral. Solo se fabrican las que entran a la pantalla: unas 70 a la vez.
+
+Cambio de fondo: la piedra, la lava, los minerales y los tesoros ahora se dibujan **encima** de la tierra de su celda (antes cada uno traía su propio fondo, siempre igual), así que un mineral dentro de una capa de arenisca se ve sobre arenisca.
 
 ---
 
