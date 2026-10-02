@@ -349,7 +349,7 @@ const dug = new Uint8Array(W * H / 8), mapa = new Uint8Array(W * H).fill(255);
 //    Formato: «MN», versión del formato, versión del generador; una celda por byte (9 = piedra con geoda); y la celda
 //    donde está cada uno de los 99 objetos de la colección. Ojo: los minerales y hallazgos se identifican por su número
 //    (10 + índice, 40 + índice): a esas listas solo se les puede agregar al final, nunca insertar ni reordenar.
-const GEN = 2, NB = W * H, MAPA_BYTES = 4 + NB + NCOL * 4;
+const GEN = 3, NB = W * H, MAPA_BYTES = 4 + NB + NCOL * 4;
 const base = new Uint8Array(NB), geodas = new Uint8Array(NB / 8);
 let mapaHash = '', mapaDe = '', mapaOk = -1, mundoGen = GEN, mapaTurno = 0, mapaEspera = null, pediRemin = false;
 function huellaMapa(u) {
@@ -358,17 +358,19 @@ function huellaMapa(u) {
   return (a >>> 0).toString(16).padStart(8, '0') + (b >>> 0).toString(16).padStart(8, '0');
 }
 // Dos franjas con sentido, de orilla a orilla, para que se note por dónde vas sin que nadie lo diga.
-// · 333 m: tres de plata, tres de oro, tres de platino, y así toda la fila; arriba y abajo, una piedra entre cada grupo.
-// · 666 m: una trenza de esmeralda, rubí y diamante que sube y baja, con piedras en los huecos de la trenza.
+// · 3,333 m: tres de ónix, tres de topacio, tres de jade (los tres de las Cavernas), y así toda la fila; arriba y abajo,
+//   una piedra entre cada grupo.
+// · 6,666 m: una trenza de amatista, tanzanita y alejandrita (las tres de la Cristalera) que sube y baja, con piedras en
+//   los huecos de la trenza.
 // Se ponen siempre igual, también en los mundos que nacieron antes de que existieran. Lo ya cavado no se toca.
 function franjas() {
   const pon = (x, y, t) => { const i = y * W + x; if (base[i] === 5) return; base[i] = t; geodas[i >> 3] &= ~(1 << (i & 7)); };
   for (let x = 0; x < W; x++) {
     const k = x % 12, hueco = k % 4 === 3;
-    pon(x, 165, hueco ? 2 : 1); pon(x, 166, hueco ? 1 : 10 + [2, 3, 4][k >> 2]); pon(x, 167, hueco ? 2 : 1);
-    const z = x % 4, gema = 10 + [6, 7, 8][x % 3];
-    pon(x, 332, z === 1 ? gema : z === 3 ? 2 : 1); pon(x, 333, z % 2 === 0 ? gema : 1); pon(x, 334, z === 3 ? gema : z === 1 ? 2 : 1);
-    for (const y of [163, 164, 168, 169, 330, 331, 335, 336]) pon(x, y, 1);      // dos filas de pura tierra arriba y abajo: así la franja resalta
+    pon(x, 1665, hueco ? 2 : 1); pon(x, 1666, hueco ? 1 : 10 + [13, 14, 15][k >> 2]); pon(x, 1667, hueco ? 2 : 1);
+    const z = x % 4, gema = 10 + [16, 17, 18][x % 3];
+    pon(x, 3332, z === 1 ? gema : z === 3 ? 2 : 1); pon(x, 3333, z % 2 === 0 ? gema : 1); pon(x, 3334, z === 3 ? gema : z === 1 ? 2 : 1);
+    for (const y of [1663, 1664, 1668, 1669, 3330, 3331, 3335, 3336]) pon(x, y, 1);      // dos filas de pura tierra arriba y abajo: así la franja resalta
   }
 }
 function empacar() {

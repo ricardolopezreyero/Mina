@@ -929,19 +929,20 @@ Antes, al entrar al agua (el Acuífero, el Río, las Aguas termales) la caída s
 - **Bajo el agua no hay golpe de caída**: el agua amortigua.
 - Se ven los rotorcitos y más burbujas mientras se baja así; las demás maquinitas también lo ven.
 
-### 9.29 Las franjas de 333 m y 666 m
+### 9.29 Las franjas de 3,333 m y 6,666 m
 
-Dos franjas que cruzan el mundo de orilla a orilla (y empatan en la orilla, porque el mundo da la vuelta), para que se note por dónde se va pasando sin que ningún letrero lo diga.
+Dos franjas que cruzan el mundo de orilla a orilla (y empatan en la orilla, porque el mundo da la vuelta), para que se note por dónde se va pasando sin que ningún letrero lo diga. Primero se pusieron a 333 y 666 m; Ricardo pidió moverlas a 3,333 y 6,666 m.
 
 | Profundidad | Qué hay | Valor de la franja |
 |---|---|---|
-| **333 m** (filas 165 a 167) | En la fila del centro, tres de **plata**, tres de **oro**, tres de **platino** y una celda de tierra, repetido ocho veces. Arriba y abajo, una piedra sobre cada celda de tierra | $26,400 |
-| **666 m** (filas 332 a 334) | Una trenza de **esmeralda**, **rubí** y **diamante** que sube y baja entre tres filas, con piedras en los huecos de la trenza | $4,000,000 |
+| **3,333 m** (filas 1665 a 1667) | En la fila del centro, tres de **ónix**, tres de **topacio**, tres de **jade imperial** y una celda de tierra, repetido ocho veces. Arriba y abajo, una piedra sobre cada celda de tierra | $216 M |
+| **6,666 m** (filas 3332 a 3334) | Una trenza de **amatista**, **tanzanita** y **alejandrita** que sube y baja entre tres filas, con piedras en los huecos de la trenza | $832 M |
 
-- **Minerales del lugar:** plata, oro y platino son los metales que ya se dan alrededor de los 333 m; esmeralda, rubí y diamante, las gemas de los 666 m.
+- **Minerales del lugar:** ónix, topacio y jade son los tres de las Cavernas; amatista, tanzanita y alejandrita, los tres de la Cristalera.
 - **Marco:** dos filas de pura tierra arriba y dos abajo de cada franja, para que resalte entre el mineral al azar.
 - **Las piedras no cierran el paso:** siempre queda tierra entre una y otra.
-- **En todos los mundos**, también los ya creados: `franjas()` se aplica al cargar el terreno, siempre igual. Lo que ya estaba cavado no se toca. Es la única excepción a «el terreno de un mundo creado no se mueve» (9.21), hecha a pedido de Ricardo; el generador pasa a `GEN = 2`.
+- **En todos los mundos**, también los ya creados: `franjas()` se aplica al cargar el terreno, siempre igual. Lo que ya estaba cavado no se toca. Es la única excepción a «el terreno de un mundo creado no se mueve» (9.21), hecha a pedido de Ricardo.
+- **A 333 y 666 m** el terreno volvió a ser el de siempre. Solo los mundos creados o remineralizados durante la hora en que estuvieron ahí las conservan, porque nacieron con ellas.
 
 ## 10. Revisión de código del 2 de octubre
 
