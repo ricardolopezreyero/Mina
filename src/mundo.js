@@ -183,7 +183,8 @@ export class Mundo extends DurableObject {
     const m = this.m;
     if (!m) return;
     let cuando = Math.max(Date.now() + 3600000, this.jug.length ? m.visto + CADUCA : m.creado + DIA);
-    if (this.sucio.meta || this.sucio.dug || this.sucio.jug.size || this.sucio.maq.size) cuando = Math.min(cuando, Date.now() + 5000);
+    // Lo cavado se guarda en 2 s como mucho; lo demás puede esperar 5. Si el mundo se reinicia antes, los navegadores lo vuelven a mandar al reconectar.
+    if (this.sucio.meta || this.sucio.dug || this.sucio.jug.size || this.sucio.maq.size) cuando = Math.min(cuando, Date.now() + (this.sucio.dug ? 2000 : 5000));
     if (m.reminAt) cuando = Math.min(cuando, m.reminAt);
     const actual = await this.ctx.storage.getAlarm();
     if (actual === null || cuando < actual || actual < Date.now()) await this.ctx.storage.setAlarm(cuando);

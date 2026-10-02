@@ -1,4 +1,4 @@
-# DOCUMENTO MAESTRO · «Mina» · v12
+# DOCUMENTO MAESTRO · «Mina» · v13
 
 **Ver en vivo: https://mina.capitaltorreon.com**
 
@@ -445,6 +445,21 @@ Ricardo pidió poder escribir a cuántos metros quiere bajar, además de elegir 
 - **A los metros que quieras** (derecha): un número y una barra que se mueven juntos, de 10 en 10 m, con el precio al momento ($50 por metro). El tope es el récord del jugador: no se puede aparecer más abajo de donde ya se llegó [N]. Enter también baja.
 
 El elevador llega por su tiro, bajo el edificio (columna 66). Si a esa profundidad hay túnel cerca, te deja ahí; si hay roca, abre un hueco de una celda, de preferencia en tierra o piedra y sin llevarse mineral ni tesoros. Si cae en una cueva o en un lugar, te baja hasta el piso (hasta 30 celdas).
+
+### 9.8 Error corregido: un tramo del túnel se cerraba al reconectar
+
+**Qué pasó.** Ricardo iba bajando y se le cerró un tramo del túnel por donde venía. No era intencional.
+
+**Por qué.** El mundo guarda lo cavado por lotes (cada 5 s). Cada vez que se publica una versión nueva, el mundo se reinicia y pierde lo que tuviera sin guardar: hasta 5 s de túnel, unas 10 celdas a ese ritmo de perforación. Al reconectarse, el navegador **aceptaba sin más lo que tenía el mundo** y borraba de su propia memoria esas celdas. Lo mismo pasaba si la señal se moría sin avisar: lo cavado hasta que el juego notaba el corte (hasta 15 s) se mandaba a una conexión muerta y se perdía. Esa noche se publicó tres veces mientras él jugaba.
+
+**Cómo quedó.**
+
+- Al reconectar, el navegador compara: toda celda que él ya tenía cavada y el mundo no, la conserva y se la vuelve a mandar. Solo una remineralización cierra túneles.
+- El mundo ahora guarda lo cavado en 2 s como mucho (antes 5).
+
+**Probado.** En local: 12 celdas cavadas con la conexión «muerta», corte y reconexión: las 12 siguieron abiertas y, al recargar la página, el mundo ya las tenía. En producción, con un mundo desechable: lo cavado se conserva tras reconectar y tras dejar el mundo solo 100 s.
+
+**Lo que no se recupera:** el tramo que ya se había cerrado antes de esta corrección. Y quien tenga abierta la versión anterior puede perder hasta 5 s de túnel una vez más, al publicarse esta.
 
 ---
 

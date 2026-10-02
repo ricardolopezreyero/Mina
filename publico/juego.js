@@ -1215,8 +1215,12 @@ function noFueMia(lista) {             // otra maquinita llegó antes a esas cel
 }
 function iniciarMundo(d) {
   const otraTierra = !!S && (d.remin !== remin || d.seed !== seed);
+  // Al reconectar no se pierde ni una celda. Lo que este navegador ya había cavado y el mundo no tiene (se cortó la señal,
+  // o el mundo se reinició antes de guardar) se conserva aquí y se le vuelve a mandar. Solo una remineralización cierra túneles.
+  const mias = S && !otraTierra ? dug.slice() : null, faltan = [];
   seed = d.seed; remin = d.remin; cfg = d.cfg; miI = d.i; soyCreador = !!d.creador;
   const b = atob(d.dug); for (let i = 0; i < dug.length; i++) dug[i] = b.charCodeAt(i);
+  if (mias) for (let i = 0; i < dug.length; i++) { const f = mias[i] & ~dug[i]; if (f) { dug[i] |= f; for (let k = 0; k < 8; k++) if (f & (1 << k)) faltan.push(i * 8 + k); } }
   nuevaSemilla();
   if (otraTierra) { pendientes = []; recientes.clear(); yo.perf = null; if (yo.y > INICIO_Y + 0.01) { yo.x = INICIO_X; yo.y = INICIO_Y; yo.vx = yo.vy = 0; } }
   otros.clear();
@@ -1232,8 +1236,9 @@ function iniciarMundo(d) {
   if (soyCreador && (!cfg.nombre || (cfg.modo === 'clasico' && !cfg.verGas))) { cfg.nombre = cfg.nombre || 'Mundo de ' + miNombre; if (cfg.modo === 'clasico') cfg.verGas = 2; enviar({ t: 'cfg', cfg }); }
   guardarMundo();
   conectado = true; tCaido = 0; listo = true; bautizo = null; llaveAntes = '';
-  // lo que se cavó sin conexión: se vuelve a marcar aquí y se le avisa al mundo
-  if (pendientes.length) { const c = pendientes; pendientes = []; for (const i of c) ponerCavada(i); for (let i = 0; i < c.length; i += 30) enviar({ t: 'cava', c: c.slice(i, i + 30) }); }
+  // lo que el mundo no tenía se le manda de nuevo (ya incluye lo cavado sin conexión)
+  pendientes = [];
+  for (let i = 0; i < faltan.length; i += 30) enviar({ t: 'cava', c: faltan.slice(i, i + 30) });
   if (primera) { medir(); vis.x = ant.x = yo.x; vis.y = ant.y = yo.y; camX = Math.max(0, Math.min(W - cols, yo.x - cols / 2)); camY = Math.max(-filas * 0.68, yo.y - filas * 0.5); }
   ultPos = '';
   $('#aviso-red').style.display = 'none';
