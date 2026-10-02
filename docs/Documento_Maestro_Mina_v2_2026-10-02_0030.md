@@ -1,4 +1,4 @@
-# DOCUMENTO MAESTRO · «Mina» · v1
+# DOCUMENTO MAESTRO · «Mina» · v2
 
 **Ver en vivo: https://mina.capitaltorreon.com**
 
@@ -46,7 +46,7 @@ Bajas con tu maquinita, llenas la bodega, subes, vendes, cargas combustible, mej
 | Remineralizar con cuenta regresiva y rescate de quien está abajo | Hecho |
 | Dificultad: 3 modos, 8 ajustes finos, 4 opciones del mundo | Hecho |
 | Opciones personales: volumen, texto A−/A+, contraste, daltónicos, temblor, partículas, acercamiento, nombres, ahorro | Hecho |
-| Reconexión automática | Hecho (falta la prueba de corte de internet de 10 s) |
+| Reconexión automática; lo cavado sin conexión se reenvía al volver | Hecho y probado en vivo |
 
 ### Lo que falta del producto mínimo
 
@@ -91,6 +91,7 @@ Cada celda se decide con un número al azar fijo, calculado con la semilla del m
 
 | Cosa | Valor |
 |---|---|
+| Paso de la física | Fijo, de 1/120 de segundo como máximo: se mueve igual a 30 que a 144 cuadros |
 | Gravedad | 14 celdas/s² |
 | Velocidad de lado | 5 celdas/s con motor de fábrica, +1 por cada 30 caballos |
 | Velocidad de subida | 6 celdas/s, +1 por cada 20 caballos |
@@ -103,6 +104,9 @@ Cada celda se decide con un número al azar fijo, calculado con la semilla del m
 | Consumo | 5 L/min parado, 8 caminando, 17 volando [O], 20 perforando [V] |
 | Parado en la superficie | no gasta [N]: nadie explota por leer un letrero |
 | Inicio | $20 [O] y 3 litros |
+| Entrar a túneles y tiros | La maquinita se acomoda sola si el hueco está a la altura de su centro |
+| Hoyo de una celda | Sin soltar la tecla, se cruza; al detenerse con el centro encima, resbala y cae |
+| Sin dinero y con menos de 3 litros | La Gasolinera fía 5 litros |
 
 ### 3.3 Ritmo medido en la prueba
 
@@ -152,7 +156,11 @@ Del mundo al navegador: `mundo` (todo el estado al entrar), `nuevo` (pide bautiz
 - **Misma maquinita en dos pestañas**: se queda la más reciente.
 - **Remineralizar con alguien abajo**: sube a la superficie con su carga intacta (probado).
 - **Volver después**: la maquinita reaparece donde quedó; si el mundo cambió y ese lugar ya es tierra, reaparece en la superficie.
-- **Desconexión**: reintenta sola a 0.5, 1, 2, 4 y 8 segundos; a los 3 segundos congela el juego y avisa.
+- **Desconexión**: reintenta sola a 0.5, 1, 2, 4 y 8 segundos; a los 3 segundos congela el juego y avisa. Lo que se cavó sin conexión se guarda y se reenvía al volver.
+- **Premio por una celda que otro cavó antes**: si el aviso del mundo llega tarde, el premio se deshace (se quita la pieza o el dinero del hallazgo).
+- **Quedar dentro de la tierra** (el terreno cambió): la maquinita sale sola a la superficie.
+- **Remineralizar** se cobra hasta que el mundo confirma; la cuenta regresiva se guarda al momento.
+- **Mundo sin bautizar**: se borra solo en un día (así las visitas de robots no dejan mundos vacíos por 180 días).
 
 ### 4.5 Pruebas de aceptación (sección 7.6 del prompt)
 
@@ -163,11 +171,11 @@ Del mundo al navegador: `mundo` (todo el estado al entrar), `nuevo` (pide bautiz
 | 3 | Uno cava, el otro lo ve | Pasa |
 | 4 | Misma celda: solo uno la recibe | Pasa (el servidor rechazó la repetida) |
 | 5 | Cerrar y volver: todo igual | Pasa (recarga); falta la de «al día siguiente» |
-| 6 | Cortar internet 10 s | **Sin probar** |
+| 6 | Cortar la conexión | Pasa en vivo: reconecta sola y lo cavado mientras tanto llega al mundo |
 | 7 | Diez jugadores a 60 cuadros | **Sin probar** (se probó con 3) |
 | 8 | Remineralizar con alguien abajo | Pasa |
 | 9 | Dos mundos, terrenos distintos | Pasa por construcción (semilla al azar); sin comparar a ojo |
-| 10 | Desechar | **Sin probar** |
+| 10 | Desechar | Borrar el mundo para todos pasa; las ventanas de confirmación no se probaron |
 
 ### 4.6 Costo
 
@@ -212,7 +220,37 @@ Dos diferencias con el prompt, las dos a favor de la ligereza:
 
 ---
 
-## 7. Decisiones que te tocan
+## 7. Revisión de código del 2 de octubre
+
+Se revisó todo el código buscando fallas y se corrigieron estas:
+
+| Dónde | Qué pasaba | Cómo quedó |
+|---|---|---|
+| Movimiento | La maquinita se quedaba colgada de la orilla de un hoyo y no podía perforar ni caer | Resbala al hueco y cae |
+| Movimiento | Entrar a un túnel lateral desde un tiro pedía puntería de centésimas | Se acomoda sola |
+| Movimiento | Un cuadro lento podía dar un paso de física largo o negativo | Pasos fijos; nunca negativos |
+| Ciclo | Abrir y cerrar un menú muy rápido podía dejar dos ciclos corriendo | Cada ciclo lleva número; el viejo se apaga |
+| Pantalla | Los medidores se repintaban 8 veces por segundo y los clics en los objetos se perdían | Solo se repinta lo que cambió |
+| Pantalla | Con tres avisos a la vez, el primero desaparecía sin leerse | Tarjetas en fila |
+| Red | Lo cavado sin conexión se perdía y la maquinita quedaba dentro de la tierra | Se reenvía; red de seguridad |
+| Red | Quien estaba quieto era invisible para quien acababa de entrar | Todos mandan su posición al entrar alguien |
+| Red | Remineralizar, regalar o cambiar reglas sin conexión cobraba sin hacer nada | Solo con conexión; se cobra al confirmar |
+| Red | Dos jugadores con buen taladro podían recibir la misma pieza | El premio tardío se deshace |
+| Servidor | Un envío a un socket cerrándose podía tumbar el manejo del mensaje | Envíos protegidos |
+| Servidor | La cuenta regresiva y las maquinitas nuevas tardaban hasta 8 s en guardarse | Se guardan al momento |
+| Guardado | Un estado viejo o incompleto podía trabar el juego al cargar | Se endereza al cargar |
+| Tutorial | «Carga combustible» no se podía cumplir con el tanque lleno | Entrar con el tanque lleno cuenta |
+| Reglas | En Paseo, sin dinero y sin combustible no había salida | Combustible fiado |
+| Contratos | «Sin daño» seguía marcado como dañado hasta la siguiente venta | Se limpia al empezar un viaje con la bodega vacía |
+| Entrada | Una liga mal escrita creaba un mundo nuevo en silencio | Avisa que está incompleta |
+
+Prueba automática: un jugador simulado con teclas al azar durante 40 y 60 minutos de juego (hasta el fondo, con explosivos) sin una sola falla de estas: números inválidos, quedar dentro de la tierra, salir del mundo, bodega rebasada.
+
+**Lo que no se pudo probar:** el juego con cuadros reales y teclado real. El panel de pruebas estaba oculto y el navegador no dibuja cuadros así; todo el movimiento se probó avanzando la física por código.
+
+---
+
+## 8. Decisiones que te tocan
 
 1. **Parado en la superficie no se gasta combustible.** Lo puse porque un jugador nuevo explotaba leyendo la bienvenida. El original sí gasta. Recomiendo dejarlo.
 2. **Se entra a los edificios con ↓**, no al pasar. Con cinco edificios seguidos, entrar al pasar estorbaba. Recomiendo dejarlo.
