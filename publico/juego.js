@@ -1459,8 +1459,11 @@ function fisica(dt) {
   const k = reserva ? 0.5 : 1;
   const agua = celda(Math.floor(yo.x), Math.floor(yo.y)) === 6, Gf = agua ? G * 0.3 : G;     // en el agua todo pesa menos
   yo.agua = agua;
-  if (crucero && (teclas.aba || yo.y > -12 || yo.y <= TECHO + 1)) crucero = false;
-  if (crucero && S.fuel / tanque() < 0.12) { crucero = false; tarjeta('Combustible bajo', 'Dejaste de subir sola. Déjate caer: allá arriba casi no se gasta.'); }
+  // Subir sola: se queda subiendo sin sostener la tecla, en el cielo o dentro de un tiro. Se suelta con ↓, con la barra
+  // espaciadora, o sola si topa con techo (medio segundo sin avanzar hacia arriba).
+  if (crucero) { if (yo.y < cruY - 0.01) { cruY = yo.y; cruT = 0; } else if ((cruT += dt) > 0.5) crucero = false; }
+  if (crucero && (teclas.aba || yo.y <= TECHO + 1)) crucero = false;
+  if (crucero && S.fuel / tanque() < 0.12) { crucero = false; tarjeta('Combustible bajo', yo.y < -25 ? 'Dejaste de subir sola. Déjate caer: allá arriba casi no se gasta.' : 'Dejaste de subir sola: queda poco combustible.'); }
   const izq = teclas.izq, der = teclas.der, arr = teclas.arr || crucero, aba = teclas.aba;
   const caballos = hp(), pesoMax = caballos * 29.5, peso = 1980 + kgCarga();
   const alto = Math.max(0, -(yo.y + HH));        // celdas sobre el suelo
@@ -3222,6 +3225,8 @@ function queEs() {
   if (txt) { o.style.left = raton.x + 16 + 'px'; o.style.top = raton.y + 18 + 'px'; }
 }
 let cavadasMundo = 0;       // celdas cavadas en todo el mundo: de eso depende el tamaño del terrero
+let cruY = 0, cruT = 0, tArr = -9;
+function subirSola() { crucero = true; cruY = yo.y + 1; cruT = 0; son.clic(); }
 let tGas = -9, crucero = false, tLatido = -9, tMach = -99, eraSonico = false, tTermas = -9;
 let pistaDe = null, tAlarma = 0, estabaAbajo = false, tTabla = 0;
 function pista(x, discreta) { const p = $('#pista'); if (p._t !== x) { p._t = x; p.textContent = x; p.style.display = x ? 'block' : 'none'; p.classList.toggle('dis', !!discreta); } }
@@ -3278,7 +3283,7 @@ function cadaTanto() {
   let e = null;
   if (yo.suelo && yo.y < 0) e = EDIF.find((b) => yo.x > b.x + 0.2 && yo.x < b.x + 2.8) || null;
   pistaDe = e;
-  pista(crucero ? 'Subiendo sola · barra espaciadora o ↓ para soltar' : yo.planea && yo.y < -40 ? '↓ caer en picada · ↑ frenar' : yo.picada ? 'En picada · suelta ↓ para planear' : yo.y < -25 && teclas.arr ? 'Barra espaciadora: seguir subiendo sin sostener la tecla' : vistaLibre ? 'Vista libre · ' + donde(camY + filas / 2) + ' · pulsa una flecha para volver a tu maquinita' : e ? '↓  Entrar a ' + e.n + ' · ' + e.h.toLowerCase() : '', !e);      // solo la invitación a entrar a un edificio va destacada
+  pista(crucero ? 'Subiendo sola · barra espaciadora o ↓ para soltar' : yo.planea && yo.y < -40 ? '↓ caer en picada · ↑ frenar' : yo.picada ? 'En picada · suelta ↓ para planear' : teclas.arr && yo.vuela && !yo.suelo ? 'Doble ↑ o barra espaciadora: seguir subiendo sin sostener la tecla' : vistaLibre ? 'Vista libre · ' + donde(camY + filas / 2) + ' · pulsa una flecha para volver a tu maquinita' : e ? '↓  Entrar a ' + e.n + ' · ' + e.h.toLowerCase() : '', !e);      // solo la invitación a entrar a un edificio va destacada
   // los lugares: al entrar por primera vez se celebra y queda apuntado en El Elevador
   const lg = yo.y >= 165 ? lugarDe(Math.floor(yo.x), Math.floor(yo.y), true) : -1;
   if (lg >= 0 && !S.lug[lg]) {
@@ -3976,7 +3981,7 @@ function menuPrincipal() {
       <p><b>Tu viaje:</b> abajo a la izquierda ves cuánto llevas, en cuánto se vende y si el combustible te alcanza para subir. Ahí mismo está la <b>grúa</b> (tecla G): te deja en la Gasolinera y cobra según lo lejos que estés y lo que peses.</p>
       <p><b>Bajo el agua:</b> el agua te sostiene y frena la caída, pero con <b>↓</b> los rotorcitos empujan hacia abajo y la cruzas tan rápido como el aire. Ahí abajo no hay golpe de caída.</p>
       <p><b>De regreso:</b> sin tocar nada, la maquinita planea con sus rotorcitos. Con <b>↓</b> los guarda y cae en picada, tres veces más rápido; con <b>↑</b> frena. El velocímetro de la izquierda dice a cuánto vas, y si pasas de Mach 1 dentro del aire, truena.</p>
-      <p><b>Hacia arriba:</b> el cielo también se explora, y subir es todo un viaje: halcones y águilas, el atardecer, un avión, la noche con sus constelaciones, la aurora al entrar al espacio (100 km), un cometa, la estación, la Luna que crece y el planeta que se achica hasta que, cerca de los 1,000 km, el Sol vuelve a salir. Son unos 15 minutos de vuelo. Entre más alto, menos combustible se gasta; con un tanque «Cisterna» alcanza. Pasando los 50 m de altura, la barra espaciadora deja a la maquinita subiendo sola.</p>
+      <p><b>Hacia arriba:</b> el cielo también se explora, y subir es todo un viaje: halcones y águilas, el atardecer, un avión, la noche con sus constelaciones, la aurora al entrar al espacio (100 km), un cometa, la estación, la Luna que crece y el planeta que se achica hasta que, cerca de los 1,000 km, el Sol vuelve a salir. Son unos 15 minutos de vuelo. Entre más alto, menos combustible se gasta; con un tanque «Cisterna» alcanza. Con <b>dos toques seguidos a ↑</b>, o con la barra espaciadora, la maquinita se queda subiendo sola, también dentro de un tiro: sigue hasta que topa con techo, o hasta el espacio si no hay. Se suelta con ↓ o con la barra.</p>
       <p><b>Lava y gas:</b> la lava (desde 410 m) se ve y se rodea. Las bolsas de gas (desde 650 m) se notan por unas burbujitas verdes y por el aviso «Huele a gas». Pon el ratón encima de cualquiera y te dice cuánto casco te quita. Vuélalas con dinamita o lleva casco y radiador suficientes: arriba, en las metas, dice hasta qué profundidad aguantas.</p>
       <p><b>Sonido:</b> la bocina de arriba a la derecha lo apaga, lo baja y lo sube; «♪ Sonidos» deja elegir qué se oye: música, taladro, hélice, motor (viene apagado) y lo demás, cada uno con su interruptor.</p>
       <p><b>Mirar alrededor:</b> la rueda del mouse o dos dedos en el trackpad mueven la vista; cualquier flecha la regresa a tu maquinita. Mientras miras, a la izquierda sale una regla con la profundidad de lo que ves, dónde quedó tu maquinita y los lugares que ya descubriste; un clic en la regla te lleva ahí. Solo se puede mirar lo ya explorado: hasta tu récord de profundidad y hasta tu mayor altura.</p>
@@ -4043,6 +4048,7 @@ addEventListener('keydown', (e) => {
   if (MAPA[k]) {
     e.preventDefault();
     if (MAPA[k] === 'aba' && !e.repeat && pistaDe && pistaDe.id && yo.suelo && yo.y < 0) return abrir(pistaDe.id);
+    if (MAPA[k] === 'arr' && !e.repeat) { const t = performance.now(); if (t - tArr < 330 && !crucero) subirSola(); tArr = t; }      // dos toques seguidos a ↑: se queda subiendo sola
     teclas[MAPA[k]] = true; vistaLibre = false; return;
   }
   const i = 'rndpqt'.indexOf(k);                  // Reserva, Nanobots, Dinamita, Plástico, cuántiQo, Transmisor
@@ -4052,7 +4058,7 @@ addEventListener('keydown', (e) => {
   if (k === 'g') grua();                            // Grúa
   if (k === 'i') abrir('inv');                      // Invitar
   if (k === 'v' && edenVivo && yo.y > EDEN0 - 6) verJardin();      // Ver el jardín entero
-  if (k === ' ') { e.preventDefault(); if (crucero) crucero = false; else if (yo.y < -25) { crucero = true; son.clic(); } }
+  if (k === ' ') { e.preventDefault(); if (crucero) crucero = false; else subirSola(); }
 });
 // La rueda o el trackpad mueven la vista para mirar alrededor; cualquier flecha la regresa a la maquinita.
 addEventListener('wheel', (e) => {

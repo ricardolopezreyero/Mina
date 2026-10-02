@@ -944,6 +944,16 @@ Dos franjas que cruzan el mundo de orilla a orilla (y empatan en la orilla, porq
 - **En todos los mundos**, también los ya creados: `franjas()` se aplica al cargar el terreno, siempre igual. Lo que ya estaba cavado no se toca. Es la única excepción a «el terreno de un mundo creado no se mueve» (9.21), hecha a pedido de Ricardo.
 - **A 333 y 666 m** el terreno volvió a ser el de siempre. Solo los mundos creados o remineralizados durante la hora en que estuvieron ahí las conservan, porque nacieron con ellas.
 
+### 9.30 Subir sola, también desde abajo
+
+«Subir sola» (la maquinita sigue subiendo sin sostener la tecla) solo funcionaba pasando los 50 m de altura. Ahora funciona en cualquier parte, también dentro de un tiro a kilómetros de profundidad.
+
+- **Cómo se activa:** dos toques seguidos a **↑**, o la barra espaciadora.
+- **Hasta dónde sube:** hasta que topa con techo (se suelta sola tras medio segundo sin avanzar). Si no hay techo, sigue hasta el espacio.
+- **Cómo se suelta:** con **↓** o con la barra espaciadora. También se suelta sola si el combustible baja del 12 %.
+- Mientras sube se puede dirigir con ← →.
+- Para bajar no hay equivalente: hay que sostener ↓, a propósito.
+
 ## 10. Revisión de código del 2 de octubre
 
 Se revisó todo el código buscando fallas y se corrigieron estas:

@@ -11,7 +11,7 @@ Gratis y sin registro: entras y ya estás jugando, sin llenar nada. Se puede ins
 - **Las flechas** para moverte. **↑** vuela, **↓** perfora hacia abajo, **← →** contra una pared perfora de lado.
 - En la superficie, párate frente a un edificio y pulsa **↓** para entrar.
 - Las teclas son la inicial, en español, de lo que hacen: **R** Reserva, **N** Nanobots, **D** Dinamita, **P** Plástico, **Q** Cuántico, **T** Transmisor, **C** Chat, **S** Señal, **A** Ayudar (pasa 5 litros), **G** Grúa, **M** Menú (también **Esc**).
-- **Barra espaciadora** (pasando los 50 m de altura): la maquinita sigue subiendo sola hasta el espacio.
+- **Dos toques a ↑** (o la barra espaciadora): la maquinita se queda subiendo sola, desde donde sea, hasta que topa con techo o hasta el espacio. Se suelta con **↓**.
 - De regreso planea sola con sus rotorcitos; con **↓** cae en picada y con **↑** frena. El velocímetro de la izquierda dice a cuánto vas.
 - Abajo a la izquierda está tu viaje: cuánto llevas, en cuánto se vende y si el combustible alcanza para subir. Ahí mismo, la **grúa** a la Gasolinera (tecla **G**).
 - La rueda o el trackpad mueven la vista; cualquier flecha la regresa.
@@ -44,7 +44,7 @@ Gratis y sin registro: entras y ya estás jugando, sin llenar nada. Se puede ins
 | `wrangler.jsonc` | Configuración del Worker y del dominio |
 | `publico/sw.js`, `publico/manifest.webmanifest`, `publico/iconos/` | La aplicación instalable: lo que se guarda en el equipo para abrir sin internet, y sus iconos |
 | `diseno-fuente/` | El programa que dibuja el icono en todos sus tamaños |
-| `docs/Documento_Maestro_Mina_v35_2026-10-02_1223.md` | Qué está construido, con qué números y qué falta |
+| `docs/Documento_Maestro_Mina_v36_2026-10-02_1234.md` | Qué está construido, con qué números y qué falta |
 | `Prompt_Maestro_Mina_v4_2026-10-01_2336.md` | El diseño completo |
 | `sonidos-fuente/` | El pedido exacto de sonidos y música para ElevenLabs (aún sin generar) |
 
