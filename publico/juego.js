@@ -1344,7 +1344,9 @@ function usar(i) {
 
 /* ════════ Red: el mundo compartido ════════ RLR */
 let ws = null, reintento = 500, bautizo = null, tCaido = 0, llaveAntes = '';
-function enviar(o) { if (ws && ws.readyState === 1) ws.send(JSON.stringify(o)); }
+// Mirar sin jugar: se entra por una ficha (no por la liga del mundo), se ve todo en vivo y no se manda nada.
+let soloVer = false, verFicha = '', veo = -1, verFallos = 0, miPid = '', miVer = '', mirones = 0;
+function enviar(o) { if (!soloVer && ws && ws.readyState === 1) ws.send(JSON.stringify(o)); }
 function enviarEst() {
   if (!S || !conectado) return;
   if (yo.renace) { S.x = INICIO_X; S.y = INICIO_Y; } else { S.x = yo.x; S.y = yo.perf ? yo.perf.oy : yo.y; }
@@ -1354,7 +1356,7 @@ function enviarEst() {
 }
 const bufPos = new Uint8Array(8), datoPos = new DataView(bufPos.buffer); let ultPos = '';
 function enviarPos() {
-  if (!conectado || ![...otros.values()].some((o) => o.on)) return;
+  if (!conectado || soloVer || !(mirones || [...otros.values()].some((o) => o.on))) return;
   const x = Math.round(yo.x * 256), y = Math.round(yo.y * 64);
   const f = (yo.dir > 0 ? 1 : 0) | (yo.vuela ? 2 : 0) | (yo.planea ? 32 : 0) | (tiempo - (yo.pelea || -9) < 0.7 ? 64 : 0) | (yo.perf || yo.ataca ? 4 : 0) | (menu || pausa ? 8 : 0) | ((yo.perf && yo.perf.ty > Math.floor(yo.perf.oy)) || yo.ataca === 2 ? 16 : 0);
   const k = x + ',' + y + ',' + f;
@@ -1364,9 +1366,9 @@ function enviarPos() {
 }
 function hola(extra) { enviar({ t: 'hola', k: miK, ...(extra || {}), ...(duenos[mundoId] ? { d: duenos[mundoId] } : {}) }); }
 function conectar() {
-  ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws/' + mundoId);
+  ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + (soloVer ? '/ws/ver/' + verFicha : '/ws/' + mundoId));
   ws.binaryType = 'arraybuffer';
-  ws.onopen = () => { reintento = 500; red.sinEco = 0; hola(bautizo); };
+  ws.onopen = () => { reintento = 500; red.sinEco = 0; if (!soloVer) hola(bautizo); };
   ws.onmessage = (e) => {
     if (typeof e.data !== 'string') return recibePos(new Uint8Array(e.data));
     if (e.data === 'q') { const v = performance.now() - red.pingT; red.rtt = red.rtt ? red.rtt * 0.7 + v * 0.3 : v; red.sinEco = 0; return; }
@@ -1378,6 +1380,7 @@ function conectar() {
 function alCerrar(e) {
   conectado = false;
   if (e.code >= 4000 && e.code <= 4002) return;
+  if (soloVer && !listo && ++verFallos >= 3) return pantallaFinal('Esta transmisión ya no existe', 'La liga para mirar dejó de servir, o el mundo se cerró a quienes miran.');
   tCaido = tCaido || Date.now();
   setTimeout(() => { if (!conectado && listo) $('#aviso-red').style.display = 'block'; }, 3000);      // sin señal se sigue jugando: todo queda en este equipo y se manda al volver
   setTimeout(conectar, reintento); reintento = Math.min(8000, reintento * 2);
@@ -1430,8 +1433,11 @@ function recibir(d) {
       return;
     }
     case 'noexiste': quitarMundo(mundoId); if (deCasa) return location.replace('/'); return pantallaFinal('Este mundo no existe', 'Puede que lo hayan borrado o que la liga esté incompleta.');
+    case 'mira': return iniciarVer(d);
+    case 'nomira': detener(); return pantallaFinal('Este mundo no admite observadores', 'Quien lo creó prefirió jugar sin público.');
+    case 'obs': mirones = d.n | 0; ultPos = ''; if (soloVer) pintarVer(); else { enviarPos(); pintarTabla(); } return;      // que quien llega a mirar me vea aunque esté quieto
     case 'cerrado': return pantallaFinal('Este mundo cerró la puerta', 'Quien lo creó ya no admite maquinitas nuevas.');
-    case 'lleno': return pantallaFinal('Este mundo está lleno', 'Hay un tope de 10 jugadores a la vez.');
+    case 'lleno': return pantallaFinal('Este mundo está lleno', soloVer ? 'Ya hay 30 personas mirando. Intenta en un rato.' : 'Hay un tope de 10 jugadores a la vez.');
     case 'otra': detener(); return pantallaFinal('Tu maquinita se abrió en otro lado', 'Está en otra pestaña o en otro dispositivo, con todo lo que trae. Aquí puedes volver a tomarla cuando quieras.');
     case 'borrado': quitarMundo(mundoId); detener(); return pantallaFinal('Este mundo fue borrado', 'Quien lo creó lo desechó.');
     case 'mundo': return iniciarMundo(d);
@@ -1500,6 +1506,7 @@ function iniciarMundo(d, local) {
   // o el mundo se reinició antes de guardar) se conserva aquí y se le vuelve a mandar. Solo una remineralización cierra túneles.
   const mias = S && !otraTierra ? dug.slice() : null, faltan = [];
   seed = d.seed; remin = d.remin; cfg = d.cfg; miI = d.i; soyCreador = !!d.creador;
+  if (!local) { miPid = d.pid || ''; miVer = d.ver || ''; mirones = d.obs | 0; }
   const b = atob(d.dug); for (let i = 0; i < dug.length; i++) dug[i] = b.charCodeAt(i);
   const misCol = mias ? hallados.slice() : null; hallados.fill(0); for (const k of d.col || []) if (k >= 0 && k < NCOL) hallados[k] = 1;
   if (misCol) for (let k = 0; k < NCOL; k++) if (misCol[k] && !hallados[k]) { hallados[k] = 1; enviar({ t: 'col', k }); }      // lo que encontré sin señal también cuenta
@@ -2363,7 +2370,7 @@ function dibujar() {
   }
   const enPelea = tiempo - (yo.pelea || -9) < 0.7, bx = enPelea ? Math.sin(reloj * 70) * T * 0.035 : 0;       // en pelea la maquinita vibra y saca los rotorcitos
   faroCol = tiempo - tGas < 3 ? '#6fc3ff' : '#fff3b0';
-  dibMaq(g, mx + bx, my, T, miModelo, yo.dir, yo.vuela ? 1 : yo.planea || enPelea ? 2 : 0, p ? (p.ty > Math.floor(p.oy) ? 2 : p.tx < Math.floor(p.ox) ? -1 : 1) : yo.ataca || 0, op.nombres ? miNombre : '', '', vis.x);
+  if (!soloVer) dibMaq(g, mx + bx, my, T, miModelo, yo.dir, yo.vuela ? 1 : yo.planea || enPelea ? 2 : 0, p ? (p.ty > Math.floor(p.oy) ? 2 : p.tx < Math.floor(p.ox) ? -1 : 1) : yo.ataca || 0, op.nombres ? miNombre : '', '', vis.x);
   // el aire como resistencia: al caer rápido se forma un arco bajo la maquinita; muy rápido se pone al rojo y deja estela
   const dens = vis.y < 0 ? Math.max(0, 1 + (vis.y + HH) / 45000) : 0;
   if (yo.vy > 30 && dens > 0.02) {
@@ -2468,6 +2475,85 @@ function ciclo(t, id) {
   }
 }
 // Todo lo que se mueve en pantalla y no es mi física: las demás maquinitas, partículas y la cámara.
+// Quien mira no tiene maquinita: la cámara va con la que eligió ver, y lo demás (el mundo, las otras, las chispas) corre igual.
+function cicloVer(t, id) {
+  if (!corriendo || id !== cicloId) return;
+  requestAnimationFrame((x) => cicloVer(x, id));
+  let d = (t - ult) / 1000; ult = t;
+  if (!(d > 0)) return;
+  if (d > 0.1) d = 0.1;
+  reloj += d; tiempo += d;
+  const o = otros.get(veo);
+  if (o && o.on && o.x !== undefined) { const lejos = Math.abs(o.x - yo.x) > 12 || Math.abs(o.y - yo.y) > 12; yo.x = vis.x = o.x; yo.y = vis.y = o.y; if (lejos) { camX = Math.max(0, Math.min(W - cols, o.x - cols / 2)); camY = o.y - filas * 0.5; } }
+  animar(d); dibujar(); gotear(d);
+  if ((tHud += d) > 0.25) { tHud = 0; pintarVer(); }
+}
+function iniciarVer(d) {
+  const primera = !listo;
+  seed = d.seed; remin = d.remin; cfg = d.cfg; miI = -1; soyCreador = false; miNombre = ''; mundoId = '';
+  const b = atob(d.dug); for (let i = 0; i < dug.length; i++) dug[i] = b.charCodeAt(i);
+  hallados.fill(0); for (const k of d.col || []) if (k >= 0 && k < NCOL) hallados[k] = 1;
+  nuevaSemilla(); otros.clear();
+  for (const j of d.jug) otros.set(j.i, j);
+  if (!S) { S = sanear(null); S.fuel = tanque(); S.vida = vidaMax(); }
+  if (!otros.has(veo)) veo = ([...otros.values()].find((o) => o.on) || [...otros.values()].sort((a, b) => (b.tot || 0) - (a.tot || 0))[0] || { i: -1 }).i;
+  conectado = true; listo = true; verFallos = 0; tCaido = 0;
+  if (primera) { medir(); yo.x = vis.x = ant.x = INICIO_X; yo.y = vis.y = ant.y = INICIO_Y; camX = Math.max(0, Math.min(W - cols, yo.x - cols / 2)); camY = Math.max(-filas * 0.68, yo.y - filas * 0.5); }
+  if (menu === 'inicio') { menu = null; $('#velo').classList.remove('on'); }
+  document.body.classList.add('viendo');
+  pintarVer(); arrancar();
+}
+// La barra de quien mira: a quién ve, cuánto lleva, cuántos más miran, y cómo cambiar de maquinita o ponerse a jugar.
+function pintarVer() {
+  const o = otros.get(veo), vivos = [...otros.values()].filter((x) => x.on).length;
+  poner($('#verDatos'), o ? `<b>${o.on ? '<span class="vivo">● EN VIVO</span>' : '○ No está jugando ahora'} · ${esc(o.n)}</b><small>${o.on && o.y !== undefined ? donde(o.y) + ' · ' : ''}${dineroLargo(o.tot || 0)} ganados · ${esc(cfg.nombre || 'un mundo de Mina')}${mirones > 1 ? ' · 👁 ' + mirones + ' mirando' : ''}</small>` : '<b>Este mundo está vacío</b>');
+  $('#verOtra').style.display = vivos > 1 || (vivos === 1 && !(o && o.on)) ? '' : 'none';
+}
+function verOtra(paso) {
+  const l = [...otros.values()].filter((o) => o.on).sort((a, b) => a.i - b.i); if (!l.length) return;
+  const k = l.findIndex((o) => o.i === veo); veo = l[(k + paso + l.length) % l.length].i; pintarVer();
+}
+const dineroLargo = (n) => '$' + Math.floor(n || 0).toLocaleString('es-MX');
+
+/* ════════ La tabla mundial ════════ RLR */
+// Las veinte maquinitas que más han ganado, en todos los mundos. Con la tabla abierta se pregunta cada 4 s y los números
+// ruedan hasta su nuevo valor; jugando, cada minuto, para saber en qué lugar vas.
+const tablaM = { l: [], corte: 0, t: 0, pedido: 0, lugar: 0, antes: new Map() };
+const topAbierta = () => menu === 'top' || (menu === 'menu' && pestana === 10);
+async function pedirTop() {
+  tablaM.pedido = Date.now();
+  try {
+    const d = await (await fetch('/api/tabla', { cache: 'no-store' })).json(); if (!Array.isArray(d.top)) return;
+    const lugar = miPid ? d.top.findIndex((e) => e.p === miPid) + 1 : 0, antes = leer('mina_lugar', 0);
+    if (!soloVer && lugar && (!antes || lugar < antes)) { son.rango(); tarjeta('🏆 Lugar ' + lugar + ' del mundo', (antes ? 'Subiste del ' + antes + ' al ' + lugar : 'Entraste al Top 20') + ' entre todas las maquinitas de Mina. Menú → Top 20.', 'msj', 12000, true); }
+    if (!soloVer && miPid && lugar !== antes) escribir('mina_lugar', lugar);
+    tablaM.l = d.top; tablaM.corte = d.corte || 0; tablaM.t = Date.now(); tablaM.lugar = lugar;
+    if (topAbierta()) pintarMenu();
+    if (!soloVer) pintarTabla();
+  } catch {}
+}
+function htmlTop() {
+  let h = '<p class="nota">Las veinte maquinitas que más dinero han ganado, entre todos los mundos de Mina. Se mueve en vivo: si alguien está jugando, ves cómo sube su cuenta, y puedes ir a verla jugar.</p>';
+  if (!tablaM.t) return h + '<p class="nota">Cargando la tabla…</p>';
+  h += tablaM.l.map((e, k) => `<div class="fila top${e.p === miPid ? ' yo' : ''}"><div class="lug">${k < 3 ? ['🥇', '🥈', '🥉'][k] : k + 1}</div><canvas width="72" height="72" data-mo="${e.m | 0}"></canvas>
+    <div class="t"><b>${esc(e.n)}${e.p === miPid ? ' (tú)' : ''}</b><small>${e.vivo ? '<span class="vivo">● jugando ahora</span>' : 'descansando'}</small></div>
+    <span class="v" data-p="${e.p}" data-tot="${e.tot}">${dineroLargo(tablaM.antes.get(e.p) ?? e.tot)}</span>
+    ${e.vivo && e.ver && e.p !== miPid ? `<a class="boton" href="/ver/${e.ver}?j=${e.i | 0}" ${soloVer ? '' : 'target="_blank" rel="noopener"'}>👁 Ver jugar</a>` : ''}</div>`).join('') || '<p class="nota">Todavía no hay nadie. La primera venta abre la tabla.</p>';
+  if (!soloVer && S && miPid && !tablaM.lugar) h += `<p class="nota" style="margin-top:10px">Tú llevas <b>${dineroLargo(S.tot)}</b>. ${tablaM.l.length >= 20 ? 'Te faltan ' + dineroLargo(Math.max(1, tablaM.corte - S.tot + 1)) + ' para entrar a la tabla.' : 'Vende una carga y apareces aquí.'}</p>`;
+  return h;
+}
+// Después de pintar la tabla: las maquinitas en chiquito y los números que cambiaron, rodando hasta su nuevo valor.
+function animarTop(c) {
+  c.querySelectorAll('canvas[data-mo]').forEach((x) => dibMaq(x.getContext('2d'), 36, 39, 62, +x.dataset.mo, 1, false, 0, '', ''));
+  c.querySelectorAll('.v[data-p]').forEach((el) => {
+    const p = el.dataset.p, a = tablaM.antes.get(p), b = +el.dataset.tot; tablaM.antes.set(p, b);
+    if (a === undefined || a === b) return;
+    el.classList.add('sube'); const t0 = performance.now();
+    const paso = () => { if (!el.isConnected) return; const k = Math.min(1, (performance.now() - t0) / 1600); el.textContent = dineroLargo(a + (b - a) * (1 - Math.pow(1 - k, 3))); if (k < 1) requestAnimationFrame(paso); else el.classList.remove('sube'); };
+    paso();
+  });
+}
+
 function animar(d) {
   const ahora = performance.now() - red.retraso;
   for (const o of otros.values()) {
@@ -2526,7 +2612,7 @@ function animar(d) {
 function arrancar() {
   if (corriendo || !listo || menu || pausa) return;   // con la pestaña oculta el navegador ya no llama al ciclo
   corriendo = true; ult = performance.now(); acum = 0; ant.x = yo.x; ant.y = yo.y;
-  const id = ++cicloId; requestAnimationFrame((x) => ciclo(x, id));
+  const id = ++cicloId; requestAnimationFrame((x) => (soloVer ? cicloVer : ciclo)(x, id));
   if (pistaDe === PAUSA) pistaDe = undefined;
 }
 function detener() { corriendo = false; for (const k in teclas) teclas[k] = false; sonarLazos(true); }
@@ -2715,7 +2801,8 @@ function pintarTabla() {
   if (!S) return;
   const l = [{ n: miNombre, m: miModelo, rec: S.rec, on: 1, yo: 1, y: donde(yo.y) }, ...[...otros.values()].map((o) => ({ ...o, y: o.on && o.y !== undefined ? donde(o.y) : null }))];
   l.sort((a, b) => (b.rec || 0) - (a.rec || 0));
-  poner($('#tabla'), l.map((j) => `<div class="${j.on ? '' : 'off'}"><i style="background:${MODELOS[j.m]?.[0] || '#888'}"></i><b>${esc(j.n)}${j.yo ? ' (tú)' : ''}</b><span>${j.on && j.y !== null ? j.y + ' · ' : ''}récord ${j.rec || 0} m</span></div>`).join(''));
+  poner($('#tabla'), l.map((j) => `<div class="${j.on ? '' : 'off'}"><i style="background:${MODELOS[j.m]?.[0] || '#888'}"></i><b>${esc(j.n)}${j.yo ? ' (tú)' : ''}</b><span>${j.on && j.y !== null ? j.y + ' · ' : ''}récord ${j.rec || 0} m</span></div>`).join('') +
+    (tablaM.lugar ? `<div class="mund">🏆 Lugar ${tablaM.lugar} del mundo</div>` : '') + (mirones ? `<div class="mund">👁 ${mirones === 1 ? '1 persona te mira' : mirones + ' personas te miran'}</div>` : ''));
 }
 
 /* ════════ Código QR ════════ RLR */
@@ -2900,14 +2987,14 @@ function pintarQR(lienzoQR, texto, lado = 8) {
 /* ════════ Menús ════════ RLR */
 let pestana = 0, pieza = 0, cuantos = 1, eleM = 0, ultVenta = 0, porCobrar = 0;      // porCobrar: lo vendido que todavía va «en camino» a la cartera
 function abrir(id) {
-  if (!S) return;
+  if (!S || (soloVer && id !== 'top')) return;
   son.clic();
   menu = id; detener(); $('#velo').classList.add('on');
   if (id === 'gas' && S.fuel >= tanque() - 0.001) evento('comb');   // llegar con el tanque lleno también cuenta
   pintarMenu(); ultPos = ''; enviarPos();
 }
 function cerrar() { if (menu === 'inicio') return; menu = null; $('#velo').classList.remove('on'); document.activeElement?.blur?.(); arrancar(); ultPos = ''; enviarPos(); if (sucio) enviarEst(); }
-const cab = (t, sinX) => `<header><h2>${t}</h2><span class="d">${S ? fmt(S.d) : ''}</span>${sinX ? '' : '<button class="s" data-a="cerrar">Cerrar (Esc)</button>'}</header>`;
+const cab = (t, sinX) => `<header><h2>${t}</h2><span class="d">${S && !soloVer ? fmt(S.d) : ''}</span>${sinX ? '' : '<button class="s" data-a="cerrar">Cerrar (Esc)</button>'}</header>`;
 function pintarMenu() {
   const c = $('#caja'); let h = '';
   if (menu === 'gas') {
@@ -2976,7 +3063,8 @@ function pintarMenu() {
       <a href="${esc(liga)}" target="_blank" rel="noopener" title="Abrir la liga"><canvas id="qrLienzo" class="qr" data-t="${esc(liga)}"></canvas></a>
       <p><button data-a="ligaMaq">Copiar la liga de mi maquinita</button></p>
       <p class="nota"><b>No lo compartas ni lo enseñes en pantalla:</b> quien lo abra maneja tu maquinita. Para invitar gente usa el botón Invitar.</p></div>`;
-  } else if (menu === 'menu') h = menuPrincipal();
+  } else if (menu === 'top') h = cab('🏆 Top 20 mundial') + '<div class="cuerpo">' + htmlTop() + '</div>';
+  else if (menu === 'menu') h = menuPrincipal();
   else return;
   const sube = c.querySelector('.cuerpo')?.scrollTop || 0, misma = c._m === menu + pieza; c._m = menu + pieza;
   c.innerHTML = h;
@@ -2984,6 +3072,7 @@ function pintarMenu() {
   if (cu) { if (misma) cu.scrollTop = sube; else if (act) cu.scrollTop = Math.max(0, act.offsetTop - cu.offsetTop - 70); }
   const mp = $('#mapa'); if (mp) { pintarMapa(mp); c.querySelector('.cuerpo').scrollTop = Math.max(0, mp.offsetTop + Math.max(0, yo.y) / 2 / (mp.height / mp.clientHeight) - 220); }
   const cm = $('#miMaq'); if (cm) dibMaq(cm.getContext('2d'), 80, 86, 132, miModelo, 1, false, 0, '', '');
+  if (topAbierta()) { animarTop(c); if (Date.now() - tablaM.pedido > 3500) pedirTop(); }
   const ql = $('#qrLienzo'); if (ql) pintarQR(ql, ql.dataset.t, 8);
   const fa = $('#fotoAqui'); if (fa) { const f = fotoRecord(); f.className = 'foto'; fa.appendChild(f); }
   for (const id of ['#ligaAqui', '#ligaAqui2']) { const la = $(id); if (la) { const f = fotoLiga(!!la.dataset.m); f.className = 'foto'; f.style.width = 'min(100%,520px)'; f.style.height = 'auto'; la.appendChild(f); subirFotos(true); } }
@@ -3056,7 +3145,7 @@ const acciones = {
       // …y se jala a la cartera
       if (vivo()) { volar(tot, cartera, '💰'); tot.classList.add('sefue'); }
       await Promise.all([rodar(cartera, desde, desde + v.total, 1500, true), (async () => { const t0 = performance.now(); while (performance.now() - t0 < 1500) { porCobrar = v.total * (1 - (performance.now() - t0) / 1500); pintarHud(true); await espera(60); } })()]);
-      porCobrar = 0; pintarHud(true); son.venta();
+      porCobrar = 0; pintarHud(true); son.venta(); tablaM.pedido = Date.now() - 54000;       // en unos segundos se pregunta la tabla: a ver en qué lugar quedaste
       if (cartera && cartera.isConnected) { cartera.classList.add('pum'); setTimeout(() => cartera.classList.remove('pum'), 500); }
       await espera(700);
       if (menu === 'bas') pintarMenu();
@@ -3133,6 +3222,12 @@ const acciones = {
     location.reload(); return 'no';
   },
   instalar() { if (instalar) { instalar.prompt(); instalar = null; } },
+  ligaVer(v, el) {
+    const liga = location.origin + '/ver/' + miVer + '?j=' + miI;
+    const hecho = () => { el.textContent = '¡Liga copiada!'; }, aMano = () => window.prompt('Copia la liga para mirar:', liga);
+    if (navigator.clipboard?.writeText) navigator.clipboard.writeText(liga).then(hecho, aMano); else aMano();
+    return 'no';
+  },
   presumir(v, el) {
     const liga = location.origin + '/m/' + mundoId + '?j=' + miI; subirFotos(true);
     const hecho = () => { el.textContent = '¡Liga copiada!'; }, aMano = () => window.prompt('Copia tu liga:', liga);
@@ -3147,7 +3242,7 @@ const acciones = {
     return 'no';
   },
   modo(v, el) { if (!conectado || !MODOS[el.value]) return; cfg = { ...cfg, ...MODOS[el.value], modo: el.value }; enviar({ t: 'cfg', cfg }); },
-  regla(v, el) { if (!conectado) return; cfg = { ...cfg, [el.dataset.k]: el.type === 'checkbox' ? (el.checked ? 1 : 0) : +el.value }; if (!['puerta', 'reminTodos', 'regalos', 'pleitos'].includes(el.dataset.k)) cfg.modo = 'medida'; enviar({ t: 'cfg', cfg }); },
+  regla(v, el) { if (!conectado) return; cfg = { ...cfg, [el.dataset.k]: el.type === 'checkbox' ? (el.checked ? 1 : 0) : +el.value }; if (!['puerta', 'reminTodos', 'regalos', 'pleitos', 'mirar'].includes(el.dataset.k)) cfg.modo = 'medida'; enviar({ t: 'cfg', cfg }); },
   nombreMundo(v, el) { const n = el.value.trim(); if (n.length < 2 || !conectado) return 'no'; cfg = { ...cfg, nombre: n }; enviar({ t: 'cfg', cfg }); guardarMundo(); return 'no'; },
   regalar(v) {
     const el = $('#cuanto'), q = Math.floor(+el.value);
@@ -3186,6 +3281,8 @@ $('#caja').addEventListener('change', (e) => {
   if (r !== 'no' && menu && menu !== 'inicio') pintarMenu();
 });
 $('#objetos').addEventListener('click', (e) => { const el = e.target.closest('[data-u]'); if (el) { audio(); usar(+el.dataset.u); } });
+$('#verOtra').addEventListener('click', () => { audio(); verOtra(1); });
+$('#verTop').addEventListener('click', () => { audio(); abrir('top'); });
 $('#bGrua').addEventListener('click', (e) => { audio(); e.currentTarget.blur(); if (listo && !menu && !pausa) grua(); });
 $('#vjDatos').addEventListener('click', (e) => { audio(); if (listo && !menu) { pestana = e.target.closest('.col') ? 1 : 0; abrir('menu'); } });
 $('#contratos').addEventListener('click', () => { audio(); if (listo && !menu) { pestana = 3; abrir('menu'); } });
@@ -3196,7 +3293,7 @@ function sel(k, ops, quien = 'regla') {
   return `<select data-a="${quien}" data-k="${k}" ${soyCreador ? '' : 'disabled'}>${ops.map(([v, t]) => `<option value="${v}" ${cfg[k] == v ? 'selected' : ''}>${t}</option>`).join('')}</select>`;
 }
 function menuPrincipal() {
-  const P = ['Bodega', 'Colección', 'Mapa', 'Contratos', 'Logros', 'Catálogo', 'Estadísticas', 'Opciones', 'Mundo', 'Ayuda'];
+  const P = ['Bodega', 'Colección', 'Mapa', 'Contratos', 'Logros', 'Catálogo', 'Estadísticas', 'Opciones', 'Mundo', 'Ayuda', '🏆 Top 20'];
   let h = cab('☰ ' + esc(cfg.nombre || 'Mina')) + `<div class="pest">${P.map((p, i) => `<button data-a="pest" data-v="${i}" class="${i === pestana ? 'on' : ''}">${p}</button>`).join('')}</div><div class="cuerpo">`;
   if (pestana === 0) {
     h += `<p class="nota">📦 ${nCarga()} de ${bodega()} espacios · ${kgCarga()} kg de carga (tu motor levanta ${Math.round(hp() * 29.5 - 1980)} kg). Tirar piezas libera espacio y peso.</p>` +
@@ -3254,6 +3351,8 @@ function menuPrincipal() {
       <label class="op"><span>Quién puede remineralizar</span>${sel('reminTodos', [[1, 'Cualquiera'], [0, 'Solo quien creó el mundo']])}</label>
       <label class="op"><span>Regalos de dinero</span>${sel('regalos', [[1, 'Sí'], [0, 'No']])}</label>
       <label class="op"><span>Pleitos entre maquinitas (bajo tierra)</span>${sel('pleitos', [[1, 'Sí'], [0, 'No']])}</label>
+      <label class="op"><span>Dejar que nos vean jugar (observadores)</span><select data-a="regla" data-k="mirar" ${soyCreador ? '' : 'disabled'}><option value="1" ${cfg.mirar !== 0 ? 'selected' : ''}>Sí</option><option value="0" ${cfg.mirar === 0 ? 'selected' : ''}>No</option></select></label>
+      ${cfg.mirar !== 0 && miVer ? `<div class="fila"><div class="t"><b>Liga para mirar</b><small>Quien la abra te ve jugar en vivo. No puede entrar a jugar ni conocer la liga de este mundo.${mirones ? ' Ahora mismo: 👁 ' + mirones + ' mirando.' : ''}</small></div><button class="s" data-a="ligaVer">Copiar liga para mirar</button></div>` : ''}
       <h4>Jugadores</h4>` +
       ([...otros.values()].length ? `<label class="op"><span>Cantidad para regalar (en la superficie)</span><input id="cuanto" type="number" min="1" value="${Math.min(1000, Math.floor(S.d))}" style="width:9em"></label>` +
         [...otros.values()].map((o) => `<div class="fila"><div class="t"><b>${esc(o.n)}</b><small>${o.on ? 'Conectado' : 'Desconectado'} · récord ${o.rec || 0} m · ganado ${fmt(o.tot || 0)}</small></div>${o.on && cfg.regalos && yo.y < 0 ? `<button class="s" data-a="regalar" data-v="${o.i}">Regalar</button>` : ''}</div>`).join('') : '<p class="nota">Estás solo en este mundo. Copia la liga y mándala.</p>') +
@@ -3270,6 +3369,8 @@ function menuPrincipal() {
       <div class="fila"><div class="t"><small>Código: <code>${esc(miK)}</code></small></div><button class="s" data-a="menu" data-v="qrmaq">Ver su código QR</button><button data-a="ligaMaq">Copiar su liga</button></div>
       <div class="fila"><div class="t"><b>Guardar este mundo en un archivo</b><small>Semilla, reglas, todos los túneles y la colección. Desde «Mis mundos» puedes abrirlo cuando quieras como un mundo nuevo, idéntico.</small></div><button data-a="guardarArchivo">💾 Guardar archivo</button></div>
       <div class="fila"><div class="t"></div><button class="s" data-a="mundos">Mis mundos · crear o cargar otro</button><button class="mal" data-a="desechar">Desechar este mundo</button></div>`;
+  } else if (pestana === 10) {
+    h += htmlTop();
   } else {
     h += `<p><b>Moverte:</b> flechas o WASD. <b>↑</b> vuela. <b>↓</b> perfora hacia abajo. <b>← →</b> contra una pared, perfora de lado. Nunca se perfora hacia arriba.</p>
       <p><b>El ciclo:</b> baja, llena la bodega, sube, vende en La Báscula, carga combustible y mejora tu equipo en El Taller. En la superficie, párate frente a un edificio y pulsa ↓.</p>
@@ -3289,6 +3390,7 @@ function menuPrincipal() {
       <p><b>Diez kilómetros:</b> debajo de la Corteza siguen el Acuífero, las Cavernas, la Cristalera y la Zona de presión, con doce minerales nuevos y cuatro lugares por descubrir. Cada lugar que encuentres queda apuntado en <b>El Elevador</b> (el último edificio), que también te regresa al punto donde te recogió la grúa.</p>
       <p><b>Sin internet y como aplicación:</b> Mina se puede instalar (Menú → Opciones) y abre aunque no haya señal. Lo que caves y ganes sin internet se queda en tu equipo y se manda al mundo cuando la señal vuelve. En pantallas táctiles, arrastra el dedo para moverte y da un toque frente a un edificio para entrar.</p>
       <p><b>Tu nombre y tus ligas:</b> la maquinita nace bautizada para que empieces a jugar sin llenar nada; el nombre y el modelo se cambian en Menú → Mundo. Hay dos ligas: la del mundo (invita a excavar) y la tuya (presume tu maquinita); cada una lleva su imagen al mandarla por WhatsApp.</p>
+      <p><b>Top 20 y público:</b> Menú → Top 20 enseña las veinte maquinitas que más han ganado en todos los mundos, en vivo. A la que esté jugando se le puede ir a ver: quien mira entra con una liga propia, no puede jugar ni conoce la liga del mundo. Tu liga para que te vean está en Menú → Mundo, y ahí mismo quien creó el mundo puede cerrarlo al público.</p>
       <p><b>Explosivos:</b> se usan donde sea, también volando: si topas con piedra al subir, X te abre paso.</p>
       <p><b>Piedra:</b> se perfora si tu taladro alcanza. Hay cinco durezas, cada una de un color, según la zona; el Taller dice qué taladro pide cada una. Con el justo tarda 1.5 s; con uno mejor, hasta 0.6 s.</p>
       <p class="nota">Piedra desde 210 m. Lava desde 410 m: se ve, rodéala. Gas desde 650 m: pocas bolsas, y se notan por sus burbujas.</p>`;
@@ -3306,6 +3408,10 @@ const MAPA = { ArrowLeft: 'izq', a: 'izq', ArrowRight: 'der', d: 'der', ArrowUp:
 addEventListener('keydown', (e) => {
   if (e.target.tagName === 'INPUT' || e.metaKey || e.ctrlKey) return;
   audio(); nacer();
+  if (soloVer) {                                   // mirando: solo se cambia de maquinita o se cierra la tabla
+    if (e.key === 'Escape' && menu === 'top') cerrar(); else if (!menu && e.key === 'ArrowRight') verOtra(1); else if (!menu && e.key === 'ArrowLeft') verOtra(-1);
+    return;
+  }
   const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
   if (e.repeat && !MAPA[k]) return;                 // dejar apretada una tecla no la dispara treinta veces por segundo
   if (k === 'Escape') { if (menu && menu !== 'inicio') cerrar(); else if (listo && !menu) abrir('menu'); return; }
@@ -3348,7 +3454,7 @@ addEventListener('pointerdown', () => nacer(), true);
 lienzo.addEventListener('pointerdown', (e) => {
   if (e.pointerType !== 'touch') return;
   tactil = true; audio();
-  if (!listo || menu || dedo.id !== -1) return;
+  if (!listo || menu || soloVer || dedo.id !== -1) return;
   if (pausa) { pausa = false; pista(''); arrancar(); }
   dedo.id = e.pointerId; dedo.x = e.clientX; dedo.y = e.clientY; dedo.t = performance.now(); dedo.mov = false; vistaLibre = false;
   try { lienzo.setPointerCapture(e.pointerId); } catch {}
@@ -3387,6 +3493,7 @@ function pasarCombustible() {
 /* ════════ Mis mundos, bautizo y arranque ════════ RLR */
 let mundos = leer('mina_mundos', []), latido = 0, maqLocal = leer('mina_maq', null);
 function guardarMundo() {
+  if (soloVer || !mundoId) return;
   maqLocal = { k: miK, n: miNombre, m: miModelo }; escribir('mina_maq', maqLocal);      // la maquinita de este navegador: la misma en todos los mundos
   mundos = mundos.filter((m) => m.id !== mundoId);
   mundos.unshift({ id: mundoId, k: miK, nombre: cfg.nombre || 'Mundo ' + mundoId, maq: miNombre, modelo: miModelo, creador: soyCreador ? 1 : 0, ult: Date.now() });
@@ -3509,6 +3616,7 @@ setInterval(() => {                       // lo poco que corre aunque el juego e
   if (sucio && conectado) enviarEst();
   if (++latido % (document.hidden ? 25 : 5) === 0) latir();
   if (latido % 4 === 0) guardarCopia();
+  if (!document.hidden && listo && Date.now() - tablaM.pedido > (topAbierta() ? 4000 : 60000) && (topAbierta() || (!soloVer && conectado && (!tablaM.t || S.tot >= tablaM.corte)))) pedirTop();
   if (latido % 9 === 0 && !document.hidden) subirFotos(!!menu);
   const c = $('#cuenta');
   if (cuentaFin) { const s = Math.ceil((cuentaFin - Date.now()) / 1000); c.style.display = 'block'; c.textContent = s > 0 ? `🌋 Remineralizando en ${s}…` : '🌋'; if (s < -3) cuentaFin = 0; }
@@ -3522,7 +3630,13 @@ if (ligaMaquinita) { maqLocal = { k: ligaMaquinita }; escribir('mina_maq', maqLo
 aplicarOp(); sonidoUI();
 {
   const r = location.pathname.match(/^\/m\/([2-9A-HJ-NP-Z]{8})\/?$/i);
+  const v = location.pathname.match(/^\/ver\/([2-9A-HJ-NP-Z]{12})\/?$/i);
   if (location.search.includes('foto')) escenaDeMuestra();
+  else if (v) {
+    soloVer = true; verFicha = v[1].toUpperCase(); veo = +(location.search.match(/[?&]j=(\d{1,2})/) || [])[1]; if (!(veo >= 0)) veo = -1;
+    inicio('<header><h2>👁 Buscando la transmisión…</h2></header><div class="cuerpo"><p class="nota">Vas a ver jugar en vivo. No necesitas nada.</p></div>');
+    conectar();
+  }
   else if (r) entrar(r[1].toUpperCase());
   else if (location.pathname.length > 1) pantallaFinal('Esta liga está incompleta', 'La liga de un mundo termina en 8 letras y números. Pídela otra vez o entra a tus mundos.');
   else if (location.search.includes('mundos')) pantallaMundos();

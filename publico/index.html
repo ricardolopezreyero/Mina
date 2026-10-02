@@ -84,6 +84,18 @@ body.jugando .hud{visibility:visible}
 #tabla div b{flex:1;overflow:hidden;text-overflow:ellipsis}
 #tabla i{width:9px;height:9px;border-radius:2px;display:inline-block;flex:none}
 #tabla .off{opacity:.5}
+#tabla .mund{color:var(--ac);font-weight:700;margin-top:3px;padding-top:3px;border-top:1px solid #ffffff22}
+.fila.top{gap:8px;padding:4px 0}.fila.top.yo{background:#ffd23f14;border-radius:6px;padding:4px 8px}
+.fila.top .lug{width:2em;text-align:center;font-weight:800;font-size:1.15em;color:var(--su);flex:none}
+.fila.top canvas{position:static;width:36px;height:36px;flex:none}
+.fila.top .v{font-variant-numeric:tabular-nums;font-size:1.05em;transition:color .3s}
+.fila.top .v.sube{color:var(--ok)}
+.vivo{color:var(--ok);font-weight:700}
+a.boton{background:var(--ac);color:#1b120e;border-radius:6px;padding:.4em .8em;font-weight:700;text-decoration:none;white-space:nowrap}
+#verBarra{position:fixed;left:50%;top:10px;transform:translateX(-50%);display:none;align-items:center;gap:10px;background:#000b;border:1px solid var(--borde);border-radius:10px;padding:8px 12px;max-width:calc(100vw - 20px);z-index:3;text-shadow:0 1px 2px #000}
+body.viendo #verBarra{display:flex}
+#verDatos{min-width:0}#verDatos b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#verDatos small{display:block;color:var(--su);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:700px){#verBarra{flex-wrap:wrap;justify-content:center}}
 #viaje{left:10px;bottom:10px;width:calc(250px*var(--f));font-size:.86em}
 #vjDatos{background:#120b08e0;border:1px solid var(--borde);border-radius:8px;padding:6px 10px}
 #vjDatos .l{display:flex;justify-content:space-between;gap:10px;line-height:1.55;color:var(--su)}
@@ -219,6 +231,7 @@ a{color:var(--az)}
 <div class="hud" id="cuenta"></div>
 <div class="hud" id="aviso-red">📡 Sin señal · sigues jugando, se guarda al volver</div>
 <div id="palanca"><i></i></div>
+<div id="verBarra"><div id="verDatos"></div><button class="s" id="verOtra" title="Ver a otra maquinita de este mundo (← →)">Otra ▶</button><button class="s" id="verTop">🏆 Top 20</button><a class="boton" href="/">⛏️ Jugar yo</a></div>
 
 <div id="velo"><div class="caja" id="caja"></div></div>
 

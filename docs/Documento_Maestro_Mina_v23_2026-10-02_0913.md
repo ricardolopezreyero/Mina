@@ -646,6 +646,20 @@ El juego las vuelve a subir solo cuando algo que enseñan cambió (un récord, a
 
 Cada una avisa con una tarjeta la primera vez (`S.fl.hongos`, `S.fl.coro`, `S.fl.mural`, `S.fl.mariposas`). La Ayuda solo dice que hay tres lugares con sorpresa, sin decir cuáles.
 
+### 9.18 Top 20 mundial y público
+
+**La tabla.** Menú → 🏆 Top 20: las veinte maquinitas que más dinero han ganado, entre todos los mundos. Cada renglón lleva solo el lugar, la maquinita, su nombre y su total, con la cifra completa (no abreviada) para que se vea subir. Con la tabla abierta se pregunta cada 4 s y los números ruedan hasta su nuevo valor. Quien no está en la tabla ve cuánto le falta para entrar. Arriba a la derecha, durante el juego, sale «🏆 Lugar N del mundo», y una tarjeta avisa al entrar al Top 20 o al subir de lugar.
+
+**Cómo se arma.** Un solo objeto en el servidor para todo el juego (`Tabla`, instancia `mundial`). Cada mundo le avisa cuánto lleva cada maquinita: a los 3 s como mucho si su total cambió, y cada 20 s mientras juega para que conste que está en vivo (60 s sin aviso = «descansando»). La tabla guarda 100 y enseña 20; las maquinitas que están lejos de las 100 no avisan. La maquinita se reconoce por una huella de su llave (SHA-256, 16 caracteres): la llave nunca sale del mundo. `GET /api/tabla` devuelve la lista.
+
+**Mirar sin jugar.** A la maquinita que está jugando se le puede ir a ver con «👁 Ver jugar». Cada mundo tiene una ficha de 12 caracteres al azar, distinta de su liga; la liga para mirar es `/ver/FICHA?j=N`. El servidor traduce la ficha a su mundo en un directorio que solo él conoce (`/ws/ver/FICHA`), así que quien mira nunca recibe la liga del mundo: ni en la dirección ni en ningún mensaje. Su conexión va marcada como de observador: recibe el mundo y todo lo que pasa en él, pero nada de lo que mande se atiende (probado: un «hola» o un «cava» desde esa conexión no hacen nada). Caben 30 mirando por mundo.
+
+Quien mira ve el juego completo sin tablero, con una barra arriba: a quién ve, a qué profundidad va, cuánto lleva, cuántos más miran, «Otra ▶» para cambiar de maquinita (también ← →), «🏆 Top 20» y «⛏️ Jugar yo». A quien juega le sale «👁 N personas te miran».
+
+**Control del mundo.** Menú → Mundo → «Dejar que nos vean jugar» (Sí por omisión, solo lo cambia quien creó el mundo). En «No», se despide a quien esté mirando y la tabla deja de ofrecer el botón. Ahí mismo está «Copiar liga para mirar», para mandarla a quien quieras aunque no estés en el Top 20.
+
+**Límite que conviene saber.** El total lo reporta el navegador de cada jugador (pendiente desde el principio: el servidor confía en el dinero que le dicen). Alguien con conocimientos puede inflar su número y aparecer en la tabla. Mientras se juegue entre conocidos no pasa nada; antes de abrirlo al público hay que hacer que el servidor lleve la cuenta, o al menos poder borrar un renglón de la tabla.
+
 ## 10. Revisión de código del 2 de octubre
 
 Se revisó todo el código buscando fallas y se corrigieron estas:

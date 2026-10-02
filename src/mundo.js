@@ -18,7 +18,7 @@ const MUNDOS_POR_DIA = 20;
 
 const CFG_BASE = {
   modo: "clasico", comb: 1, caida: 1, lava: 1, gas: 1, verGas: 2,
-  pierde: 2, rescates: 3, nombre: "", puerta: 0, reminTodos: 1, regalos: 1, pleitos: 1,
+  pierde: 2, rescates: 3, nombre: "", puerta: 0, reminTodos: 1, regalos: 1, pleitos: 1, mirar: 1,
 };
 
 const json = (o, status = 200) =>
@@ -42,6 +42,19 @@ function nuevoId() {
   return s;
 }
 
+// Una ficha de 12 letras para mirar un mundo sin conocer su liga: no se deduce del mundo ni lleva a él.
+function fichaNueva() {
+  const b = crypto.getRandomValues(new Uint8Array(12));
+  let s = "";
+  for (const x of b) s += ALFA[x & 31];
+  return s;
+}
+// La maquinita en la tabla mundial se reconoce por una huella de su llave: la llave nunca sale de aquí.
+async function huella(k) {
+  const h = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode("mina:" + k)));
+  return [...h.subarray(0, 8)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 function cfgLimpia(c, antes) {
   c = c || {};
   const modo = ["paseo", "clasico", "rudo", "medida"].includes(c.modo) ? c.modo : antes.modo;
@@ -59,7 +72,54 @@ function cfgLimpia(c, antes) {
     reminTodos: entero(c.reminTodos, 0, 1, antes.reminTodos),
     regalos: entero(c.regalos, 0, 1, antes.regalos),
     pleitos: entero(c.pleitos, 0, 1, antes.pleitos ?? 1),
+    mirar: entero(c.mirar, 0, 1, antes.mirar ?? 1),
   };
+}
+
+// RLR · la tabla mundial
+// Un solo objeto para todo el juego. Guarda las 100 maquinitas que más han ganado (se enseñan 20) y el directorio de
+// fichas para mirar: ficha → mundo. La liga del mundo nunca sale de aquí hacia quien mira.
+const TABLA_MAX = 100, TABLA_VE = 20, VIVO_MS = 60000;
+export class Tabla extends DurableObject {
+  constructor(ctx, env) {
+    super(ctx, env);
+    this.top = null; this.sucio = false; this.fichas = new Set();
+  }
+  async cargar() { if (!this.top) this.top = (await this.ctx.storage.get("top")) || []; return this.top; }
+
+  async registrar(ver, mundo) {
+    if (!ver || !mundo || this.fichas.has(ver)) return;
+    if (this.fichas.size > 5000) this.fichas.clear();
+    this.fichas.add(ver);
+    await this.ctx.storage.put("v:" + ver, mundo);
+  }
+  async mundoDe(ver) { return (await this.ctx.storage.get("v:" + ver)) || null; }
+  async olvidar(ver) { this.fichas.delete(ver); await this.ctx.storage.delete("v:" + ver); }
+
+  // Un mundo avisa cuánto lleva una de sus maquinitas. Devuelve el corte: con menos que eso no hace falta volver a avisar.
+  async reportar(r) {
+    const top = await this.cargar(), lleno = top.length >= TABLA_MAX, corte = lleno ? top[top.length - 1].tot : 0;
+    if (r.ver && r.mundo) await this.registrar(r.ver, r.mundo);
+    let e = top.find((x) => x.p === r.p);
+    if (!e) {
+      if (!(r.tot > 0) || (lleno && r.tot <= corte)) return corte;
+      e = { p: r.p }; top.push(e);
+    }
+    e.n = r.n; e.m = r.m; e.tot = r.tot; e.t = r.vivo ? Date.now() : 0; e.ver = r.ver || ""; e.i = r.i;
+    top.sort((a, b) => b.tot - a.tot);
+    if (top.length > TABLA_MAX) top.length = TABLA_MAX;
+    this.sucio = true;
+    if ((await this.ctx.storage.getAlarm()) === null) await this.ctx.storage.setAlarm(Date.now() + 5000);
+    return top.length >= TABLA_MAX ? top[top.length - 1].tot : 0;
+  }
+  async lista() {
+    const top = await this.cargar(), ahora = Date.now();
+    return {
+      top: top.slice(0, TABLA_VE).map((e) => { const vivo = ahora - e.t < VIVO_MS; return { p: e.p, n: e.n, m: e.m, tot: e.tot, vivo: vivo ? 1 : 0, ver: vivo ? e.ver : "", i: e.i }; }),
+      corte: top.length >= TABLA_VE ? top[TABLA_VE - 1].tot : 0,
+    };
+  }
+  async alarm() { if (this.sucio && this.top) { this.sucio = false; await this.ctx.storage.put("top", this.top); } }
 }
 
 // RLR · la maquinita
@@ -116,6 +176,7 @@ export class Mundo extends DurableObject {
     this.maqT = new Map();    // cuándo se guardó por última vez cada maquinita en su propio objeto
     this.creados = new Map(); // portero: mundos creados hoy por visitante (solo en memoria)
     this.fotoT = new Map();   // cuándo subió cada quien su última imagen de liga
+    this.tablaT = new Map();  // cuándo y con cuánto se avisó por última vez de cada maquinita a la tabla mundial
     ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair("p", "q"));
   }
 
@@ -161,9 +222,31 @@ export class Mundo extends DurableObject {
     const s = new Set();
     for (const ws of this.ctx.getWebSockets()) {
       const a = ws.deserializeAttachment();
-      if (a) s.add(a.i);
+      if (a && a.i !== undefined) s.add(a.i);
     }
     return s;
+  }
+
+  // ── La tabla mundial y quienes miran
+  tabla() { return this.env.TABLA.get(this.env.TABLA.idFromName("mundial")); }
+
+  // Avisa a la tabla cuánto lleva una maquinita. Si cambió, a los 3 s como mucho; si no, cada 20 s para que conste que sigue
+  // jugando. Las que están lejos del tablero no avisan (el corte se vuelve a preguntar cada 10 minutos).
+  avisarTabla(i, vivo, ya) {
+    const m = this.m, j = this.jug[i];
+    if (!m || !j || !j.pid || !(j.tot > 0)) return;
+    const ahora = Date.now(), tot = j.tot || 0, u = this.tablaT.get(i) || { t: 0, tot: -1 };
+    if (this.corte !== undefined && tot < this.corte && ahora - (this.corteT || 0) < 600000) return;
+    if (!ya && ahora - u.t < (tot !== u.tot ? 3000 : 20000)) return;
+    this.tablaT.set(i, { t: ahora, tot });
+    const mira = m.cfg.mirar !== 0 && m.ver && m.id;
+    this.ctx.waitUntil(this.tabla().reportar({ p: j.pid, n: j.n, m: j.m, tot, vivo: vivo ? 1 : 0, i, ver: mira ? m.ver : "", mundo: mira ? m.id : "" })
+      .then((c) => { this.corte = c; this.corteT = Date.now(); }, () => {}));
+  }
+  contarMirones(menos) {
+    let n = 0;
+    for (const ws of this.ctx.getWebSockets("mira")) if (ws !== menos) n++;
+    this.difundir({ t: "obs", n }, menos);
   }
 
   // Para la vista previa de la liga: cómo se llama el mundo y cuántas maquinitas tiene.
@@ -259,6 +342,27 @@ export class Mundo extends DurableObject {
     if (/^[2-9A-HJ-NP-Z]{8}$/.test(id)) this.idVisto = id;        // mundos anteriores no guardaban su propio nombre
     if (request.headers.get("Upgrade") !== "websocket") return new Response("Se esperaba websocket", { status: 426 });
     const [cliente, servidor] = Object.values(new WebSocketPair());
+    // Quien mira entra por su ficha: recibe el mundo y lo que pasa en él, pero nada de lo que mande se atiende,
+    // y en ningún mensaje viaja la liga del mundo.
+    if (new URL(request.url).searchParams.get("mira") === "1") {
+      const m = await this.cargar();
+      this.ctx.acceptWebSocket(servidor, ["mira"]);
+      servidor.serializeAttachment({ o: 1 });
+      const fin = (o) => { manda(servidor, o); servidor.serializeAttachment(null); try { servidor.close(4002, o.t); } catch {} };
+      if (!m) fin({ t: "noexiste" });
+      else if (m.cfg.mirar === 0) fin({ t: "nomira" });
+      else if (this.ctx.getWebSockets("mira").length > 30) fin({ t: "lleno" });
+      else {
+        const on = this.conectados();
+        let hasta = BYTES; while (hasta > 0 && !this.dug[hasta - 1]) hasta--;
+        let b = "";
+        for (let x = 0; x < hasta; x += 8192) b += String.fromCharCode.apply(null, this.dug.subarray(x, Math.min(hasta, x + 8192)));
+        manda(servidor, { t: "mira", seed: m.seed, remin: m.remin, cfg: m.cfg, jug: this.jug.map((j, x) => (j ? this.publico(x, on.has(x)) : null)).filter(Boolean), dug: btoa(b), col: m.col || [] });
+        for (const [x, s] of this.pos) if (on.has(x)) manda(servidor, s);
+        this.contarMirones();
+      }
+      return new Response(null, { status: 101, webSocket: cliente });
+    }
     this.ctx.acceptWebSocket(servidor);
     return new Response(null, { status: 101, webSocket: cliente });
   }
@@ -267,6 +371,7 @@ export class Mundo extends DurableObject {
   async webSocketMessage(ws, msg) {
     const m = await this.cargar();
     const att = ws.deserializeAttachment();
+    if ((att && att.o) || this.ctx.getTags(ws).includes("mira")) return;        // quien mira no puede hacer nada
 
     // Posición: 6 bytes binarios → se reenvía con el número de maquinita (7 bytes)
     if (typeof msg !== "string") {
@@ -327,6 +432,7 @@ export class Mundo extends DurableObject {
           this.difundir({ t: "j", i, rec, tot }, ws);
         }
         this.sucio.jug.add(i);
+        this.avisarTabla(i, true);
         break;
       }
       case "golpe": {            // un pleito: se le avisa a la maquinita alcanzada; ella calcula su daño
@@ -342,6 +448,7 @@ export class Mundo extends DurableObject {
         yo.n = n; yo.m = mo;
         this.sucio.jug.add(i);
         this.difundir({ t: "nom", i, n, m: mo });
+        this.avisarTabla(i, true, true);
         break;
       }
       case "aviso":
@@ -376,6 +483,10 @@ export class Mundo extends DurableObject {
         m.cfg = cfgLimpia(d.cfg, m.cfg);
         this.sucio.meta = true;
         this.difundir({ t: "cfg", cfg: m.cfg, i });
+        if (m.cfg.mirar === 0) {                 // se cerró a quienes miran: se les despide y la tabla deja de ofrecer la ficha
+          for (const s of this.ctx.getWebSockets("mira")) { manda(s, { t: "nomira" }); try { s.close(4002, "nomira"); } catch {} }
+        }
+        for (const x of this.conectados()) this.avisarTabla(x, true, true);
         break;
       case "remin":
         if (m.reminAt || (!m.cfg.reminTodos && i !== this.creador())) return;
@@ -387,6 +498,7 @@ export class Mundo extends DurableObject {
         if (i !== this.creador()) return;
         this.difundir({ t: "borrado" });
         for (const s of this.ctx.getWebSockets()) { try { s.close(4001, "borrado"); } catch {} }
+        if (m.ver) { try { await this.tabla().olvidar(m.ver); } catch {} }
         await this.ctx.storage.deleteAlarm();
         await this.ctx.storage.deleteAll();
         this.m = false;
@@ -433,6 +545,10 @@ export class Mundo extends DurableObject {
     }
     const yo = this.jug[i];
     yo.n = r.n; yo.m = r.mo; yo.est = r.est;
+    if (!yo.pid) { yo.pid = await huella(k); this.sucio.jug.add(i); }
+    // La ficha para mirar este mundo: nace una vez y se apunta en el directorio de la tabla.
+    if (!m.ver) m.ver = fichaNueva();
+    if (!m.verReg && m.id) { m.verReg = 1; try { await this.tabla().registrar(m.ver, m.id); } catch { m.verReg = 0; } }
     if (r.est) { yo.rec = entero(r.est.rec, 0, H * 2, yo.rec || 0); yo.tot = Number.isFinite(r.est.tot) ? Math.floor(r.est.tot) : yo.tot || 0; }
     const on = this.conectados();
 
@@ -454,9 +570,10 @@ export class Mundo extends DurableObject {
       t: "mundo", i, seed: m.seed, remin: m.remin, cfg: m.cfg, creador: i === this.creador() ? 1 : 0,
       est: this.jug[i].est, cuenta: m.reminAt ? Math.max(0, Math.ceil((m.reminAt - Date.now()) / 1000)) : 0,
       jug: this.jug.map((j, x) => (j ? this.publico(x, on.has(x)) : null)).filter(Boolean),
-      dug: btoa(b), col: m.col || [],
+      dug: btoa(b), col: m.col || [], pid: yo.pid, ver: m.cfg.mirar === 0 ? "" : m.ver, obs: this.ctx.getWebSockets("mira").length,
     });
     for (const [x, s] of this.pos) if (x !== i && on.has(x)) manda(ws, s);
+    this.avisarTabla(i, true, true);
     this.difundir({ t: "entra", j: this.publico(i, true), nuevo: estrena ? 1 : 0 }, ws);
     await this.programar();
   }
@@ -465,12 +582,14 @@ export class Mundo extends DurableObject {
     try { ws.close(code > 1000 && code < 5000 && code !== 1005 && code !== 1006 ? code : 1000); } catch {}
     const att = ws.deserializeAttachment();
     const m = await this.cargar();
+    if (m && this.ctx.getTags(ws).includes("mira")) { this.contarMirones(ws); return; }
     if (!m || !att) return;
     // Si la maquinita ya entró por otra pestaña, este cierre no la saca del mundo.
     const otro = this.ctx.getWebSockets().some((s) => s !== ws && s.deserializeAttachment()?.i === att.i);
     if (!otro) {
       this.pos.delete(att.i);
       this.difundir({ t: "sale", i: att.i }, ws);
+      this.avisarTabla(att.i, false, true);
     }
     m.visto = Date.now();
     this.sucio.meta = true;
@@ -495,6 +614,7 @@ export class Mundo extends DurableObject {
     await this.guardar();
     const caduco = this.jug.length ? ahora - m.visto >= CADUCA : ahora - m.creado >= DIA;
     if (!this.ctx.getWebSockets().length && caduco) {
+      if (m.ver) { try { await this.tabla().olvidar(m.ver); } catch {} }
       await this.ctx.storage.deleteAll();
       this.m = false;
       return;
@@ -566,8 +686,21 @@ export default {
         .transform(pagina);
     }
 
+    // La tabla mundial: las veinte maquinitas que más han ganado.
+    if (u.pathname === "/api/tabla" && request.method === "GET") {
+      const t = await env.TABLA.get(env.TABLA.idFromName("mundial")).lista();
+      return new Response(JSON.stringify(t), { headers: { "content-type": "application/json", "cache-control": "no-store" } });
+    }
+    // Mirar un mundo por su ficha: aquí se traduce a su mundo, y quien mira nunca ve cuál es.
+    const mira = u.pathname.match(/^\/ws\/ver\/([2-9A-HJ-NP-Z]{12})$/);
+    if (mira) {
+      const id = await env.TABLA.get(env.TABLA.idFromName("mundial")).mundoDe(mira[1]);
+      if (!id) return json({ error: "no" }, 404);
+      return env.MUNDO.get(env.MUNDO.idFromName(id)).fetch(new Request(new URL("/ws/" + id + "?mira=1", request.url), request));
+    }
+
     const ws = u.pathname.match(/^\/ws\/([2-9A-HJ-NP-Z]{8})$/);
-    if (ws) return env.MUNDO.get(env.MUNDO.idFromName(ws[1])).fetch(request);
+    if (ws) return env.MUNDO.get(env.MUNDO.idFromName(ws[1])).fetch(new Request(new URL(u.pathname, request.url), request));      // sin parámetros: nadie se cuela como observador ni al revés
 
     if (u.pathname.startsWith("/api/") || u.pathname.startsWith("/ws/") || u.pathname.startsWith("/og/")) return json({ error: "no" }, 404);
     return env.ASSETS.fetch(request);
