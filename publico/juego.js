@@ -2453,7 +2453,7 @@ function pintarHud(forzar) {
   const bc = $('#bComb'), bv = $('#bCasco');
   bc.firstChild.style.width = f * 100 + '%'; bc.lastChild.textContent = S.fuel.toFixed(1) + ' / ' + tanque() + ' L'; bc.classList.toggle('bajo', f < 0.25);
   bv.firstChild.style.width = v * 100 + '%'; bv.lastChild.textContent = Math.max(0, Math.ceil(S.vida)) + ' / ' + vidaMax(); bv.classList.toggle('bajo', v < 0.3);
-  $('#prof').textContent = donde(yo.y) + (yo.y > 105 ? ' · ' + ZONA_N[zonaDe(prof())].replace(/^(La|El|Las) /, '') : ''); $('#din').textContent = fmt(S.d);
+  $('#prof').textContent = donde(yo.y) + (yo.y > 105 ? ' · ' + ZONA_N[zonaDe(prof())].replace(/^(La|El|Las) /, '') : ''); $('#din').textContent = fmt(S.d - porCobrar);
   pintarViaje();
   poner($('#metas'), metas().map((m) => `<div class="m${m.ya ? ' ya' : ''}${m.mal ? ' mal' : ''}"><i style="width:${Math.round(Math.min(100, m.p * 100))}%"></i><span>${esc(m.tx)}</span></div>`).join(''));
   poner($('#objetos'), OBJ.map((o, i) => `<div data-u="${i}" class="${S.obj[i] ? '' : 'n0'}" title="${o.n}: ${o.ef}"><kbd>${o.k}</kbd>${o.ic} ${CORTO[i]} ×${S.obj[i]}</div>`).join(''));
@@ -2613,7 +2613,7 @@ function pintarQR(lienzoQR, texto, lado = 8) {
 }
 
 /* ════════ Menús ════════ RLR */
-let pestana = 0, pieza = 0, cuantos = 1, eleM = 0;
+let pestana = 0, pieza = 0, cuantos = 1, eleM = 0, ultVenta = 0, porCobrar = 0;      // porCobrar: lo vendido que todavía va «en camino» a la cartera
 function abrir(id) {
   if (!S) return;
   son.clic();
@@ -2631,11 +2631,14 @@ function pintarMenu() {
       <p class="nota">$1 por litro. Sin combustible, ${cfg.comb ? 'la maquinita explota' : 'entras en reserva: avanzas despacio y no perforas'}.</p>
       <button data-a="llenar" ${paga < 1 && !fiado ? 'disabled' : ''}>${falta < 1 ? 'Tanque lleno' : fiado ? 'No traes dinero: te fiamos 5 litros' : paga < falta ? `Cargar ${paga} L (${fmt(paga)}): es lo que te alcanza` : `Llenar el tanque (${fmt(falta)})`}</button></div>`;
   } else if (menu === 'bas') {
-    const v = venta();
-    h = cab('⚖️ La Báscula') + `<div class="cuerpo">` + (v.piezas ? S.carga.map((n, i) => n ? `<div class="fila"><div class="t"><b style="color:${MIN[i].col}">${MIN[i].n} × ${n}</b><small>${fmt(MIN[i].v)} la pieza</small></div><div class="v">${fmt(n * MIN[i].v)}</div></div>` : '').join('') +
-      (v.perfecto ? `<div class="fila"><div class="t"><b>✨ Viaje perfecto</b><small>Bodega llena y cero daño: +10 %</small></div><div class="v">+${fmt(v.base * 0.1)}</div></div>` : '') +
-      (v.cat ? `<div class="fila"><div class="t"><b>📖 Catálogo completo</b><small>+5 % para siempre</small></div><div class="v">+${fmt(v.base * 0.05)}</div></div>` : '') +
-      `<p class="grande" id="totalVenta">${fmt(v.total)}</p><button data-a="vender">Vender toda la carga</button>` : '<p class="nota">La bodega está vacía. Baja, recoge mineral y vuelve.</p>') + '</div>';
+    // Todo lo que vas a vender cabe en una pantalla: dos columnas arriba y, siempre a la vista abajo, el total y el botón.
+    const v = venta(), linea = (cls, punto, nombre, sub, monto, dato) => `<div class="vi ${cls}" data-q="${dato}"><i style="background:${punto}"></i><span><b>${nombre}</b><small>${sub}</small></span><u>${monto}</u></div>`;
+    h = cab('⚖️ La Báscula') + (v.piezas ? `<div class="cuerpo"><div class="vende">` +
+      S.carga.map((n, i) => n ? linea('', MIN[i].col, `${MIN[i].n} × ${n}`, fmt(MIN[i].v) + ' la pieza', fmt(n * MIN[i].v), n * MIN[i].v) : '').join('') +
+      (v.perfecto ? linea('bono', '#ffd23f', '✨ Viaje perfecto', 'Bodega llena y cero daño: +10 %', '+' + fmt(v.base * 0.1), v.base * 0.1) : '') +
+      (v.cat ? linea('bono', '#ffd23f', '📖 Catálogo completo', '+5 % para siempre', '+' + fmt(v.base * 0.05), v.base * 0.05) : '') +
+      `</div></div><footer class="pie"><div><small>${v.piezas} ${v.piezas === 1 ? 'pieza' : 'piezas'} · se vende en</small><b id="totalVenta">${fmt(v.total)}</b></div><button id="bVender" data-a="vender">Vender toda la carga</button></footer>`
+      : `<div class="cuerpo">${ultVenta ? `<p class="nota">Tu última venta</p><p class="grande">${fmt(ultVenta)}</p>` : ''}<p class="nota">La bodega está vacía. Baja, recoge mineral y vuelve.</p></div>`);
   } else if (menu === 'tal') {
     const P = PZ[pieza];
     const hasta = Math.min(P.niv.length, S.eq[pieza] + 11);          // todo lo que ya compraste y las diez que siguen
@@ -2742,9 +2745,33 @@ const acciones = {
     if (n[3] >= 10) S.fl.midas = 1; if (v.perfecto) S.fl.perfecto = 1;
     S.carga.fill(0); S.st.viajes++; S.st.mejorViaje = Math.max(S.st.mejorViaje, v.total); S.vj.dano = 0;
     const desde = S.d; S.d += v.total; S.tot += v.total;
-    // la venta es una ceremonia: el contador sube girando
-    const el = $('#totalVenta'); let k = 0; const pasos = 16;
-    const iv = setInterval(() => { k++; son.moneda(k); if (el.isConnected) el.textContent = '+' + fmt(v.total * k / pasos) + ' → ' + fmt(desde + v.total * k / pasos); if (k >= pasos) { clearInterval(iv); son.venta(); pintarMenu(); } }, 45);
+    // La venta es una ceremonia, sin prisa: cada renglón se cobra con su moneda, el total va creciendo,
+    // entran los bonos y al final todo el dinero se va a la cartera.
+    ultVenta = v.total; porCobrar = v.total;
+    const caja = $('#caja'), filas = [...caja.querySelectorAll('.vi')], tot = $('#totalVenta'), cartera = caja.querySelector('header .d'), boton = $('#bVender');
+    if (boton) { boton.disabled = true; boton.textContent = 'Vendiendo…'; }
+    if (tot) tot.textContent = fmt(0);
+    const vivo = () => tot && tot.isConnected, espera = (ms) => new Promise((r) => setTimeout(r, ms));
+    const rodar = async (el, a, b, ms, tic) => { const t0 = performance.now(); let n = 0; while (performance.now() - t0 < ms) { const k = (performance.now() - t0) / ms; if (el && el.isConnected) el.textContent = fmt(a + (b - a) * (1 - Math.pow(1 - k, 2))); if (tic && n++ % 2 === 0) son.moneda(Math.min(24, Math.floor(k * 24))); await espera(34); } if (el && el.isConnected) el.textContent = fmt(b); };
+    const volar = (de, a, txt) => { if (!de || !a || !de.isConnected) return; const r1 = de.getBoundingClientRect(), r2 = a.getBoundingClientRect(), m = document.createElement('span'); m.className = 'moneda'; m.textContent = txt; m.style.left = r1.right - 40 + 'px'; m.style.top = r1.top + r1.height / 2 - 12 + 'px'; document.body.appendChild(m); requestAnimationFrame(() => { m.style.transform = `translate(${r2.left + r2.width / 2 - r1.right + 30}px, ${r2.top - r1.top}px) scale(0.6)`; m.style.opacity = '0.2'; }); setTimeout(() => m.remove(), 650); };
+    (async () => {
+      let suma = 0; const paso = Math.max(170, Math.min(520, 3200 / Math.max(1, filas.length)));
+      for (let k = 0; k < filas.length; k++) {
+        const f = filas[k], q = +f.dataset.q || 0, bono = f.classList.contains('bono');
+        if (vivo()) { f.classList.add('cobrado'); volar(f, tot, bono ? '✨' : '🪙'); }
+        if (bono) { await espera(260); campana(1319, 0.5, 0.09, 'tesoro'); campana(1976, 0.6, 0.07, 'tesoro', 0.1); } else son.moneda(Math.min(24, k * 2));
+        await rodar(tot, suma, suma + q, paso * (bono ? 1.5 : 0.85), false); suma += q;
+      }
+      if (vivo()) { tot.textContent = fmt(v.total); tot.classList.add('listo'); }
+      await espera(550);
+      // …y se jala a la cartera
+      if (vivo()) { volar(tot, cartera, '💰'); tot.classList.add('sefue'); }
+      await Promise.all([rodar(cartera, desde, desde + v.total, 1500, true), (async () => { const t0 = performance.now(); while (performance.now() - t0 < 1500) { porCobrar = v.total * (1 - (performance.now() - t0) / 1500); pintarHud(true); await espera(60); } })()]);
+      porCobrar = 0; pintarHud(true); son.venta();
+      if (cartera && cartera.isConnected) { cartera.classList.add('pum'); setTimeout(() => cartera.classList.remove('pum'), 500); }
+      await espera(700);
+      if (menu === 'bas') pintarMenu();
+    })();
     if (v.perfecto) tarjeta('✨ Viaje perfecto', '+10 % por volver con la bodega llena y sin un rasguño.');
     if (v.total >= 20000) difundir('vendió ' + fmt(v.total) + ' en un viaje');
     evento('venta', { llena: v.piezas === bodega(), total: v.total, n });

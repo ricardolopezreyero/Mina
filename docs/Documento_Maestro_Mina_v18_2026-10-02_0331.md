@@ -1,4 +1,4 @@
-# DOCUMENTO MAESTRO · «Mina» · v17
+# DOCUMENTO MAESTRO · «Mina» · v18
 
 **Ver en vivo: https://mina.capitaltorreon.com**
 
@@ -547,6 +547,17 @@ Cada uno da bono al descubrirlo y queda en El Elevador. Las paredes de los rinco
 **Personalidad de las zonas.** Junto a la profundidad dice la zona. Al entrar por primera vez a una zona sale un letrero que la presenta y dice qué taladro pide su piedra. En los túneles flota algo distinto en cada una: polvo en la Corteza, gotas en el Acuífero, esporas en las Cavernas, destellos en la Cristalera y brasas en la Zona de presión.
 
 Sin probar: un pleito entre dos personas reales (se probó con una maquinita simulada).
+
+### 9.13 La Báscula: todo a la vista y una venta que se disfruta
+
+Ricardo pidió que lo que va a vender se vea completo en una pantalla (el total quedaba abajo, tras un scroll) y que el efecto de vender sea más lento y más rico, con el dinero moviéndose y al final «jalándose» a la cartera.
+
+- **Dos columnas.** Cada mineral en una casilla compacta: color, nombre y cantidad, precio por pieza y subtotal. Catorce minerales distintos caben sin scroll.
+- **Total y botón fijos abajo**, siempre a la vista: «125 piezas · se vende en $65.08 M» y «Vender toda la carga».
+- **La venta, paso a paso:** el total arranca en cero; cada casilla se enciende, suelta una moneda que vuela al total y el total sube girando, con una nota cada vez más aguda. Los bonos (viaje perfecto, catálogo) entran al final con su campana. Luego el total se va hacia la cartera, la cartera sube girando con lluvia de monedas, y cierra la caja registradora.
+- **Cuánto dura:** entre 3 y 7 s según cuántos minerales distintos traigas (6.5 s con catorce). Antes duraba 0.7 s.
+- El dinero ya es tuyo desde el clic; lo que tarda es solo lo que se ve. Si cierras a media venta no se pierde nada.
+- Con la bodega vacía, La Báscula muestra tu última venta.
 
 ---
 
