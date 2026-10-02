@@ -766,6 +766,39 @@ Medido en local, sin la latencia de internet. En la red real hay que sumar el vi
 
 **Sin medir todavía:** el efecto en una pantalla real y en un teléfono real. Para eso está el medidor de Menú → Opciones (cuadros lentos del último minuto).
 
+### 9.23 El chat del mundo
+
+Como en las partidas de StarCraft: lo que alguien escribe sale abajo un momento, y el chat completo se abre de izquierda a derecha con todo lo dicho.
+
+**Cómo se usa.**
+
+- **Enter** (o el botón 💬 Chat, arriba a la derecha) abre el chat con el cursor listo. Se escribe abajo y la conversación crece hacia arriba.
+- **Enter** manda. **Enter con la caja vacía** regresa al juego dejando el chat a la vista. **Esc** lo cierra.
+- Con el chat **cerrado**, cada mensaje sale abajo durante diez segundos («Ricardo: Hola a todos») y el botón lleva la cuenta de los no leídos.
+- Con el chat **abierto**, el tablero de la izquierda se recorre a la derecha para no quedar tapado, y el juego sigue corriendo.
+
+**Lo que trae.**
+
+- **Burbujas** con el icono de la maquinita, su nombre y la hora. Las propias van a la derecha. Mensajes seguidos de la misma maquinita se agrupan.
+- **Cien colores**, uno por número de maquinita en el mundo (el orden en que entró por primera vez). El color es de la maquinita en ese mundo y no cambia aunque salga y vuelva; en otro mundo le toca el del lugar en que entró allá. Por eso caben **100 maquinitas por mundo** (antes 30).
+- **Emojis**: los del teclado, más una fila de diez para un toque.
+- **Ligas**: lo que empieza con http, https o www se vuelve liga y abre en otra pestaña.
+- **El texto se puede seleccionar y copiar.** No hay botones de copiar.
+- **Se guarda todo** en el mundo, mensaje por mensaje (tabla `chat`). Al entrar llegan los últimos 60; al subir hasta arriba se piden los anteriores de 50 en 50. Letreros de «Hoy», «Ayer» y fecha separan los días.
+- **Quién está conectado** va en el encabezado, cada quien con su color. Las entradas, salidas y descubrimientos salen como notas chicas en medio de la conversación (solo durante la sesión; no se guardan).
+- **Quien mira** un mundo puede leer el chat y su historial, pero no escribir.
+
+**Cuidados.**
+
+- El texto nunca se interpreta como código: se escribe tal cual. Se le quitan los caracteres de control y las marcas invisibles que voltean el texto.
+- Máximo 300 caracteres por mensaje, y seis mensajes cada diez segundos por maquinita.
+- Se guardan los últimos 20,000 mensajes de cada mundo.
+- No hay moderación: nadie puede borrar un mensaje ni silenciar a alguien. Para jugar entre conocidos alcanza; antes de abrir el juego al público hace falta.
+
+**Más gente a la vez.** Conectadas al mismo tiempo caben **40** (antes 10). Para que aguante, el mundo ya no le manda todas las posiciones a todos: a quien está cerca le llegan todas; a quien anda lejos, una de cada cinco. Prueba en local con 38 maquinitas simuladas mandando 30 posiciones por segundo, todas juntas: un mensaje de chat tardó entre 4 y 20 ms en llegar. Repartidas por el mundo, cada una recibió 185 posiciones por segundo en vez de 1,110. Sin probar todavía con 40 personas reales ni en el servidor de producción.
+
+**Piezas.** Mundo: `textoChat`, mensajes `chat`, `chatAntes`, `chatMas`, `chatNo`, tabla SQL `chat`. Juego: `colorDe`, `agregarChat`, `ponerChat`, `chatViejos`, `conLigas`, `nodoChat`, `abrirChat`, `#chat`, `#chatVivo`.
+
 ## 10. Revisión de código del 2 de octubre
 
 Se revisó todo el código buscando fallas y se corrigieron estas:

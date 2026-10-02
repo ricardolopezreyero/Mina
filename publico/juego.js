@@ -781,6 +781,7 @@ const son = {
   piedra: () => { campana(1900, 0.12, 0.1, 'taladro'); ruido(0.05, 0.25, 'taladro', 3000, 'bandpass', 3); },
   // los demás
   entra: () => { cuerda(659, 0.3, 0.07, 'otros'); cuerda(880, 0.45, 0.07, 'otros', 0.12); },
+  chat: () => { campana(1175, 0.16, 0.03, 'otros'); campana(1568, 0.24, 0.025, 'otros', 0.07); },
   senal: () => { campana(1568, 0.7, 0.07, 'otros'); campana(1568, 0.5, 0.025, 'otros', 0.28); },
 };
 
@@ -1583,11 +1584,14 @@ function recibir(d) {
     }
     case 'noexiste': quitarMundo(mundoId); if (deCasa) return location.replace('/'); return pantallaFinal('Este mundo no existe', 'Puede que lo hayan borrado o que la liga esté incompleta.');
     case 'mira': return conMapa(d, iniciarVer);
+    case 'chat': if (d.id && typeof d.x === 'string') agregarChat(d); return;
+    case 'chatMas': return chatViejos(d.l);
+    case 'chatNo': return aviso('Vas muy rápido: espera un momento para escribir otra vez.');
     case 'mapa': mapaOk = d.r; if (d.r === remin && d.h !== mapaHash) cambiarMapa(d); return;
     case 'nomira': detener(); return pantallaFinal('Este mundo no admite observadores', 'Quien lo creó prefirió jugar sin público.');
     case 'obs': mirones = d.n | 0; ultPos = ''; if (soloVer) pintarVer(); else { enviarPos(); pintarTabla(); } return;      // que quien llega a mirar me vea aunque esté quieto
     case 'cerrado': return pantallaFinal('Este mundo cerró la puerta', 'Quien lo creó ya no admite maquinitas nuevas.');
-    case 'lleno': return pantallaFinal('Este mundo está lleno', soloVer ? 'Ya hay 30 personas mirando. Intenta en un rato.' : 'Hay un tope de 10 jugadores a la vez.');
+    case 'lleno': return pantallaFinal('Este mundo está lleno', soloVer ? 'Ya hay 30 personas mirando. Intenta en un rato.' : 'Caben 100 maquinitas por mundo y 40 jugando a la vez.');
     case 'otra': detener(); return pantallaFinal('Tu maquinita se abrió en otro lado', 'Está en otra pestaña o en otro dispositivo, con todo lo que trae. Aquí puedes volver a tomarla cuando quieras.');
     case 'borrado': quitarMundo(mundoId); detener(); return pantallaFinal('Este mundo fue borrado', 'Quien lo creó lo desechó.');
     case 'mundo': return conMapa(d, iniciarMundo);
@@ -1597,8 +1601,9 @@ function recibir(d) {
       otros.set(d.j.i, { ...otros.get(d.j.i), ...d.j });
       if (d.nuevo) { S.d += 500; S.tot += 500; S.st.amigos = (S.st.amigos || 0) + 1; sucio = true; tarjeta('🎉 Llegó ' + d.j.n, 'Maquinita nueva en el mundo: +$500 para cada quien.'); pintarHud(true); }
       else aviso(d.j.n + ' entró al mundo');
+      notaChat(d.j.n + (d.nuevo ? ' llegó al mundo por primera vez' : ' entró')); pintarChatQuien();
       son.entra(); ultPos = ''; enviarPos(); return pintarTabla();   // que el recién llegado me vea aunque yo esté quieto
-    case 'sale': { const o = otros.get(d.i); if (o) { o.on = 0; o.x = undefined; o.b = []; aviso(o.n + ' salió'); } return pintarTabla(); }
+    case 'sale': { const o = otros.get(d.i); if (o) { o.on = 0; o.x = undefined; o.b = []; aviso(o.n + ' salió'); notaChat(o.n + ' salió'); pintarChatQuien(); } return pintarTabla(); }
     case 'j': { const o = otros.get(d.i); if (o) { o.rec = d.rec; o.tot = d.tot; } return pintarTabla(); }
     case 'col': if (d.k >= 0 && d.k < NCOL) { hallados[d.k] = 1; dugCambios++; mapa.fill(255); bloques.clear(); pintarHud(true); if (menu === 'menu') pintarMenu(); } return;
     case 'golpe': {            // otra maquinita me alcanzó con su taladro: pega según su taladro y la clase de golpe; lo que aguanto es mi casco
@@ -1617,7 +1622,7 @@ function recibir(d) {
       if (k === 3) { son.choque(); onda(yo.x - dir * 0.5, yo.y, 1.6, '#ffffff', 0.3); }
       return danar(Math.max(1, Math.min(900, d.q | 0) * 0.25), 'pleito');
     }
-    case 'aviso': return aviso(nombreDe(d.i) + ' ' + d.x);
+    case 'aviso': notaChat(nombreDe(d.i) + ' ' + d.x); return aviso(nombreDe(d.i) + ' ' + d.x);
     case 'senal': senales.push({ x: d.x, y: d.y, t: 10, n: nombreDe(d.i) }); son.senal(); return aviso(nombreDe(d.i) + ' marcó un punto');
     case 'fuel': if (S.fuel <= 0 && d.q > 0) tarjeta('Saliste de la reserva', nombreDe(d.i) + ' te pasó combustible.'); S.fuel = Math.min(tanque(), S.fuel + d.q); son.combustible(); sucio = true; return aviso(nombreDe(d.i) + ' te pasó ' + d.q + ' litros');
     case 'regalo': S.d += d.q; son.compra(); sucio = true; return tarjeta('🎁 ' + nombreDe(d.i) + ' te regaló ' + fmt(d.q));
@@ -1695,7 +1700,7 @@ function iniciarMundo(d, local) {
   $('#aviso-red').style.display = 'none';
   if (menu === 'inicio') { menu = null; $('#velo').classList.remove('on'); }
   document.body.classList.add('jugando');
-  surtirContratos(); pintarHud(true); pintarTabla(); arrancar();
+  surtirContratos(); pintarHud(true); pintarTabla(); if (!local) ponerChat(d.chat); arrancar();
   { const f = new Date(), hoy = f.getDate() + '/' + (f.getMonth() + 1); if (primera && hoy === '11/7') tarjeta('⛏️ ¡Feliz Día del Minero!', 'Hoy, 11 de julio, México celebra a su gente de mina. Buen turno.', 'msj', 10000); if (primera && hoy === '4/12') tarjeta('🕯️ Día de Santa Bárbara', 'Hoy, 4 de diciembre, las minas festejan a su patrona.', 'msj', 10000); }
   if (primera && !d.est) tarjeta('⛏️ Tu maquinita se llama ' + miNombre, (tactil ? 'Arrastra el dedo para moverte.' : 'Flechas o WASD para moverte.') + ' Primero: carga combustible en la Gasolinera (' + (tactil ? 'un toque' : '↓') + ' para entrar). El nombre se cambia en Menú → Mundo.', 'msj', 11000);
   if (primera) { const n = leer('mina_nota', ''); if (n) { try { localStorage.removeItem('mina_nota'); } catch {} aviso(n); } }
@@ -2698,7 +2703,7 @@ function iniciarVer(d) {
   if (primera) { medir(); yo.x = vis.x = ant.x = INICIO_X; yo.y = vis.y = ant.y = INICIO_Y; camX = Math.max(0, Math.min(W - cols, yo.x - cols / 2)); camY = Math.max(-filas * 0.68, yo.y - filas * 0.5); }
   if (menu === 'inicio') { menu = null; $('#velo').classList.remove('on'); }
   document.body.classList.add('viendo');
-  pintarVer(); arrancar();
+  ponerChat(d.chat); pintarVer(); arrancar();
 }
 // La barra de quien mira: a quién ve, cuánto lleva, cuántos más miran, y cómo cambiar de maquinita o ponerse a jugar.
 function pintarVer() {
@@ -2711,6 +2716,112 @@ function verOtra(paso) {
   const k = l.findIndex((o) => o.i === veo); veo = l[(k + paso + l.length) % l.length].i; pintarVer();
 }
 const dineroLargo = (n) => '$' + Math.floor(n || 0).toLocaleString('es-MX');
+
+/* ════════ El chat del mundo ════════ RLR */
+// Como en las partidas de antes: lo que alguien escribe sale abajo un momento, y el chat completo se abre de izquierda a
+// derecha con todo lo dicho, guardado en el mundo. Cada maquinita tiene su color, el de su número en este mundo (el orden
+// en que entró): hay cien, y no cambia aunque salga y vuelva a entrar.
+const colorDe = (i) => { const k = (((i | 0) % 100) + 100) % 100, c = k % 3; return [(k * 137.508) % 360, [78, 62, 88][c], [66, 74, 60][c]]; };
+const colorTx = (i) => { const [h, sa, l] = colorDe(i); return `hsl(${h.toFixed(0)} ${sa}% ${l}%)`; };
+const colorFondo = (i) => { const [h, sa] = colorDe(i); return `hsl(${h.toFixed(0)} ${Math.round(sa * 0.62)}% 21% / .94)`; };
+const chat = { l: [], abierto: false, sinLeer: 0, nuevos: 0, completo: false, pidiendo: false };
+const iconos = [];
+function iconoMaq(m) { m = m | 0; if (!iconos[m]) { const c = document.createElement('canvas'); c.width = c.height = 60; dibMaq(c.getContext('2d'), 30, 32, 54, m, 1, false, 0, '', ''); iconos[m] = c.toDataURL(); } return iconos[m]; }
+// El texto se escribe tal cual (nunca como código) y lo que parezca una liga se vuelve liga.
+function conLigas(x) {
+  let h = '', k = 0, m; const re = /((?:https?:\/\/|www\.)[^\s<>"']+)/gi;
+  while ((m = re.exec(x))) {
+    const u = m[1].replace(/[.,;:!?)\]]+$/, ''); if (u.length < 5) continue;
+    h += esc(x.slice(k, m.index)) + `<a href="${esc(/^www\./i.test(u) ? 'https://' + u : u)}" target="_blank" rel="noopener noreferrer nofollow">${esc(u)}</a>`;
+    k = m.index + u.length; re.lastIndex = k;
+  }
+  return h + esc(x.slice(k));
+}
+const horaChat = (h) => new Date(h).toLocaleTimeString('es-MX', { hour: 'numeric', minute: '2-digit' });
+const diaChat = (h) => { const d = new Date(h), hoy = new Date(), ay = new Date(Date.now() - 864e5); return d.toDateString() === hoy.toDateString() ? 'Hoy' : d.toDateString() === ay.toDateString() ? 'Ayer' : d.toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: d.getFullYear() === hoy.getFullYear() ? undefined : 'numeric' }); };
+function nodoChat(m, ant) {
+  const f = document.createDocumentFragment(), d = document.createElement('div');
+  if (m.nota) { d.className = 'cn'; d.textContent = m.nota; f.appendChild(d); return f; }
+  const otroDia = !ant || !ant.h || new Date(ant.h).toDateString() !== new Date(m.h).toDateString();
+  if (otroDia) { const s = document.createElement('div'); s.className = 'cn dia'; s.textContent = diaChat(m.h); f.appendChild(s); }
+  const mio = !soloVer && m.i === miI, junto = !otroDia && ant && !ant.nota && ant.i === m.i && m.h - ant.h < 120000;
+  d.className = 'cm' + (mio ? ' mio' : '') + (junto ? ' junto' : '');
+  d.style.setProperty('--c', colorTx(m.i)); d.style.setProperty('--b', colorFondo(m.i));
+  d.innerHTML = (junto ? '' : `<img class="av" src="${iconoMaq(m.m)}" alt="">`) + `<div class="bu">${junto ? '' : `<b>${esc(m.n)}</b>`}<span class="tx">${conLigas(m.x)}</span><small>${horaChat(m.h)}</small></div>`;
+  f.appendChild(d); return f;
+}
+const chatAbajo = () => { const L = $('#chatLista'); return L.scrollHeight - L.scrollTop - L.clientHeight < 70; };
+const chatAlFondo = () => { const L = $('#chatLista'); L.scrollTop = L.scrollHeight; chat.nuevos = 0; $('#chatNuevos').style.display = 'none'; };
+function pintarChatBoton() { poner($('#bChat'), '💬 Chat' + (chat.sinLeer ? `<i>${chat.sinLeer > 99 ? '99+' : chat.sinLeer}</i>` : '')); const v = $('#verChat'); if (v) poner(v, '💬' + (chat.sinLeer ? `<i>${chat.sinLeer}</i>` : '')); }
+// Un mensaje (o una nota chica: quién entró, quién descubrió qué) se agrega al final.
+function agregarChat(m) {
+  const ant = chat.l[chat.l.length - 1], abajo = chatAbajo(), mio = !m.nota && !soloVer && m.i === miI;
+  chat.l.push(m); $('#chatMsgs').appendChild(nodoChat(m, ant));
+  const vacio = $('#chatVacio'); if (vacio) vacio.remove();
+  if (m.nota) { if (abajo) chatAlFondo(); return; }
+  if (chat.abierto) { if (abajo || mio) chatAlFondo(); else { chat.nuevos++; const b = $('#chatNuevos'); b.textContent = '↓ ' + chat.nuevos + (chat.nuevos === 1 ? ' mensaje nuevo' : ' mensajes nuevos'); b.style.display = 'block'; } }
+  else {
+    // con el chat cerrado, el mensaje sale abajo un momento, como en las partidas de antes
+    const v = $('#chatVivo'), d = document.createElement('div');
+    d.innerHTML = `<b style="color:${colorTx(m.i)}">${esc(m.n)}:</b> ${conLigas(m.x)}`; v.appendChild(d); while (v.children.length > 5) v.firstChild.remove(); setTimeout(() => d.remove(), 10000);
+    if (!mio) { chat.sinLeer++; pintarChatBoton(); }
+  }
+  if (!mio) son.chat();
+}
+function notaChat(x) { if (listo) agregarChat({ nota: x, h: Date.now() }); }
+// Al entrar (o al reconectar) llega lo último que se dijo; lo que ya se tenía no se repite.
+function ponerChat(l) {
+  if (!Array.isArray(l)) return;
+  const ult = chat.l.reduce((a, m) => (m.id > a ? m.id : a), 0);
+  if (!ult) {
+    chat.l = []; const c = $('#chatMsgs'); c.innerHTML = l.length ? '' : `<p id="chatVacio" class="cn">Aquí todavía no ha escrito nadie. Di hola 👋</p>`;
+    let ant = null; for (const m of l) { c.appendChild(nodoChat(m, ant)); chat.l.push(m); ant = m; }
+    chat.completo = l.length < 60; chatAlFondo();
+  } else for (const m of l) if (m.id > ult) agregarChat(m);
+  $('#chatIn').disabled = soloVer; $('#chatIn').placeholder = soloVer ? 'Estás mirando: entra a jugar para escribir' : 'Escribe y pulsa Enter…';
+  pintarChatQuien();
+}
+function chatViejos(l) {                           // historial hacia atrás, al subir hasta arriba
+  chat.pidiendo = false; if (!Array.isArray(l) || !l.length) { chat.completo = true; return; }
+  if (l.length < 50) chat.completo = true;
+  const L = $('#chatLista'), h0 = L.scrollHeight, f = document.createDocumentFragment(); let ant = null;
+  for (const m of l) { f.appendChild(nodoChat(m, ant)); ant = m; }
+  const pri = chat.l.find((m) => m.id), dia = $('#chatMsgs .cn.dia');       // si el día continúa, sobra el letrero de fecha que encabezaba lo ya cargado
+  if (pri && dia && new Date(pri.h).toDateString() === new Date(l[l.length - 1].h).toDateString()) dia.remove();
+  $('#chatMsgs').prepend(f); chat.l = l.concat(chat.l); L.scrollTop += L.scrollHeight - h0;
+}
+function pintarChatQuien() {
+  if (!S) return;
+  const l = (soloVer ? [] : [{ i: miI, n: miNombre }]).concat([...otros.values()].filter((o) => o.on));
+  poner($('#chatQuien'), l.length ? l.map((j) => `<span><i style="background:${colorTx(j.i)}"></i>${esc(j.n)}</span>`).join('') : 'Nadie conectado');
+}
+function abrirChat(foco) {
+  if (!listo) return;
+  chat.abierto = true; chat.sinLeer = 0; document.body.classList.add('chat'); $('#chatVivo').innerHTML = ''; pintarChatBoton(); pintarChatQuien(); chatAlFondo();
+  if (foco && !soloVer) { for (const k in teclas) teclas[k] = false; $('#chatIn').focus(); }
+}
+function cerrarChat() { chat.abierto = false; document.body.classList.remove('chat'); $('#chatIn').blur(); }
+$('#bChat').addEventListener('click', (e) => { audio(); e.currentTarget.blur(); if (chat.abierto) cerrarChat(); else abrirChat(true); });
+$('#chatX').addEventListener('click', cerrarChat);
+$('#chatNuevos').addEventListener('click', chatAlFondo);
+$('#chatForm').addEventListener('submit', (e) => {
+  e.preventDefault(); const el = $('#chatIn'), x = el.value.trim();
+  if (!x) return el.blur();                          // Enter con la caja vacía: de vuelta al juego, con el chat a la vista
+  if (soloVer) return;
+  if (!conectado) { el.placeholder = 'Sin señal: en cuanto vuelva podrás escribir'; return; }
+  if (Date.now() - (chat.tEnv || 0) < 450) return;      // un respiro entre mensajes: el texto se queda en la caja
+  chat.tEnv = Date.now(); audio(); enviar({ t: 'chat', x }); el.value = '';
+});
+$('#chatIn').addEventListener('keydown', (e) => { if (e.key === 'Escape') cerrarChat(); });
+$('#chatEmo').addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b || soloVer) return;
+  const el = $('#chatIn'), a = el.selectionStart ?? el.value.length, z = el.selectionEnd ?? a;
+  el.value = (el.value.slice(0, a) + b.textContent + el.value.slice(z)).slice(0, 300); el.focus(); el.selectionStart = el.selectionEnd = a + b.textContent.length;
+});
+$('#chatLista').addEventListener('scroll', (e) => {
+  const L = e.currentTarget; if (chatAbajo()) { chat.nuevos = 0; $('#chatNuevos').style.display = 'none'; }
+  if (L.scrollTop < 60 && !chat.completo && !chat.pidiendo && ws && ws.readyState === 1) { const p = chat.l.find((m) => m.id); if (p) { chat.pidiendo = true; ws.send(JSON.stringify({ t: 'chatAntes', id: p.id })); } }
+});
 
 /* ════════ La tabla mundial ════════ RLR */
 // Las veinte maquinitas que más han ganado, en todos los mundos. Con la tabla abierta se pregunta cada 4 s y los números
@@ -3027,8 +3138,9 @@ function pintarVel() {
 function pintarTabla() {
   if (!S) return;
   const l = [{ n: miNombre, m: miModelo, rec: S.rec, on: 1, yo: 1, y: donde(yo.y) }, ...[...otros.values()].map((o) => ({ ...o, y: o.on && o.y !== undefined ? donde(o.y) : null }))];
-  l.sort((a, b) => (b.rec || 0) - (a.rec || 0));
-  poner($('#tabla'), l.map((j) => `<div class="${j.on ? '' : 'off'}"><i style="background:${MODELOS[j.m]?.[0] || '#888'}"></i><b>${esc(j.n)}${j.yo ? ' (tú)' : ''}</b><span>${j.on && j.y !== null ? j.y + ' · ' : ''}récord ${j.rec || 0} m</span></div>`).join('') +
+  l.sort((a, b) => (b.on || 0) - (a.on || 0) || (b.rec || 0) - (a.rec || 0));        // primero quienes están jugando
+  const mas = l.length - 8; if (mas > 0) { const yoJ = l.findIndex((j) => j.yo); l.length = 8; if (yoJ >= 8) l[7] = { n: miNombre, m: miModelo, rec: S.rec, on: 1, yo: 1, y: donde(yo.y) }; }
+  poner($('#tabla'), l.map((j) => `<div class="${j.on ? '' : 'off'}"><i style="background:${MODELOS[j.m]?.[0] || '#888'}"></i><b>${esc(j.n)}${j.yo ? ' (tú)' : ''}</b><span>${j.on && j.y !== null ? j.y + ' · ' : ''}récord ${j.rec || 0} m</span></div>`).join('') + (mas > 0 ? `<div class="off"><b>y ${mas} más</b></div>` : '') +
     (tablaM.lugar ? `<div class="mund">🏆 Lugar ${tablaM.lugar} del mundo</div>` : '') + (mirones ? `<div class="mund">👁 ${mirones === 1 ? '1 persona te mira' : mirones + ' personas te miran'}</div>` : ''));
 }
 
@@ -3275,7 +3387,7 @@ function pintarMenu() {
       <button data-a="remin" ${!puedo || S.d < c || cuentaFin ? 'disabled' : ''}>${puedo ? 'Remineralizar el tablero' : 'Solo quien creó el mundo puede hacerlo'}</button></div>`;
   } else if (menu === 'inv') {
     const liga = location.origin + '/m/' + mundoId;
-    h = cab('👥 Invita a tu gente') + `<div class="cuerpo" style="text-align:center"><p>Quien abra esta liga entra a <b>${esc(cfg.nombre || 'este mundo')}</b> con su propia maquinita. Caben 10 a la vez.</p>
+    h = cab('👥 Invita a tu gente') + `<div class="cuerpo" style="text-align:center"><p>Quien abra esta liga entra a <b>${esc(cfg.nombre || 'este mundo')}</b> con su propia maquinita. Caben 100 maquinitas por mundo, 40 jugando a la vez.</p>
       <a href="${liga}" target="_blank" rel="noopener" title="Abrir la liga"><canvas id="qrLienzo" class="qr" data-t="${liga}"></canvas></a>
       <p><code>${liga}</code></p>
       <p><button data-a="invitar">Copiar la liga del mundo</button> <button class="s" data-a="presumir">Copiar mi liga (presume tu maquinita)</button> ${navigator.share ? '<button class="s" data-a="compartir">Compartir…</button>' : ''} <button class="s" data-a="menu" data-v="foto">📸 Foto para presumir</button></p>
@@ -3518,6 +3630,7 @@ $('#reglaVia').addEventListener('click', (e) => {          // un clic en la regl
   panY += fila - (camY + filas / 2); camY = fila - filas / 2; vistaLibre = true;
 });
 $('#verOtra').addEventListener('click', () => { audio(); verOtra(1); });
+$('#verChat').addEventListener('click', () => { audio(); if (chat.abierto) cerrarChat(); else abrirChat(); });
 $('#verTop').addEventListener('click', () => { audio(); abrir('top'); });
 $('#bGrua').addEventListener('click', (e) => { audio(); e.currentTarget.blur(); if (listo && !menu && !pausa) grua(); });
 $('#vjDatos').addEventListener('click', (e) => { audio(); if (listo && !menu) { pestana = e.target.closest('.col') ? 1 : 0; abrir('menu'); } });
@@ -3627,6 +3740,7 @@ function menuPrincipal() {
       <p><b>Diez kilómetros:</b> debajo de la Corteza siguen el Acuífero, las Cavernas, la Cristalera y la Zona de presión, con doce minerales nuevos y cuatro lugares por descubrir. Cada lugar que encuentres queda apuntado en <b>El Elevador</b> (el último edificio), que también te regresa al punto donde te recogió la grúa.</p>
       <p><b>Sin internet y como aplicación:</b> Mina se puede instalar (Menú → Opciones) y abre aunque no haya señal. Lo que caves y ganes sin internet se queda en tu equipo y se manda al mundo cuando la señal vuelve. En pantallas táctiles, arrastra el dedo para moverte y da un toque frente a un edificio para entrar.</p>
       <p><b>Tu nombre y tus ligas:</b> la maquinita nace bautizada para que empieces a jugar sin llenar nada; el nombre y el modelo se cambian en Menú → Mundo. Hay dos ligas: la del mundo (invita a excavar) y la tuya (presume tu maquinita); cada una lleva su imagen al mandarla por WhatsApp.</p>
+      <p><b>El chat:</b> pulsa <b>Enter</b> (o el botón 💬 Chat) y escribe. Se abre de izquierda a derecha con todo lo que se ha dicho en este mundo, que queda guardado. Con el chat cerrado, lo que alguien escriba sale abajo un momento. Enter con la caja vacía te regresa al juego con el chat a la vista; Esc lo cierra. Cada maquinita tiene su color, de los cien que hay, según el orden en que entró. El texto se puede seleccionar y copiar, y las ligas se abren con un clic.</p>
       <p><b>Top 20 y público:</b> Menú → Top 20 enseña las veinte maquinitas que más han ganado en todos los mundos, en vivo. A la que esté jugando se le puede ir a ver: quien mira entra con una liga propia, no puede jugar ni conoce la liga del mundo. Tu liga para que te vean está en Menú → Mundo, y ahí mismo quien creó el mundo puede cerrarlo al público.</p>
       <p><b>El mundo da la vuelta:</b> si sales por la orilla derecha entras por la izquierda, y al revés, perforando o volando. Todo está conectado.</p>
       <p><b>La Remineralizadora:</b> cuesta el 5 % de todo lo que has ganado en la vida de tu maquinita. Entre más llevas, más cuesta.</p>
@@ -3648,6 +3762,8 @@ const MAPA = { ArrowLeft: 'izq', a: 'izq', ArrowRight: 'der', d: 'der', ArrowUp:
 addEventListener('keydown', (e) => {
   if (e.target.tagName === 'INPUT' || e.metaKey || e.ctrlKey) return;
   audio(); nacer();
+  if (e.key === 'Enter' && listo && !menu) { e.preventDefault(); return abrirChat(true); }      // Enter abre el chat y deja el cursor listo para escribir
+  if (e.key === 'Escape' && chat.abierto && !menu) return cerrarChat();
   if (soloVer) {                                   // mirando: solo se cambia de maquinita o se cierra la tabla
     if (e.key === 'Escape' && menu === 'top') cerrar(); else if (!menu && e.key === 'ArrowRight') verOtra(1); else if (!menu && e.key === 'ArrowLeft') verOtra(-1);
     return;
@@ -3677,7 +3793,7 @@ addEventListener('keydown', (e) => {
 });
 // La rueda o el trackpad mueven la vista para mirar alrededor; cualquier flecha la regresa a la maquinita.
 addEventListener('wheel', (e) => {
-  if (!listo || menu) return;
+  if (!listo || menu || (e.target.closest && e.target.closest('#chat'))) return;      // dentro del chat, la rueda recorre la conversación
   e.preventDefault();
   const k = (e.deltaMode === 1 ? 32 : 1) * RES / T;
   panX = Math.max(-W, Math.min(W, panX + e.deltaX * k)); panY = Math.max(-H, Math.min(H, panY + e.deltaY * k)); vistaLibre = true;

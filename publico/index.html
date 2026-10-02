@@ -92,6 +92,41 @@ body.jugando .hud{visibility:visible}
 .fila.top .v.sube{color:var(--ok)}
 .vivo{color:var(--ok);font-weight:700}
 a.boton{background:var(--ac);color:#1b120e;border-radius:6px;padding:.4em .8em;font-weight:700;text-decoration:none;white-space:nowrap}
+/* El chat: se abre de izquierda a derecha; el tablero de la izquierda se recorre para no quedar tapado. */
+:root{--cw:min(390px,100vw)}
+#chat{position:fixed;left:0;top:0;bottom:0;width:var(--cw);z-index:4;display:flex;flex-direction:column;background:#17100cf4;border-right:1px solid var(--borde);box-shadow:8px 0 26px #0009;transform:translateX(-104%);visibility:hidden;transition:transform .22s ease,visibility 0s .22s}
+body.chat #chat{transform:none;visibility:visible;transition:transform .22s ease,visibility 0s}
+#chat header{display:flex;gap:10px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--borde)}
+#chat header b{white-space:nowrap}
+#chatQuien{flex:1;display:flex;gap:3px 9px;flex-wrap:wrap;font-size:.76em;color:var(--su);max-height:3em;overflow:hidden}
+#chatQuien span{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}#chatQuien i{width:8px;height:8px;border-radius:50%;display:inline-block}
+#chatLista{flex:1;overflow-y:auto;display:flex;flex-direction:column;padding:10px 12px;overscroll-behavior:contain}
+#chatMsgs{margin-top:auto;display:flex;flex-direction:column;gap:7px;-webkit-user-select:text;user-select:text;cursor:text}
+.cm{display:flex;gap:8px;align-items:flex-end;max-width:94%}
+.cm.mio{align-self:flex-end;flex-direction:row-reverse}
+.cm .av{width:32px;height:32px;flex:none;border-radius:9px;background:#0006;border:1px solid var(--c);-webkit-user-select:none;user-select:none}
+.cm.junto{margin-top:-4px;padding-left:40px}.cm.mio.junto{padding-left:0;padding-right:40px}
+.cm .bu{background:var(--b);border:1px solid color-mix(in srgb,var(--c) 60%,transparent);border-radius:14px 14px 14px 4px;padding:6px 10px 5px;min-width:0;overflow-wrap:anywhere;line-height:1.35}
+.cm.mio .bu{border-radius:14px 14px 4px 14px}
+.cm .bu b{display:block;color:var(--c);font-size:.8em;margin-bottom:1px}
+.cm .bu small{color:#fff8;font-size:.68em;margin:.45em 0 0 10px;float:right;-webkit-user-select:none;user-select:none}
+.cm .bu a{color:#9fd4ff;text-decoration:underline}
+.cn{align-self:center;color:var(--su);font-size:.72em;padding:2px 10px;background:#0005;border-radius:99px;text-align:center;-webkit-user-select:none;user-select:none}
+.cn.dia{margin:6px 0 2px;font-weight:700}
+#chatNuevos{position:absolute;left:50%;bottom:106px;transform:translateX(-50%);display:none;font-size:.8em;box-shadow:0 2px 10px #000a}
+#chatEmo{display:flex;gap:1px;padding:5px 9px 0;border-top:1px solid #ffffff14}
+#chatEmo button{background:transparent;padding:2px 5px;font-size:1.15em;font-weight:400}
+#chatForm{display:flex;gap:6px;padding:7px 10px 10px}
+#chatIn{flex:1;min-width:0;font-size:1em;padding:.55em .7em}
+#chatVivo{position:fixed;left:calc(270px*var(--f) + 14px);bottom:12px;width:min(540px,calc(100vw - 600px*var(--f)));z-index:2;pointer-events:none;display:flex;flex-direction:column;gap:3px;text-shadow:0 1px 2px #000}
+#chatVivo div{align-self:flex-start;max-width:100%;background:#000a;border-radius:9px;padding:3px 10px;overflow-wrap:anywhere;animation:chatSale 10s forwards}
+#chatVivo a{color:#9fd4ff}
+@keyframes chatSale{0%{opacity:0;transform:translateY(6px)}4%{opacity:1;transform:none}86%{opacity:1}100%{opacity:0}}
+body.chat #chatVivo{display:none}
+#bChat i,#verChat i{font-style:normal;background:var(--mal);color:#fff;border-radius:99px;padding:0 6px;margin-left:5px;font-size:.8em}
+@media (min-width:761px){#izq,#viaje,#avisos,#regla{transition:left .22s ease}
+  body.chat #izq,body.chat #viaje{left:calc(var(--cw) + 10px)}body.chat #avisos{left:calc(var(--cw) + 10px)}body.chat.libre #avisos{left:calc(var(--cw) + 150px*var(--f))}body.chat #regla{left:calc(var(--cw) + 14px)}}
+@media (max-width:760px){#chatVivo{left:10px;right:10px;width:auto;bottom:auto;top:calc(118px*var(--f))}}
 #verBarra{position:fixed;left:50%;top:10px;transform:translateX(-50%);display:none;align-items:center;gap:10px;background:#000b;border:1px solid var(--borde);border-radius:10px;padding:8px 12px;max-width:calc(100vw - 20px);z-index:3;text-shadow:0 1px 2px #000}
 body.viendo #verBarra{display:flex}
 #verDatos{min-width:0}#verDatos b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#verDatos small{display:block;color:var(--su);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -233,7 +268,7 @@ a{color:var(--az)}
 </div>
 <div class="hud" id="metas"></div>
 <div class="hud" id="der">
-  <div id="botones"><button id="bSon" class="s" title="Apagar el sonido">🔊</button><button id="bMenos" class="s" title="Bajar el volumen">−</button><span id="bVol">70 %</span><button id="bMas" class="s" title="Subir el volumen">+</button><button id="bTipos" class="s" title="Elegir qué sonidos se oyen">♪ Sonidos</button><button id="bInv" class="s">👥 Invitar</button><button id="bMenu" class="s">☰ Menú (Esc)</button></div>
+  <div id="botones"><button id="bSon" class="s" title="Apagar el sonido">🔊</button><button id="bMenos" class="s" title="Bajar el volumen">−</button><span id="bVol">70 %</span><button id="bMas" class="s" title="Subir el volumen">+</button><button id="bTipos" class="s" title="Elegir qué sonidos se oyen">♪ Sonidos</button><button id="bChat" class="s" title="Abrir el chat de este mundo (Enter)">💬 Chat</button><button id="bInv" class="s">👥 Invitar</button><button id="bMenu" class="s">☰ Menú (Esc)</button></div>
   <div id="panSon"></div><div id="tabla"></div><div id="tarjeta"></div>
 </div>
 <div class="hud" id="avisos"></div>
@@ -245,7 +280,12 @@ a{color:var(--az)}
 <div class="hud" id="regla"><small id="reglaArr">superficie</small><div id="reglaVia"><div id="reglaLug"></div><i id="reglaYo"></i><i id="reglaVer"><b id="reglaTx"></b></i></div><small id="reglaAb"></small></div>
 <div class="hud" id="aviso-red">📡 Sin señal · sigues jugando, se guarda al volver</div>
 <div id="palanca"><i></i></div>
-<div id="verBarra"><div id="verDatos"></div><button class="s" id="verOtra" title="Ver a otra maquinita de este mundo (← →)">Otra ▶</button><button class="s" id="verTop">🏆 Top 20</button><a class="boton" href="/">⛏️ Jugar yo</a></div>
+<aside id="chat"><header><b>💬 Chat</b><div id="chatQuien"></div><button class="s" id="chatX" title="Cerrar el chat (Esc)">✕</button></header>
+  <div id="chatLista"><div id="chatMsgs"></div></div><button id="chatNuevos" type="button"></button>
+  <div id="chatEmo"><button type="button">👋</button><button type="button">👍</button><button type="button">😂</button><button type="button">⛏️</button><button type="button">💎</button><button type="button">🔥</button><button type="button">❤️</button><button type="button">😮</button><button type="button">🙏</button><button type="button">🎉</button></div>
+  <form id="chatForm" autocomplete="off"><input id="chatIn" maxlength="300" enterkeyhint="send" placeholder="Escribe y pulsa Enter…"><button>Enviar</button></form></aside>
+<div id="chatVivo"></div>
+<div id="verBarra"><div id="verDatos"></div><button class="s" id="verOtra" title="Ver a otra maquinita de este mundo (← →)">Otra ▶</button><button class="s" id="verChat" title="Leer el chat de este mundo">💬</button><button class="s" id="verTop">🏆 Top 20</button><a class="boton" href="/">⛏️ Jugar yo</a></div>
 
 <div id="velo"><div class="caja" id="caja"></div></div>
 

@@ -14,7 +14,15 @@ const _k = "EYE", _rev = 181218; // RLR · sello de autoría
 const W = 96, H = 5000, BYTES = (W * H) / 8;
 const ZX0 = 39, ZX1 = 68;            // suelo firme bajo los edificios (filas 0 y 1)
 const ALFA = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"; // sin 0/O ni 1/I
-const MAX_CONECTADOS = 10, MAX_MAQUINITAS = 30;
+// Cada maquinita tiene su número en el mundo (el orden en que entró) y con él su color en el chat: hay 100 colores, así que
+// caben 100 maquinitas por mundo. A la vez pueden estar conectadas 40.
+const MAX_CONECTADOS = 40, MAX_MAQUINITAS = 100;
+const CHAT_LARGO = 300, CHAT_GUARDA = 20000;
+// El texto del chat: una sola línea, sin caracteres de control ni marcas invisibles que voltean el texto; los emojis pasan enteros.
+function textoChat(s) {
+  const t = String(s ?? "").replace(/[\u0000-\u001f\u007f\u200b-\u200f\u2028-\u202e\u2066-\u2069]/g, " ").replace(/\s+/g, " ").trim();
+  return Array.from(t).slice(0, CHAT_LARGO).join("");
+}
 const DIA = 86400000;
 // El terreno completo de un mundo: 4 bytes de encabezado («MN», versión del formato, versión del generador), una celda por
 // byte (96 × 5,000) y la posición de los 99 objetos de la colección (4 bytes cada una).
@@ -196,6 +204,11 @@ export class Mundo extends DurableObject {
     this.creados = new Map(); // portero: mundos creados hoy por visitante (solo en memoria)
     this.fotoT = new Map();   // cuándo subió cada quien su última imagen de liga
     this.tablaT = new Map();  // cuándo y con cuánto se avisó por última vez de cada maquinita a la tabla mundial
+    this.chatT = new Map();   // cuándo escribió cada quien, para que nadie inunde el chat
+    this.xy = new Map();      // dónde anda cada maquinita conectada: las posiciones se reparten según la cercanía
+    this.paso = new Map();
+    // El chat del mundo se guarda completo, mensaje por mensaje.
+    ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS chat (id INTEGER PRIMARY KEY AUTOINCREMENT, h INTEGER, i INTEGER, n TEXT, m INTEGER, x TEXT)");
     ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair("p", "q"));
   }
 
@@ -267,6 +280,13 @@ export class Mundo extends DurableObject {
     let n = 0;
     for (const ws of this.ctx.getWebSockets("mira")) if (ws !== menos) n++;
     this.difundir({ t: "obs", n }, menos);
+  }
+
+  // ── El chat
+  chatUltimos(n) { return this.ctx.storage.sql.exec("SELECT id, h, i, n, m, x FROM chat ORDER BY id DESC LIMIT ?", n).toArray().reverse(); }
+  chatMas(ws, d) {
+    const antes = entero(d.id, 1, 1e12, 0);
+    if (antes) manda(ws, { t: "chatMas", l: this.ctx.storage.sql.exec("SELECT id, h, i, n, m, x FROM chat WHERE id < ? ORDER BY id DESC LIMIT 50", antes).toArray().reverse() });
   }
 
   // ── El terreno guardado
@@ -402,7 +422,7 @@ export class Mundo extends DurableObject {
         let hasta = BYTES; while (hasta > 0 && !this.dug[hasta - 1]) hasta--;
         let b = "";
         for (let x = 0; x < hasta; x += 8192) b += String.fromCharCode.apply(null, this.dug.subarray(x, Math.min(hasta, x + 8192)));
-        manda(servidor, { t: "mira", mapa: this.mapaDe(m), seed: m.seed, remin: m.remin, cfg: m.cfg, jug: this.jug.map((j, x) => (j ? this.publico(x, on.has(x)) : null)).filter(Boolean), dug: btoa(b), col: m.col || [] });
+        manda(servidor, { t: "mira", chat: this.chatUltimos(60), mapa: this.mapaDe(m), seed: m.seed, remin: m.remin, cfg: m.cfg, jug: this.jug.map((j, x) => (j ? this.publico(x, on.has(x)) : null)).filter(Boolean), dug: btoa(b), col: m.col || [] });
         for (const [x, s] of this.pos) if (on.has(x)) manda(servidor, s);
         this.contarMirones();
       }
@@ -416,7 +436,10 @@ export class Mundo extends DurableObject {
   async webSocketMessage(ws, msg) {
     const m = await this.cargar();
     const att = ws.deserializeAttachment();
-    if ((att && att.o) || this.ctx.getTags(ws).includes("mira")) return;        // quien mira no puede hacer nada
+    if ((att && att.o) || this.ctx.getTags(ws).includes("mira")) {             // quien mira no puede hacer nada… salvo leer el chat hacia atrás
+      if (m && typeof msg === "string" && msg.length < 80) { try { const d = JSON.parse(msg); if (d && d.t === "chatAntes") this.chatMas(ws, d); } catch {} }
+      return;
+    }
 
     // Posición: 6 bytes binarios → se reenvía con el número de maquinita (7 bytes)
     if (typeof msg !== "string") {
@@ -438,7 +461,17 @@ export class Mundo extends DurableObject {
       const e = new Uint8Array(msg), s = new Uint8Array(9);
       s[0] = 1; s[1] = att.i; s.set(e.subarray(1), 2);
       this.pos.set(att.i, s);
-      this.difundir(s, ws);
+      // A quien está cerca le llegan todas (para verse en tiempo real); a quien anda lejos, una de cada cinco: le basta para
+      // saber por dónde vas. Así un mundo con mucha gente repartida no se satura.
+      const dv = new DataView(e.buffer), x = dv.getUint16(1, true) / 256, y = dv.getInt32(3, true) / 64;
+      this.xy.set(att.i, [x, y]);
+      const n = ((this.paso.get(att.i) || 0) + 1) % 5; this.paso.set(att.i, n);
+      for (const o of this.ctx.getWebSockets()) {
+        if (o === ws) continue;
+        const a = o.deserializeAttachment(); if (!a) continue;
+        if (n && a.i !== undefined) { const r = this.xy.get(a.i); if (r && (Math.abs(r[0] - x) > 40 || Math.abs(r[1] - y) > 28)) continue; }
+        manda(o, s);
+      }
       return;
     }
     if (msg.length > 24000) return;
@@ -497,6 +530,21 @@ export class Mundo extends DurableObject {
         this.avisarTabla(i, true, true);
         break;
       }
+      case "chat": {
+        const x = textoChat(d.x);
+        if (!x) return;
+        const ahora = Date.now(), r = this.chatT.get(i) || [];
+        while (r.length && ahora - r[0] > 10000) r.shift();
+        if (r.length >= 6 || (r.length && ahora - r[r.length - 1] < 400)) { manda(ws, { t: "chatNo" }); return; }      // seis mensajes cada diez segundos, como mucho
+        r.push(ahora); this.chatT.set(i, r);
+        const id = this.ctx.storage.sql.exec("INSERT INTO chat (h, i, n, m, x) VALUES (?, ?, ?, ?, ?) RETURNING id", ahora, i, yo.n, yo.m, x).one().id;
+        this.difundir({ t: "chat", id, h: ahora, i, n: yo.n, m: yo.m, x });
+        if (id % 500 === 0) this.ctx.storage.sql.exec("DELETE FROM chat WHERE id <= ?", id - CHAT_GUARDA);
+        return;
+      }
+      case "chatAntes":
+        this.chatMas(ws, d);
+        return;
       case "aviso":
         this.difundir({ t: "aviso", i, x: limpio(d.x, 90) }, ws);
         return;
@@ -545,6 +593,7 @@ export class Mundo extends DurableObject {
         this.difundir({ t: "borrado" });
         for (const s of this.ctx.getWebSockets()) { try { s.close(4001, "borrado"); } catch {} }
         if (m.ver) { try { await this.tabla().olvidar(m.ver); } catch {} }
+        this.ctx.storage.sql.exec("DELETE FROM chat");
         await this.ctx.storage.deleteAlarm();
         await this.ctx.storage.deleteAll();
         this.m = false;
@@ -616,7 +665,7 @@ export class Mundo extends DurableObject {
       t: "mundo", i, seed: m.seed, remin: m.remin, cfg: m.cfg, creador: i === this.creador() ? 1 : 0,
       est: this.jug[i].est, cuenta: m.reminAt ? Math.max(0, Math.ceil((m.reminAt - Date.now()) / 1000)) : 0,
       jug: this.jug.map((j, x) => (j ? this.publico(x, on.has(x)) : null)).filter(Boolean),
-      dug: btoa(b), col: m.col || [], mapa: this.mapaDe(m), pid: yo.pid, ver: m.cfg.mirar === 0 ? "" : m.ver, obs: this.ctx.getWebSockets("mira").length,
+      dug: btoa(b), col: m.col || [], chat: this.chatUltimos(60), mapa: this.mapaDe(m), pid: yo.pid, ver: m.cfg.mirar === 0 ? "" : m.ver, obs: this.ctx.getWebSockets("mira").length,
     });
     for (const [x, s] of this.pos) if (x !== i && on.has(x)) manda(ws, s);
     this.avisarTabla(i, true, true);
@@ -633,7 +682,7 @@ export class Mundo extends DurableObject {
     // Si la maquinita ya entró por otra pestaña, este cierre no la saca del mundo.
     const otro = this.ctx.getWebSockets().some((s) => s !== ws && s.deserializeAttachment()?.i === att.i);
     if (!otro) {
-      this.pos.delete(att.i);
+      this.pos.delete(att.i); this.xy.delete(att.i);
       this.difundir({ t: "sale", i: att.i }, ws);
       this.avisarTabla(att.i, false, true);
     }
