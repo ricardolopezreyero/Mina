@@ -2815,13 +2815,17 @@ $('#chatX').addEventListener('click', cerrarChat);
 $('#chatNuevos').addEventListener('click', chatAlFondo);
 $('#chatForm').addEventListener('submit', (e) => {
   e.preventDefault(); const el = $('#chatIn'), x = el.value.trim();
-  if (!x) return el.blur();                          // Enter con la caja vacía: de vuelta al juego, con el chat a la vista
+  if (!x) return cerrarChat();                       // Enter con la caja vacía cierra el chat: C, escribir, Enter, Enter… y de vuelta al juego
   if (soloVer) return;
   if (!conectado) { el.placeholder = 'Sin señal: en cuanto vuelva podrás escribir'; return; }
   if (Date.now() - (chat.tEnv || 0) < 450) return;      // un respiro entre mensajes: el texto se queda en la caja
   chat.tEnv = Date.now(); audio(); enviar({ t: 'chat', x }); el.value = '';
 });
-$('#chatIn').addEventListener('keydown', (e) => { if (e.key === 'Escape') cerrarChat(); });
+$('#chatIn').addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') cerrarChat();                                             // Esc cierra, aunque haya algo escrito (se queda para después)
+  else if (e.key === 'Tab') { e.preventDefault(); e.currentTarget.blur(); }         // Tab: de vuelta al juego, con el chat a la vista
+  else if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'PageUp' || e.key === 'PageDown') { e.preventDefault(); $('#chatLista').scrollTop += (e.key.endsWith('Up') ? -1 : 1) * (e.key.startsWith('Page') ? 320 : 90); }      // las flechas recorren la conversación
+});
 $('#chatEmo').addEventListener('click', (e) => {
   const b = e.target.closest('button'); if (!b || soloVer) return;
   const el = $('#chatIn'), a = el.selectionStart ?? el.value.length, z = el.selectionEnd ?? a;
@@ -3350,7 +3354,7 @@ function pintarMenu() {
     const falta = Math.ceil(tanque() - S.fuel - 0.001), paga = Math.min(falta, Math.floor(S.d)), fiado = paga < 1 && S.fuel < 3;
     h = cab('⛽ Gasolinera') + `<div class="cuerpo"><p class="grande">${S.fuel.toFixed(1)} / ${tanque()} litros</p>
       <p class="nota">$1 por litro. Sin combustible, ${cfg.comb ? 'la maquinita explota' : 'entras en reserva: avanzas despacio y no perforas'}.</p>
-      <button data-a="llenar" ${paga < 1 && !fiado ? 'disabled' : ''}>${falta < 1 ? 'Tanque lleno' : fiado ? 'No traes dinero: te fiamos 5 litros' : paga < falta ? `Cargar ${paga} L (${fmt(paga)}): es lo que te alcanza` : `Llenar el tanque (${fmt(falta)})`}</button></div>`;
+      <button data-a="llenar" ${paga < 1 && !fiado ? 'disabled' : ''}><kbd>Enter</kbd>${falta < 1 ? 'Tanque lleno' : fiado ? 'No traes dinero: te fiamos 5 litros' : paga < falta ? `Cargar ${paga} L (${fmt(paga)}): es lo que te alcanza` : `Llenar el tanque (${fmt(falta)})`}</button></div>`;
   } else if (menu === 'bas') {
     // Todo lo que vas a vender cabe en una pantalla: dos columnas arriba y, siempre a la vista abajo, el total y el botón.
     const v = venta(), linea = (cls, punto, nombre, sub, monto, dato) => `<div class="vi ${cls}" data-q="${dato}"><i style="background:${punto}"></i><span><b>${nombre}</b><small>${sub}</small></span><u>${monto}</u></div>`;
@@ -3358,7 +3362,7 @@ function pintarMenu() {
       S.carga.map((n, i) => n ? linea('', MIN[i].col, `${MIN[i].n} × ${n}`, fmt(MIN[i].v) + ' la pieza · ' + (n * MIN[i].kg).toLocaleString('es-MX') + ' kg', fmt(n * MIN[i].v), n * MIN[i].v) : '').join('') +
       (v.perfecto ? linea('bono', '#ffd23f', '✨ Viaje perfecto', 'Bodega llena y cero daño: +10 %', '+' + fmt(v.base * 0.1), v.base * 0.1) : '') +
       (v.cat ? linea('bono', '#ffd23f', '📖 Catálogo completo', '+5 % para siempre', '+' + fmt(v.base * 0.05), v.base * 0.05) : '') +
-      `</div></div><footer class="pie"><div><small>${v.piezas} ${v.piezas === 1 ? 'pieza' : 'piezas'} · ${kgCarga().toLocaleString('es-MX')} kg en la báscula · se vende en</small><b id="totalVenta">${fmt(v.total)}</b></div><button id="bVender" data-a="vender">Vender toda la carga</button></footer>`
+      `</div></div><footer class="pie"><div><small>${v.piezas} ${v.piezas === 1 ? 'pieza' : 'piezas'} · ${kgCarga().toLocaleString('es-MX')} kg en la báscula · se vende en</small><b id="totalVenta">${fmt(v.total)}</b></div><button id="bVender" data-a="vender"><kbd>Enter</kbd>Vender toda la carga</button></footer>`
       : `<div class="cuerpo">${ultVenta ? `<p class="nota">Tu última venta</p><p class="grande">${fmt(ultVenta)}</p>` : ''}<p class="nota">La bodega está vacía. Baja, recoge mineral y vuelve.</p></div>`);
   } else if (menu === 'tal') {
     const P = PZ[pieza];
@@ -3367,15 +3371,15 @@ function pintarMenu() {
       <div class="cuerpo"><p class="nota">${P.que}${pieza === 0 ? ' La piedra también se perfora: la ' + PIEDRA.map((D, i) => D[1] + ' (' + ['Corteza', 'Acuífero', 'Cavernas', 'Cristalera', 'fondo'][i] + ') desde <b>' + P.niv[D[0]][0] + '</b>').join(', la ') + '. Con el taladro justo tarda 1.5 s; con tres niveles de sobra, 0.6 s.' : ''}${(pieza === 1 || pieza === 4) && cfg.gas ? ` Con lo que traes, aguantas una bolsa de gas hasta <b>${gasSeguro() < 650 ? 'ninguna profundidad' : gasSeguro() >= H * 2 ? 'el fondo' : gasSeguro() + ' m'}</b> (el gas empieza a los 650 m).` : ''}</p>` + P.niv.slice(0, hasta).map((n, i) => {
       const tengo = i <= S.eq[pieza], act = i === S.eq[pieza];
       return `<div class="fila ${act ? 'act' : tengo ? 'tengo' : ''}"><div class="t"><b>${n[0]}${act ? ' · lo que traes' : ''}</b><small>${n[3]}</small><small>${act || tengo ? n[2] + ' ' + P.u : `<b style="display:inline;color:var(--ok)">${nv(pieza)} → ${n[2]}</b> ${P.u}`}</small></div>
-        ${tengo ? '<div class="v ya">✓</div>' : `<div class="v">${fmt(n[1])}</div><button data-a="mejorar" data-v="${i}" ${S.d < n[1] ? 'disabled' : ''}>Comprar</button>`}</div>`;
+        ${tengo ? '<div class="v ya">✓</div>' : `<div class="v">${fmt(n[1])}</div><button data-a="mejorar" data-v="${i}" ${S.d < n[1] ? 'disabled' : ''}>${i === S.eq[pieza] + 1 && S.d >= n[1] ? '<kbd>Enter</kbd>' : ''}Comprar</button>`}</div>`;
     }).join('') + (hasta < P.niv.length ? `<p class="nota">Hay ${P.niv.length - hasta} ${P.niv.length - hasta === 1 ? 'mejora' : 'mejoras'} más allá. Se van asomando conforme compras.</p>` : S.eq[pieza] === P.niv.length - 1 ? '<p class="nota">Tienes lo mejor que existe… en esta capa.</p>' : '') + '</div>';
   } else if (menu === 'alm') {
     const dano = vidaMax() - S.vida, costo = Math.ceil(dano * 15), puede = Math.min(costo, Math.floor(S.d));
     h = cab('🧰 El Almacén') + `<div class="cuerpo"><div class="fila"><div class="ic">🛠️</div><div class="t"><b>Reparar el casco</b><small>${Math.ceil(S.vida)} / ${vidaMax()} de vida · $15 por punto</small></div>
-      <div class="v">${dano > 0.01 ? fmt(costo) : ''}</div><button data-a="reparar" ${dano <= 0.01 || puede < 1 ? 'disabled' : ''}>${dano <= 0.01 ? 'Intacto' : puede < costo ? 'Reparar lo que alcance' : 'Reparar'}</button></div>
+      <div class="v">${dano > 0.01 ? fmt(costo) : ''}</div><button data-a="reparar" ${dano <= 0.01 || puede < 1 ? 'disabled' : ''}>${dano > 0.01 && puede >= 1 ? '<kbd>Enter</kbd>' : ''}${dano <= 0.01 ? 'Intacto' : puede < costo ? 'Reparar lo que alcance' : 'Reparar'}</button></div>
       <div class="cant"><span>Comprar de a</span>${[1, 5, 10, 50, 100].map((q) => `<button class="s${q === cuantos ? ' on' : ''}" data-a="cuantos" data-v="${q}">${q}</button>`).join('')}</div>` +
       OBJ.map((o, i) => `<div class="fila"><div class="ic">${o.ic}</div><div class="t"><b>${o.n} <small style="display:inline">· tecla ${o.k} · tienes ${S.obj[i]}</small></b><small>${o.h}</small><small>${o.ef}</small></div>
-      <div class="v">${fmt(o.p * cuantos)}</div><button data-a="objeto" data-v="${i}" ${S.d < o.p * cuantos ? 'disabled' : ''}>Comprar${cuantos > 1 ? ' ' + cuantos : ''}</button></div>`).join('') + '</div>';
+      <div class="v">${fmt(o.p * cuantos)}</div><button data-a="objeto" data-v="${i}" ${S.d < o.p * cuantos ? 'disabled' : ''}><kbd>${o.k}</kbd>Comprar${cuantos > 1 ? ' ' + cuantos : ''}</button></div>`).join('') + '</div>';
   } else if (menu === 'ele') {
     const u = ultimoPunto(), fila = (ic, n, sub, m, v) => `<div class="fila"><div class="ic">${ic}</div><div class="t"><b>${n}</b><small>${sub}</small></div><div class="v">${fmt(costoEle(m))}</div><button data-a="bajar" data-v="${v}" ${S.d >= costoEle(m) ? '' : 'disabled'}>Bajar</button></div>`;
     const tope = Math.floor(S.rec / 10) * 10, def = Math.max(10, Math.min(tope, eleM || tope));
@@ -3417,7 +3421,7 @@ function pintarMenu() {
   else if (menu === 'menu') h = menuPrincipal();
   else return;
   const sube = c.querySelector('.cuerpo')?.scrollTop || 0, misma = c._m === menu + pieza; c._m = menu + pieza;
-  c.innerHTML = h;
+  c.innerHTML = h + (tactil || !listo ? '' : `<div class="tecl">${TECLAS_MENU[menu] ? TECLAS_MENU[menu] + ' · ' : ''}<kbd>↑</kbd> <kbd>↓</kbd> recorren · <kbd>Esc</kbd> o <kbd>M</kbd> cierra</div>`);
   const cu = c.querySelector('.cuerpo'), act = menu === 'tal' && c.querySelector('.fila.act');
   if (cu) { if (misma) cu.scrollTop = sube; else if (act) cu.scrollTop = Math.max(0, act.offsetTop - cu.offsetTop - 70); }
   const mp = $('#mapa'); if (mp) { pintarMapa(mp); c.querySelector('.cuerpo').scrollTop = Math.max(0, mp.offsetTop + Math.max(0, yo.y) / 2 / (mp.height / mp.clientHeight) - 220); }
@@ -3750,7 +3754,8 @@ function menuPrincipal() {
       <p><b>Diez kilómetros:</b> debajo de la Corteza siguen el Acuífero, las Cavernas, la Cristalera y la Zona de presión, con doce minerales nuevos y cuatro lugares por descubrir. Cada lugar que encuentres queda apuntado en <b>El Elevador</b> (el último edificio), que también te regresa al punto donde te recogió la grúa.</p>
       <p><b>Sin internet y como aplicación:</b> Mina se puede instalar (Menú → Opciones) y abre aunque no haya señal. Lo que caves y ganes sin internet se queda en tu equipo y se manda al mundo cuando la señal vuelve. En pantallas táctiles, arrastra el dedo para moverte y da un toque frente a un edificio para entrar.</p>
       <p><b>Tu nombre y tus ligas:</b> la maquinita nace bautizada para que empieces a jugar sin llenar nada; el nombre y el modelo se cambian en Menú → Mundo. Hay dos ligas: la del mundo (invita a excavar) y la tuya (presume tu maquinita); cada una lleva su imagen al mandarla por WhatsApp.</p>
-      <p><b>El chat:</b> pulsa <b>C</b> (o el botón 💬 Chat) y escribe; otra vez C, o Esc, lo cierra. Se abre de izquierda a derecha con todo lo que se ha dicho en este mundo, que queda guardado. Con el chat cerrado, lo que alguien escriba sale abajo un momento. Enter con la caja vacía te regresa al juego con el chat a la vista; Esc lo cierra. Cada maquinita tiene su color, de los cien que hay, según el orden en que entró. El texto se puede seleccionar y copiar, y las ligas se abren con un clic.</p>
+      <p><b>Con puro teclado:</b> <b>C</b> abre el chat; escribes y <b>Enter</b> manda; <b>Enter</b> con la caja vacía, o <b>Esc</b>, lo cierra; <b>Tab</b> te regresa al juego dejándolo a la vista y las flechas ↑ ↓ recorren la conversación. En los edificios, <b>Enter</b> hace lo principal (cargar, vender, comprar la siguiente mejora, reparar), <b>← →</b> cambian de pestaña o de cantidad, <b>↑ ↓</b> recorren y en El Almacén la letra de cada objeto lo compra. <b>I</b> abre Invitar.</p>
+      <p><b>El chat:</b> pulsa <b>C</b> (o el botón 💬 Chat) y escribe. Se abre de izquierda a derecha con todo lo que se ha dicho en este mundo, que queda guardado. Con el chat cerrado, lo que alguien escriba sale abajo un momento. Enter con la caja vacía te regresa al juego con el chat a la vista; Esc lo cierra. Cada maquinita tiene su color, de los cien que hay, según el orden en que entró. El texto se puede seleccionar y copiar, y las ligas se abren con un clic.</p>
       <p><b>Top 33 y público:</b> Menú → Top 33 enseña las 33 maquinitas que más han ganado en todos los mundos y cuánto tiempo lleva jugando cada una, en vivo. A la que esté jugando se le puede ir a ver: quien mira entra con una liga propia, no puede jugar ni conoce la liga del mundo. Tu liga para que te vean está en Menú → Mundo, y ahí mismo quien creó el mundo puede cerrarlo al público.</p>
       <p><b>El mundo da la vuelta:</b> si sales por la orilla derecha entras por la izquierda, y al revés, perforando o volando. Todo está conectado.</p>
       <p><b>La Remineralizadora:</b> cuesta el 5 % de todo lo que has ganado en la vida de tu maquinita. Entre más llevas, más cuesta.</p>
@@ -3768,6 +3773,19 @@ function aplicarOp() {
 }
 
 /* ════════ Teclado ════════ */
+// Con un menú abierto también se juega sin ratón: Enter hace lo principal, ← → cambian de pestaña (o de cantidad en El Almacén),
+// ↑ ↓ recorren la lista, y en El Almacén las letras de los objetos los compran. Esc o M cierran.
+function tecladoMenu(e, k) {
+  const c = $('#caja'), clic = (sel) => { const b = c.querySelector(sel); if (b && !b.disabled) b.click(); };
+  if (k === 'ArrowUp' || k === 'ArrowDown') { const cu = c.querySelector('.cuerpo'); if (cu) { e.preventDefault(); cu.scrollTop += k === 'ArrowDown' ? 90 : -90; } return; }
+  if (k === 'ArrowLeft' || k === 'ArrowRight') {
+    const bs = [...c.querySelectorAll(menu === 'alm' ? '.cant button' : '.pest button')]; if (!bs.length) return;
+    e.preventDefault(); const i = Math.max(0, bs.findIndex((b) => b.classList.contains('on'))); bs[(i + (k === 'ArrowRight' ? 1 : bs.length - 1)) % bs.length].click(); return;
+  }
+  if (k === 'Enter') { e.preventDefault(); const P = { gas: '[data-a="llenar"]', bas: '#bVender', tal: '[data-a="mejorar"]:not(:disabled)', alm: '[data-a="reparar"]' }[menu]; if (P) clic(P); else if (menu === 'ele') { const m = $('#eleM'); if (m) { m.focus(); m.select(); } } return; }      // remineralizar cuesta mucho: eso no va en una tecla
+  if (menu === 'alm') { const i = 'rndpqt'.indexOf(k); if (i >= 0) clic(`[data-a="objeto"][data-v="${i}"]`); }
+}
+const TECLAS_MENU = { gas: '<kbd>Enter</kbd> carga', bas: '<kbd>Enter</kbd> vende', tal: '<kbd>←</kbd> <kbd>→</kbd> cambian de pieza · <kbd>Enter</kbd> compra la siguiente', alm: '<kbd>←</kbd> <kbd>→</kbd> cantidad · la letra de cada objeto lo compra · <kbd>Enter</kbd> repara', ele: '<kbd>Enter</kbd> para escribir los metros, y otra vez <kbd>Enter</kbd> para bajar', menu: '<kbd>←</kbd> <kbd>→</kbd> cambian de pestaña' };
 // Las teclas son la inicial, en español, de lo que hacen: Reserva, Nanobots, Dinamita, Plástico, Transmisor (y Q de cuántico),
 // Chat, Señal, Ayudar, Grúa, Menú. Para moverse, las flechas. Por eso ya no hay W A S D: esas letras tienen dueño.
 const MAPA = { ArrowLeft: 'izq', ArrowRight: 'der', ArrowUp: 'arr', ArrowDown: 'aba' };
@@ -3784,6 +3802,7 @@ addEventListener('keydown', (e) => {
   const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
   if (e.repeat && !MAPA[k]) return;                 // dejar apretada una tecla no la dispara treinta veces por segundo
   if (k === 'Escape' || k === 'm') { if (menu && menu !== 'inicio') cerrar(); else if (listo && !menu) abrir('menu'); return; }      // M o Esc: el menú (y con el menú abierto, la maquinita descansa)
+  if (menu && menu !== 'inicio') return tecladoMenu(e, k);
   if (!listo || menu) return;
   if (pausa) return;
   if (MAPA[k]) {
@@ -3796,6 +3815,7 @@ addEventListener('keydown', (e) => {
   if (k === 's') { enviar({ t: 'senal', x: yo.x, y: yo.y }); senales.push({ x: yo.x, y: yo.y, t: 10, n: miNombre }); son.senal(); }      // Señal
   if (k === 'a') pasarCombustible();                // Ayudar: 5 litros a la maquinita de junto
   if (k === 'g') grua();                            // Grúa
+  if (k === 'i') abrir('inv');                      // Invitar
   if (k === ' ') { e.preventDefault(); if (crucero) crucero = false; else if (yo.y < -25) { crucero = true; son.clic(); } }
 });
 // La rueda o el trackpad mueven la vista para mirar alrededor; cualquier flecha la regresa a la maquinita.

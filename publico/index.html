@@ -114,10 +114,16 @@ body.chat #chat{transform:none;visibility:visible;transition:transform .22s ease
 .cm .bu a{color:#9fd4ff;text-decoration:underline}
 .cn{align-self:center;color:var(--su);font-size:.72em;padding:2px 10px;background:#0005;border-radius:99px;text-align:center;-webkit-user-select:none;user-select:none}
 .cn.dia{margin:6px 0 2px;font-weight:700}
-#chatNuevos{position:absolute;left:50%;bottom:106px;transform:translateX(-50%);display:none;font-size:.8em;box-shadow:0 2px 10px #000a}
+#chatNuevos{position:absolute;left:50%;bottom:128px;transform:translateX(-50%);display:none;font-size:.8em;box-shadow:0 2px 10px #000a}
 #chatEmo{display:flex;gap:1px;padding:5px 9px 0;border-top:1px solid #ffffff14}
 #chatEmo button{background:transparent;padding:2px 5px;font-size:1.15em;font-weight:400}
-#chatForm{display:flex;gap:6px;padding:7px 10px 10px}
+#chatForm{display:flex;gap:6px;padding:7px 10px 6px}
+#chatTeclas{padding:0 12px 9px;color:var(--su);font-size:.72em}
+#chatTeclas kbd,.tecl kbd{font:800 1em system-ui;color:var(--ac)}
+.tecl{padding:6px 14px 8px;border-top:1px solid #ffffff14;color:var(--su);font-size:.74em}
+#caja button kbd{font:800 .8em system-ui;background:#1b120e;color:var(--ac);border-radius:4px;padding:1px .45em;margin-right:7px}
+#caja button:disabled kbd{display:none}
+@media (pointer:coarse){#chatTeclas{display:none}}
 #chatIn{flex:1;min-width:0;font-size:1em;padding:.55em .7em}
 #chatVivo{position:fixed;left:calc(270px*var(--f) + 14px);bottom:12px;width:min(540px,calc(100vw - 600px*var(--f)));z-index:2;pointer-events:none;display:flex;flex-direction:column;gap:3px;text-shadow:0 1px 2px #000}
 #chatVivo div{align-self:flex-start;max-width:100%;background:#000a;border-radius:9px;padding:3px 10px;overflow-wrap:anywhere;animation:chatSale 10s forwards}
@@ -270,7 +276,7 @@ a{color:var(--az)}
 </div>
 <div class="hud" id="metas"></div>
 <div class="hud" id="der">
-  <div id="botones"><button id="bSon" class="s" title="Apagar el sonido">🔊</button><button id="bMenos" class="s" title="Bajar el volumen">−</button><span id="bVol">70 %</span><button id="bMas" class="s" title="Subir el volumen">+</button><button id="bTipos" class="s" title="Elegir qué sonidos se oyen">♪ Sonidos</button><button id="bChat" class="s" title="Abrir y cerrar el chat de este mundo (tecla C)"><kbd>C</kbd>💬 Chat</button><button id="bInv" class="s">👥 Invitar</button><button id="bMenu" class="s" title="Abrir el menú (tecla M o Esc)"><kbd>M</kbd>☰ Menú</button></div>
+  <div id="botones"><button id="bSon" class="s" title="Apagar el sonido">🔊</button><button id="bMenos" class="s" title="Bajar el volumen">−</button><span id="bVol">70 %</span><button id="bMas" class="s" title="Subir el volumen">+</button><button id="bTipos" class="s" title="Elegir qué sonidos se oyen">♪ Sonidos</button><button id="bChat" class="s" title="Abrir y cerrar el chat de este mundo (tecla C)"><kbd>C</kbd>💬 Chat</button><button id="bInv" class="s" title="Invitar a tu gente (tecla I)"><kbd>I</kbd>👥 Invitar</button><button id="bMenu" class="s" title="Abrir el menú (tecla M o Esc)"><kbd>M</kbd>☰ Menú</button></div>
   <div id="panSon"></div><div id="tabla"></div><div id="tarjeta"></div>
 </div>
 <div class="hud" id="avisos"></div>
@@ -282,10 +288,11 @@ a{color:var(--az)}
 <div class="hud" id="regla"><small id="reglaArr">superficie</small><div id="reglaVia"><div id="reglaLug"></div><i id="reglaYo"></i><i id="reglaVer"><b id="reglaTx"></b></i></div><small id="reglaAb"></small></div>
 <div class="hud" id="aviso-red">📡 Sin señal · sigues jugando, se guarda al volver</div>
 <div id="palanca"><i></i></div>
-<aside id="chat"><header><b><kbd>C</kbd>💬 Chat</b><div id="chatQuien"></div><button class="s" id="chatX" title="Cerrar el chat (tecla C fuera de la caja, o Esc)">✕</button></header>
+<aside id="chat"><header><b><kbd>C</kbd>💬 Chat</b><div id="chatQuien"></div><button class="s" id="chatX" title="Cerrar el chat"><kbd>Esc</kbd>✕</button></header>
   <div id="chatLista"><div id="chatMsgs"></div></div><button id="chatNuevos" type="button"></button>
   <div id="chatEmo"><button type="button">👋</button><button type="button">👍</button><button type="button">😂</button><button type="button">⛏️</button><button type="button">💎</button><button type="button">🔥</button><button type="button">❤️</button><button type="button">😮</button><button type="button">🙏</button><button type="button">🎉</button></div>
-  <form id="chatForm" autocomplete="off"><input id="chatIn" maxlength="300" enterkeyhint="send" placeholder="Escribe y pulsa Enter…"><button>Enviar</button></form></aside>
+  <form id="chatForm" autocomplete="off"><input id="chatIn" maxlength="300" enterkeyhint="send" placeholder="Escribe y pulsa Enter…"><button>Enviar</button></form>
+  <div id="chatTeclas"><kbd>Enter</kbd> manda · <kbd>Enter</kbd> vacío o <kbd>Esc</kbd> cierra · <kbd>Tab</kbd> al juego · <kbd>↑</kbd> <kbd>↓</kbd> recorren</div></aside>
 <div id="chatVivo"></div>
 <div id="verBarra"><div id="verDatos"></div><button class="s" id="verOtra" title="Ver a otra maquinita de este mundo (← →)">Otra ▶</button><button class="s" id="verChat" title="Leer el chat de este mundo">💬</button><button class="s" id="verTop">🏆 Top 33</button><a class="boton" href="/">⛏️ Jugar yo</a></div>
 

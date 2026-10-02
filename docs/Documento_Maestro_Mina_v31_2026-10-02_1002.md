@@ -842,6 +842,42 @@ Las seis primeras y la C las pidió Ricardo; S, A, G y M se cambiaron con el mis
 
 **Letras amarillas.** El botón del chat lleva una **C** amarilla a la izquierda de la burbuja, igual que las letras de los objetos de abajo; también el encabezado del chat. El botón del menú lleva su **M** y la grúa su **G**.
 
+### 9.26 Puro teclado: el chat y los edificios
+
+Ricardo viene de StarCraft y quiere poder jugar casi sin ratón. Las teclas son las mismas en Windows y en Mac: no se usa ninguna combinación.
+
+**El chat.**
+
+| Tecla | Dónde | Qué hace |
+|---|---|---|
+| **C** (o Enter) | Jugando | Abre el chat con el cursor en la caja |
+| **Enter** | Escribiendo | Manda el mensaje y deja el cursor listo para otro |
+| **Enter** con la caja vacía | Escribiendo | Cierra el chat |
+| **Esc** | Donde sea | Cierra el chat; lo que estaba escrito se queda para después |
+| **Tab** | Escribiendo | Regresa al juego dejando el chat a la vista |
+| **↑ ↓**, RePág, AvPág | Escribiendo | Recorren la conversación |
+| **C** | Jugando, con el chat a la vista | Lo cierra |
+| **Enter** | Jugando, con el chat a la vista | Regresa el cursor a la caja |
+
+El ciclo completo queda así: C, escribir, Enter, Enter. Debajo de la caja hay un renglón con estas teclas en amarillo, y el botón de cerrar dice «Esc».
+
+**Los edificios y el menú.**
+
+| Tecla | Qué hace |
+|---|---|
+| **Enter** | Lo principal de cada edificio: cargar en la Gasolinera, vender en la Báscula, comprar la siguiente mejora en el Taller, reparar en el Almacén. En el Elevador pone el cursor en los metros |
+| **← →** | Cambian de pestaña (pieza en el Taller, pestaña en el menú) o de cantidad en el Almacén |
+| **↑ ↓** | Recorren la lista |
+| **R N D P Q T** | En el Almacén, compran ese objeto: la misma letra con que se usa |
+| **Esc** o **M** | Cierran |
+| **I** | Abre Invitar |
+
+Cada menú lleva al pie un renglón con sus teclas, y los botones principales traen su letra.
+
+**Lo que se dejó fuera a propósito:** remineralizar no tiene tecla. Cuesta el 5 % de todo lo ganado y no debe dispararse con un Enter de más.
+
+**Lo que todavía pide ratón:** mirar alrededor (rueda) y la regla de profundidad, las opciones de sonido, y los botones secundarios dentro de los menús (aunque Tab y Enter del navegador los alcanzan).
+
 ## 10. Revisión de código del 2 de octubre
 
 Se revisó todo el código buscando fallas y se corrigieron estas:

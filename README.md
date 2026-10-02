@@ -26,6 +26,7 @@ Gratis y sin registro: entras y ya estás jugando, sin llenar nada. Se puede ins
 - **Los mundos son para siempre**: cada uno se guarda completo (terreno, túneles, reglas y colección) y no se borra nunca, salvo que quien lo creó lo deseche. Con su liga se vuelve a entrar cuando sea, exactamente donde se dejó.
 - **El mundo da la vuelta**: lo que sale por la orilla derecha entra por la izquierda, y al revés.
 - **El Taller** tiene 26 mejoras por pieza, hasta $25 billones. **La Remineralizadora** cuesta el 5 % de todo lo ganado.
+- **Con puro teclado**: en el chat, **Enter** manda, **Enter** vacío o **Esc** cierra y **Tab** regresa al juego; en los edificios, **Enter** hace lo principal, **← →** cambian de pestaña y **↑ ↓** recorren.
 - **Chat del mundo** (tecla **C**): se abre de izquierda a derecha con todo lo dicho, que queda guardado. Cada maquinita tiene su color; el texto se puede copiar y las ligas se abren con un clic.
 - **Top 33 mundial** (Menú → Top 33): las 33 maquinitas que más han ganado en todos los mundos y cuánto tiempo lleva jugando cada una, en vivo. A la que esté jugando se le puede ir a ver, con una liga de observador que no revela la del mundo.
 - **Sin internet** se sigue jugando; al volver la señal, todo se manda al mundo.
@@ -42,7 +43,7 @@ Gratis y sin registro: entras y ya estás jugando, sin llenar nada. Se puede ins
 | `wrangler.jsonc` | Configuración del Worker y del dominio |
 | `publico/sw.js`, `publico/manifest.webmanifest`, `publico/iconos/` | La aplicación instalable: lo que se guarda en el equipo para abrir sin internet, y sus iconos |
 | `diseno-fuente/` | El programa que dibuja el icono en todos sus tamaños |
-| `docs/Documento_Maestro_Mina_v30_2026-10-02_0958.md` | Qué está construido, con qué números y qué falta |
+| `docs/Documento_Maestro_Mina_v31_2026-10-02_1002.md` | Qué está construido, con qué números y qué falta |
 | `Prompt_Maestro_Mina_v4_2026-10-01_2336.md` | El diseño completo |
 | `sonidos-fuente/` | El pedido exacto de sonidos y música para ElevenLabs (aún sin generar) |
 
