@@ -423,7 +423,7 @@ function escribir(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } ca
 function nuevoEstado() {
   return {
     d: 20, eq: [0, 0, 0, 0, 0, 0], carga: Array(MIN.length).fill(0), obj: [0, 0, 0, 0, 0, 0],
-    fuel: 3, vida: 10, x: INICIO_X, y: INICIO_Y, rec: 0, tot: 0, msj: 0, rango: 0, resc: 0, reminGratis: 1, mejor: -1, alt: 0, msjA: 0, v: 0, mu: '',
+    fuel: 3, vida: 10, x: INICIO_X, y: INICIO_Y, rec: 0, tot: 0, msj: 0, rango: 0, resc: 0, reminGratis: 1, mejor: -1, alt: 0, msjA: 0, v: 0, mu: '', seg: 0,
     st: { viajes: 0, cavadas: 0, rec: Array(MIN.length).fill(0), vend: Array(MIN.length).fill(0), hall: Array(HALL.length).fill(0), muertes: 0, expl: 0, remin: 0, comb: 0, mejorViaje: 0, gruas: 0, amigos: 0 },
     log: [], fl: {}, vj: { dano: 0 }, con: { tut: 0, act: [] }, lug: [0, 0, 0, 0], ult: null,
   };
@@ -438,6 +438,7 @@ function sanear(e) {
   s.d = num(s.d, 20); s.tot = num(s.tot, 0); s.rec = Math.floor(num(s.rec, 0, 0, H * 2));
   s.msj = Math.floor(num(s.msj, 0, 0, MSJ.length)); s.rango = Math.floor(num(s.rango, 0, 0, RANGOS.length - 1));
   s.resc = Math.floor(num(s.resc, 0)); s.mejor = Math.floor(num(s.mejor, -1, -1, MIN.length - 1)); s.reminGratis = s.reminGratis ? 1 : 0;
+  s.seg = num(s.seg, 0, 0, 4e9);              // segundos jugados en toda la vida de la maquinita
   s.x = num(s.x, INICIO_X, HW, W - HW); s.y = num(s.y, INICIO_Y, TECHO, H);
   s.alt = Math.floor(num(s.alt, 0, 0, -TECHO * 2)); s.msjA = ALTURAS.filter((x) => x.m <= s.alt).length; s.v = Math.floor(num(s.v, 0)); s.mu = typeof s.mu === 'string' ? s.mu : '';
   s.st = { ...b.st, ...(s.st && typeof s.st === 'object' ? s.st : {}) };
@@ -2716,6 +2717,14 @@ function verOtra(paso) {
   const k = l.findIndex((o) => o.i === veo); veo = l[(k + paso + l.length) % l.length].i; pintarVer();
 }
 const dineroLargo = (n) => '$' + Math.floor(n || 0).toLocaleString('es-MX');
+// El tiempo que una maquinita lleva jugando: de segundos a años, con las unidades más grandes que le toquen.
+const UNIDADES = [[31536000, 'año', 'años'], [2592000, 'mes', 'meses'], [604800, 'sem', 'sem'], [86400, 'd', 'd'], [3600, 'h', 'h'], [60, 'min', 'min'], [1, 's', 's']];
+function tiempoLargo(seg) {
+  seg = Math.max(0, Math.floor(seg || 0)); if (!seg) return '0 s';
+  const p = []; let desde = -1;
+  for (let k = 0; k < UNIDADES.length && p.length < 3; k++) { const [u, uno, varios] = UNIDADES[k], n = Math.floor(seg / u); if (n && desde < 0) desde = k; if (n) { p.push(n + ' ' + (n === 1 ? uno : varios)); seg -= n * u; } if (desde >= 0 && k - desde >= 2) break; }
+  return p.join(' ');
+}
 
 /* ════════ El chat del mundo ════════ RLR */
 // Como en las partidas de antes: lo que alguien escribe sale abajo un momento, y el chat completo se abre de izquierda a
@@ -2833,7 +2842,7 @@ async function pedirTop() {
   try {
     const d = await (await fetch('/api/tabla', { cache: 'no-store' })).json(); if (!Array.isArray(d.top)) return;
     const lugar = miPid ? d.top.findIndex((e) => e.p === miPid) + 1 : 0, antes = leer('mina_lugar', 0);
-    if (!soloVer && lugar && (!antes || lugar < antes)) { son.rango(); tarjeta('🏆 Lugar ' + lugar + ' del mundo', (antes ? 'Subiste del ' + antes + ' al ' + lugar : 'Entraste al Top 20') + ' entre todas las maquinitas de Mina. Menú → Top 20.', 'msj', 12000, true); }
+    if (!soloVer && lugar && (!antes || lugar < antes)) { son.rango(); tarjeta('🏆 Lugar ' + lugar + ' del mundo', (antes ? 'Subiste del ' + antes + ' al ' + lugar : 'Entraste al Top 33') + ' entre todas las maquinitas de Mina. Menú → Top 33.', 'msj', 12000, true); }
     if (!soloVer && miPid && lugar !== antes) escribir('mina_lugar', lugar);
     tablaM.l = d.top; tablaM.corte = d.corte || 0; tablaM.t = Date.now(); tablaM.lugar = lugar;
     if (topAbierta()) pintarMenu();
@@ -2841,13 +2850,13 @@ async function pedirTop() {
   } catch {}
 }
 function htmlTop() {
-  let h = '<p class="nota">Las veinte maquinitas que más dinero han ganado, entre todos los mundos de Mina. Se mueve en vivo: si alguien está jugando, ves cómo sube su cuenta, y puedes ir a verla jugar.</p>';
+  let h = '<p class="nota">Las 33 maquinitas que más dinero han ganado, entre todos los mundos de Mina, y el tiempo que cada una lleva jugando. Se mueve en vivo: si alguien está jugando, ves cómo suben su cuenta y su reloj, y puedes ir a verla jugar.</p>';
   if (!tablaM.t) return h + '<p class="nota">Cargando la tabla…</p>';
   h += tablaM.l.map((e, k) => `<div class="fila top${e.p === miPid ? ' yo' : ''}"><div class="lug">${k < 3 ? ['🥇', '🥈', '🥉'][k] : k + 1}</div><canvas width="72" height="72" data-mo="${e.m | 0}"></canvas>
     <div class="t"><b>${esc(e.n)}${e.p === miPid ? ' (tú)' : ''}</b><small>${e.vivo ? '<span class="vivo">● jugando ahora</span>' : 'descansando'}</small></div>
-    <span class="v" data-p="${e.p}" data-tot="${e.tot}">${dineroLargo(tablaM.antes.get(e.p) ?? e.tot)}</span>
+    <div class="tv"><span class="v" data-p="${e.p}" data-tot="${e.tot}">${dineroLargo(tablaM.antes.get(e.p) ?? e.tot)}</span>${e.seg || e.vivo ? `<small class="tt" data-seg="${Math.floor(e.seg || 0)}" data-vivo="${e.vivo ? 1 : 0}">⏱ ${tiempoLargo(e.seg)}</small>` : ''}</div>
     ${e.vivo && e.ver && e.p !== miPid ? `<a class="boton" href="/ver/${e.ver}?j=${e.i | 0}" ${soloVer ? '' : 'target="_blank" rel="noopener"'}>👁 Ver jugar</a>` : ''}</div>`).join('') || '<p class="nota">Todavía no hay nadie. La primera venta abre la tabla.</p>';
-  if (!soloVer && S && miPid && !tablaM.lugar) h += `<p class="nota" style="margin-top:10px">Tú llevas <b>${dineroLargo(S.tot)}</b>. ${tablaM.l.length >= 20 ? 'Te faltan ' + dineroLargo(Math.max(1, tablaM.corte - S.tot + 1)) + ' para entrar a la tabla.' : 'Vende una carga y apareces aquí.'}</p>`;
+  if (!soloVer && S && miPid && !tablaM.lugar) h += `<p class="nota" style="margin-top:10px">Tú llevas <b>${dineroLargo(S.tot)}</b>. ${tablaM.l.length >= 33 ? 'Te faltan ' + dineroLargo(Math.max(1, tablaM.corte - S.tot + 1)) + ' para entrar a la tabla.' : 'Vende una carga y apareces aquí.'}</p>`;
   return h;
 }
 // Después de pintar la tabla: las maquinitas en chiquito y los números que cambiaron, rodando hasta su nuevo valor.
@@ -3404,7 +3413,7 @@ function pintarMenu() {
       <a href="${esc(liga)}" target="_blank" rel="noopener" title="Abrir la liga"><canvas id="qrLienzo" class="qr" data-t="${esc(liga)}"></canvas></a>
       <p><button data-a="ligaMaq">Copiar la liga de mi maquinita</button></p>
       <p class="nota"><b>No lo compartas ni lo enseñes en pantalla:</b> quien lo abra maneja tu maquinita. Para invitar gente usa el botón Invitar.</p></div>`;
-  } else if (menu === 'top') h = cab('🏆 Top 20 mundial') + '<div class="cuerpo">' + htmlTop() + '</div>';
+  } else if (menu === 'top') h = cab('🏆 Top 33 mundial') + '<div class="cuerpo">' + htmlTop() + '</div>';
   else if (menu === 'menu') h = menuPrincipal();
   else return;
   const sube = c.querySelector('.cuerpo')?.scrollTop || 0, misma = c._m === menu + pieza; c._m = menu + pieza;
@@ -3642,7 +3651,7 @@ function sel(k, ops, quien = 'regla') {
   return `<select data-a="${quien}" data-k="${k}" ${soyCreador ? '' : 'disabled'}>${ops.map(([v, t]) => `<option value="${v}" ${cfg[k] == v ? 'selected' : ''}>${t}</option>`).join('')}</select>`;
 }
 function menuPrincipal() {
-  const P = ['Bodega', 'Colección', 'Mapa', 'Contratos', 'Logros', 'Catálogo', 'Estadísticas', 'Opciones', 'Mundo', 'Ayuda', '🏆 Top 20'];
+  const P = ['Bodega', 'Colección', 'Mapa', 'Contratos', 'Logros', 'Catálogo', 'Estadísticas', 'Opciones', 'Mundo', 'Ayuda', '🏆 Top 33'];
   let h = cab('☰ ' + esc(cfg.nombre || 'Mina')) + `<div class="pest">${P.map((p, i) => `<button data-a="pest" data-v="${i}" class="${i === pestana ? 'on' : ''}">${p}</button>`).join('')}</div><div class="cuerpo">`;
   if (pestana === 0) {
     h += `<p class="nota">📦 ${nCarga()} de ${bodega()} espacios · ${kgCarga()} kg de carga (tu motor levanta ${Math.round(hp() * 29.5 - 1980)} kg). Tirar piezas libera espacio y peso.</p>` +
@@ -3668,7 +3677,7 @@ function menuPrincipal() {
       HALL.map((x, i) => S.st.hall[i] ? `<div><b>🏺 ${x.n}</b><small>${fmt(x.v)} · encontrados: ${S.st.hall[i]}</small></div>` : '<div class="no"><b>???</b><small>Hallazgo sin encontrar</small></div>').join('') + '</div>';
   } else if (pestana === 6) {
     const e = S.st;
-    h += `<p><button data-a="menu" data-v="foto">📸 Presume tu maquinita y tus récords</button></p>` + [['Profundidad máxima', S.rec + ' m'], ['Altura máxima', fmtAlto(S.alt)], ['Total ganado', fmt(S.tot)], ['Viajes', e.viajes], ['Mejor viaje', fmt(e.mejorViaje)], ['Celdas perforadas', e.cavadas.toLocaleString('es-MX')], ['Piezas vendidas', e.vend.reduce((a, b) => a + b, 0)], ['Hallazgos', e.hall.reduce((a, b) => a + b, 0)], ['Explosivos usados', e.expl], ['Litros cargados', e.comb], ['Explosiones', e.muertes], ['Rescates gratis usados', S.resc], ['Remineralizaciones', e.remin]]
+    h += `<p><button data-a="menu" data-v="foto">📸 Presume tu maquinita y tus récords</button></p>` + [['Tiempo jugando', tiempoLargo(S.seg)], ['Profundidad máxima', S.rec + ' m'], ['Altura máxima', fmtAlto(S.alt)], ['Total ganado', fmt(S.tot)], ['Viajes', e.viajes], ['Mejor viaje', fmt(e.mejorViaje)], ['Celdas perforadas', e.cavadas.toLocaleString('es-MX')], ['Piezas vendidas', e.vend.reduce((a, b) => a + b, 0)], ['Hallazgos', e.hall.reduce((a, b) => a + b, 0)], ['Explosivos usados', e.expl], ['Litros cargados', e.comb], ['Explosiones', e.muertes], ['Rescates gratis usados', S.resc], ['Remineralizaciones', e.remin]]
       .map(([a, b]) => `<div class="fila"><div class="t">${a}</div><div class="v">${b}</div></div>`).join('');
   } else if (pestana === 7) {
     const chk = (k, t) => `<label class="op"><span>${t}</span><input type="checkbox" data-a="op" data-k="${k}" ${op[k] ? 'checked' : ''}></label>`;
@@ -3708,7 +3717,7 @@ function menuPrincipal() {
         [...otros.values()].map((o) => `<div class="fila"><div class="t"><b>${esc(o.n)}</b><small>${o.on ? 'Conectado' : 'Desconectado'} · récord ${o.rec || 0} m · ganado ${fmt(o.tot || 0)}</small></div>${o.on && cfg.regalos && yo.y < 0 ? `<button class="s" data-a="regalar" data-v="${o.i}">Regalar</button>` : ''}</div>`).join('') : '<p class="nota">Estás solo en este mundo. Copia la liga y mándala.</p>') +
       `<h4>Mi maquinita</h4><div class="maq"><canvas id="miMaq" width="160" height="160"></canvas><div>
         <b>${esc(miNombre)}</b> · ${RANGOS[S.rango][1]}
-        <small>${fmt(S.d)} · récord ${S.rec} m · ${S.log.length} logros · ${S.st.viajes} viajes</small>
+        <small>${fmt(S.d)} · récord ${S.rec} m · ${S.log.length} logros · ${S.st.viajes} viajes · ⏱ ${tiempoLargo(S.seg)} jugando</small>
         <small>Combustible ${S.fuel.toFixed(1)} / ${tanque()} L · casco ${Math.ceil(S.vida)} / ${vidaMax()} · bodega ${nCarga()} / ${bodega()}</small>
         <small>${PZ.map((z, i) => z.n + ': <b style="display:inline">' + z.niv[S.eq[i]][0] + '</b>').join(' · ')}</small>
         <small>Objetos: ${OBJ.map((o, i) => S.obj[i] ? CORTO[i] + ' ×' + S.obj[i] : '').filter(Boolean).join(' · ') || 'ninguno'}</small></div></div>
@@ -3741,7 +3750,7 @@ function menuPrincipal() {
       <p><b>Sin internet y como aplicación:</b> Mina se puede instalar (Menú → Opciones) y abre aunque no haya señal. Lo que caves y ganes sin internet se queda en tu equipo y se manda al mundo cuando la señal vuelve. En pantallas táctiles, arrastra el dedo para moverte y da un toque frente a un edificio para entrar.</p>
       <p><b>Tu nombre y tus ligas:</b> la maquinita nace bautizada para que empieces a jugar sin llenar nada; el nombre y el modelo se cambian en Menú → Mundo. Hay dos ligas: la del mundo (invita a excavar) y la tuya (presume tu maquinita); cada una lleva su imagen al mandarla por WhatsApp.</p>
       <p><b>El chat:</b> pulsa <b>Enter</b> (o el botón 💬 Chat) y escribe. Se abre de izquierda a derecha con todo lo que se ha dicho en este mundo, que queda guardado. Con el chat cerrado, lo que alguien escriba sale abajo un momento. Enter con la caja vacía te regresa al juego con el chat a la vista; Esc lo cierra. Cada maquinita tiene su color, de los cien que hay, según el orden en que entró. El texto se puede seleccionar y copiar, y las ligas se abren con un clic.</p>
-      <p><b>Top 20 y público:</b> Menú → Top 20 enseña las veinte maquinitas que más han ganado en todos los mundos, en vivo. A la que esté jugando se le puede ir a ver: quien mira entra con una liga propia, no puede jugar ni conoce la liga del mundo. Tu liga para que te vean está en Menú → Mundo, y ahí mismo quien creó el mundo puede cerrarlo al público.</p>
+      <p><b>Top 33 y público:</b> Menú → Top 33 enseña las 33 maquinitas que más han ganado en todos los mundos y cuánto tiempo lleva jugando cada una, en vivo. A la que esté jugando se le puede ir a ver: quien mira entra con una liga propia, no puede jugar ni conoce la liga del mundo. Tu liga para que te vean está en Menú → Mundo, y ahí mismo quien creó el mundo puede cerrarlo al público.</p>
       <p><b>El mundo da la vuelta:</b> si sales por la orilla derecha entras por la izquierda, y al revés, perforando o volando. Todo está conectado.</p>
       <p><b>La Remineralizadora:</b> cuesta el 5 % de todo lo que has ganado en la vida de tu maquinita. Entre más llevas, más cuesta.</p>
       <p><b>Los mundos son para siempre:</b> cada mundo se guarda completo (su terreno celda por celda, sus túneles, sus reglas y su colección) y no se borra nunca, salvo que quien lo creó lo deseche para todos. Con su liga se vuelve a entrar mañana o en dos años, exactamente donde se dejó.</p>
@@ -3858,7 +3867,8 @@ function guardarMundo() {
 function quitarMundo(id) { mundos = mundos.filter((m) => m.id !== id); escribir('mina_mundos', mundos); try { localStorage.removeItem('mina_copia_' + id); } catch {} }
 // La copia de este equipo: el mundo (semilla, túneles, colección) y la maquinita. Con ella el juego abre al instante,
 // sin esperar al servidor, y se puede seguir jugando sin internet; al volver la señal, lo de aquí se manda al mundo.
-let dugCambios = 0, copiaDug = -1, copiaEst = '';
+let dugCambios = 0, copiaDug = -1, copiaEst = '', tReloj = Date.now(), tEntrada = Date.now(), relojN = 0;
+for (const ev of ['keydown', 'pointerdown', 'wheel', 'touchstart']) addEventListener(ev, () => { tEntrada = Date.now(); }, { passive: true, capture: true });
 const ocio = window.requestIdleCallback ? (f) => requestIdleCallback(() => f(), { timeout: 3000 }) : (f) => setTimeout(f, 0);      // lo que no urge se hace entre cuadro y cuadro
 function guardarCopia() {
   if (!listo || !S || !mundoId || !miK || miI < 0 || !miNombre) return;
@@ -3973,6 +3983,12 @@ setInterval(componer, 220);               // la música sigue aunque haya un men
 setInterval(() => {                       // lo poco que corre aunque el juego esté detenido
   if (sucio && conectado) enviarEst();
   if (++latido % (document.hidden ? 25 : 5) === 0) latir();
+  // El reloj de la maquinita: suma mientras se está jugando de verdad. No cuenta con la pestaña oculta, en pausa, ni tras
+  // dos minutos sin tocar nada con la maquinita quieta.
+  { const ahora = Date.now(), dt = Math.min(2, (ahora - tReloj) / 1000); tReloj = ahora;
+    if (S && listo && !soloVer && !document.hidden && !pausa && (ahora - tEntrada < 120000 || yo.perf || Math.abs(yo.vx) + Math.abs(yo.vy) > 0.5)) { S.seg = (S.seg || 0) + dt; if (++relojN % 30 === 0) sucio = true; } }
+  // en la tabla abierta, el reloj de quien está jugando corre cada segundo
+  if (topAbierta()) document.querySelectorAll('#caja .tt[data-vivo="1"]').forEach((el) => { el.dataset.seg = +el.dataset.seg + 1; el.textContent = '⏱ ' + tiempoLargo(+el.dataset.seg); });
   if (latido % 4 === 0) ocio(guardarCopia);
   if (!document.hidden && listo && Date.now() - tablaM.pedido > (topAbierta() ? 4000 : 60000) && (topAbierta() || (!soloVer && conectado && (!tablaM.t || S.tot >= tablaM.corte)))) pedirTop();
   if (latido % 9 === 0 && !document.hidden) subirFotos(!!menu);

@@ -104,9 +104,9 @@ function cfgLimpia(c, antes) {
 }
 
 // RLR · la tabla mundial
-// Un solo objeto para todo el juego. Guarda las 100 maquinitas que más han ganado (se enseñan 20) y el directorio de
+// Un solo objeto para todo el juego. Guarda las 100 maquinitas que más han ganado (se enseñan 33) y el directorio de
 // fichas para mirar: ficha → mundo. La liga del mundo nunca sale de aquí hacia quien mira.
-const TABLA_MAX = 100, TABLA_VE = 20, VIVO_MS = 60000;
+const TABLA_MAX = 100, TABLA_VE = 33, VIVO_MS = 60000;
 export class Tabla extends DurableObject {
   constructor(ctx, env) {
     super(ctx, env);
@@ -132,7 +132,7 @@ export class Tabla extends DurableObject {
       if (!(r.tot > 0) || (lleno && r.tot <= corte)) return corte;
       e = { p: r.p }; top.push(e);
     }
-    e.n = r.n; e.m = r.m; e.tot = r.tot; e.t = r.vivo ? Date.now() : 0; e.ver = r.ver || ""; e.i = r.i;
+    e.n = r.n; e.m = r.m; e.tot = r.tot; e.seg = Math.max(e.seg || 0, r.seg || 0); e.t = r.vivo ? Date.now() : 0; e.ver = r.ver || ""; e.i = r.i;
     top.sort((a, b) => b.tot - a.tot);
     if (top.length > TABLA_MAX) top.length = TABLA_MAX;
     this.sucio = true;
@@ -142,7 +142,7 @@ export class Tabla extends DurableObject {
   async lista() {
     const top = await this.cargar(), ahora = Date.now();
     return {
-      top: top.slice(0, TABLA_VE).map((e) => { const vivo = ahora - e.t < VIVO_MS; return { p: e.p, n: e.n, m: e.m, tot: e.tot, vivo: vivo ? 1 : 0, ver: vivo ? e.ver : "", i: e.i }; }),
+      top: top.slice(0, TABLA_VE).map((e) => { const vivo = ahora - e.t < VIVO_MS; return { p: e.p, n: e.n, m: e.m, tot: e.tot, seg: e.seg || 0, vivo: vivo ? 1 : 0, ver: vivo ? e.ver : "", i: e.i }; }),
       corte: top.length >= TABLA_VE ? top[TABLA_VE - 1].tot : 0,
     };
   }
@@ -273,7 +273,7 @@ export class Mundo extends DurableObject {
     if (!ya && ahora - u.t < (tot !== u.tot ? 3000 : 20000)) return;
     this.tablaT.set(i, { t: ahora, tot });
     const mira = m.cfg.mirar !== 0 && m.ver && m.id;
-    this.ctx.waitUntil(this.tabla().reportar({ p: j.pid, n: j.n, m: j.m, tot, vivo: vivo ? 1 : 0, i, ver: mira ? m.ver : "", mundo: mira ? m.id : "" })
+    this.ctx.waitUntil(this.tabla().reportar({ p: j.pid, n: j.n, m: j.m, tot, seg: j.seg || 0, vivo: vivo ? 1 : 0, i, ver: mira ? m.ver : "", mundo: mira ? m.id : "" })
       .then((c) => { this.corte = c; this.corteT = Date.now(); }, () => {}));
   }
   contarMirones(menos) {
@@ -506,6 +506,7 @@ export class Mundo extends DurableObject {
         yo.est = d.e;
         this.sucio.maq.add(i);
         const rec = entero(d.rec, 0, H * 2, yo.rec || 0), tot = Number.isFinite(d.tot) && d.tot >= 0 ? d.tot : yo.tot || 0;
+        yo.seg = entero(d.e.seg, 0, 4e9, yo.seg || 0);        // segundos que esta maquinita lleva jugando, en toda su vida
         if (rec !== yo.rec || tot !== yo.tot) {
           yo.rec = rec; yo.tot = tot;
           this.difundir({ t: "j", i, rec, tot }, ws);
@@ -644,7 +645,7 @@ export class Mundo extends DurableObject {
     // La ficha para mirar este mundo: nace una vez y se apunta en el directorio de la tabla.
     if (!m.ver) m.ver = fichaNueva();
     if (!m.verReg && m.id) { m.verReg = 1; try { await this.tabla().registrar(m.ver, m.id); } catch { m.verReg = 0; } }
-    if (r.est) { yo.rec = entero(r.est.rec, 0, H * 2, yo.rec || 0); yo.tot = Number.isFinite(r.est.tot) ? Math.floor(r.est.tot) : yo.tot || 0; }
+    if (r.est) { yo.rec = entero(r.est.rec, 0, H * 2, yo.rec || 0); yo.tot = Number.isFinite(r.est.tot) ? Math.floor(r.est.tot) : yo.tot || 0; yo.seg = entero(r.est.seg, 0, 4e9, yo.seg || 0); }
     const on = this.conectados();
 
     // La misma maquinita en otra pestaña: se queda la más reciente.
@@ -791,7 +792,7 @@ export default {
       return new Response(r.z, { encodeBody: "manual", headers: { "content-type": "application/octet-stream", "content-encoding": "gzip", "cache-control": fijo ? "public, max-age=31536000, immutable" : "no-store", "x-mapa": r.r + "." + r.h } });
     }
 
-    // La tabla mundial: las veinte maquinitas que más han ganado.
+    // La tabla mundial: las 33 maquinitas que más han ganado.
     if (u.pathname === "/api/tabla" && request.method === "GET") {
       const t = await env.TABLA.get(env.TABLA.idFromName("mundial")).lista();
       return new Response(JSON.stringify(t), { headers: { "content-type": "application/json", "cache-control": "no-store" } });

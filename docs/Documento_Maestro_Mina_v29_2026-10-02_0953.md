@@ -799,6 +799,21 @@ Como en las partidas de StarCraft: lo que alguien escribe sale abajo un momento,
 
 **Piezas.** Mundo: `textoChat`, mensajes `chat`, `chatAntes`, `chatMas`, `chatNo`, tabla SQL `chat`. Juego: `colorDe`, `agregarChat`, `ponerChat`, `chatViejos`, `conLigas`, `nodoChat`, `abrirChat`, `#chat`, `#chatVivo`.
 
+### 9.24 El reloj de cada maquinita, y la tabla crece a 33
+
+**El reloj.** Cada maquinita lleva la cuenta de los segundos que ha estado jugando en toda su vida (`S.seg`). Viaja con ella de mundo en mundo, igual que su dinero.
+
+- **Cuándo suma:** con el juego a la vista y la maquinita activa. Cuenta también el tiempo en los menús (comprar es jugar).
+- **Cuándo no suma:** con la pestaña oculta, en pausa (tecla P), o tras dos minutos sin tocar nada con la maquinita quieta. Si va subiendo sola al espacio, sí cuenta aunque no se toque nada.
+- **Cómo se lee:** de segundos a años, con las tres unidades más grandes que le toquen: «59 min 59 s», «3 h 12 min 5 s», «1 d 1 h 1 min», «1 sem 1 d 2 h», «1 mes 2 sem 2 d», «1 año 3 meses 1 sem». Un mes son 30 días y un año, 365.
+- **Dónde se ve:** en la tabla mundial, en Menú → Estadísticas («Tiempo jugando») y en Menú → Mundo, junto a tu maquinita.
+
+**La tabla.** Pasa de 20 a **33** maquinitas. Cada renglón lleva el dinero ganado y, debajo, el tiempo jugado. En las maquinitas que están jugando en ese momento, el reloj corre segundo a segundo con la tabla abierta.
+
+**De dónde parte.** El reloj empieza a contar con esta versión: no hay forma de saber cuánto jugó cada maquinita antes. Las que no han vuelto a entrar salen sin tiempo.
+
+**Límite.** Igual que el dinero, el tiempo lo reporta el navegador de cada jugador; el servidor le cree.
+
 ## 10. Revisión de código del 2 de octubre
 
 Se revisó todo el código buscando fallas y se corrigieron estas:

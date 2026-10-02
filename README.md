@@ -27,7 +27,7 @@ Gratis y sin registro: entras y ya estás jugando, sin llenar nada. Se puede ins
 - **El mundo da la vuelta**: lo que sale por la orilla derecha entra por la izquierda, y al revés.
 - **El Taller** tiene 26 mejoras por pieza, hasta $25 billones. **La Remineralizadora** cuesta el 5 % de todo lo ganado.
 - **Chat del mundo** (tecla **Enter**): se abre de izquierda a derecha con todo lo dicho, que queda guardado. Cada maquinita tiene su color; el texto se puede copiar y las ligas se abren con un clic.
-- **Top 20 mundial** (Menú → Top 20): las maquinitas que más han ganado en todos los mundos, en vivo. A la que esté jugando se le puede ir a ver, con una liga de observador que no revela la del mundo.
+- **Top 33 mundial** (Menú → Top 33): las 33 maquinitas que más han ganado en todos los mundos y cuánto tiempo lleva jugando cada una, en vivo. A la que esté jugando se le puede ir a ver, con una liga de observador que no revela la del mundo.
 - **Sin internet** se sigue jugando; al volver la señal, todo se manda al mundo.
 - El sonido se maneja con la bocina de arriba a la derecha: música, taladro, hélice y motor tienen cada uno su interruptor (el motor viene apagado).
 - Tu maquinita es tuya: entra contigo a cualquier mundo y a cualquier equipo.
@@ -42,7 +42,7 @@ Gratis y sin registro: entras y ya estás jugando, sin llenar nada. Se puede ins
 | `wrangler.jsonc` | Configuración del Worker y del dominio |
 | `publico/sw.js`, `publico/manifest.webmanifest`, `publico/iconos/` | La aplicación instalable: lo que se guarda en el equipo para abrir sin internet, y sus iconos |
 | `diseno-fuente/` | El programa que dibuja el icono en todos sus tamaños |
-| `docs/Documento_Maestro_Mina_v28_2026-10-02_0949.md` | Qué está construido, con qué números y qué falta |
+| `docs/Documento_Maestro_Mina_v29_2026-10-02_0953.md` | Qué está construido, con qué números y qué falta |
 | `Prompt_Maestro_Mina_v4_2026-10-01_2336.md` | El diseño completo |
 | `sonidos-fuente/` | El pedido exacto de sonidos y música para ElevenLabs (aún sin generar) |
 
