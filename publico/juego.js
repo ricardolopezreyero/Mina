@@ -600,6 +600,10 @@ function armarLazos() {
     lazo.motor = { g, o, o2, l }; }
   // viento
   { const f = filtro('lowpass', 500, 0.5), g = salida('ambiente'); fuente().connect(f).connect(g); lazo.viento = { g, f }; }
+  // ráfaga: el aire ya silba y viene por rachas
+  { const f = filtro('bandpass', 1100, 0.8), g = salida('ambiente'), m = gan(0.8); fuente().connect(f).connect(m).connect(g); vaiven(0.7, 0.2, m); lazo.rafaga = { g, f }; }
+  // rugido: a toda velocidad el aire truena en grave y sisea en agudo
+  { const g = salida('ambiente'), grave = gan(5), agudo = gan(0.05); fuente().connect(filtro('lowpass', 210)).connect(grave).connect(g); fuente().connect(filtro('highpass', 3200)).connect(agudo).connect(g); vaiven(11, 1.2, grave); lazo.rugido = { g }; }
   // cueva: un aire hondo que respira
   { const g = salida('ambiente'), t = gan(0.6), f = filtro('lowpass', 210, 0.6); fuente().connect(f).connect(t).connect(g); vaiven(0.11, 0.3, t); const o = osc('sine', 55), go = gan(0.35); o.connect(go).connect(t); lazo.cueva = { g }; }
 }
@@ -613,14 +617,17 @@ function sonarLazos(quieto) {
   pon(lazo.taladro.g.gain, p ? 0.145 : 0, p ? 0.012 : 0.035);
   if (p) { const e = Math.min(1, p.t / p.dur), duro = p.tipo >= 10 && p.tipo < 40, f = (92 + niv * 8) * (0.88 + 0.3 * e) * (duro ? 1.12 : 1); pon(lazo.taladro.o1.frequency, f, 0.02); pon(lazo.taladro.o2.frequency, f * 1.007, 0.02); pon(lazo.taladro.fG.frequency, 420 + 260 * e + (duro ? 520 : 0), 0.03); pon(lazo.taladro.l1.frequency, 23 + niv * 2 + 6 * e); }
   // hélice: prende con la tecla y, al soltarla, el rotor se va frenando
-  const aspas = v ? 20 + Math.min(9, sube * 0.6) : 12;
-  pon(lazo.helice.g.gain, v ? 0.17 : 0, v ? 0.02 : 0.1);
-  pon(lazo.helice.l.frequency, aspas, v ? 0.05 : 0.15); pon(lazo.helice.l2.frequency, aspas * 2, v ? 0.05 : 0.15); pon(lazo.helice.z.frequency, aspas * 4, v ? 0.05 : 0.15); pon(lazo.helice.fA.frequency, 650 + Math.min(650, sube * 40), 0.1);
+  const pl = yo.planea, aspas = v ? 20 + Math.min(9, sube * 0.6) : pl ? 30 + Math.min(14, cae * 0.2) : 12;      // al planear giran los rotorcitos: más agudos y más bajito
+  pon(lazo.helice.g.gain, v ? 0.17 : pl ? 0.08 : 0, v ? 0.02 : 0.1);
+  pon(lazo.helice.l.frequency, aspas, v ? 0.05 : 0.15); pon(lazo.helice.l2.frequency, aspas * 2, v ? 0.05 : 0.15); pon(lazo.helice.z.frequency, aspas * 4, v ? 0.05 : 0.15); pon(lazo.helice.fA.frequency, v ? 650 + Math.min(650, sube * 40) : 1150, 0.1);
   // motor: las vueltas siguen a lo que le pides
   const vueltas = 30 + vel * 3.2 + (p ? 9 : 0) + (v ? 7 : 0);
   pon(lazo.motor.g.gain, 0.045 + Math.min(0.02, vel * 0.004)); pon(lazo.motor.o.frequency, vueltas, 0.08); pon(lazo.motor.o2.frequency, vueltas / 2, 0.08); pon(lazo.motor.l.frequency, vueltas, 0.08);
-  const aire = Math.max(0, 1 - km / 90);                    // en el espacio no hay viento
-  pon(lazo.viento.g.gain, yo.y < 1 ? aire * (0.035 + Math.min(0.2, (cae + sube) / 260 + alto / 60000)) : 0, 0.25); pon(lazo.viento.f.frequency, 380 + Math.min(1800, (cae + sube) * 14), 0.1);
+  // El viento: brisa, ráfaga y rugido se van relevando según la velocidad. En el espacio no hay aire: se cae en silencio.
+  const rapidez = cae + sube, den = yo.y < 1 ? Math.max(0, 1 - km / 90) : yo.suelo ? 0 : 0.5;
+  pon(lazo.viento.g.gain, den * (0.03 + 0.1 * tope(rapidez / 40) + Math.min(0.03, alto / 60000)) * (1 - 0.6 * suave(60, 200, rapidez)), 0.2); pon(lazo.viento.f.frequency, 380 + Math.min(900, rapidez * 10), 0.1);
+  pon(lazo.rafaga.g.gain, den * 0.15 * suave(25, 90, rapidez) * (1 - 0.5 * suave(250, 600, rapidez)), 0.2); pon(lazo.rafaga.f.frequency, 800 + Math.min(1700, rapidez * 4), 0.1);
+  pon(lazo.rugido.g.gain, den * 0.3 * suave(150, 500, rapidez), 0.25);
   pon(lazo.cueva.g.gain, yo.y > 2 ? 0.022 + Math.min(0.02, yo.y / 20000) : 0, 0.5);
 }
 // una gota que cae en algún lugar de la cueva, de vez en cuando
@@ -909,9 +916,14 @@ function fisica(dt) {
     yo.vy -= (Gf + sube) * dt; yo.vuela = true;
   }
   yo.vy += Gf * dt;
+  // Sin tocar nada, la maquinita planea: saca sus rotorcitos y el aire la frena. Con ↓ los guarda y cae en picada, tres veces más rápido.
+  const picada = aba && !arr && !yo.suelo && !agua;
+  if (picada) yo.vy += G * 2 * dt;
   // Al espacio (100 km) se llega en unos 10 minutos y a los 1,000 km en unos 15: la velocidad crece con la altura.
-  const vsube = (6 + brio() / 20) * k + alto / 140;
-  yo.vy = Math.max(-vsube, Math.min(agua ? 5 : 36 + alto / 40, yo.vy));       // el agua frena la caída: nadie se estrella en el lago
+  const vsube = (6 + brio() / 20) * k + alto / 140, vcae = agua ? 5 : (36 + alto / 40) * (picada ? 3 : 1);     // el aire es más delgado arriba: se cae más rápido; el agua frena del todo
+  if (yo.vy > vcae) yo.vy = agua ? vcae : vcae + (yo.vy - vcae) * Math.exp(-2.2 * dt);      // la resistencia del aire: al soltar ↓ la velocidad baja poco a poco
+  if (yo.vy < -vsube) yo.vy = -vsube;
+  yo.picada = picada && yo.vy > 3; yo.planea = !yo.suelo && !yo.vuela && !picada && !agua && yo.vy > 3;
   // parado en la superficie no gasta: nadie explota por leer un letrero
   const quieto = yo.suelo && yo.y < 0 && !yo.vuela && Math.abs(yo.vx) < 0.5;
   // El aire se adelgaza con la altura: arriba el motor casi no gasta. Con un tanque mediano se llega al espacio.
@@ -1093,7 +1105,7 @@ const bufPos = new Uint8Array(8), datoPos = new DataView(bufPos.buffer); let ult
 function enviarPos() {
   if (!conectado || ![...otros.values()].some((o) => o.on)) return;
   const x = Math.round(yo.x * 256), y = Math.round(yo.y * 64);
-  const f = (yo.dir > 0 ? 1 : 0) | (yo.vuela ? 2 : 0) | (yo.perf ? 4 : 0) | (menu || pausa ? 8 : 0) | (yo.perf && yo.perf.ty > Math.floor(yo.perf.oy) ? 16 : 0);
+  const f = (yo.dir > 0 ? 1 : 0) | (yo.vuela ? 2 : 0) | (yo.planea ? 32 : 0) | (yo.perf ? 4 : 0) | (menu || pausa ? 8 : 0) | (yo.perf && yo.perf.ty > Math.floor(yo.perf.oy) ? 16 : 0);
   const k = x + ',' + y + ',' + f;
   if (k === ultPos) return; ultPos = k;
   bufPos[0] = 1; datoPos.setUint16(1, x, true); datoPos.setInt32(3, y, true); bufPos[7] = f;
@@ -1534,7 +1546,12 @@ function dibMaq(q, px, py, t, modelo, dir, vuela, perfDir, nombre, estado, mundo
     q.strokeStyle = raya; q.lineWidth = t * 0.05; for (let i = -1; i < 4; i++) { const yy = (i + z) * l * 0.34; q.beginPath(); q.moveTo(-bw, yy); q.lineTo(bw, yy + l * 0.22); q.stroke(); }
     q.restore(); cono(); q.strokeStyle = '#2b2b2b'; q.lineWidth = lw; q.stroke(); q.restore();
   }
-  if (vuela) {                                       // hélice
+  if (vuela === 2) {                                 // planeando: tres rotorcitos, todos hacia arriba, que frenan la caída
+    for (const [dx, al, f] of [[-0.27, 0.13, 0], [0, 0.2, 2], [0.27, 0.13, 4]]) {
+      q.fillStyle = '#555'; q.fillRect(px + w * dx - t * 0.015, y + h * 0.16 - t * al, t * 0.03, t * al);
+      q.globalAlpha = 0.65; q.fillStyle = '#e8eef2'; q.beginPath(); q.ellipse(px + w * dx, y + h * 0.16 - t * al, w * (0.1 + 0.13 * Math.abs(Math.sin(reloj * 80 + f))), t * 0.026, 0, 0, 7); q.fill(); q.globalAlpha = 1;
+    }
+  } else if (vuela) {                                // hélice
     q.fillStyle = '#555'; q.fillRect(px - t * 0.02, y - t * 0.1, t * 0.04, t * 0.16);
     q.globalAlpha = 0.6; q.fillStyle = '#e8eef2'; q.beginPath(); q.ellipse(px, y - t * 0.1, w * (0.35 + 0.35 * Math.abs(Math.sin(reloj * 63))), t * 0.035, 0, 0, 7); q.fill(); q.globalAlpha = 1;
   }
@@ -1958,10 +1975,20 @@ function dibujar() {
   // las demás maquinitas y la mía
   for (const o of otros.values()) {
     if (!o.on || o.x === undefined) continue;
-    dibMaq(g, ox + o.x * T, oy + o.y * T, T, o.m, o.fl & 1 ? 1 : -1, o.fl & 2, o.fl & 4 ? (o.fl & 16 ? 2 : o.fl & 1 ? 1 : -1) : 0, op.nombres ? o.n : '', o.fl & 8 ? 'en pausa' : '', o.x);
+    dibMaq(g, ox + o.x * T, oy + o.y * T, T, o.m, o.fl & 1 ? 1 : -1, o.fl & 2 ? 1 : o.fl & 32 ? 2 : 0, o.fl & 4 ? (o.fl & 16 ? 2 : o.fl & 1 ? 1 : -1) : 0, op.nombres ? o.n : '', o.fl & 8 ? 'en pausa' : '', o.x);
   }
   const p = yo.perf, mx = ox + vis.x * T, my = oy + vis.y * T;
-  dibMaq(g, mx, my, T, miModelo, yo.dir, yo.vuela, p ? (p.ty > Math.floor(p.oy) ? 2 : p.tx < Math.floor(p.ox) ? -1 : 1) : 0, op.nombres ? miNombre : '', '', vis.x);
+  dibMaq(g, mx, my, T, miModelo, yo.dir, yo.vuela ? 1 : yo.planea ? 2 : 0, p ? (p.ty > Math.floor(p.oy) ? 2 : p.tx < Math.floor(p.ox) ? -1 : 1) : 0, op.nombres ? miNombre : '', '', vis.x);
+  // el aire como resistencia: al caer rápido se forma un arco bajo la maquinita; muy rápido se pone al rojo y deja estela
+  const dens = vis.y < 0 ? Math.max(0, 1 + (vis.y + HH) / 45000) : 0;
+  if (yo.vy > 30 && dens > 0.02) {
+    const f = tope((yo.vy - 30) / 140) * dens, cal = tope((yo.vy - 200) / 500) * dens;
+    g.globalCompositeOperation = 'lighter';
+    if (cal > 0.02) { const l = T * (2 + 5 * cal), est = g.createLinearGradient(0, my, 0, my - l); est.addColorStop(0, `rgba(255,150,60,${0.55 * cal})`); est.addColorStop(1, 'rgba(255,120,40,0)'); g.fillStyle = est; g.beginPath(); g.moveTo(mx - T * 0.42, my); g.lineTo(mx - T * 0.12, my - l); g.lineTo(mx + T * 0.12, my - l); g.lineTo(mx + T * 0.42, my); g.fill(); }
+    g.strokeStyle = `rgba(255,${Math.round(255 - 110 * cal)},${Math.round(255 - 190 * cal)},${0.15 + 0.5 * f})`;
+    for (let n = 0; n < 3; n++) { g.lineWidth = Math.max(1, T * (0.075 - n * 0.02)); g.beginPath(); g.arc(mx, my - T * 0.12, T * (0.72 + 0.2 * f + n * 0.16) + Math.sin(reloj * 40 + n) * T * 0.02, 0.17 * Math.PI, 0.83 * Math.PI); g.stroke(); }
+    g.globalCompositeOperation = 'source-over';
+  }
   const lado = Math.max(1, Math.round(T * 0.09));
   for (const q of parts) {                           // chispas cuadradas; el humo, en bolitas suaves
     g.fillStyle = q.col;
@@ -2118,7 +2145,7 @@ function queEs() {
   if (o._t !== txt) { o._t = txt; o.textContent = txt; o.style.display = txt ? 'block' : 'none'; }
   if (txt) { o.style.left = raton.x + 16 + 'px'; o.style.top = raton.y + 18 + 'px'; }
 }
-let tGas = -9, crucero = false, tLatido = -9;
+let tGas = -9, crucero = false, tLatido = -9, tMach = -99, eraSonico = false;
 let pistaDe = null, tAlarma = 0, estabaAbajo = false, tTabla = 0;
 function pista(x, discreta) { const p = $('#pista'); if (p._t !== x) { p._t = x; p.textContent = x; p.style.display = x ? 'block' : 'none'; p.classList.toggle('dis', !!discreta); } }
 // La grúa te deja en la Gasolinera. Cobra por lo lejos que estás y por lo que pesas.
@@ -2173,7 +2200,7 @@ function cadaTanto() {
   let e = null;
   if (yo.suelo && yo.y < 0) e = EDIF.find((b) => yo.x > b.x + 0.2 && yo.x < b.x + 2.8) || null;
   pistaDe = e;
-  pista(crucero ? 'Subiendo sola · barra espaciadora o ↓ para soltar' : yo.y < -25 && teclas.arr ? 'Barra espaciadora: seguir subiendo sin sostener la tecla' : vistaLibre ? 'Vista libre · pulsa una flecha para volver a tu maquinita' : e ? '↓  Entrar a ' + e.n + ' · ' + e.h.toLowerCase() : '', !e);      // solo la invitación a entrar a un edificio va destacada
+  pista(crucero ? 'Subiendo sola · barra espaciadora o ↓ para soltar' : yo.planea && yo.y < -40 ? '↓ caer en picada · ↑ frenar' : yo.picada ? 'En picada · suelta ↓ para planear' : yo.y < -25 && teclas.arr ? 'Barra espaciadora: seguir subiendo sin sostener la tecla' : vistaLibre ? 'Vista libre · pulsa una flecha para volver a tu maquinita' : e ? '↓  Entrar a ' + e.n + ' · ' + e.h.toLowerCase() : '', !e);      // solo la invitación a entrar a un edificio va destacada
   // los lugares: al entrar por primera vez se celebra y queda apuntado en El Elevador
   const lg = yo.y >= AGUA0 ? lugarDe(Math.floor(yo.x), Math.floor(yo.y)) : -1;
   if (lg >= 0 && !S.lug[lg]) {
@@ -2205,6 +2232,11 @@ function cadaTanto() {
     const cx = Math.floor(yo.x), cy = Math.floor(yo.y);
     if ([[0, 1], [-1, 0], [1, 0]].some(([a, b]) => celda(cx + a, cy + b) === 4)) { tGas = tiempo; flota(yo.x, yo.y - 0.9, '⚠ Huele a gas', '#a8ff94'); son.huele(); }
   }
+  pintarVel();
+  // la barrera del sonido: al pasar de 343 m/s dentro del aire, truena
+  const sonico = Math.hypot(yo.vx, yo.vy) * 2 >= 343 && yo.y < -10 && altura() < 85000;
+  if (sonico && !eraSonico && tiempo - tMach > 12) { tMach = tiempo; onda(yo.x, yo.y, 5, '#ffffff', 0.6); son.boom(0.45); temblar(5); flota(yo.x, yo.y - 1.4, 'Mach 1 · rompiste la barrera del sonido', '#ffffff'); }
+  eraSonico = sonico;
   pintarHud(); queEs();
   if (++tTabla % 4 === 0) pintarTabla();
 }
@@ -2249,6 +2281,16 @@ function pintarViaje() {
   const b = $('#bGrua'), c = lejos ? costoGrua() : 0;
   poner(b, lejos ? `<span>🚁 Grúa a la Gasolinera · <b>${fmt(c)}</b>${S.d < c ? ' · no te alcanza' : ''}</span><kbd>E</kbd>` : '');
   b.style.display = lejos ? 'flex' : 'none'; b.classList.toggle('no', S.d < c);
+}
+// El velocímetro, a la izquierda: aparece al volar o caer. La escala se aprieta al crecer para que quepa de 0 a 100,000 km/h.
+function pintarVel() {
+  const el = $('#vel'), v = Math.hypot(yo.vx, yo.vy) * 2, ver = !menu && !yo.perf && !yo.suelo && (yo.y < -10 || Math.abs(yo.vy) > 10);
+  if (el._v !== ver) { el._v = ver; el.style.display = ver ? 'block' : 'none'; }
+  if (!ver) return;
+  const kmh = v * 3.6, enAire = yo.y < 0 && altura() < 85000;
+  $('#velAg').style.transform = `rotate(${(-90 + 180 * Math.min(1, Math.log10(1 + kmh / 20) / 3.7)).toFixed(1)}deg)`;
+  $('#velN').textContent = (yo.vy > 0.5 ? '↓ ' : yo.vy < -0.5 ? '↑ ' : '') + Math.round(kmh).toLocaleString('es-MX');
+  $('#velU').textContent = 'km/h' + (yo.picada ? ' · en picada' : yo.planea ? ' · planeando' : '') + (enAire && v >= 300 ? ' · Mach ' + (v / 343).toFixed(1) : '');
 }
 function pintarTabla() {
   if (!S) return;
@@ -2632,6 +2674,7 @@ function menuPrincipal() {
       <p><b>El Taller:</b> cada pieza tiene dieciséis mejoras, de $750 a $2,500 millones. Siempre ves las que ya compraste y las diez que siguen.</p>
       <p><b>Acompañado:</b> G deja una señal que todos ven · T le pasa 5 litros a la maquinita que tengas junto · P pausa tu maquinita.</p>
       <p><b>Tu viaje:</b> abajo a la izquierda ves cuánto llevas, en cuánto se vende y si el combustible te alcanza para subir. Ahí mismo está la <b>grúa</b> (tecla E): te deja en la Gasolinera y cobra según lo lejos que estés y lo que peses.</p>
+      <p><b>De regreso:</b> sin tocar nada, la maquinita planea con sus rotorcitos. Con <b>↓</b> los guarda y cae en picada, tres veces más rápido; con <b>↑</b> frena. El velocímetro de la izquierda dice a cuánto vas, y si pasas de Mach 1 dentro del aire, truena.</p>
       <p><b>Hacia arriba:</b> el cielo también se explora, y subir es todo un viaje: halcones y águilas, el atardecer, un avión, la noche con sus constelaciones, la aurora al entrar al espacio (100 km), un cometa, la estación, la Luna que crece y el planeta que se achica hasta que, cerca de los 1,000 km, el Sol vuelve a salir. Son unos 15 minutos de vuelo. Entre más alto, menos combustible se gasta; con un tanque «Cisterna» alcanza. Pasando los 50 m de altura, la barra espaciadora deja a la maquinita subiendo sola.</p>
       <p><b>Lava y gas:</b> la lava (desde 410 m) se ve y se rodea. Las bolsas de gas (desde 650 m) se notan por unas burbujitas verdes y por el aviso «Huele a gas». Pon el ratón encima de cualquiera y te dice cuánto casco te quita. Vuélalas con dinamita o lleva casco y radiador suficientes: arriba, en las metas, dice hasta qué profundidad aguantas.</p>
       <p><b>Sonido:</b> la bocina de arriba a la derecha lo apaga, lo baja y lo sube; «♪ Sonidos» deja elegir qué se oye: música, taladro, hélice, motor (viene apagado) y lo demás, cada uno con su interruptor.</p>

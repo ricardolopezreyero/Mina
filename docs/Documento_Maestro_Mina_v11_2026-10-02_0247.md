@@ -1,4 +1,4 @@
-# DOCUMENTO MAESTRO · «Mina» · v10
+# DOCUMENTO MAESTRO · «Mina» · v11
 
 **Ver en vivo: https://mina.capitaltorreon.com**
 
@@ -420,6 +420,22 @@ Ricardo subió hasta los 66 km, le encantaron el avión, la aurora y las estrell
 | «El Güero» | La maquinita 22 de la historia está en la Gruta de Cristal. Al acercarte te habla, te da $5 M y diez nanobots, y queda un logro secreto. |
 
 **Plan hacia abajo (lo que sigue, sin construir todavía):** un fósil gigante cruzando varias celdas cerca de los 700 m; rieles y un carrito de mina viejo en la Corteza; un río subterráneo que cruza el Acuífero; la maquinita 9 de la historia varada cerca del Corazón; raíces y topos en los primeros metros; un eco distinto por zona en el sonido.
+
+### 9.6 Undécima iteración: la bajada también se siente
+
+Ricardo pidió que al planear hacia abajo salgan hélices chiquitas hacia arriba, revisar el sonido de la caída, un velocímetro a la izquierda, que ↓ aumente mucho la velocidad, que se vea la resistencia del aire y que el sonido cambie con la velocidad.
+
+| Cambio | Cómo quedó |
+|---|---|
+| Planear | Al caer sin tocar nada salen tres rotorcitos, todos hacia arriba, y suenan (agudos y bajito). Los demás jugadores también los ven. |
+| Caer en picada | Con ↓ en el aire se guardan los rotores, la gravedad se triplica y el tope de velocidad también [N]. Con ↑ se frena, como antes. También sirve al caer por un túnel. |
+| Resistencia del aire | Al soltar ↓ la velocidad no se corta de golpe: baja poco a poco hasta la de planeo. El aire es más delgado arriba, así que se cae más rápido alto y más lento cerca del suelo. |
+| Se ve | Bajo la maquinita se forman arcos blancos desde los 216 km/h; pasando de 1,440 km/h se ponen al rojo y queda una estela naranja hacia arriba. Sin aire (arriba de 90 km) no hay nada de esto. |
+| Velocímetro | Aparece a la izquierda al volar o caer: aguja, km/h, flecha de subida o bajada, «planeando» o «en picada» y el número de Mach. La escala se aprieta para caber de 0 a 100,000 km/h. |
+| Barrera del sonido | Al pasar de Mach 1 dentro del aire: trueno, anillo blanco y letrero. |
+| El viento en tres voces | Brisa (grave y suave, hasta unos 290 km/h), ráfaga (silba y viene por rachas) y rugido (trueno grave con siseo, desde unos 1,100 km/h). Se relevan solas según la velocidad. En el espacio hay silencio. Medido: el volumen medio sube de 0.008 a 0.052 entre planear despacio y la picada más rápida. |
+
+Medido en la simulación: planeando a 3 km se va a 531 km/h; en picada, a 1,380 (Mach 1.1). Volver desde 100 km toma 169 s planeando y 71 s en picada.
 
 ---
 

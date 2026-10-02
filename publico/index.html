@@ -43,6 +43,13 @@ body.jugando .hud{visibility:visible}
 @keyframes parp{50%{opacity:.4}}
 #datos{display:flex;gap:10px;font-weight:800;font-size:1.05em;flex-wrap:wrap}
 #datos span{background:#0007;border-radius:5px;padding:1px 7px}
+#vel{display:none;margin-top:8px;width:calc(128px*var(--f));background:#0007;border-radius:8px;padding:5px 8px 6px;text-align:center;line-height:1.15}
+#vel svg{display:block;width:100%;overflow:visible}
+#vel path{fill:none;stroke-width:6;stroke-linecap:round}#vel .f{stroke:#ffffff33}#vel .r{stroke:#ff6b5aaa}
+#vel .m{stroke:#fff9;stroke-width:1.5}
+#vel #velAg{stroke:var(--ac);stroke-width:3;stroke-linecap:round;transform-origin:50px 54px;transition:transform .14s linear}
+#vel circle{fill:var(--ac)}
+#vel b{display:block;font-size:1.25em;font-weight:800}#vel small{display:block;color:var(--su);font-size:.78em}
 #din{color:var(--ac)}
 #metas{left:50%;top:8px;transform:translateX(-50%);width:min(430px,44vw);font-size:.8em}
 #metas .m{background:#0007;border-radius:5px;padding:2px 7px;margin-bottom:3px;position:relative;overflow:hidden}
@@ -90,7 +97,7 @@ body.jugando .hud{visibility:visible}
 #objetos div{background:#0008;border:1px solid var(--borde);border-radius:6px;padding:3px 6px;text-align:center;min-width:44px;font-size:.78em;cursor:pointer}
 #objetos kbd{display:block;font:700 1.15em system-ui;color:var(--ac)}
 #objetos .n0{opacity:.4}
-#avisos{left:10px;top:calc(120px*var(--f));width:calc(260px*var(--f));font-size:.8em}
+#avisos{left:10px;top:calc(222px*var(--f));width:calc(260px*var(--f));font-size:.8em}
 #avisos div{background:#0008;border-radius:4px;padding:2px 7px;margin-top:3px;animation:entra .25s}
 @keyframes entra{from{opacity:0;transform:translateX(-12px)}}
 #tarjeta{margin-top:6px;text-align:left;font-size:.82em}
@@ -150,6 +157,7 @@ a{color:var(--az)}
   <div>Combustible</div><div class="barra" id="bComb"><i></i><b></b></div>
   <div>Casco</div><div class="barra" id="bCasco"><i></i><b></b></div>
   <div id="datos"><span id="prof">0 m</span><span id="din">$0</span></div>
+  <div id="vel"><svg viewBox="0 0 100 60"><path class="f" d="M10 54 A40 40 0 0 1 90 54"/><path class="r" d="M70 19.4 A40 40 0 0 1 90 54"/><line class="m" x1="50" y1="14" x2="50" y2="20"/><line id="velAg" x1="50" y1="54" x2="50" y2="21"/><circle cx="50" cy="54" r="3.5"/></svg><b id="velN">0</b><small id="velU">km/h</small></div>
 </div>
 <div class="hud" id="metas"></div>
 <div class="hud" id="der">
