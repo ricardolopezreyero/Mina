@@ -638,7 +638,7 @@ function sonarLazos(quieto) {
   const alto = Math.max(0, -(yo.y + HH)), km = alto / 500, vel = Math.abs(yo.vx), cae = Math.max(0, yo.vy), sube = Math.max(0, -yo.vy), p = yo.perf, v = yo.vuela, niv = Math.min(8, S.eq[0]);
   // taladro: suena exactamente mientras perfora; el tono sube mientras muerde cada celda y se aclara contra el mineral
   pon(lazo.taladro.g.gain, p ? 0.145 : 0, p ? 0.012 : 0.035);
-  if (p) { const e = Math.min(1, p.t / p.dur), duro = p.tipo >= 10 && p.tipo < 40, f = (92 + niv * 8) * (0.88 + 0.3 * e) * (duro ? 1.12 : 1); pon(lazo.taladro.o1.frequency, f, 0.02); pon(lazo.taladro.o2.frequency, f * 1.007, 0.02); pon(lazo.taladro.fG.frequency, 420 + 260 * e + (duro ? 520 : 0), 0.03); pon(lazo.taladro.l1.frequency, 23 + niv * 2 + 6 * e); }
+  if (p) { const e = Math.min(1, p.t / p.dur), duro = (p.tipo >= 10 && p.tipo < 40) || p.tipo === 2, f = (92 + niv * 8) * (0.88 + 0.3 * e) * (duro ? 1.12 : 1); pon(lazo.taladro.o1.frequency, f, 0.02); pon(lazo.taladro.o2.frequency, f * 1.007, 0.02); pon(lazo.taladro.fG.frequency, 420 + 260 * e + (duro ? 520 : 0), 0.03); pon(lazo.taladro.l1.frequency, 23 + niv * 2 + 6 * e); }
   // hélice: prende con la tecla y, al soltarla, el rotor se va frenando
   const pl = yo.planea, aspas = v ? 20 + Math.min(9, sube * 0.6) : pl ? 30 + Math.min(14, cae * 0.2) : 12;      // al planear giran los rotorcitos: más agudos y más bajito
   pon(lazo.helice.g.gain, v ? 0.17 : pl ? 0.08 : 0, v ? 0.02 : 0.1);
@@ -917,7 +917,7 @@ function fisica(dt) {
     if (yo.renace) return;
     const e = Math.min(1, p.t / p.dur);
     yo.x = p.ox + (p.tx + 0.5 - p.ox) * e; yo.y = p.oy + (p.ty + 1 - HH - p.oy) * e;
-    if (Math.random() < 0.5) chispas(p.tx + 0.5, p.ty + 0.5, p.tipo === 3 ? '#ff9a3a' : p.tipo >= 10 && p.tipo < 40 ? MIN[p.tipo - 10].col : '#a9744f', 1, 3);
+    if (Math.random() < 0.5) chispas(p.tx + 0.5, p.ty + 0.5, p.tipo === 3 ? '#ff9a3a' : p.tipo === 2 ? '#c9c5bc' : p.tipo >= 10 && p.tipo < 40 ? MIN[p.tipo - 10].col : '#a9744f', 1, 3);
     if (e >= 1) { yo.perf = null; yo.vx = yo.vy = 0; llegar(p); if (!yo.renace) seguirPerforando(p); }
     return;
   }
@@ -1049,16 +1049,30 @@ function aterrizar(v) {
   danar(d * MULT[cfg.caida], 'una caída');
   if (h >= 46 && !yo.renace && cfg.caida) S.fl.caida = 1;
 }
-let ultNo = 0, tMuerde = 0;
+let ultNo = 0, tMuerde = 0, tAvisoPiedra = -9;
+// La piedra: cinco durezas según la zona. Cada una pide un taladro mínimo (nivel de la pieza) y tiene su color.
+const PIEDRA = [[4, 'gris', ['#77726d', '#56524e', '#9a948e', '#3b3836']], [7, 'azulada', ['#5f8196', '#456275', '#8fb0c4', '#26383f']], [9, 'morada', ['#7d6796', '#5d4a74', '#a995c2', '#33263f']], [12, 'índigo', ['#4d5aa3', '#39437d', '#7f8cd6', '#1d2247']], [15, 'negra', ['#3d3438', '#2a2226', '#6b565c', '#120c0e']]];
+const durezaDe = (m) => (m < 1000 ? 0 : m < 2000 ? 1 : m < 4000 ? 2 : m < 8000 ? 3 : 4);
+// Cuánto tarda tu taladro en una piedra a esa profundidad: 1.5 s si apenas le alcanza, 0.6 s si le sobran tres niveles. 0 = no entra.
+const tiempoPiedra = (m) => { const sobra = S.eq[0] - PIEDRA[durezaDe(m)][0]; return sobra < 0 ? 0 : 1.5 - 0.9 * Math.min(1, sobra / 3); };
 function perforar(x, y) {
   const t = celda(x, y);
   if (t === 0 || t === 6) return;
-  if (t === 2 || t === 5) { if (tiempo - ultNo > 0.4) { son.piedra(); ultNo = tiempo; if (t === 2 && !S.fl.piedra) { S.fl.piedra = 1; tarjeta('Piedra', 'El taladro no entra. Rodéala o vuélala con dinamita (X).'); } } return; }
+  const tp = t === 2 ? tiempoPiedra((y + 1) * 2) : 0;
+  if (t === 5 || (t === 2 && !tp)) {
+    if (tiempo - ultNo > 0.4) {
+      son.piedra(); ultNo = tiempo;
+      if (t === 2) { const D = PIEDRA[durezaDe((y + 1) * 2)], falta = PZ[0].niv[D[0]][0]; if (tiempo - tAvisoPiedra > 6) { tAvisoPiedra = tiempo; flota(x + 0.5, y - 0.1, 'Piedra ' + D[1] + ' · pide ' + falta, '#d9dde4'); }
+        if (!S.fl.piedra) { S.fl.piedra = 1; tarjeta('Piedra', `Tu taladro no entra. Rodéala, vuélala con dinamita (X) o consigue ${falta} en El Taller: con ese ya la perforas.`, '', 9000); } }
+    }
+    return;
+  }
   const m = (y + 1) * 2;
   let dur = Math.max(0.07, 0.6 * (20 / pot()) * (1 + 4 * Math.min(m, 1000) / 1000 + Math.max(0, m - 1000) / 1500));
+  if (t === 2) dur = tp;                             // la piedra tarda lo suyo, sin importar la profundidad dentro de su zona
   if (t === 3) { dur = Math.max(0.6, dur * (cfg.lava ? 1.6 : 3)); son.lava(); }          // cortar lava toma su tiempo: al menos 0.6 s, para que se vea
   yo.perf = { tx: x, ty: y, t: 0, dur, tipo: t, ox: yo.x, oy: yo.y, idx: y * W + x };
-  cavar([[x, y]]); if (tiempo - tMuerde > 0.11) { tMuerde = tiempo; son.muerde(t >= 10 && t < 40); }
+  cavar([[x, y]]); if (tiempo - tMuerde > 0.11) { tMuerde = tiempo; son.muerde((t >= 10 && t < 40) || t === 2); }
   S.st.cavadas++;
 }
 function llegar(p) {
@@ -1425,10 +1439,11 @@ function tile(tipo, zona, vr) {
     if (tipo >= 10 && tipo !== 50 && vr) vacio(q, zona, r); else tierra(q, zona, r);        // dentro de un lugar, tesoros y cristales van sobre el hueco, no sobre tierra
     if (tipo === 2) {                               // piedra
       const s = r() * 1000 | 0;
-      poligono(q, T / 2, T / 2, u * 7.2, 9, azarDe(s)); q.fillStyle = '#77726d'; q.fill(); q.lineWidth = u * 0.5; q.strokeStyle = '#3b3836'; q.stroke();
+      const C = PIEDRA[[0, 0, 0, 0, 1, 2, 3, 4][zona]][2];           // gris en la Corteza; más abajo, más dura y de otro color
+      poligono(q, T / 2, T / 2, u * 7.2, 9, azarDe(s)); q.fillStyle = C[0]; q.fill(); q.lineWidth = u * 0.5; q.strokeStyle = C[3]; q.stroke();
       q.save(); poligono(q, T / 2, T / 2, u * 7.2, 9, azarDe(s)); q.clip();
-      q.fillStyle = '#56524e'; q.fillRect(0, T * 0.58, T, T); q.fillStyle = '#9a948e'; q.beginPath(); q.ellipse(T * 0.4, T * 0.32, u * 3.6, u * 1.8, -0.4, 0, 7); q.fill();
-      q.strokeStyle = '#3b383699'; q.lineWidth = u * 0.4; q.beginPath(); q.moveTo(T * 0.55, T * 0.3); q.lineTo(T * 0.62, T * 0.52); q.lineTo(T * 0.5, T * 0.7); q.stroke();
+      q.fillStyle = C[1]; q.fillRect(0, T * 0.58, T, T); q.fillStyle = C[2]; q.beginPath(); q.ellipse(T * 0.4, T * 0.32, u * 3.6, u * 1.8, -0.4, 0, 7); q.fill();
+      q.strokeStyle = C[3] + '99'; q.lineWidth = u * 0.4; q.beginPath(); q.moveTo(T * 0.55, T * 0.3); q.lineTo(T * 0.62, T * 0.52); q.lineTo(T * 0.5, T * 0.7); q.stroke();
       q.restore();
     } else if (tipo === 3) {                        // lava: una poza de roca fundida con orilla de basalto; las pozas vecinas se unen (vr dice de qué lados)
       const fuera = u * 5, m = u * 1.6, x0 = vr & 8 ? -fuera : m, y0 = vr & 1 ? -fuera : m, x1 = vr & 2 ? T + fuera : T - m, y1 = vr & 4 ? T + fuera : T - m;
@@ -2028,6 +2043,13 @@ function dibujar() {
     dibMaq(g, ox + o.x * T, oy + o.y * T, T, o.m, o.fl & 1 ? 1 : -1, o.fl & 2 ? 1 : o.fl & 32 ? 2 : 0, o.fl & 4 ? (o.fl & 16 ? 2 : o.fl & 1 ? 1 : -1) : 0, op.nombres ? o.n : '', o.fl & 8 ? 'en pausa' : '', o.x);
   }
   const p = yo.perf, mx = ox + vis.x * T, my = oy + vis.y * T;
+  if (p && p.tipo === 2) {                         // la piedra que estás perforando se queda a la vista y se va desmoronando
+    const e = Math.min(1, p.t / p.dur), lx = ox + p.tx * T, ly = oy + p.ty * T;
+    g.globalAlpha = 1 - e * 0.9; g.drawImage(tile(2, zonaDe((p.ty + 1) * 2), 0), lx, ly); g.globalAlpha = 1;
+    g.strokeStyle = '#000a'; g.lineWidth = Math.max(1, T * 0.04); g.beginPath();
+    for (let n = 0; n < 5; n++) if (e > n * 0.18) { const a = n * 1.3 + 0.4; g.moveTo(lx + T / 2, ly + T / 2); g.lineTo(lx + T / 2 + Math.cos(a) * T * 0.2, ly + T / 2 + Math.sin(a) * T * 0.25); g.lineTo(lx + T / 2 + Math.cos(a + 0.4) * T * 0.42, ly + T / 2 + Math.sin(a + 0.4) * T * 0.42); }
+    g.stroke();
+  }
   if (p && p.tipo === 3) {                         // la lava que estás cortando sigue ahí, cada vez más abierta y más brillante
     const e = Math.min(1, p.t / p.dur), lx = ox + p.tx * T, ly = oy + p.ty * T;
     g.globalAlpha = 1 - e * 0.85; g.drawImage(tile(3, zonaDe((p.ty + 1) * 2), 0), lx, ly); g.globalAlpha = 1;
@@ -2205,7 +2227,7 @@ function queEs() {
     else if (t >= 40) txt = t === 46 ? 'Late…' : 'Algo enterrado…';
     else if (t === 6) txt = 'Agua · aquí flotas';
     else if (t === 7) txt = 'Ladrillo antiguo · se perfora';
-    else if (t === 2) txt = 'Piedra · no se perfora';
+    else if (t === 2) { const my = (Math.floor(camY + raton.y * RES / T) + 1) * 2, D = PIEDRA[durezaDe(my)], tp = tiempoPiedra(my); txt = 'Piedra ' + D[1] + (tp ? ' · tu taladro la pasa en ' + tp.toFixed(1) + ' s' : ' · pide ' + PZ[0].niv[D[0]][0]); }
     else if (t === 3) { const [a, b] = danoLava(); txt = cfg.lava ? `Lava · perforarla quita de ${a} a ${b} de casco · traes ${Math.ceil(S.vida)}` : 'Lava · en este mundo no quema'; }
     else if (t === 4 && (cfg.verGas === 1 || pistaGas())) txt = cfg.gas ? `Bolsa de gas · si la perforas explota y quita ${danoGas(Math.floor(camY + raton.y * RES / T))} de casco · traes ${Math.ceil(S.vida)}` : 'Bolsa de gas · en este mundo no explota';
   }
@@ -2511,7 +2533,7 @@ function pintarMenu() {
     const P = PZ[pieza];
     const hasta = Math.min(P.niv.length, S.eq[pieza] + 11);          // todo lo que ya compraste y las diez que siguen
     h = cab('🔧 El Taller') + `<div class="pest">${PZ.map((p, i) => `<button data-a="pieza" data-v="${i}" class="${i === pieza ? 'on' : ''}">${p.ic} ${p.n} <small>${S.eq[i]}/${p.niv.length - 1}</small></button>`).join('')}</div>
-      <div class="cuerpo"><p class="nota">${P.que}${(pieza === 1 || pieza === 4) && cfg.gas ? ` Con lo que traes, aguantas una bolsa de gas hasta <b>${gasSeguro() < 650 ? 'ninguna profundidad' : gasSeguro() >= H * 2 ? 'el fondo' : gasSeguro() + ' m'}</b> (el gas empieza a los 650 m).` : ''}</p>` + P.niv.slice(0, hasta).map((n, i) => {
+      <div class="cuerpo"><p class="nota">${P.que}${pieza === 0 ? ' La piedra también se perfora: la ' + PIEDRA.map((D, i) => D[1] + ' (' + ['Corteza', 'Acuífero', 'Cavernas', 'Cristalera', 'fondo'][i] + ') desde <b>' + P.niv[D[0]][0] + '</b>').join(', la ') + '. Con el taladro justo tarda 1.5 s; con tres niveles de sobra, 0.6 s.' : ''}${(pieza === 1 || pieza === 4) && cfg.gas ? ` Con lo que traes, aguantas una bolsa de gas hasta <b>${gasSeguro() < 650 ? 'ninguna profundidad' : gasSeguro() >= H * 2 ? 'el fondo' : gasSeguro() + ' m'}</b> (el gas empieza a los 650 m).` : ''}</p>` + P.niv.slice(0, hasta).map((n, i) => {
       const tengo = i <= S.eq[pieza], act = i === S.eq[pieza];
       return `<div class="fila ${act ? 'act' : tengo ? 'tengo' : ''}"><div class="t"><b>${n[0]}${act ? ' · lo que traes' : ''}</b><small>${n[3]}</small><small>${act || tengo ? n[2] + ' ' + P.u : `<b style="display:inline;color:var(--ok)">${nv(pieza)} → ${n[2]}</b> ${P.u}`}</small></div>
         ${tengo ? '<div class="v ya">✓</div>' : `<div class="v">${fmt(n[1])}</div><button data-a="mejorar" data-v="${i}" ${S.d < n[1] ? 'disabled' : ''}>Comprar</button>`}</div>`;
@@ -2787,7 +2809,8 @@ function menuPrincipal() {
       <p><b>La colección:</b> hay 99 objetos enterrados (33 distintos, tres de cada uno), cada uno en su franja de profundidad. Se ven como medallones dorados. Son del mundo: los junta el equipo entero y se van encendiendo en Menú → Colección. Las explosiones no los destruyen.</p>
       <p><b>Diez kilómetros:</b> debajo de la Corteza siguen el Acuífero, las Cavernas, la Cristalera y la Zona de presión, con doce minerales nuevos y cuatro lugares por descubrir. Cada lugar que encuentres queda apuntado en <b>El Elevador</b> (el último edificio), que también te regresa al punto donde te recogió la grúa.</p>
       <p><b>Explosivos:</b> se usan donde sea, también volando: si topas con piedra al subir, X te abre paso.</p>
-      <p class="nota">Piedra desde 210 m: no se perfora. Lava desde 410 m: se ve, rodéala. Gas desde 650 m: pocas bolsas, y se notan por sus burbujas.</p>`;
+      <p><b>Piedra:</b> se perfora si tu taladro alcanza. Hay cinco durezas, cada una de un color, según la zona; el Taller dice qué taladro pide cada una. Con el justo tarda 1.5 s; con uno mejor, hasta 0.6 s.</p>
+      <p class="nota">Piedra desde 210 m. Lava desde 410 m: se ve, rodéala. Gas desde 650 m: pocas bolsas, y se notan por sus burbujas.</p>`;
   }
   return h + '</div>';
 }

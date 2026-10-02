@@ -1,4 +1,4 @@
-# DOCUMENTO MAESTRO · «Mina» · v15
+# DOCUMENTO MAESTRO · «Mina» · v16
 
 **Ver en vivo: https://mina.capitaltorreon.com**
 
@@ -488,6 +488,23 @@ Ricardo recordaba del original que, al atravesar lava, todo se ponía rojo, el r
 - El radiador saca vapor por atrás todo el tiempo; entre mejor radiador, más vapor.
 - Al salir del otro lado: una bocanada de vapor con su siseo, el golpe al casco de siempre, y el rojo se va en poco más de un segundo.
 - Cortar lava dura al menos 0.6 s (1.6 veces lo que la tierra), para que el efecto se alcance a ver aun con el mejor taladro.
+
+### 9.11 La piedra se perfora, si el taladro alcanza
+
+Ricardo pidió poder atravesar las piedras desde cierto taladro, tardando entre 0.6 y 1.5 s según el taladro, y que la piedra sea más dura y de otro color conforme se baja. (En el original la piedra nunca se perfora; aquí sí, a propósito.)
+
+| Piedra | Dónde | Taladro mínimo [N] |
+|---|---|---|
+| Gris | Corteza (210 a 1,000 m) | Colmillo de Rubí ($20 mil) |
+| Azulada | Acuífero (1 a 2 km) | Broca de Obsidiana Viva ($2 M) |
+| Morada | Cavernas (2 a 4 km) | Barrena de Plasma ($10 M) |
+| Índigo | Cristalera (4 a 8 km) | Aguja de Antimateria ($100 M) |
+| Negra | Zona de presión (8 a 10 km) | Devoradora de Mundos ($1,000 M) |
+
+- Con el taladro mínimo tarda 1.5 s; cada nivel de sobra quita 0.3 s, hasta 0.6 s con tres niveles de más.
+- Mientras se perfora, la piedra se queda a la vista, se agrieta y se desvanece.
+- Si el taladro no alcanza, rebota como antes y un letrero dice qué taladro pide. La dinamita la sigue volando.
+- El ratón sobre una piedra dice si tu taladro la pasa y en cuánto; la pestaña Taladro del Taller lista qué pide cada piedra.
 
 ---
 
