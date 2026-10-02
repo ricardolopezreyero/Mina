@@ -1,8 +1,10 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Mina · el mundo compartido — Ricardo López Reyero (RLR)
 // Un Durable Object por mundo: es la única verdad sobre el terreno cavado y
-// sobre quién está jugando. El terreno no se guarda: se calcula con la semilla;
-// aquí solo vive un bit por celda cavada (60 KB para los 10 km de profundidad).
+// sobre quién está jugando. Aquí vive el mundo entero y para siempre: su terreno
+// completo, celda por celda (se fabrica una sola vez, al nacer, y ya no depende de
+// que el juego cambie), un bit por celda cavada, sus reglas y su colección.
+// Un mundo solo se borra si quien lo creó pide borrarlo.
 // ─────────────────────────────────────────────────────────────────────────────
 import { DurableObject } from "cloudflare:workers";
 
@@ -13,7 +15,24 @@ const W = 96, H = 5000, BYTES = (W * H) / 8;
 const ZX0 = 39, ZX1 = 68;            // suelo firme bajo los edificios (filas 0 y 1)
 const ALFA = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"; // sin 0/O ni 1/I
 const MAX_CONECTADOS = 10, MAX_MAQUINITAS = 30;
-const DIA = 86400000, CADUCA = 180 * DIA;
+const DIA = 86400000;
+// El terreno completo de un mundo: 4 bytes de encabezado («MN», versión del formato, versión del generador), una celda por
+// byte (96 × 5,000) y la posición de los 99 objetos de la colección (4 bytes cada una).
+const NCOL = 99, MAPA_BYTES = 4 + W * H + NCOL * 4;
+function mapaValido(u) {
+  if (!(u instanceof Uint8Array) || u.length !== MAPA_BYTES || u[0] !== 77 || u[1] !== 78) return false;
+  for (let i = 4, fin = 4 + W * H; i < fin; i++) if (u[i] > 49 || u[i] === 8) return false;
+  const d = new DataView(u.buffer, u.byteOffset + 4 + W * H);
+  for (let k = 0; k < NCOL; k++) if (d.getUint32(k * 4, true) >= W * H) return false;
+  return true;
+}
+// La misma huella que calcula el juego: con ella un navegador sabe si el terreno que tiene es el del mundo.
+function huellaMapa(u) {
+  let a = 0x811c9dc5, b = 0x9e3779b9;
+  for (let i = 0; i < u.length; i++) { const v = u[i]; a = Math.imul(a ^ v, 16777619); b = Math.imul(b + v, 0x85ebca6b) ^ (b >>> 13); }
+  return (a >>> 0).toString(16).padStart(8, "0") + (b >>> 0).toString(16).padStart(8, "0");
+}
+const comprimir = async (u) => new Uint8Array(await new Response(new Blob([u]).stream().pipeThrough(new CompressionStream("gzip"))).arrayBuffer());
 const MUNDOS_POR_DIA = 20;
 
 const CFG_BASE = {
@@ -197,8 +216,9 @@ export class Mundo extends DurableObject {
     const meta = { seed, remin: 0, reminAt: 0, cfg: { ...CFG_BASE }, creado: Date.now(), visto: Date.now(), n: 0, dueno, creador: -1, id };
     const dug = new Uint8Array(BYTES);
     if (base) { meta.remin = base.remin; meta.cfg = cfgLimpia(base.cfg, CFG_BASE); meta.col = base.col; dug.set(base.dug.subarray(0, BYTES)); }
-    await this.ctx.storage.put({ meta, dug });
-    await this.ctx.storage.setAlarm(Date.now() + DIA);   // si nadie llega a bautizarse, se borra en un día
+    const o = { meta, dug };
+    if (base && base.mapa && mapaValido(base.mapa)) { meta.mapaR = meta.remin; meta.mapaH = huellaMapa(base.mapa); o.mapa = await comprimir(base.mapa); }      // nace con su terreno completo
+    await this.ctx.storage.put(o);
     this.m = null;
     return dueno;
   }
@@ -249,6 +269,29 @@ export class Mundo extends DurableObject {
     this.difundir({ t: "obs", n }, menos);
   }
 
+  // ── El terreno guardado
+  mapaDe(m) { return m.mapaH && m.mapaR === m.remin ? { r: m.remin, h: m.mapaH } : null; }
+  async mapa() {
+    const m = await this.cargar();
+    if (!m || !this.mapaDe(m)) return null;
+    const z = await this.ctx.storage.get("mapa");
+    return z ? { h: m.mapaH, r: m.mapaR, z } : null;
+  }
+  // Un mundo que todavía no tiene guardado su terreno (los de antes, o tras remineralizar) lo recibe de la primera maquinita
+  // que lo fabrica. Queda fijo: ya nadie lo puede cambiar.
+  async recibirMapa(u, r) {
+    const m = this.m;
+    if (!m || r !== m.remin || this.mapaDe(m) || this.guardandoMapa || !mapaValido(u)) return;
+    this.guardandoMapa = true;
+    try {
+      const h = huellaMapa(u), z = await comprimir(u);
+      if (r !== m.remin) return;
+      m.mapaR = r; m.mapaH = h;
+      await this.ctx.storage.put({ mapa: z, meta: m });
+      this.difundir({ t: "mapa", r, h });
+    } finally { this.guardandoMapa = false; }
+  }
+
   // Para la vista previa de la liga: cómo se llama el mundo y cuántas maquinitas tiene.
   // Con «j» (el número de una maquinita) devuelve también su ficha: la liga de un jugador presume lo suyo.
   async ficha(j) {
@@ -293,10 +336,12 @@ export class Mundo extends DurableObject {
   async programar() {
     const m = this.m;
     if (!m) return;
-    let cuando = Math.max(Date.now() + 3600000, this.jug.length ? m.visto + CADUCA : m.creado + DIA);
+    // Los mundos no caducan: la alarma solo sirve para guardar lo pendiente y para la cuenta de la Remineralizadora.
+    let cuando = Infinity;
     // Lo cavado se guarda en 2 s como mucho; lo demás puede esperar 5. Si el mundo se reinicia antes, los navegadores lo vuelven a mandar al reconectar.
     if (this.sucio.meta || this.sucio.dug || this.sucio.jug.size || this.sucio.maq.size) cuando = Math.min(cuando, Date.now() + (this.sucio.dug ? 2000 : 5000));
     if (m.reminAt) cuando = Math.min(cuando, m.reminAt);
+    if (cuando === Infinity) return;
     const actual = await this.ctx.storage.getAlarm();
     if (actual === null || cuando < actual || actual < Date.now()) await this.ctx.storage.setAlarm(cuando);
   }
@@ -357,7 +402,7 @@ export class Mundo extends DurableObject {
         let hasta = BYTES; while (hasta > 0 && !this.dug[hasta - 1]) hasta--;
         let b = "";
         for (let x = 0; x < hasta; x += 8192) b += String.fromCharCode.apply(null, this.dug.subarray(x, Math.min(hasta, x + 8192)));
-        manda(servidor, { t: "mira", seed: m.seed, remin: m.remin, cfg: m.cfg, jug: this.jug.map((j, x) => (j ? this.publico(x, on.has(x)) : null)).filter(Boolean), dug: btoa(b), col: m.col || [] });
+        manda(servidor, { t: "mira", mapa: this.mapaDe(m), seed: m.seed, remin: m.remin, cfg: m.cfg, jug: this.jug.map((j, x) => (j ? this.publico(x, on.has(x)) : null)).filter(Boolean), dug: btoa(b), col: m.col || [] });
         for (const [x, s] of this.pos) if (on.has(x)) manda(servidor, s);
         this.contarMirones();
       }
@@ -379,6 +424,7 @@ export class Mundo extends DurableObject {
       // Imagen de la liga: 2 = la del mundo, 3 = la de esta maquinita. Solo JPEG, con tope de peso y de frecuencia.
       if (msg.byteLength > 8) {
         const f = new Uint8Array(msg), yo = m && this.jug[att.i];
+        if (yo && f[0] === 4 && f.length === MAPA_BYTES + 5) return this.recibirMapa(f.slice(5), new DataView(f.buffer, f.byteOffset).getUint32(1, true));      // el terreno completo
         if (!yo || (f[0] !== 2 && f[0] !== 3) || f.length < 2000 || f.length > 300000 || f[1] !== 0xff || f[2] !== 0xd8 || f[3] !== 0xff) return;
         const llave = att.i + ":" + f[0], ahora = Date.now();
         if (ahora - (this.fotoT.get(llave) || 0) < 12000) return;
@@ -570,7 +616,7 @@ export class Mundo extends DurableObject {
       t: "mundo", i, seed: m.seed, remin: m.remin, cfg: m.cfg, creador: i === this.creador() ? 1 : 0,
       est: this.jug[i].est, cuenta: m.reminAt ? Math.max(0, Math.ceil((m.reminAt - Date.now()) / 1000)) : 0,
       jug: this.jug.map((j, x) => (j ? this.publico(x, on.has(x)) : null)).filter(Boolean),
-      dug: btoa(b), col: m.col || [], pid: yo.pid, ver: m.cfg.mirar === 0 ? "" : m.ver, obs: this.ctx.getWebSockets("mira").length,
+      dug: btoa(b), col: m.col || [], mapa: this.mapaDe(m), pid: yo.pid, ver: m.cfg.mirar === 0 ? "" : m.ver, obs: this.ctx.getWebSockets("mira").length,
     });
     for (const [x, s] of this.pos) if (x !== i && on.has(x)) manda(ws, s);
     this.avisarTabla(i, true, true);
@@ -606,19 +652,12 @@ export class Mundo extends DurableObject {
     const ahora = Date.now();
     if (m.reminAt && ahora >= m.reminAt - 50) {
       // Remineralizar: semilla nueva para la capa y se borran los bits de lo cavado.
-      m.remin++; m.reminAt = 0;
+      m.remin++; m.reminAt = 0; m.mapaH = "";      // el terreno nuevo lo entrega quien remineralizó, y queda fijo otra vez
       this.dug.fill(0);
       this.sucio.meta = this.sucio.dug = true;
       this.difundir({ t: "remin", remin: m.remin });
     }
-    await this.guardar();
-    const caduco = this.jug.length ? ahora - m.visto >= CADUCA : ahora - m.creado >= DIA;
-    if (!this.ctx.getWebSockets().length && caduco) {
-      if (m.ver) { try { await this.tabla().olvidar(m.ver); } catch {} }
-      await this.ctx.storage.deleteAll();
-      this.m = false;
-      return;
-    }
+    await this.guardar();      // un mundo nunca se borra solo: únicamente cuando quien lo creó pide borrarlo
     await this.programar();
   }
 }
@@ -638,9 +677,14 @@ export default {
         try {
           const a = (await request.json()).archivo;
           if (!a || a.formato !== "mina-mundo" || typeof a.dug !== "string" || a.dug.length > BYTES * 1.4) return json({ error: "archivo" }, 400);
+          let mapa = null;                    // el terreno completo, si el archivo lo trae
+          if (typeof a.mapa === "string" && a.mapa.length < MAPA_BYTES * 1.4) {
+            const bm = atob(a.mapa);
+            if (bm.length === MAPA_BYTES) { mapa = new Uint8Array(MAPA_BYTES); for (let k = 0; k < MAPA_BYTES; k++) mapa[k] = bm.charCodeAt(k); }
+          }
           const bin = atob(a.dug), dug = new Uint8Array(Math.min(BYTES, bin.length));
           for (let k = 0; k < dug.length; k++) dug[k] = bin.charCodeAt(k);
-          base = { seed: entero(a.seed, -2147483648, 4294967295, 1), remin: entero(a.remin, 0, 1e9, 0), cfg: a.cfg, col: (Array.isArray(a.col) ? a.col : []).map((k) => entero(k, 0, 98, -1)).filter((k) => k >= 0).slice(0, 99), dug };
+          base = { seed: entero(a.seed, -2147483648, 4294967295, 1), remin: entero(a.remin, 0, 1e9, 0), cfg: a.cfg, col: (Array.isArray(a.col) ? a.col : []).map((k) => entero(k, 0, 98, -1)).filter((k) => k >= 0).slice(0, 99), dug, mapa };
         } catch { return json({ error: "archivo" }, 400); }
       }
       for (let n = 0; n < 5; n++) {
@@ -684,6 +728,18 @@ export default {
         .on('meta[property="og:image"]', pon(imagen))
         .on('meta[property="og:url"]', pon(u.origin + "/m/" + id + (p ? "?j=" + j : "")))
         .transform(pagina);
+    }
+
+    // El terreno completo de un mundo, comprimido. No cambia nunca (salvo al remineralizar, que le cambia la huella):
+    // el navegador lo guarda y no lo vuelve a pedir. Quien mira lo pide con su ficha.
+    const mp = u.pathname.match(/^\/api\/mapa\/(?:([2-9A-HJ-NP-Z]{8})|ver\/([2-9A-HJ-NP-Z]{12}))$/);
+    if (mp && request.method === "GET") {
+      const id = mp[1] || (await env.TABLA.get(env.TABLA.idFromName("mundial")).mundoDe(mp[2]));
+      let r = null;
+      if (id) { try { r = await env.MUNDO.get(env.MUNDO.idFromName(id)).mapa(); } catch {} }
+      if (!r) return json({ error: "no" }, 404);
+      const fijo = u.searchParams.get("h") === r.h;
+      return new Response(r.z, { encodeBody: "manual", headers: { "content-type": "application/octet-stream", "content-encoding": "gzip", "cache-control": fijo ? "public, max-age=31536000, immutable" : "no-store", "x-mapa": r.r + "." + r.h } });
     }
 
     // La tabla mundial: las veinte maquinitas que más han ganado.

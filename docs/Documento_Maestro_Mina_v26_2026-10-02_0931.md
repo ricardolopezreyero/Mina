@@ -132,7 +132,7 @@ Cada celda se decide con un número al azar fijo, calculado con la semilla del m
 | Bits de celdas cavadas | 6 KB, una fila |
 | Cada maquinita: llave, nombre, modelo, estado completo, récord y total | una fila por maquinita |
 
-Se guarda por lotes cada 8 segundos mientras haya cambios, y al salir alguien. Un mundo sin visitas en 180 días se borra solo.
+Se guarda por lotes cada 8 segundos mientras haya cambios, y al salir alguien. Un mundo no se borra nunca por sí solo (ver 9.21): solo si quien lo creó lo desecha para todos.
 
 ### 4.3 Mensajes
 
@@ -160,7 +160,7 @@ Del mundo al navegador: `mundo` (todo el estado al entrar), `nuevo` (pide bautiz
 - **Premio por una celda que otro cavó antes**: si el aviso del mundo llega tarde, el premio se deshace (se quita la pieza o el dinero del hallazgo).
 - **Quedar dentro de la tierra** (el terreno cambió): la maquinita sale sola a la superficie.
 - **Remineralizar** se cobra hasta que el mundo confirma; la cuenta regresiva se guarda al momento.
-- **Mundo sin bautizar**: se borra solo en un día (así las visitas de robots no dejan mundos vacíos por 180 días).
+- **Mundo sin bautizar**: ya no existe el caso. El mundo se registra hasta que el visitante mueve algo, y nace con su maquinita ya bautizada (ver 9.16 y 9.21).
 
 ### 4.5 Pruebas de aceptación (sección 7.6 del prompt)
 
@@ -706,6 +706,28 @@ El cálculo no es el cuello de botella. Lo que sí crecía sin tope era la memor
 - **Medidor:** Menú → Opciones dice, del último minuto jugado, cuántos cuadros salieron lentos, cuánto tardó el peor y cuánta memoria ocupan las celdas. Sirve para saber con datos cómo va en cada equipo.
 
 **Lo que no se tocó, a propósito.** Juntar todas las celdas en una sola imagen grande (un «atlas») podría aligerar a la tarjeta de video, pero toca la parte más delicada del dibujo y aquí no hay forma de medir su efecto en una pantalla real. Si el medidor de Opciones muestra cuadros lentos en algún equipo, ese es el siguiente paso.
+
+### 9.21 Los mundos son para siempre, y su terreno queda fijo
+
+**El problema que había.** El terreno de un mundo no estaba guardado: cada vez que alguien entraba, el juego lo volvía a calcular con la semilla y con el generador de la versión de ese día. Cada vez que el generador cambió (más tesoros, menos gas, lugares nuevos), los mundos ya creados cambiaron con él. Y los mundos caducaban: 180 días sin visitas, o un día si nadie se había bautizado.
+
+**Cómo queda.**
+
+- **El terreno se fabrica una sola vez, al nacer el mundo, y se guarda completo:** las 480,000 celdas (96 × 5,000), una por una, con sus geodas, más la celda donde está cada uno de los 99 objetos de la colección. Desde entonces el juego lo lee tal cual y ya no usa el generador para ese mundo. Aunque el juego cambie en dos años, el mundo es el mismo.
+- **Dónde vive:** en el mundo (comprimido pesa unos 150 KB), en cada equipo que lo ha abierto (guardado por su huella, para abrir sin pedirlo otra vez, incluso sin internet) y, completo, en el archivo de «Guardar archivo» (unos 690 KB de JSON).
+- **Nadie lo puede cambiar:** un mundo que ya tiene terreno rechaza cualquier otro (probado).
+- **Los mundos de antes** quedan fijos la primera vez que alguien entra con esta versión: su navegador fabrica el terreno con el generador de hoy (el mismo que ya estaban viendo) y lo entrega.
+- **Remineralizar** sigue creando terreno nuevo: lo entrega quien remineralizó y queda fijo otra vez.
+- **Una huella** (16 caracteres) identifica cada terreno. Si un navegador trae un terreno distinto del que tiene el mundo, manda el del mundo.
+- **Los mundos no caducan.** Se quitó el borrado automático. Un mundo solo desaparece si quien lo creó elige «Desechar este mundo» → «borrarlo para todos».
+
+**Lo que hace que una partida sea «exactamente la misma» en dos años:** el terreno (fijo), lo cavado (un bit por celda), la colección, las reglas, y la maquinita con todo lo suyo, que vive aparte y tampoco caduca.
+
+**Lo que no queda congelado.** El dibujo, los sonidos, los precios y las reglas del juego son código: si cambian, cambian para todos los mundos. Para que el terreno guardado siga significando lo mismo hay una regla al programar: a las listas de minerales y hallazgos solo se les agrega al final, nunca se insertan ni se reordenan (cada celda guarda el número del mineral). El terreno lleva además la versión del generador con que nació (`GEN = 1`, `mundoGen`), para que una novedad futura pueda aplicarse solo a mundos nuevos.
+
+**Piezas.** Juego: `base` y `geodas` (terreno cargado), `terrenoProcedural`, `empacar`/`desempacar`, `huellaMapa`, `conMapa`, `traerMapa`, `ponerTerreno`, `subirMapa`, `cambiarMapa`, caché `mina-mapas`. Mundo: `mapaValido`, `recibirMapa`, `mapa()`, `GET /api/mapa/ID` y `/api/mapa/ver/FICHA`, mensaje binario 4, campos `mapaR` y `mapaH`.
+
+**Costo.** Cada mundo ocupa entre 0.2 y 0.8 MB guardado (terreno, túneles e imágenes de liga). Mil mundos son menos de 1 GB.
 
 ## 10. Revisión de código del 2 de octubre
 

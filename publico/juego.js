@@ -2,7 +2,7 @@
    Mina · juego de minería infinito y compartido
    Autor: Ricardo López Reyero (RLR) · mina.capitaltorreon.com
    Sin librerías, sin imágenes y sin audios descargados: todo se dibuja y se
-   sintetiza aquí. El terreno se calcula con la semilla del mundo.
+   sintetiza aquí. El terreno de cada mundo se fabrica una vez con su semilla y queda guardado.
    ════════════════════════════════════════════════════════════════════════════ */
 'use strict';
 const _RLR = 'Ricardo López Reyero';
@@ -344,6 +344,68 @@ let S = null;                  // lo que se guarda de mi maquinita
 let cfg = { ...MODOS.clasico, modo: 'clasico', nombre: '', puerta: 0, reminTodos: 1, regalos: 1 };
 let seed = 1, remin = 0, SEM = 1, soyCreador = false, miI = -1, mundoId = '', miK = '', miModelo = 0, miNombre = '';
 const dug = new Uint8Array(W * H / 8), mapa = new Uint8Array(W * H).fill(255);
+// ── El terreno de un mundo se fabrica UNA sola vez, al nacer, y se guarda completo (en el mundo y en este equipo).
+//    Desde entonces el juego lo lee tal cual: aunque el generador cambie con los años, un mundo ya creado no se mueve.
+//    Formato: «MN», versión del formato, versión del generador; una celda por byte (9 = piedra con geoda); y la celda
+//    donde está cada uno de los 99 objetos de la colección. Ojo: los minerales y hallazgos se identifican por su número
+//    (10 + índice, 40 + índice): a esas listas solo se les puede agregar al final, nunca insertar ni reordenar.
+const GEN = 1, NB = W * H, MAPA_BYTES = 4 + NB + NCOL * 4;
+const base = new Uint8Array(NB), geodas = new Uint8Array(NB / 8);
+let mapaHash = '', mapaDe = '', mapaOk = -1, mundoGen = GEN, mapaTurno = 0, mapaEspera = null, pediRemin = false;
+function huellaMapa(u) {
+  let a = 0x811c9dc5, b = 0x9e3779b9;
+  for (let i = 0; i < u.length; i++) { const v = u[i]; a = Math.imul(a ^ v, 16777619); b = Math.imul(b + v, 0x85ebca6b) ^ (b >>> 13); }
+  return (a >>> 0).toString(16).padStart(8, '0') + (b >>> 0).toString(16).padStart(8, '0');
+}
+function empacar() {
+  const u = new Uint8Array(MAPA_BYTES), d = new DataView(u.buffer); u[0] = 77; u[1] = 78; u[2] = 1; u[3] = mundoGen;
+  for (let i = 0; i < NB; i++) u[4 + i] = base[i] === 2 && (geodas[i >> 3] & (1 << (i & 7))) ? 9 : base[i];
+  for (const [pos, id] of colec) d.setUint32(4 + NB + id * 4, pos, true);
+  return u;
+}
+function desempacar(u) {
+  if (!u || u.length !== MAPA_BYTES || u[0] !== 77 || u[1] !== 78) return false;
+  mundoGen = u[3]; geodas.fill(0); colec.clear();
+  for (let i = 0; i < NB; i++) { const t = u[4 + i]; if (t === 9) { base[i] = 2; geodas[i >> 3] |= 1 << (i & 7); } else base[i] = t; }
+  const d = new DataView(u.buffer, u.byteOffset + 4 + NB); for (let id = 0; id < NCOL; id++) colec.set(d.getUint32(id * 4, true), id);
+  mapa.fill(255); return true;
+}
+// El terreno también se guarda en este equipo, por su huella: la siguiente vez abre sin pedir nada, incluso sin internet.
+async function leerMapaLocal(h) { try { const c = await caches.open('mina-mapas'), r = await c.match('/mapa-local/' + h); return r ? new Uint8Array(await r.arrayBuffer()) : null; } catch { return null; } }
+async function guardarMapaLocal(h, u) {
+  try { const c = await caches.open('mina-mapas'); await c.put('/mapa-local/' + h, new Response(u, { headers: { 'content-type': 'application/octet-stream' } })); const ks = await c.keys(); for (const k of ks.slice(0, Math.max(0, ks.length - 8))) c.delete(k); } catch {}
+}
+async function traerMapa(m) {
+  let u = await leerMapaLocal(m.h); if (u && u.length === MAPA_BYTES) return u;
+  try {
+    const r = await fetch((soloVer ? '/api/mapa/ver/' + verFicha : '/api/mapa/' + mundoId) + '?r=' + m.r + '&h=' + m.h); if (!r.ok) return null;
+    u = new Uint8Array(await r.arrayBuffer()); if (u.length !== MAPA_BYTES || huellaMapa(u) !== m.h) return null;
+    guardarMapaLocal(m.h, u); return u;
+  } catch { return null; }
+}
+// Antes de entrar a un mundo se consigue su terreno. Lo que llegue mientras tanto espera su turno.
+async function conMapa(d, sigue) {
+  const turno = ++mapaTurno;
+  if (d.mapa && d.mapa.h !== mapaHash) { mapaEspera = mapaEspera || []; d.blob = await traerMapa(d.mapa); if (turno !== mapaTurno) return; }
+  sigue(d);
+  const q = mapaEspera; mapaEspera = null; if (q) for (const x of q) recibir(x);
+}
+// El terreno que toca usar al entrar: el guardado si llegó; el que ya está cargado si es el mismo; y solo si el mundo todavía
+// no tiene el suyo (mundos de antes, o recién remineralizado) se fabrica aquí.
+function ponerTerreno(d) {
+  if (d.blob && desempacar(d.blob)) { mapaHash = d.mapa.h; mapaDe = seed + '|' + remin; }
+  else if (!(mapaHash && mapaDe === seed + '|' + remin)) terrenoProcedural();
+  if (d.mapa) mapaOk = remin;
+}
+function subirMapa() {
+  if (soloVer || !ws || ws.readyState !== 1) return;
+  const b = empacar(), u = new Uint8Array(b.length + 5); u[0] = 4; new DataView(u.buffer).setUint32(1, remin, true); u.set(b, 5); ws.send(u);
+}
+async function cambiarMapa(m) {              // el mundo fijó un terreno distinto del que fabricó este equipo: manda el del mundo
+  const turno = ++mapaTurno, u = await traerMapa(m);
+  if (turno !== mapaTurno || !u || m.r !== remin || !desempacar(u)) return;
+  mapaHash = m.h; mapaDe = seed + '|' + remin; dugCambios++; if (!corriendo && listo) dibujar();
+}
 const otros = new Map();       // las demás maquinitas
 const yo = { x: INICIO_X, y: INICIO_Y, vx: 0, vy: 0, dir: 1, suelo: false, vuela: false, perf: null };
 const teclas = {};
@@ -418,7 +480,7 @@ function fmt(n) {
   for (const [v, s] of u) if (n >= v) return '$' + (n / v).toFixed(2).replace(/\.?0+$/, '') + ' ' + s;
 }
 
-/* ════════ El terreno: se calcula con la semilla ════════ RLR */
+/* ════════ El generador: fabrica el terreno de un mundo nuevo a partir de su semilla ════════ RLR */
 function azar(x, y, s) {
   let n = Math.imul(x, 374761393) ^ Math.imul(y, 668265263) ^ Math.imul(SEM + s * 7919 | 0, 2147483647);
   n = Math.imul(n ^ (n >>> 13), 1274126177); n ^= n >>> 16;
@@ -531,8 +593,7 @@ function gen(x, y) {
   if (x < 0 || x >= W || y >= H) return 5;
   if (y < 0) return 0;
   if (y < 2 && x >= ZX0 && x <= ZX1) return 5;
-  const m = (y + 1) * 2, agua = y >= AGUA0 && y < AGUA1, co = colec.get(y * W + x);
-  if (co !== undefined && !hallados[co]) return 50;          // un objeto de la colección que nadie ha encontrado
+  const m = (y + 1) * 2, agua = y >= AGUA0 && y < AGUA1;
   if (y >= 165) { const t = genLugar(x, y); if (t >= 0) return t; }
   const [vx, vy] = veta(Math.floor(y / 75));
   if (Math.abs(x - vx) <= 1 && Math.abs(y - vy) <= 1) return 10 + mejorMineral(vy);
@@ -556,7 +617,11 @@ function celda(x, y) {
   if (x < 0 || x >= W) return 5;
   const i = y * W + x;
   let t = mapa[i];
-  if (t === 255) t = mapa[i] = (dug[i >> 3] & (1 << (i & 7))) ? vacia(y) : gen(x, y);
+  if (t === 255) {
+    if (dug[i >> 3] & (1 << (i & 7))) t = vacia(y);
+    else { const co = colec.get(i); t = co !== undefined && !hallados[co] ? 50 : base[i]; }      // un objeto de la colección que nadie ha encontrado, o lo que el terreno guardado dice
+    mapa[i] = t;
+  }
   return t;
 }
 const hueca = (x, y) => { const t = celda(x, y); return t === 0 || t === 6; };
@@ -576,8 +641,10 @@ function cavar(lista) {            // marca aquí y avisa al mundo
 }
 let pendientes = [];                // celdas cavadas mientras no había conexión
 const recientes = new Map();        // premios recién dados, por si el mundo dice que otro llegó antes
-function nuevaSemilla() {
-  SEM = (seed + remin * 104729) | 0; mapa.fill(255); pesosFila.clear(); litos.fill(255);
+function nuevaSemilla() { SEM = (seed + remin * 104729) | 0; mapa.fill(255); pesosFila.clear(); litos.fill(255); }
+// Fabricar el terreno completo con el generador de esta versión. Solo pasa cuando nace un mundo, cuando se remineraliza,
+// o la primera vez que se abre un mundo de antes de que el terreno se guardara.
+function terrenoProcedural() {
   // dónde quedó cada objeto de la colección: tres por franja, a distintas alturas y en distintas columnas, fuera de los lugares
   colec.clear();
   for (let id = 0; id < NCOL; id++) {
@@ -587,6 +654,10 @@ function nuevaSemilla() {
     for (let n = 0; n < 80 && (lugarDe(x, y, true) >= 0 || colec.has(y * W + x) || cavada()); n++) { y++; x = 3 + (x + 7) % (W - 6); }
     colec.set(y * W + x, id);
   }
+  geodas.fill(0);
+  for (let y = 0, i = 0; y < H; y++) for (let x = 0; x < W; x++, i++) { const t = gen(x, y); base[i] = t; if (t === 2 && azar(x, y, 61) < 0.07) geodas[i >> 3] |= 1 << (i & 7); }
+  mundoGen = GEN; mapa.fill(255);
+  const u = empacar(); mapaHash = huellaMapa(u); mapaDe = seed + '|' + remin; guardarMapaLocal(mapaHash, u);
 }
 
 /* ════════ Sonido ════════ RLR */
@@ -1319,7 +1390,7 @@ const PIEDRA = [[4, 'gris', ['#77726d', '#56524e', '#9a948e', '#3b3836']], [7, '
 const durezaDe = (m) => (m < 1000 ? 0 : m < 2000 ? 1 : m < 4000 ? 2 : m < 8000 ? 3 : 4);
 // Cuánto tarda tu taladro en una piedra a esa profundidad: 1.5 s si apenas le alcanza, 0.6 s si le sobran tres niveles. 0 = no entra.
 // Una de cada catorce piedras es una geoda: por fuera igual a las demás, salvo un brillo en una grieta. Solo el taladro la abre.
-const esGeoda = (x, y) => azar(x, y, 61) < 0.07;
+const esGeoda = (x, y) => { const i = y * W + ((x % W) + W) % W; return !!(geodas[i >> 3] & (1 << (i & 7))); };
 const tiempoPiedra = (m) => { const sobra = S.eq[0] - PIEDRA[durezaDe(m)][0]; return sobra < 0 ? 0 : 1.5 - 0.9 * Math.min(1, sobra / 3); };
 function perforar(x, y) {
   const t = celda(x, y);
@@ -1485,6 +1556,7 @@ const red = { rtt: 0, lenta: false, retraso: 135, pingT: 0, sinEco: 0 };
 const duenos = leer('mina_duenos', {});
 const nombreDe = (i) => (i === miI ? miNombre : otros.get(i)?.n || 'Alguien');
 function recibir(d) {
+  if (mapaEspera && d.t !== 'mundo' && d.t !== 'mira') { mapaEspera.push(d); return; }
   switch (d.t) {
     case 'nuevo': {            // el mundo no conoce esta maquinita: nace aquí mismo, ya bautizada, sin preguntar nada
       const antes = leer('mina_maq_antes', null);
@@ -1504,14 +1576,15 @@ function recibir(d) {
       return;
     }
     case 'noexiste': quitarMundo(mundoId); if (deCasa) return location.replace('/'); return pantallaFinal('Este mundo no existe', 'Puede que lo hayan borrado o que la liga esté incompleta.');
-    case 'mira': return iniciarVer(d);
+    case 'mira': return conMapa(d, iniciarVer);
+    case 'mapa': mapaOk = d.r; if (d.r === remin && d.h !== mapaHash) cambiarMapa(d); return;
     case 'nomira': detener(); return pantallaFinal('Este mundo no admite observadores', 'Quien lo creó prefirió jugar sin público.');
     case 'obs': mirones = d.n | 0; ultPos = ''; if (soloVer) pintarVer(); else { enviarPos(); pintarTabla(); } return;      // que quien llega a mirar me vea aunque esté quieto
     case 'cerrado': return pantallaFinal('Este mundo cerró la puerta', 'Quien lo creó ya no admite maquinitas nuevas.');
     case 'lleno': return pantallaFinal('Este mundo está lleno', soloVer ? 'Ya hay 30 personas mirando. Intenta en un rato.' : 'Hay un tope de 10 jugadores a la vez.');
     case 'otra': detener(); return pantallaFinal('Tu maquinita se abrió en otro lado', 'Está en otra pestaña o en otro dispositivo, con todo lo que trae. Aquí puedes volver a tomarla cuando quieras.');
     case 'borrado': quitarMundo(mundoId); detener(); return pantallaFinal('Este mundo fue borrado', 'Quien lo creó lo desechó.');
-    case 'mundo': return iniciarMundo(d);
+    case 'mundo': return conMapa(d, iniciarMundo);
     case 'cava': for (const i of d.c) ponerCavada(i); return efectoAjeno(d.c);
     case 'no': return noFueMia(d.c);
     case 'entra':
@@ -1546,11 +1619,13 @@ function recibir(d) {
     case 'cfg': cfg = d.cfg; dugCambios++; tiles.clear(); if (listo) guardarMundo(); if (d.i !== miI) aviso(nombreDe(d.i) + ' cambió las reglas del mundo'); if (menu) pintarMenu(); return;
     case 'cuenta':
       cuentaFin = Date.now() + d.s * 1000; son.alarma();
-      if (d.i === miI) { S.d -= Math.min(S.d, costoRemin()); S.reminGratis = 0; S.st.remin++; sucio = true; pintarHud(true); }   // se cobra hasta que el mundo confirma
+      if (d.i === miI) { S.d -= Math.min(S.d, costoRemin()); S.reminGratis = 0; S.st.remin++; sucio = true; pediRemin = true; pintarHud(true); }   // se cobra hasta que el mundo confirma
       if (menu === 'rem') pintarMenu();
       return aviso(nombreDe(d.i) + ' activó la Remineralizadora');
     case 'remin': {
-      remin = d.remin; dug.fill(0); nuevaSemilla(); cuentaFin = 0; pendientes = []; recientes.clear();
+      remin = d.remin; dug.fill(0); nuevaSemilla(); terrenoProcedural(); cuentaFin = 0; pendientes = []; recientes.clear();
+      // El terreno nuevo se le entrega al mundo para que quede fijo: lo manda quien remineralizó; si no llega, cualquiera.
+      { const r = remin; if (pediRemin) { pediRemin = false; subirMapa(); } setTimeout(() => { if (remin === r && mapaOk !== r) subirMapa(); }, 3000 + Math.random() * 3000); }
       yo.perf = null;
       if (yo.y > INICIO_Y + 0.01) { yo.x = INICIO_X; yo.y = INICIO_Y; yo.vx = yo.vy = 0; yo.suelo = true; }
       if (menu) pintarMenu(); else if (!corriendo) dibujar();
@@ -1582,7 +1657,7 @@ function iniciarMundo(d, local) {
   const misCol = mias ? hallados.slice() : null; hallados.fill(0); for (const k of d.col || []) if (k >= 0 && k < NCOL) hallados[k] = 1;
   if (misCol) for (let k = 0; k < NCOL; k++) if (misCol[k] && !hallados[k]) { hallados[k] = 1; enviar({ t: 'col', k }); }      // lo que encontré sin señal también cuenta
   if (mias) for (let i = 0; i < dug.length; i++) { const f = mias[i] & ~dug[i]; if (f) { dug[i] |= f; for (let k = 0; k < 8; k++) if (f & (1 << k)) faltan.push(i * 8 + k); } }
-  nuevaSemilla();
+  nuevaSemilla(); ponerTerreno(d);
   if (otraTierra) { pendientes = []; recientes.clear(); yo.perf = null; if (yo.y > INICIO_Y + 0.01) { yo.x = INICIO_X; yo.y = INICIO_Y; yo.vx = yo.vy = 0; } }
   otros.clear();
   for (const j of d.jug) { if (j.i === miI) { miNombre = j.n; miModelo = j.m; } else otros.set(j.i, j); }
@@ -1608,6 +1683,7 @@ function iniciarMundo(d, local) {
   // lo que el mundo no tenía se le manda de nuevo (ya incluye lo cavado sin conexión)
   pendientes = [];
   for (let i = 0; i < faltan.length; i += 30) enviar({ t: 'cava', c: faltan.slice(i, i + 30) });
+  if (!local && !d.mapa) subirMapa();              // el mundo todavía no tenía guardado su terreno: se le entrega y queda fijo
   if (primera) { medir(); vis.x = ant.x = yo.x; vis.y = ant.y = yo.y; camX = Math.max(0, Math.min(W - cols, yo.x - cols / 2)); camY = Math.max(-filas * 0.68, yo.y - filas * 0.5); }
   ultPos = '';
   $('#aviso-red').style.display = 'none';
@@ -2573,7 +2649,7 @@ function iniciarVer(d) {
   seed = d.seed; remin = d.remin; cfg = d.cfg; miI = -1; soyCreador = false; miNombre = ''; mundoId = '';
   const b = atob(d.dug); for (let i = 0; i < dug.length; i++) dug[i] = b.charCodeAt(i);
   hallados.fill(0); for (const k of d.col || []) if (k >= 0 && k < NCOL) hallados[k] = 1;
-  nuevaSemilla(); otros.clear();
+  nuevaSemilla(); ponerTerreno(d); otros.clear();
   for (const j of d.jug) otros.set(j.i, j);
   if (!S) { S = sanear(null); S.fuel = tanque(); S.vida = vidaMax(); }
   if (!otros.has(veo)) veo = ([...otros.values()].find((o) => o.on) || [...otros.values()].sort((a, b) => (b.tot || 0) - (a.tot || 0))[0] || { i: -1 }).i;
@@ -3200,10 +3276,11 @@ function pintarMapa(cv) {
   q.fillStyle = '#ffd23f'; q.strokeStyle = '#000'; q.lineWidth = 2; q.beginPath(); q.arc(yo.x * A, Math.max(0, yo.y) / 2, 5, 0, 7); q.fill(); q.stroke();
 }
 // El mundo en un archivo: semilla, reglas, todo lo cavado y la colección. Con él se puede abrir una copia idéntica cuando sea.
-function archivoDelMundo() {
+function archivoDelMundo(conTerreno) {
   let fin = dug.length; while (fin > 0 && !dug[fin - 1]) fin--;
   let b = ''; for (let i = 0; i < fin; i += 8192) b += String.fromCharCode.apply(null, dug.subarray(i, Math.min(fin, i + 8192)));
-  return { formato: 'mina-mundo', version: 1, guardado: new Date().toISOString(), nombre: cfg.nombre || 'Mundo', seed, remin, cfg, col: [...hallados].map((v, i) => (v ? i : -1)).filter((i) => i >= 0), ancho: W, alto: H, dug: btoa(b) };
+  return { formato: 'mina-mundo', version: 1, guardado: new Date().toISOString(), nombre: cfg.nombre || 'Mundo', seed, remin, cfg, col: [...hallados].map((v, i) => (v ? i : -1)).filter((i) => i >= 0), ancho: W, alto: H, dug: btoa(b),
+    ...(conTerreno ? { gen: mundoGen, mapa: (() => { const u = empacar(); let t = ''; for (let i = 0; i < u.length; i += 8192) t += String.fromCharCode.apply(null, u.subarray(i, Math.min(u.length, i + 8192))); return btoa(t); })() } : { terreno: mapaHash ? { r: remin, h: mapaHash } : null }) };
 }
 function venta() {
   const base = S.carga.reduce((a, n, i) => a + n * MIN[i].v, 0), piezas = nCarga();
@@ -3359,7 +3436,7 @@ const acciones = {
   },
   guardarArchivo() {
     const f = new Date(), p2 = (n) => String(n).padStart(2, '0'), a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([JSON.stringify(archivoDelMundo())], { type: 'application/json' }));
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(archivoDelMundo(true))], { type: 'application/json' }));
     a.download = `Mina_${(cfg.nombre || 'Mundo').replace(/[^\wáéíóúñÁÉÍÓÚÑ]+/g, '_')}_v1_${f.getFullYear()}-${p2(f.getMonth() + 1)}-${p2(f.getDate())}_${p2(f.getHours())}${p2(f.getMinutes())}.json`;
     a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); aviso('Mundo guardado en tu carpeta de descargas.');
     return 'no';
@@ -3507,6 +3584,7 @@ function menuPrincipal() {
       <p><b>Top 20 y público:</b> Menú → Top 20 enseña las veinte maquinitas que más han ganado en todos los mundos, en vivo. A la que esté jugando se le puede ir a ver: quien mira entra con una liga propia, no puede jugar ni conoce la liga del mundo. Tu liga para que te vean está en Menú → Mundo, y ahí mismo quien creó el mundo puede cerrarlo al público.</p>
       <p><b>El mundo da la vuelta:</b> si sales por la orilla derecha entras por la izquierda, y al revés, perforando o volando. Todo está conectado.</p>
       <p><b>La Remineralizadora:</b> cuesta el 5 % de todo lo que has ganado en la vida de tu maquinita. Entre más llevas, más cuesta.</p>
+      <p><b>Los mundos son para siempre:</b> cada mundo se guarda completo (su terreno celda por celda, sus túneles, sus reglas y su colección) y no se borra nunca, salvo que quien lo creó lo deseche para todos. Con su liga se vuelve a entrar mañana o en dos años, exactamente donde se dejó.</p>
       <p><b>Explosivos:</b> se usan donde sea, también volando: si topas con piedra al subir, X te abre paso.</p>
       <p><b>Piedra:</b> se perfora si tu taladro alcanza. Hay cinco durezas, cada una de un color, según la zona; el Taller dice qué taladro pide cada una. Con el justo tarda 1.5 s; con uno mejor, hasta 0.6 s.</p>
       <p class="nota">Piedra desde 210 m. Lava desde 410 m: se ve, rodéala. Gas desde 650 m: pocas bolsas, y se notan por sus burbujas.</p>`;
@@ -3631,11 +3709,13 @@ function guardarCopia() {
     for (const m of mundos.slice(4)) { try { localStorage.removeItem('mina_copia_' + m.id); } catch {} }      // solo los cuatro mundos más recientes
   }
 }
-function abrirCopia(id) {
+async function abrirCopia(id) {
   const c = leer('mina_copia_' + id, null), e = leer('mina_est', null);
   if (!c || c.k !== miK || !e || e.k !== miK || !e.e || !Number.isFinite(c.seed) || typeof c.dug !== 'string' || !c.n || !c.cfg) return false;
   try { atob(c.dug); } catch { return false; }
-  iniciarMundo({ seed: c.seed, remin: c.remin | 0, cfg: c.cfg, i: c.i | 0, creador: c.creador ? 1 : 0, dug: c.dug, col: Array.isArray(c.col) ? c.col : [], est: e.e, jug: [{ i: c.i | 0, n: c.n, m: c.m | 0 }], cuenta: 0 }, true);
+  const tr = c.terreno && c.terreno.h ? c.terreno : null, blob = tr ? await leerMapaLocal(tr.h) : null;      // el terreno guardado en este equipo
+  if (listo || S || mundoId !== id) return true;                   // el mundo contestó antes: ya está adentro
+  iniciarMundo({ mapa: blob ? tr : null, blob, seed: c.seed, remin: c.remin | 0, cfg: c.cfg, i: c.i | 0, creador: c.creador ? 1 : 0, dug: c.dug, col: Array.isArray(c.col) ? c.col : [], est: e.e, jug: [{ i: c.i | 0, n: c.n, m: c.m | 0 }], cuenta: 0 }, true);
   return true;
 }
 // Nadie llena nada para empezar: la maquinita nace con nombre de mina y modelo al azar. Se cambian en Menú → Mundo.
@@ -3654,7 +3734,7 @@ function mundoAlInstante() {
 async function nacer() {
   if (!porNacer || naciendo) return; naciendo = true;
   try {
-    const r = await fetch('/api/mundo', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ archivo: archivoDelMundo() }) }), d = await r.json();
+    const r = await fetch('/api/mundo', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ archivo: archivoDelMundo(true) }) }), d = await r.json();      // el mundo nace con su terreno completo
     if (!d.id) throw 0;
     porNacer = false; if (d.d) { duenos[d.id] = d.d; escribir('mina_duenos', duenos); }
     mundoId = d.id; history.replaceState(null, '', '/m/' + d.id); conectar();
@@ -3672,7 +3752,7 @@ function pantallaMundos() {
     (maqLocal && maqLocal.n ? `<p class="nota">Tu maquinita <b>${esc(maqLocal.n)}</b> entra contigo al mundo que elijas, con todo lo que trae.</p>` : '') +
     mundos.map((m) => `<div class="fila"><div class="t"><b>${esc(m.nombre)}</b><small>${m.maq ? 'Tu maquinita: ' + esc(m.maq) + ' · ' : ''}${new Date(m.ult).toLocaleDateString('es-MX', { day: 'numeric', month: 'long' })} · ${m.id}</small></div>
       <button data-ir="${m.id}">Continuar</button><button class="s" data-des="${m.id}">Desechar</button></div>`).join('') +
-    `<p style="margin-top:14px"><button id="bNuevo">＋ Crear mundo nuevo</button></p><p class="nota">Cada mundo nace con una semilla distinta y se guarda solo. Para jugar acompañado, entra y copia su liga.</p></div>`);
+    `<p style="margin-top:14px"><button id="bNuevo">＋ Crear mundo nuevo</button></p><p class="nota">Cada mundo nace con una semilla distinta y se guarda solo, completo y para siempre: con su liga se vuelve a entrar cuando sea, tal como se dejó. Para jugar acompañado, entra y copia su liga.</p></div>`);
   $('#bNuevo').onclick = pantallaCrear;
   $('#caja').querySelectorAll('[data-ir]').forEach((b) => (b.onclick = () => (location.href = '/m/' + b.dataset.ir)));
   $('#caja').querySelectorAll('[data-des]').forEach((b) => (b.onclick = () => { const m = mundos.find((x) => x.id === b.dataset.des); desechar(m.id, m.creador, m.k); }));
@@ -3718,10 +3798,9 @@ function entrar(id) {
   miK = ligaMaquinita || (maqLocal && maqLocal.k) || (m && m.k) || (mundos[0] && mundos[0].k) || llave();
   if (!ligaMaquinita && !(maqLocal && maqLocal.n)) bautizo = nombreNuevo();      // llega por una liga y no tiene maquinita: nace bautizada
   // Si este equipo ya conoce el mundo, abre al instante con su copia; el servidor se pone al corriente en cuanto contesta.
-  if (!abrirCopia(id)) {
-    inicio('<header><h2>Entrando al mundo…</h2></header><div class="cuerpo"><p class="nota" id="entrando">' + esc(id) + '</p></div>');
-    setTimeout(() => { const n = $('#entrando'); if (n && !listo) n.textContent = 'No hay señal con el mundo y este equipo todavía no tiene copia de él. Sigo intentando: en cuanto conteste, entras.'; }, 6000);
-  }
+  inicio('<header><h2>Entrando al mundo…</h2></header><div class="cuerpo"><p class="nota" id="entrando">' + esc(id) + '</p></div>');
+  setTimeout(() => { const n = $('#entrando'); if (n && !listo) n.textContent = 'No hay señal con el mundo y este equipo todavía no tiene copia de él. Sigo intentando: en cuanto conteste, entras.'; }, 6000);
+  abrirCopia(id);
   conectar();
 }
 
@@ -3761,7 +3840,7 @@ aplicarOp(); sonidoUI();
   else mundoAlInstante();
 }
 function escenaDeMuestra() {
-  seed = 20261002; remin = 0; nuevaSemilla();
+  seed = 20261002; remin = 0; nuevaSemilla(); terrenoProcedural();
   S = sanear(null); S.eq = [3, 3, 3, 3, 3, 3]; S.rec = 96; S.st.rec[0] = S.st.rec[1] = S.st.rec[2] = S.st.rec[3] = 1; miNombre = 'Ricardo'; miModelo = 0; mundoId = 'MUESTRA2';
   // El título va sobre cielo limpio, a la izquierda; el pueblo queda a la derecha y las maquinitas se ven grandes.
   const cava = (a, b, c, d) => { for (let x = a; x <= c; x++) for (let y = b; y <= d; y++) ponerCavada(y * W + x); };

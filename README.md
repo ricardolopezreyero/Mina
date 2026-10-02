@@ -23,6 +23,7 @@ Gratis y sin registro: entras y ya estás jugando, sin llenar nada. Se puede ins
 - Para jugar acompañado: botón **Invitar** (liga y código QR).
 - **Dos ligas, cada una con su imagen** al mandarla por WhatsApp: la del mundo (sus hitos y su gente) y la tuya (presume tu maquinita).
 - **En el teléfono**: arrastra el dedo para moverte; un toque frente a un edificio entra.
+- **Los mundos son para siempre**: cada uno se guarda completo (terreno, túneles, reglas y colección) y no se borra nunca, salvo que quien lo creó lo deseche. Con su liga se vuelve a entrar cuando sea, exactamente donde se dejó.
 - **El mundo da la vuelta**: lo que sale por la orilla derecha entra por la izquierda, y al revés.
 - **El Taller** tiene 26 mejoras por pieza, hasta $25 billones. **La Remineralizadora** cuesta el 5 % de todo lo ganado.
 - **Top 20 mundial** (Menú → Top 20): las maquinitas que más han ganado en todos los mundos, en vivo. A la que esté jugando se le puede ir a ver, con una liga de observador que no revela la del mundo.
@@ -40,7 +41,7 @@ Gratis y sin registro: entras y ya estás jugando, sin llenar nada. Se puede ins
 | `wrangler.jsonc` | Configuración del Worker y del dominio |
 | `publico/sw.js`, `publico/manifest.webmanifest`, `publico/iconos/` | La aplicación instalable: lo que se guarda en el equipo para abrir sin internet, y sus iconos |
 | `diseno-fuente/` | El programa que dibuja el icono en todos sus tamaños |
-| `docs/Documento_Maestro_Mina_v25_2026-10-02_0923.md` | Qué está construido, con qué números y qué falta |
+| `docs/Documento_Maestro_Mina_v26_2026-10-02_0931.md` | Qué está construido, con qué números y qué falta |
 | `Prompt_Maestro_Mina_v4_2026-10-01_2336.md` | El diseño completo |
 | `sonidos-fuente/` | El pedido exacto de sonidos y música para ElevenLabs (aún sin generar) |
 
