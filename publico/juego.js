@@ -1459,11 +1459,11 @@ function fisica(dt) {
   }
   yo.vy += Gf * dt;
   // Sin tocar nada, la maquinita planea: saca sus rotorcitos y el aire la frena. Con ↓ los guarda y cae en picada, tres veces más rápido.
-  const picada = aba && !arr && !yo.suelo && !agua;
+  const picada = aba && !arr && !yo.suelo;          // también bajo el agua: ahí los rotorcitos empujan hacia abajo
   if (picada) yo.vy += G * 2 * dt;
   // Al espacio (100 km) se llega en unos 10 minutos y a los 1,000 km en unos 15: la velocidad crece con la altura.
-  const vsube = (6 + brio() / 20) * k + alto / 140, vcae = agua ? 5 : (36 + alto / 40) * (picada ? 3 : 1);     // el aire es más delgado arriba: se cae más rápido; el agua frena del todo
-  if (yo.vy > vcae) yo.vy = agua ? vcae : vcae + (yo.vy - vcae) * Math.exp(-2.2 * dt);      // la resistencia del aire: al soltar ↓ la velocidad baja poco a poco
+  const vsube = (6 + brio() / 20) * k + alto / 140, vcae = agua && !picada ? 5 : (36 + alto / 40) * (picada ? 3 : 1);     // el aire es más delgado arriba: se cae más rápido. El agua frena… salvo que bajes con ↓: entonces se cruza a la misma velocidad que el aire
+  if (yo.vy > vcae) yo.vy = vcae + (yo.vy - vcae) * Math.exp(-(agua ? 6 : 2.2) * dt);      // la resistencia del aire: al soltar ↓ la velocidad baja poco a poco
   if (yo.vy < -vsube) yo.vy = -vsube;
   yo.picada = picada && yo.vy > 3; yo.planea = !yo.suelo && !yo.vuela && !picada && !agua && yo.vy > 3;
   // parado en la superficie no gasta: nadie explota por leer un letrero
@@ -1585,6 +1585,7 @@ function gastar(l) {
   if (S.fuel <= 0) { S.fuel = 0; if (cfg.comb) morir('combustible'); else tarjeta('Entraste en reserva', 'Avanzas despacio y no perforas hasta cargar combustible.'); }
 }
 function aterrizar(v) {
+  if (yo.agua) return;                         // el agua amortigua: bajo el agua no hay golpe de caída
   const h = v * v / (2 * G);
   if (h < 2) return;
   const d = h < 3 ? 3 : h < 5 ? 4 : h < 9 ? 5 : h < 17 ? 6 : h < 46 ? 7 : 8;
@@ -1708,7 +1709,7 @@ const bufPos = new Uint8Array(8), datoPos = new DataView(bufPos.buffer); let ult
 function enviarPos() {
   if (!conectado || soloVer || !(mirones || [...otros.values()].some((o) => o.on))) return;
   const x = Math.round(yo.x * 256), y = Math.round(yo.y * 64);
-  const f = (yo.dir > 0 ? 1 : 0) | (yo.vuela ? 2 : 0) | (yo.planea ? 32 : 0) | (tiempo - (yo.pelea || -9) < 0.7 ? 64 : 0) | (yo.perf || yo.ataca ? 4 : 0) | (menu || pausa ? 8 : 0) | ((yo.perf && yo.perf.ty > Math.floor(yo.perf.oy)) || yo.ataca === 2 ? 16 : 0);
+  const f = (yo.dir > 0 ? 1 : 0) | (yo.vuela ? 2 : 0) | (yo.planea || (yo.agua && yo.picada) ? 32 : 0) | (tiempo - (yo.pelea || -9) < 0.7 ? 64 : 0) | (yo.perf || yo.ataca ? 4 : 0) | (menu || pausa ? 8 : 0) | ((yo.perf && yo.perf.ty > Math.floor(yo.perf.oy)) || yo.ataca === 2 ? 16 : 0);
   const k = x + ',' + y + ',' + f;
   if (k === ultPos) return; ultPos = k;
   bufPos[0] = 1; datoPos.setUint16(1, x, true); datoPos.setInt32(3, y, true); bufPos[7] = f;
@@ -2778,7 +2779,7 @@ function dibujar() {
   }
   const enPelea = tiempo - (yo.pelea || -9) < 0.7, bx = enPelea ? Math.sin(reloj * 70) * T * 0.035 : 0;       // en pelea la maquinita vibra y saca los rotorcitos
   faroCol = tiempo - tGas < 3 ? '#6fc3ff' : '#fff3b0';
-  if (!soloVer) dibMaq(g, mx + bx, my, T, miModelo, yo.dir, yo.vuela ? 1 : yo.planea || enPelea ? 2 : 0, p ? (p.ty > Math.floor(p.oy) ? 2 : p.tx < Math.floor(p.ox) ? -1 : 1) : yo.ataca || 0, op.nombres ? miNombre : '', '', vis.x);
+  if (!soloVer) dibMaq(g, mx + bx, my, T, miModelo, yo.dir, yo.vuela ? 1 : yo.planea || enPelea || (yo.agua && yo.picada) ? 2 : 0, p ? (p.ty > Math.floor(p.oy) ? 2 : p.tx < Math.floor(p.ox) ? -1 : 1) : yo.ataca || 0, op.nombres ? miNombre : '', '', vis.x);
   // el aire como resistencia: al caer rápido se forma un arco bajo la maquinita; muy rápido se pone al rojo y deja estela
   const dens = vis.y < 0 ? Math.max(0, 1 + (vis.y + HH) / 45000) : 0;
   if (yo.vy > 30 && dens > 0.02) {
@@ -3110,7 +3111,7 @@ function animar(d) {
     const ax = vis.x + (Math.random() - 0.5) * 16, ay = vis.y + (Math.random() - 0.5) * 9, z = zonaDe((ay + 1) * 2);
     if (celda(Math.floor(ax), Math.floor(ay)) === 0) parts.push(z < 4 ? { x: ax, y: ay, vx: (Math.random() - 0.5) * 0.3, vy: 0.2, t: 1.6, col: '#c9a37e', gr: 0.2 } : z === 4 ? { x: ax, y: Math.floor(ay) + 0.05, vx: 0, vy: 0.5, t: 0.9, col: '#9fdcff', gr: 9 } : z === 5 ? { x: ax, y: ay, vx: (Math.random() - 0.5) * 0.4, vy: -0.4, t: 2.2, col: '#7dffe0', gr: -0.1 } : z === 6 ? { x: ax, y: ay, vx: 0, vy: 0, t: 0.5, col: '#dfe6ff', gr: 0 } : { x: ax, y: ay, vx: (Math.random() - 0.5) * 0.5, vy: -0.8, t: 1.4, col: '#ff9a4a', gr: -0.5 });
   }
-  if (yo.agua && op.part && Math.random() < d * 7) parts.push({ x: vis.x + (Math.random() - 0.5) * 0.5, y: vis.y - 0.3, vx: (Math.random() - 0.5) * 0.3, vy: -1 - Math.random(), t: 1 + Math.random() * 0.6, col: '#bfe9ff', g: 1, gr: -1 });
+  if (yo.agua && op.part && Math.random() < d * (yo.picada ? 40 : 7)) parts.push({ x: vis.x + (Math.random() - 0.5) * 0.5, y: vis.y - 0.3, vx: (Math.random() - 0.5) * 0.3, vy: -1 - Math.random(), t: 1 + Math.random() * 0.6, col: '#bfe9ff', g: 1, gr: -1 });
   { const pf = yo.perf, enLava = pf && pf.tipo === 3, meta = enLava ? 0.35 + 0.65 * Math.min(1, pf.t / pf.dur) : 0;
     calorFx += (meta - calorFx) * (1 - Math.exp(-(enLava ? 10 : 2) * d));
     if (enLava && op.part && Math.random() < d * (14 + 30 * rad())) {      // el radiador va sacando el calor por atrás: entre mejor radiador, más vapor
@@ -3957,6 +3958,7 @@ function menuPrincipal() {
       <p><b>El Taller:</b> cada pieza tiene veintiséis mejoras, de $750 a $25 billones ($25 T). Siempre ves las que ya compraste y las diez que siguen.</p>
       <p><b>Acompañado:</b> S deja una señal que todos ven · A ayuda a la maquinita que tengas junto: le pasa 5 litros · C abre el chat. Para descansar, abre el menú (M o Esc): con el menú abierto tu maquinita no gasta.</p>
       <p><b>Tu viaje:</b> abajo a la izquierda ves cuánto llevas, en cuánto se vende y si el combustible te alcanza para subir. Ahí mismo está la <b>grúa</b> (tecla G): te deja en la Gasolinera y cobra según lo lejos que estés y lo que peses.</p>
+      <p><b>Bajo el agua:</b> el agua te sostiene y frena la caída, pero con <b>↓</b> los rotorcitos empujan hacia abajo y la cruzas tan rápido como el aire. Ahí abajo no hay golpe de caída.</p>
       <p><b>De regreso:</b> sin tocar nada, la maquinita planea con sus rotorcitos. Con <b>↓</b> los guarda y cae en picada, tres veces más rápido; con <b>↑</b> frena. El velocímetro de la izquierda dice a cuánto vas, y si pasas de Mach 1 dentro del aire, truena.</p>
       <p><b>Hacia arriba:</b> el cielo también se explora, y subir es todo un viaje: halcones y águilas, el atardecer, un avión, la noche con sus constelaciones, la aurora al entrar al espacio (100 km), un cometa, la estación, la Luna que crece y el planeta que se achica hasta que, cerca de los 1,000 km, el Sol vuelve a salir. Son unos 15 minutos de vuelo. Entre más alto, menos combustible se gasta; con un tanque «Cisterna» alcanza. Pasando los 50 m de altura, la barra espaciadora deja a la maquinita subiendo sola.</p>
       <p><b>Lava y gas:</b> la lava (desde 410 m) se ve y se rodea. Las bolsas de gas (desde 650 m) se notan por unas burbujitas verdes y por el aviso «Huele a gas». Pon el ratón encima de cualquiera y te dice cuánto casco te quita. Vuélalas con dinamita o lleva casco y radiador suficientes: arriba, en las metas, dice hasta qué profundidad aguantas.</p>

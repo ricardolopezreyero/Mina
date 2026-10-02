@@ -920,6 +920,15 @@ Cada menú lleva al pie un renglón con sus teclas, y los botones principales tr
 
 **Sin probar con personas:** el recorrido completo de una hora y el cierre con varios jugadores conectados a la vez. Se probó cavando por código y con un solo jugador.
 
+### 9.28 Bajar rápido también bajo el agua
+
+Antes, al entrar al agua (el Acuífero, el Río, las Aguas termales) la caída se frenaba de golpe a 5 celdas por segundo y la picada no funcionaba ahí: 152 m de agua tomaban 14 segundos.
+
+- **Con ↓, bajo el agua los rotorcitos empujan hacia abajo** y se cruza a la misma velocidad que en el aire. Los mismos 152 m toman 0.7 s viniendo en picada.
+- **Sin tocar nada**, el agua sigue sosteniendo a la maquinita como antes (se flota), solo que ahora frena suave en vez de en seco.
+- **Bajo el agua no hay golpe de caída**: el agua amortigua.
+- Se ven los rotorcitos y más burbujas mientras se baja así; las demás maquinitas también lo ven.
+
 ## 10. Revisión de código del 2 de octubre
 
 Se revisó todo el código buscando fallas y se corrigieron estas:
