@@ -162,7 +162,8 @@ let menu = null, pausa = false, listo = false, corriendo = false, conectado = fa
 let parts = [], senales = [], temblor = 0, tiempo = 0, cuentaFin = 0;
 let op = leer('mina_op', {});
 op = { vol: 0.7, temblor: 1, part: 2, texto: 1, contraste: 0, dalton: 0, nombres: 1, zoom: 1, fps: 0, mudo: 0, ...op };
-op.son = { musica: 1, motor: 1, tesoro: 1, peligro: 1, avisos: 1, otros: 1, ambiente: 1, ...(op.son || {}) };
+op.son = { musica: 1, taladro: 1, helice: 1, motor: 0, tesoro: 1, peligro: 1, avisos: 1, otros: 1, ambiente: 1, ...(op.son || {}) };
+if ((op.sv | 0) < 2) { op.son.motor = 0; op.son.taladro = op.son.helice = 1; op.sv = 2; }      // el motor quedó aparte y apagado; taladro y hélice, cada uno con su interruptor
 if (![0, 30, 60].includes(op.fps)) op.fps = 0;
 
 function leer(k, def) { try { return JSON.parse(localStorage.getItem(k)) ?? def; } catch { return def; } }
@@ -293,23 +294,28 @@ const recientes = new Map();        // premios recién dados, por si el mundo di
 function nuevaSemilla() { SEM = (seed + remin * 104729) | 0; mapa.fill(255); pesosFila.clear(); }
 
 /* ════════ Sonido ════════ RLR */
-// Todo se sintetiza aquí, sin descargar un solo archivo. Hay siete tipos de sonido; cada uno tiene su
-// propio canal y su interruptor en la bocina de arriba a la derecha.
-const TIPOS = [['musica', 'Música', 0.55], ['motor', 'Motor, hélice y taladro', 0.8], ['tesoro', 'Minerales y dinero', 1], ['peligro', 'Explosiones y daño', 1], ['avisos', 'Avisos y logros', 0.9], ['otros', 'Lo que hacen los demás', 0.7], ['ambiente', 'Viento y cueva', 0.7]];
-let AC = null, maestro = null, ruidoBuf = null;
+// Todo se sintetiza aquí, sin descargar un solo archivo. Cada tipo de sonido tiene su propio canal y su
+// interruptor en la bocina de arriba a la derecha. El motor viene apagado: es un fondo continuo y cansa.
+const TIPOS = [['musica', 'Música', 0.6], ['taladro', 'Taladro', 0.9], ['helice', 'Hélice', 0.8], ['motor', 'Motor', 0.7], ['tesoro', 'Minerales y dinero', 1], ['peligro', 'Golpes, explosiones y daño', 1], ['avisos', 'Avisos y logros', 0.9], ['otros', 'Lo que hacen los demás', 0.7], ['ambiente', 'Viento y cueva', 0.7]];
+const MOJADO = { musica: 0.55, tesoro: 0.16, avisos: 0.14, peligro: 0.1, ambiente: 0.25, otros: 0.2 };     // cuánto de cada canal pasa por el eco
+let AC = null, maestro = null, ruidoBuf = null, eco = null;
 const bus = {}, lazo = {};
 function audio() {
   if (AC) { if (AC.state === 'suspended') AC.resume(); return AC; }
-  try {
-    AC = new (window.AudioContext || window.webkitAudioContext)();
-    const comp = AC.createDynamicsCompressor(); comp.threshold.value = -16; comp.ratio.value = 5; comp.connect(AC.destination);
-    maestro = AC.createGain(); maestro.gain.value = 0; maestro.connect(comp);
-    for (const [id] of TIPOS) { bus[id] = AC.createGain(); bus[id].gain.value = 0; bus[id].connect(maestro); }
-    ruidoBuf = AC.createBuffer(1, AC.sampleRate * 2, AC.sampleRate);
-    const a = ruidoBuf.getChannelData(0); for (let i = 0; i < a.length; i++) a[i] = Math.random() * 2 - 1;
-    armarLazos(); volumenes();
-  } catch { AC = null; }
+  try { AC = new (window.AudioContext || window.webkitAudioContext)(); montar(); volumenes(); } catch { AC = null; }
   return AC;
+}
+function montar() {            // canales, eco y sonidos continuos sobre el contexto AC
+  const comp = AC.createDynamicsCompressor(); comp.threshold.value = -14; comp.ratio.value = 4; comp.connect(AC.destination);
+  maestro = AC.createGain(); maestro.gain.value = 0; maestro.connect(comp);
+  // eco de cueva: una respuesta fabricada (ruido que se apaga y se oscurece) le da aire a la música y a las campanas
+  const sr = AC.sampleRate, n = Math.floor(sr * 2.6), ir = AC.createBuffer(2, n, sr);
+  for (let c = 0; c < 2; c++) { const a = ir.getChannelData(c); let lp = 0; for (let i = 0; i < n; i++) { const k = i / n; lp += (Math.random() * 2 - 1 - lp) * (0.5 - 0.42 * k); a[i] = lp * Math.pow(1 - k, 2.4) * Math.min(1, i / (sr * 0.012)); } }
+  eco = AC.createConvolver(); eco.buffer = ir; const ge = AC.createGain(); ge.gain.value = 0.8; eco.connect(ge).connect(maestro);
+  for (const [id] of TIPOS) { bus[id] = AC.createGain(); bus[id].gain.value = 0; bus[id].connect(maestro); if (MOJADO[id]) { const s = AC.createGain(); s.gain.value = MOJADO[id]; bus[id].connect(s).connect(eco); } }
+  ruidoBuf = AC.createBuffer(1, sr * 2, sr);
+  const a = ruidoBuf.getChannelData(0); for (let i = 0; i < a.length; i++) a[i] = Math.random() * 2 - 1;
+  armarLazos();
 }
 function volumenes() {
   pintarBocina();
@@ -335,7 +341,7 @@ function ruido(d = 0.3, v = 0.25, b = 'peligro', fc = 0, tipoF = 'lowpass', q = 
   if (fc) { const f = AC.createBiquadFilter(); f.type = tipoF; f.frequency.setValueAtTime(fc, t); if (f2) f.frequency.exponentialRampToValueAtTime(f2, t + d); f.Q.value = q; s.connect(f).connect(g); } else s.connect(g);
   g.connect(bus[b]); s.start(t, Math.random()); s.stop(t + d + 0.03);
 }
-// campana: tres parciales que se apagan; sirve para minerales, logros y música
+// campana: tres parciales que se apagan; sirve para minerales y logros
 function campana(f, d = 0.5, v = 0.08, b = 'tesoro', cuando = 0) {
   tono(f, d, 'sine', v, 0, cuando, b); tono(f * 2.01, d * 0.6, 'sine', v * 0.35, 0, cuando, b); tono(f * 3.02, d * 0.35, 'sine', v * 0.15, 0, cuando, b);
 }
@@ -349,20 +355,29 @@ function cuerda(f, d = 0.5, v = 0.07, b = 'musica', cuando = 0) {
   g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v, t + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
   o.connect(fl); o2.connect(g2).connect(fl); fl.connect(g).connect(bus[b]); o.start(t); o2.start(t); o.stop(t + d + 0.03); o2.stop(t + d + 0.03);
 }
-// colchón: dos sierras desafinadas, entrada y salida lentas
+// colchón: dos ondas suaves apenas desafinadas, entrada y salida lentas
 function colchon(f, d = 4, v = 0.03, b = 'musica', cuando = 0) {
   if (!AC || op.mudo || !op.son[b]) return;
   const t = AC.currentTime + cuando, fl = AC.createBiquadFilter(), g = AC.createGain();
-  fl.type = 'lowpass'; fl.frequency.value = Math.min(1400, f * 3.5); fl.Q.value = 0.4;
-  g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(v, t + d * 0.35); g.gain.linearRampToValueAtTime(0.0001, t + d);
-  for (const des of [-6, 5]) { const o = AC.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f; o.detune.value = des; o.connect(fl); o.start(t); o.stop(t + d + 0.05); }
+  fl.type = 'lowpass'; fl.frequency.value = Math.min(1100, f * 3); fl.Q.value = 0.4;
+  g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(v, t + d * 0.4); g.gain.linearRampToValueAtTime(0.0001, t + d);
+  for (const des of [-5, 4]) { const o = AC.createOscillator(); o.type = 'triangle'; o.frequency.value = f; o.detune.value = des; o.connect(fl); o.start(t); o.stop(t + d + 0.05); }
+  fl.connect(g).connect(bus[b]);
+}
+// piano de fieltro: golpe suave y una cola larga que se va oscureciendo
+function piano(f, d = 3.5, v = 0.06, cuando = 0, b = 'musica') {
+  if (!AC || op.mudo || !op.son[b]) return;
+  const t = AC.currentTime + cuando, g = AC.createGain(), fl = AC.createBiquadFilter();
+  fl.type = 'lowpass'; fl.frequency.setValueAtTime(Math.min(4200, f * 6), t); fl.frequency.exponentialRampToValueAtTime(Math.max(260, f * 1.5), t + d * 0.7);
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v, t + 0.014); g.gain.exponentialRampToValueAtTime(v * 0.34, t + 0.4); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+  for (const [k, a, tipo] of [[1, 1, 'sine'], [2, 0.3, 'sine'], [3, 0.09, 'sine'], [1.002, 0.3, 'triangle']]) { const o = AC.createOscillator(), go = AC.createGain(); o.type = tipo; o.frequency.value = f * k; go.gain.value = a; o.connect(go).connect(fl); o.start(t); o.stop(t + d + 0.05); }
   fl.connect(g).connect(bus[b]);
 }
 const PENTA = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21];
 const nota = (base, semis) => base * Math.pow(2, semis / 12);
 const son = {
   // minerales y dinero
-  mineral: (i) => { campana(nota(392, PENTA[i]), 0.45, 0.09); ruido(0.06, 0.05, 'tesoro', 2600, 'bandpass', 1); if (i >= 5) for (let k = 0; k < 3; k++) campana(nota(1568, PENTA[(i + k * 2) % 10]), 0.22, 0.03, 'tesoro', 0.07 + k * 0.06); },
+  mineral: (i) => { campana(nota(392, PENTA[i]), 0.45, 0.14); ruido(0.06, 0.07, 'tesoro', 2600, 'bandpass', 1); if (i >= 5) for (let k = 0; k < 3; k++) campana(nota(1568, PENTA[(i + k * 2) % 10]), 0.22, 0.03, 'tesoro', 0.07 + k * 0.06); },
   moneda: (n = 0) => campana(1175 + n * 55, 0.09, 0.05),
   venta: () => { ruido(0.12, 0.12, 'tesoro', 3200, 'bandpass', 2); campana(1319, 0.5, 0.09, 'tesoro', 0.05); campana(1976, 0.7, 0.08, 'tesoro', 0.16); },
   compra: () => { for (let k = 0; k < 4; k++) ruido(0.035, 0.12, 'tesoro', 1800 + k * 250, 'bandpass', 3, k * 0.06); [523, 659, 784].forEach((f, k) => campana(f, 0.4, 0.08, 'tesoro', 0.28 + k * 0.08)); },
@@ -376,85 +391,116 @@ const son = {
   no: () => tono(130, 0.07, 'square', 0.05),
   alarma: () => { tono(990, 0.09, 'square', 0.05); tono(990, 0.09, 'square', 0.05, 0, 0.16); },
   bip: () => tono(1480, 0.05, 'sine', 0.08),
-  clic: () => ruido(0.03, 0.08, 'avisos', 2400, 'bandpass', 2),
+  clic: () => ruido(0.035, 0.3, 'avisos', 2400, 'bandpass', 2),
   tele: () => { tono(180, 0.5, 'sine', 0.1, 1900, 0, 'avisos'); ruido(0.5, 0.06, 'avisos', 600, 'bandpass', 1, 0, 5000); campana(1760, 0.5, 0.05, 'avisos', 0.45); },
   grua: () => { for (let k = 0; k < 9; k++) ruido(0.07, 0.11, 'avisos', 220, 'bandpass', 1.2, k * 0.085); tono(300, 0.8, 'sawtooth', 0.03, 900, 0, 'avisos'); },
   remin: () => { ruido(2.4, 0.3, 'peligro', 140, 'lowpass', 0.8); tono(48, 2.2, 'sine', 0.25, 34, 0, 'peligro'); for (let k = 0; k < 10; k++) campana(nota(523, PENTA[k]), 0.5, 0.05, 'avisos', 0.6 + k * 0.14); },
   espacio: () => { for (const [f, k] of [[131, 0], [196, 0.3], [294, 0.6], [440, 0.9]]) colchon(f, 5, 0.05, 'avisos', k); campana(1760, 2, 0.04, 'avisos', 1.5); },
-  // explosiones y daño
-  dano: () => { tono(170, 0.2, 'sawtooth', 0.12, 55, 0, 'peligro'); ruido(0.12, 0.18, 'peligro', 900, 'lowpass', 1); },
+  // golpes, explosiones y daño
+  dano: () => { tono(170, 0.24, 'sawtooth', 0.3, 55, 0, 'peligro'); ruido(0.14, 0.4, 'peligro', 900, 'lowpass', 1); },
   boom: (v = 1, b = 'peligro') => { ruido(0.9, 0.5 * v, b, 900, 'lowpass', 0.6, 0, 90); tono(95, 0.55, 'sine', 0.3 * v, 28, 0, b); ruido(0.5, 0.12 * v, b, 2500, 'bandpass', 0.8, 0.12); },
   gas: () => { ruido(0.25, 0.2, 'peligro', 5000, 'highpass', 0.7); son.boom(0.9); },
-  lava: () => ruido(0.9, 0.22, 'peligro', 3500, 'bandpass', 0.9, 0, 1200),
-  golpe: () => { tono(95, 0.14, 'sine', 0.2, 45, 0, 'motor'); ruido(0.08, 0.1, 'motor', 500, 'lowpass', 1); },
-  piedra: () => { campana(1900, 0.12, 0.05, 'motor'); ruido(0.05, 0.12, 'motor', 3000, 'bandpass', 3); },
+  huele: () => ruido(0.55, 0.06, 'peligro', 5200, 'highpass', 0.7),
+  lava: () => { ruido(0.9, 0.22, 'peligro', 3500, 'bandpass', 0.9, 0, 1200); tono(120, 0.3, 'sine', 0.12, 60, 0, 'peligro'); },
+  golpe: () => { tono(95, 0.14, 'sine', 0.2, 45, 0, 'peligro'); ruido(0.08, 0.1, 'peligro', 500, 'lowpass', 1); },
+  // taladro: el mordisco con que arranca cada celda y el rebote contra la piedra
+  muerde: (duro) => { ruido(0.09, 0.2, 'taladro', duro ? 1900 : 800, 'bandpass', 0.9, 0, duro ? 900 : 260); tono(duro ? 120 : 84, 0.08, 'sine', 0.14, 46, 0, 'taladro'); },
+  piedra: () => { campana(1900, 0.12, 0.1, 'taladro'); ruido(0.05, 0.25, 'taladro', 3000, 'bandpass', 3); },
   // los demás
   entra: () => { cuerda(659, 0.3, 0.07, 'otros'); cuerda(880, 0.45, 0.07, 'otros', 0.12); },
   senal: () => { campana(1568, 0.7, 0.07, 'otros'); campana(1568, 0.5, 0.025, 'otros', 0.28); },
 };
 
-// ── sonidos continuos: se arman una vez y solo se les mueve el volumen y el tono
+// ── sonidos continuos: se arman una vez y después solo se les mueve el volumen y el tono, cuadro por cuadro
 function armarLazos() {
   const fuente = () => { const s = AC.createBufferSource(); s.buffer = ruidoBuf; s.loop = true; s.start(0, Math.random()); return s; };
   const salida = (b) => { const g = AC.createGain(); g.gain.value = 0; g.connect(bus[b]); return g; };
-  const trino = (hz, hondo) => { const l = AC.createOscillator(), a = AC.createGain(), m = AC.createGain(); l.frequency.value = hz; l.type = 'square'; a.gain.value = hondo; m.gain.value = 1 - hondo; l.connect(a).connect(m.gain); l.start(); return { m, l }; };
-  // motor: ronroneo grave
-  { const o = AC.createOscillator(), o2 = AC.createOscillator(), f = AC.createBiquadFilter(), g = salida('motor'); o.type = 'sawtooth'; o2.type = 'square'; o.frequency.value = 46; o2.frequency.value = 23; f.type = 'lowpass'; f.frequency.value = 240; o.connect(f); o2.connect(f); f.connect(g); o.start(); o2.start(); lazo.motor = { g, o, o2 }; }
-  // hélice: aire cortado
-  { const f = AC.createBiquadFilter(), t = trino(17, 0.5), g = salida('motor'); f.type = 'bandpass'; f.frequency.value = 280; f.Q.value = 0.9; fuente().connect(f).connect(t.m).connect(g); lazo.helice = { g, f, l: t.l }; }
-  // taladro: molienda
-  { const f = AC.createBiquadFilter(), t = trino(38, 0.45), g = salida('motor'), o = AC.createOscillator(), og = AC.createGain(); f.type = 'bandpass'; f.frequency.value = 1100; f.Q.value = 0.7; fuente().connect(f).connect(t.m).connect(g); o.type = 'sawtooth'; o.frequency.value = 92; og.gain.value = 0.35; o.connect(og).connect(t.m); o.start(); lazo.taladro = { g, f, o }; }
+  const gan = (v) => { const g = AC.createGain(); g.gain.value = v; return g; };
+  const osc = (tipo, hz) => { const o = AC.createOscillator(); o.type = tipo; o.frequency.value = hz; o.start(); return o; };
+  const filtro = (tipo, hz, q = 0.7) => { const f = AC.createBiquadFilter(); f.type = tipo; f.frequency.value = hz; f.Q.value = q; return f; };
+  const vaiven = (hz, hondo, destino, tipo = 'sine') => { const l = osc(tipo, hz), a = gan(hondo); l.connect(a).connect(destino.gain); return l; };   // un oscilador lento que mece el volumen, sin cortes bruscos
+  // taladro: tierra que se muele (grano que vibra y un fondo grave) y el zumbido de la broca
+  { const g = salida('taladro'), grano = gan(0.6), fG = filtro('bandpass', 520, 1.1), fondo = gan(0.85), o1 = osc('sawtooth', 100), o2 = osc('sawtooth', 100.7), fO = filtro('lowpass', 600, 1.4), gO = gan(0.085);
+    fuente().connect(fG).connect(filtro('lowpass', 1150, 0.5)).connect(grano).connect(g); const l1 = vaiven(27, 0.28, grano); vaiven(6.1, 0.16, grano);
+    fuente().connect(filtro('lowpass', 170)).connect(fondo).connect(g);
+    o1.connect(fO); o2.connect(fO); fO.connect(gO).connect(g);
+    lazo.taladro = { g, fG, o1, o2, l1 }; }
+  // hélice: el aire que corta cada aspa y el zumbido del rotor
+  { const g = salida('helice'), aire = gan(0.5), fA = filtro('lowpass', 750, 0.5), z = osc('triangle', 80), fZ = filtro('lowpass', 280), gZ = gan(0.1);
+    fuente().connect(fA).connect(aire).connect(g); const l = vaiven(20, 0.4, aire), l2 = vaiven(40, 0.1, aire);
+    z.connect(fZ).connect(gZ).connect(g);
+    lazo.helice = { g, fA, l, l2, z }; }
+  // motor: explosiones lentas y graves, con el soplido del escape
+  { const g = salida('motor'), o = osc('sawtooth', 30), o2 = osc('triangle', 15), f = filtro('lowpass', 180, 1.2), cuerpo = gan(0.5), esc = gan(0.22);
+    o.connect(f); o2.connect(f); f.connect(cuerpo).connect(g);
+    fuente().connect(filtro('bandpass', 140, 1.4)).connect(esc).connect(g); const l = vaiven(30, 0.2, esc, 'sawtooth');
+    lazo.motor = { g, o, o2, l }; }
   // viento
-  { const f = AC.createBiquadFilter(), g = salida('ambiente'); f.type = 'lowpass'; f.frequency.value = 500; f.Q.value = 0.5; fuente().connect(f).connect(g); lazo.viento = { g, f }; }
-  // cueva: zumbido hondo que respira
-  { const o = AC.createOscillator(), o2 = AC.createOscillator(), g = salida('ambiente'), t = AC.createGain(), l = AC.createOscillator(), a = AC.createGain(); o.frequency.value = 55; o2.frequency.value = 82.6; l.frequency.value = 0.13; a.gain.value = 0.35; t.gain.value = 0.65; l.connect(a).connect(t.gain); o.connect(t); o2.connect(t); t.connect(g); o.start(); o2.start(); l.start(); lazo.cueva = { g }; }
+  { const f = filtro('lowpass', 500, 0.5), g = salida('ambiente'); fuente().connect(f).connect(g); lazo.viento = { g, f }; }
+  // cueva: un aire hondo que respira
+  { const g = salida('ambiente'), t = gan(0.6), f = filtro('lowpass', 210, 0.6); fuente().connect(f).connect(t).connect(g); vaiven(0.11, 0.3, t); const o = osc('sine', 55), go = gan(0.35); o.connect(go).connect(t); lazo.cueva = { g }; }
 }
 function sonarLazos(quieto) {
   if (!AC || !lazo.motor) return;
-  const t = AC.currentTime, pon = (p, v, c = 0.08) => p.setTargetAtTime(v, t, c);
-  if (quieto || !S) { for (const k in lazo) pon(lazo[k].g.gain, 0, 0.05); return; }
-  const alto = Math.max(0, -(yo.y + HH)), km = alto / 500, vel = Math.abs(yo.vx), cae = Math.max(0, yo.vy), sube = Math.max(0, -yo.vy);
-  pon(lazo.motor.g.gain, yo.perf ? 0.05 : 0.035 + Math.min(0.06, vel * 0.012)); pon(lazo.motor.o.frequency, 46 + vel * 5 + (yo.perf ? 14 : 0)); pon(lazo.motor.o2.frequency, 23 + vel * 2.5);
-  pon(lazo.helice.g.gain, yo.vuela ? 0.16 : 0, 0.06); pon(lazo.helice.f.frequency, 260 + Math.min(900, sube * 22)); pon(lazo.helice.l.frequency, 17 + Math.min(14, sube * 0.4));
-  pon(lazo.taladro.g.gain, yo.perf ? 0.13 : 0, 0.03); if (yo.perf) pon(lazo.taladro.f.frequency, 900 + pot() * 6);
+  const t = AC.currentTime;
+  const pon = (p, v, c = 0.03) => { if (p._v === undefined || Math.abs(p._v - v) > Math.abs(v) * 0.01 + 1e-5) { p._v = v; p.setTargetAtTime(v, t, c); } };
+  if (quieto || !S) { for (const k in lazo) pon(lazo[k].g.gain, 0, 0.04); return; }
+  const alto = Math.max(0, -(yo.y + HH)), km = alto / 500, vel = Math.abs(yo.vx), cae = Math.max(0, yo.vy), sube = Math.max(0, -yo.vy), p = yo.perf, v = yo.vuela, niv = S.eq[0];
+  // taladro: suena exactamente mientras perfora; el tono sube mientras muerde cada celda y se aclara contra el mineral
+  pon(lazo.taladro.g.gain, p ? 0.145 : 0, p ? 0.012 : 0.035);
+  if (p) { const e = Math.min(1, p.t / p.dur), duro = p.tipo >= 10, f = (92 + niv * 8) * (0.88 + 0.3 * e) * (duro ? 1.12 : 1); pon(lazo.taladro.o1.frequency, f, 0.02); pon(lazo.taladro.o2.frequency, f * 1.007, 0.02); pon(lazo.taladro.fG.frequency, 420 + 260 * e + (duro ? 520 : 0), 0.03); pon(lazo.taladro.l1.frequency, 23 + niv * 2 + 6 * e); }
+  // hélice: prende con la tecla y, al soltarla, el rotor se va frenando
+  const aspas = v ? 20 + Math.min(9, sube * 0.6) : 12;
+  pon(lazo.helice.g.gain, v ? 0.17 : 0, v ? 0.02 : 0.1);
+  pon(lazo.helice.l.frequency, aspas, v ? 0.05 : 0.15); pon(lazo.helice.l2.frequency, aspas * 2, v ? 0.05 : 0.15); pon(lazo.helice.z.frequency, aspas * 4, v ? 0.05 : 0.15); pon(lazo.helice.fA.frequency, 650 + Math.min(650, sube * 40), 0.1);
+  // motor: las vueltas siguen a lo que le pides
+  const vueltas = 30 + vel * 3.2 + (p ? 9 : 0) + (v ? 7 : 0);
+  pon(lazo.motor.g.gain, 0.045 + Math.min(0.02, vel * 0.004)); pon(lazo.motor.o.frequency, vueltas, 0.08); pon(lazo.motor.o2.frequency, vueltas / 2, 0.08); pon(lazo.motor.l.frequency, vueltas, 0.08);
   const aire = Math.max(0, 1 - km / 90);                    // en el espacio no hay viento
-  pon(lazo.viento.g.gain, yo.y < 1 ? aire * (0.035 + Math.min(0.2, (cae + sube) / 260 + alto / 60000)) : 0, 0.25); pon(lazo.viento.f.frequency, 380 + Math.min(1800, (cae + sube) * 14));
-  pon(lazo.cueva.g.gain, yo.y > 2 ? 0.05 + Math.min(0.09, yo.y / 5000) : 0, 0.5);
+  pon(lazo.viento.g.gain, yo.y < 1 ? aire * (0.035 + Math.min(0.2, (cae + sube) / 260 + alto / 60000)) : 0, 0.25); pon(lazo.viento.f.frequency, 380 + Math.min(1800, (cae + sube) * 14), 0.1);
+  pon(lazo.cueva.g.gain, yo.y > 2 ? 0.022 + Math.min(0.02, yo.y / 20000) : 0, 0.5);
 }
+// una gota que cae en algún lugar de la cueva, de vez en cuando
+let tGota = 0;
+function gotear(d) { if (yo.y > 6 && (tGota -= d) < 0) { tGota = 5 + Math.random() * 9; const f = 1300 + Math.random() * 900; tono(f, 0.09, 'sine', 0.022, f * 0.55, 0, 'ambiente'); tono(f * 1.5, 0.12, 'sine', 0.012, f * 0.9, 0.07, 'ambiente'); } }
 
-// ── música: se compone sola, nota por nota, según dónde andes
-const ZONAS = {
-  superficie: { raiz: 146.83, esc: [0, 2, 4, 7, 9, 12, 14, 16, 19, 21], paso: 0.326, voz: 'cuerda',
-    mel: [[5, -1, 6, -1, 7, -1, 6, -1, 5, -1, 7, -1, 8, -1, 7, 6], [5, -1, 6, -1, 7, -1, 6, -1, 5, -1, 7, -1, 8, -1, 7, 6], [9, -1, 8, -1, 7, -1, 8, -1, 9, -1, 8, 7, 6, -1, 5, -1], [7, -1, 8, -1, 9, 8, 7, -1, 6, -1, 7, -1, 5, -1, -1, -1]],
-    bajo: [0, -1, -1, -1, -1, -1, 7, -1, 0, -1, -1, -1, -1, -1, 9, -1], col: [0, 7, 16] },
-  mina: { raiz: 110, esc: [0, 3, 5, 7, 10, 12, 15, 17, 19, 22], paso: 0.3, voz: 'campana',
-    mel: [[5, -1, -1, 7, -1, -1, 6, -1, 5, -1, -1, 8, -1, 7, -1, -1], [9, -1, -1, 8, -1, -1, 7, -1, 6, -1, -1, 5, -1, -1, -1, -1], [5, -1, -1, 7, -1, -1, 6, -1, 5, -1, -1, 8, -1, 7, -1, -1], [7, -1, 6, -1, 5, -1, -1, -1, 4, -1, -1, 5, -1, -1, -1, -1]],
-    bajo: [0, -1, -1, -1, 0, -1, -1, -1, 0, -1, -1, 7, -1, -1, -1, -1], col: [0, 7, 15] },
-  fondo: { raiz: 82.41, esc: [0, 1, 5, 7, 8, 12, 13, 17, 19, 20], paso: 0.43, voz: 'campana',
-    mel: [[5, -1, -1, -1, -1, -1, -1, -1, 4, -1, -1, -1, -1, -1, 6, -1], [-1, -1, -1, -1, 7, -1, -1, -1, -1, -1, 5, -1, -1, -1, -1, -1]],
-    bajo: [0, -1, -1, 0, -1, -1, -1, -1, 0, -1, -1, 0, -1, -1, -1, -1], col: [0, 7, 13], latido: 1 },
-  cielo: { raiz: 196, esc: [0, 2, 4, 7, 9, 12, 14, 16, 19, 21], paso: 0.42, voz: 'cuerda',
-    mel: [[7, -1, -1, 8, -1, -1, 9, -1, -1, -1, 8, -1, 7, -1, -1, -1], [5, -1, -1, 7, -1, -1, 6, -1, -1, -1, 5, -1, -1, -1, -1, -1]],
-    bajo: [0, -1, -1, -1, -1, -1, -1, -1, 7, -1, -1, -1, -1, -1, -1, -1], col: [0, 7, 14, 16] },
-  espacio: { raiz: 130.81, esc: [0, 2, 7, 9, 12, 14, 19, 21, 24, 26], paso: 0.6, voz: 'campana',
-    mel: [[8, -1, -1, -1, -1, -1, 7, -1, -1, -1, -1, -1, 9, -1, -1, -1], [-1, -1, -1, 6, -1, -1, -1, -1, -1, 8, -1, -1, -1, -1, -1, -1]],
-    bajo: [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1], col: [0, 7, 14, 19] },
+// ── música: un piano suave que improvisa despacio sobre cuatro acordes, con mucho aire y silencios largos.
+// Nunca repite la misma tonada: cada acorde elige una frase al azar entre varias, y a veces no toca nada.
+const ZONAS = {     // raíz en Hz, segundos por tiempo, octava de la melodía, probabilidad de que un acorde quede en silencio, acordes en semitonos sobre la raíz
+  superficie: { raiz: 146.83, paso: 0.8, oct: 2, calla: 0.2, cola: 3.2, ac: [[0, 4, 7, 14], [-3, 0, 4, 7], [5, 9, 12, 16], [7, 12, 14, 19]] },
+  mina:       { raiz: 110, paso: 0.92, oct: 2, bajo: 1, calla: 0.25, cola: 3.8, ac: [[0, 3, 7, 14], [-4, 0, 3, 7], [3, 7, 10, 17], [-2, 2, 5, 10]] },
+  fondo:      { raiz: 82.41, paso: 1.2, oct: 2, bajo: 1, calla: 0.4, cola: 5, ac: [[0, 3, 7, 14], [-4, 0, 3, 7], [5, 8, 12, 15], [7, 10, 14, 17]] },
+  cielo:      { raiz: 196, paso: 0.95, oct: 2, calla: 0.25, cola: 4, ac: [[0, 4, 7, 11], [2, 6, 9, 14], [-3, 0, 4, 7], [5, 9, 12, 16]] },
+  espacio:    { raiz: 130.81, paso: 1.5, oct: 2, calla: 0.35, cola: 7, ac: [[0, 4, 7, 14], [-3, 0, 4, 11], [5, 9, 12, 16], [7, 11, 14, 16]] },
 };
-const musica = { paso: 0, t: 0, z: 'superficie' };
+// cada frase: [tiempo dentro del acorde (0 a 8), cuál nota del acorde, octava de más]
+const FRASES = [
+  [[0, 2, 0], [1.5, 3, 0], [3, 1, 0], [5, 2, 0]],
+  [[1, 0, 1], [2, 1, 0], [2.5, 2, 0], [4.5, 3, 0]],
+  [[0.5, 3, 0], [2, 2, 0], [4, 1, 0], [6, 0, 0], [7, 1, 0]],
+  [[0, 0, 0], [0.5, 1, 0], [1, 2, 0], [1.5, 3, 0], [4, 2, 0]],
+  [[2, 2, 0], [6, 3, 0]],
+  [[1, 1, 1], [3, 0, 1], [3.5, 1, 1], [6, 2, 0]],
+  [[0, 3, 0], [3, 2, 0], [4, 3, 0], [5, 0, 1]],
+  [[4, 1, 0], [5, 2, 0], [6, 3, 0], [7, 2, 0]],
+];
+const musica = { t: 0, n: 0, quedan: 0, z: '', ult: -1 };
 function zonaMusical() { const km = Math.max(0, -(yo.y + HH)) / 500; return km > 40 ? 'espacio' : km > 0.4 ? 'cielo' : yo.y < 2 ? 'superficie' : yo.y < 325 ? 'mina' : 'fondo'; }
-function componer() {           // se llama varias veces por segundo y deja programadas las notas del siguiente rato
-  if (!AC || !S || op.mudo || !op.son.musica || document.hidden) { musica.t = 0; return; }
+function componer(adelante = 0.8) {           // se llama varias veces por segundo y deja programado el acorde que sigue
+  if (!AC || !S || op.mudo || !op.son.musica || (document.hidden && adelante < 1)) { musica.t = 0; return; }
   const ahora = AC.currentTime;
-  if (musica.t < ahora) musica.t = ahora + 0.1;
-  while (musica.t < ahora + 0.7) {
-    const i = musica.paso % 16, compas = Math.floor(musica.paso / 16);
-    if (i === 0) musica.z = zonaMusical();
-    const z = ZONAS[musica.z], cuando = musica.t - ahora, m = z.mel[compas % z.mel.length][i], bj = z.bajo[i];
-    if (m >= 0) (z.voz === 'cuerda' ? cuerda : campana)(nota(z.raiz * 2, z.esc[m]), z.paso * 3.2, 0.05, 'musica', cuando);
-    if (bj >= 0) cuerda(nota(z.raiz / 2, bj), z.paso * 3.5, 0.075, 'musica', cuando);
-    if (i === 0) for (const c of z.col) colchon(nota(z.raiz, c), z.paso * 17, 0.016, 'musica', cuando);
-    if (z.latido && (i === 0 || i === 3)) tono(58, 0.3, 'sine', 0.12, 38, cuando, 'musica');
-    musica.t += z.paso; musica.paso++;
+  if (musica.t < ahora) musica.t = ahora + 0.4;
+  while (musica.t < ahora + adelante) {
+    const zn = zonaMusical();
+    if (zn !== musica.z) { musica.z = zn; musica.n = 0; musica.quedan = 10 + Math.floor(Math.random() * 6); }
+    else if (musica.quedan <= 0) { musica.quedan = 10 + Math.floor(Math.random() * 6); musica.n = 0; musica.t += 16 + Math.random() * 18; continue; }     // la pieza termina y deja un rato solo la cueva
+    const z = ZONAS[zn], ac = z.ac[musica.n % z.ac.length], c = musica.t - ahora, ultimo = musica.quedan === 1;
+    piano(nota(z.raiz * (z.bajo || 0.5), ac[0]), z.cola * 1.7, 0.06, c);                                     // bajo
+    for (let k = 1; k < 4; k++) colchon(nota(z.raiz, ac[k]), z.paso * 9.5, 0.011, 'musica', c);        // colchón
+    let f = Math.floor(Math.random() * FRASES.length); if (f === musica.ult) f = (f + 1) % FRASES.length; musica.ult = f;
+    if (ultimo) piano(nota(z.raiz * z.oct, ac[2]), z.cola * 1.4, 0.05, c + z.paso * 2);        // el último acorde se despide con una sola nota
+    else if (Math.random() > z.calla) for (const [b, i, o] of FRASES[f]) piano(nota(z.raiz * z.oct * (o ? 2 : 1), ac[i]), z.cola, 0.034 + Math.random() * 0.022, c + b * z.paso + Math.random() * 0.03);
+    musica.t += z.paso * 8; musica.n++; musica.quedan--;
   }
 }
 
@@ -508,6 +554,12 @@ function chispas(x, y, col, n = 8, f = 4) {
 let flot = [];
 function flota(x, y, txt, col = '#fff') { flot.push({ x, y, txt, col, t: 1.7 }); if (flot.length > 14) flot.shift(); }
 function temblar(q) { if (op.temblor) temblor = Math.max(temblor, q); }
+let ondas = [], golpeFx = 0;
+function onda(x, y, r, col = '#ffe2a8', d = 0.5) { if (op.part) ondas.push({ x, y, r, col, t: 0, d }); }
+function humo(x, y, n = 10) {
+  if (!op.part) return;
+  for (let i = 0; i < n && parts.length < 400; i++) parts.push({ x: x + (Math.random() - 0.5) * 1.4, y: y + (Math.random() - 0.5) * 1.4, vx: (Math.random() - 0.5) * 1.2, vy: -0.5 - Math.random() * 1.2, t: 0.9 + Math.random() * 0.9, col: Math.random() < 0.5 ? '#4a4441' : '#6b6360', g: 2 + (Math.random() * 2 | 0), gr: -0.6 });
+}
 
 /* ════════ Logros ════════ RLR */
 const LOGROS = [
@@ -605,9 +657,9 @@ function evento(tp, d) {
   }
   if (cambio) { sucio = true; surtirContratos(); }
 }
-function pintarContratos() {
-  poner($('#contratos'), S.con.act.map((k) =>
-    `<div class="c">${esc(k.tx)}${k.b > 1 ? ` (${k.pr | 0}/${k.b})` : ''} · <small>${fmt(k.pg)}</small></div>`).join(''));
+function pintarContratos() {       // abajo a la izquierda va uno solo; los demás están en Menú → Contratos
+  const a = S.con.act, k = a[0];
+  poner($('#contratos'), k ? `<div class="c" title="Ver los contratos">📋 ${esc(k.tx)}${k.b > 1 ? ` (${k.pr | 0}/${k.b})` : ''} · <small>${fmt(k.pg)}</small>${a.length > 1 ? ` <em>+${a.length - 1}</em>` : ''}</div>` : '');
 }
 
 /* ════════ Daño, muerte y rescate ════════ */
@@ -617,12 +669,14 @@ function danar(q, causa) {
   ultGolpe = { q, m: prof() };
   S.vida -= q; S.vj.dano = 1; sucio = true;
   son.dano(); temblar(Math.min(14, 3 + q / 6)); chispas(yo.x, yo.y, '#ff6b5a', 10, 6);
+  golpeFx = Math.min(1, 0.45 + q / vidaMax()); flota(yo.x, yo.y - 1.3, '−' + q + ' de casco', '#ff8a7a');
+  const b = $('#bCasco'); b.classList.remove('golpe'); void b.offsetWidth; b.classList.add('golpe');
   if (S.vida <= 0) morir(causa);
 }
 let ultGolpe = { q: 0, m: 0 };
 function morir(causa) {
   const tenia = vidaMax(), dondeFue = donde(yo.y);
-  son.boom(); temblar(16); chispas(yo.x, yo.y, '#ffb347', 40, 10);
+  son.boom(); temblar(16); chispas(yo.x, yo.y, '#ffb347', 40, 10); onda(yo.x, yo.y, 4.5, '#ffd9a0', 0.7); humo(yo.x, yo.y, 18);
   S.st.muertes++;
   const gratis = cfg.rescates < 0 || S.resc < cfg.rescates;
   let x = '';
@@ -655,7 +709,7 @@ function fisica(dt) {
     if (yo.renace) return;
     const e = Math.min(1, p.t / p.dur);
     yo.x = p.ox + (p.tx + 0.5 - p.ox) * e; yo.y = p.oy + (p.ty + 1 - HH - p.oy) * e;
-    if (Math.random() < 0.5) chispas(p.tx + 0.5, p.ty + 0.5, '#a9744f', 1, 3);
+    if (Math.random() < 0.5) chispas(p.tx + 0.5, p.ty + 0.5, p.tipo === 3 ? '#ff9a3a' : p.tipo >= 10 && p.tipo < 20 ? MIN[p.tipo - 10].col : '#a9744f', 1, 3);
     if (e >= 1) { yo.perf = null; yo.vx = yo.vy = 0; llegar(p); if (!yo.renace) seguirPerforando(p); }
     return;
   }
@@ -756,9 +810,10 @@ function seguirPerforando(p) {
   if (aba && !izq && !der) perforar(p.tx, p.ty + 1);
   else if (solida(p.tx, p.ty + 1)) { if (izq && !der) { yo.dir = -1; perforar(p.tx - 1, p.ty); } else if (der && !izq) { yo.dir = 1; perforar(p.tx + 1, p.ty); } }
 }
-let tTaladro = 0;
 // Hasta qué profundidad aguanta una bolsa de gas lo que traes puesto (el gas empieza a los 650 m).
 function gasSeguro() { return cfg.gas ? Math.floor(410 + 2.05 * vidaMax() / ((1 - rad()) * MULT[cfg.gas])) : 9999; }
+const danoLava = () => [41, 58].map((q) => Math.round(q * (1 - rad()) * MULT[cfg.lava]));
+const danoGas = (y) => Math.round(Math.max(0, ((y + 1) * 2 - 410) / 2.05) * (1 - rad()) * MULT[cfg.gas]);
 const pistaGas = () => cfg.verGas === 2 || (cfg.modo === 'clasico' && !cfg.verGas);     // el gas se insinúa con burbujas
 function gastar(l) {
   if (!S || S.fuel <= 0) return;
@@ -782,7 +837,7 @@ function perforar(x, y) {
   let dur = 0.6 * (20 / pot()) * (1 + 4 * m / 1000);
   if (t === 3 && !cfg.lava) dur *= 3;
   yo.perf = { tx: x, ty: y, t: 0, dur, tipo: t, ox: yo.x, oy: yo.y, idx: y * W + x };
-  cavar([[x, y]]);
+  cavar([[x, y]]); son.muerde(t >= 10);
   S.st.cavadas++;
 }
 function llegar(p) {
@@ -807,13 +862,13 @@ function llegar(p) {
     difundir('encontró ' + h.n); evento('hall');
   } else if (t === 3 && cfg.lava) {
     danar((Math.random() < 0.5 ? 58 : 41) * (1 - rad()) * MULT[cfg.lava], 'la lava');
-    son.lava(); chispas(x, y, '#ff7a1a', 20, 6);
+    son.lava(); chispas(x, y, '#ff7a1a', 20, 6); onda(x, y, 1.3, '#ffb347', 0.35);
     if (!yo.renace) S.fl.lava = 1;
   } else if (t === 4 && cfg.gas) {
     const lista = [];
     for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) lista.push([p.tx + a, p.ty + b]);
-    cavar(lista); son.gas(); chispas(x, y, '#7dff6b', 40, 9);
-    danar(Math.max(0, ((p.ty + 1) * 2 - 410) / 2.05) * (1 - rad()) * MULT[cfg.gas], 'una bolsa de gas');
+    cavar(lista); son.gas(); chispas(x, y, '#7dff6b', 40, 9); onda(x, y, 2.6, '#b6ff9e'); humo(x, y, 10);
+    danar(danoGas(p.ty), 'una bolsa de gas');
     if (!yo.renace) S.fl.gas = 1;
   }
   sucio = true;
@@ -830,7 +885,7 @@ function usar(i) {
   else if (i === 2 || i === 3) {
     const r = i === 2 ? 1 : 2, cx = Math.floor(yo.x), cy = Math.floor(yo.y), lista = [];
     for (let a = -r; a <= r; a++) for (let b = -r; b <= r; b++) lista.push([cx + a, cy + b]);
-    cavar(lista); son.boom(); temblar(i === 2 ? 9 : 14); chispas(yo.x, yo.y, '#ffb347', 50, i === 2 ? 9 : 13);
+    cavar(lista); son.boom(); temblar(i === 2 ? 9 : 14); chispas(yo.x, yo.y, '#ffb347', 50, i === 2 ? 9 : 13); onda(yo.x, yo.y, i === 2 ? 2.4 : 3.9); humo(yo.x, yo.y, i === 2 ? 10 : 18);
     S.st.expl++; evento('expl');
   } else {
     son.tele(); chispas(yo.x, yo.y, '#6ec3ff', 30, 8);
@@ -902,7 +957,7 @@ function recibePos(b) {
 function efectoAjeno(c) {
   const i0 = c[c.length >> 1], x = i0 % W + 0.5, y = Math.floor(i0 / W) + 0.5, lejos = Math.hypot(x - yo.x, y - yo.y);
   if (lejos > 34) return;
-  if (c.length >= 5) { chispas(x, y, '#ffb347', 30, 9); temblar(Math.max(0, 10 - lejos * 0.6)); if (lejos < 26) son.boom(Math.max(0.12, 1 - lejos / 26), 'otros'); }
+  if (c.length >= 5) { chispas(x, y, '#ffb347', 30, 9); onda(x, y, c.length > 12 ? 3.9 : 2.4); humo(x, y, 8); temblar(Math.max(0, 10 - lejos * 0.6)); if (lejos < 26) son.boom(Math.max(0.12, 1 - lejos / 26), 'otros'); }
   else { chispas(x, y, '#a9744f', 6, 3); if (lejos < 12) ruido(0.07, 0.07 * (1 - lejos / 12), 'otros', 900, 'bandpass', 1); }
 }
 const red = { rtt: 0, lenta: false, retraso: 135, pingT: 0, sinEco: 0 };
@@ -1015,7 +1070,7 @@ function medir() {
   if (lienzo.height !== h) lienzo.height = h;
   T = Math.max(Math.round(12 * RES), Math.round(w / [26, 32, 40][op.zoom]));
   cols = w / T; filas = h / T;                    // lo que de verdad cabe, aunque la ventana sea angosta
-  tiles.clear(); casas.clear();
+  tiles.clear(); casas.clear(); sprites.clear();
   if (listo && !corriendo) dibujar();
 }
 
@@ -1087,7 +1142,7 @@ function gema(q, i, x, y, a, r) {
   q.shadowBlur = 0;
 }
 function tile(tipo, zona, vr) {
-  const key = tipo * 100 + zona * 10 + vr; let c = tiles.get(key);
+  const key = tipo * 1000 + zona * 100 + vr; let c = tiles.get(key);
   if (c) return c;
   c = document.createElement('canvas'); c.width = c.height = T;
   const q = c.getContext('2d'), r = azarDe(key * 7919 + 13), u = T / 16;
@@ -1109,13 +1164,21 @@ function tile(tipo, zona, vr) {
       q.fillStyle = '#56524e'; q.fillRect(0, T * 0.58, T, T); q.fillStyle = '#9a948e'; q.beginPath(); q.ellipse(T * 0.4, T * 0.32, u * 3.6, u * 1.8, -0.4, 0, 7); q.fill();
       q.strokeStyle = '#3b383699'; q.lineWidth = u * 0.4; q.beginPath(); q.moveTo(T * 0.55, T * 0.3); q.lineTo(T * 0.62, T * 0.52); q.lineTo(T * 0.5, T * 0.7); q.stroke();
       q.restore();
-    } else if (tipo === 3) {                        // lava
-      q.fillStyle = '#a82408'; q.fillRect(0, 0, T, T);
-      for (let i = 0; i < 12; i++) { q.fillStyle = ['#e2470f', '#ff7a1a', '#ffb321', '#ffe27a'][i % 4]; q.beginPath(); q.ellipse(r() * T, r() * T, u * (1 + r() * 3), u * (0.8 + r() * 1.6), r() * 3, 0, 7); q.fill(); }
-      q.fillStyle = '#4a1005'; for (let i = 0; i < 6; i++) q.fillRect(r() * T, r() * T, u * (1 + r() * 2), u * 0.8);
-    } else if (tipo === 4) {                        // gas (solo cuando se puede ver)
-      q.fillStyle = '#7dff6b44'; q.fillRect(0, 0, T, T);
-      for (let i = 0; i < 6; i++) { q.strokeStyle = '#c9ffb8'; q.lineWidth = u * 0.5; q.beginPath(); q.arc(r() * T, r() * T, u * (0.8 + r() * 1.8), 0, 7); q.stroke(); }
+    } else if (tipo === 3) {                        // lava: una poza de roca fundida con orilla de basalto; las pozas vecinas se unen (vr dice de qué lados)
+      const fuera = u * 5, m = u * 1.6, x0 = vr & 8 ? -fuera : m, y0 = vr & 1 ? -fuera : m, x1 = vr & 2 ? T + fuera : T - m, y1 = vr & 4 ? T + fuera : T - m;
+      const poza = (e) => { q.beginPath(); q.roundRect(x0 - e, y0 - e, x1 - x0 + e * 2, y1 - y0 + e * 2, u * 3.6 + e); };
+      poza(u * 1.2); q.fillStyle = '#24100a'; q.fill();                           // basalto quemado
+      poza(u * 0.4); q.fillStyle = '#6a1c08'; q.fill();
+      poza(0); q.fillStyle = '#f2601a'; q.fill(); q.save(); q.clip();
+      const gr = q.createRadialGradient(T / 2, T / 2, u, T / 2, T / 2, T * 0.75); gr.addColorStop(0, '#ffb53a'); gr.addColorStop(1, 'rgba(255,150,40,0)'); q.fillStyle = gr; q.fillRect(0, 0, T, T);
+      q.fillStyle = '#ffe58a'; q.beginPath(); q.ellipse(T * (0.3 + r() * 0.25), T * (0.28 + r() * 0.16), u * (2 + r()), u * 0.85, -0.6 + r() * 0.7, 0, 7); q.fill();
+      q.fillStyle = '#cf3f0d'; q.beginPath(); q.ellipse(T * (0.5 + r() * 0.2), T * (0.6 + r() * 0.14), u * (1.8 + r()), u * 0.75, r() * 0.9, 0, 7); q.fill();
+      q.restore();
+    } else if (tipo === 4) {                        // gas a la vista: una grieta que resplandece en verde
+      const grieta = () => { q.beginPath(); q.moveTo(u * 4, u * 3.5); q.lineTo(u * 7.2, u * 6.6); q.lineTo(u * 6.2, u * 9.4); q.lineTo(u * 10.4, u * 12.6); q.moveTo(u * 7.2, u * 6.6); q.lineTo(u * 11.6, u * 5.4); };
+      q.lineCap = q.lineJoin = 'round'; q.shadowColor = '#7dff6b'; q.shadowBlur = u * 4;
+      grieta(); q.strokeStyle = '#0f2109'; q.lineWidth = u * 2.4; q.stroke();
+      q.shadowBlur = 0; grieta(); q.strokeStyle = '#8dff74'; q.lineWidth = u * 0.8; q.stroke();
     } else if (tipo >= 10 && tipo < 20) {           // mineral: tres piezas con la forma propia de cada uno
       const i = tipo - 10;
       for (const [a, b] of [[4.6, 5], [11.2, 6.6], [7.4, 11.6]]) gema(q, i, (a + (r() - 0.5) * 1.6) * u, (b + (r() - 0.5) * 1.6) * u, (2.5 + r() * 0.8) * u, r);
@@ -1130,6 +1193,24 @@ function tile(tipo, zona, vr) {
     }
   }
   return tiles.set(key, c), c;
+}
+// Figuras chicas que se pintan una vez y se estampan muchas: el resplandor de la lava y las burbujas.
+const sprites = new Map(), calor = [], gases = [];
+function sprite(id) {
+  let c = sprites.get(id); if (c) return c;
+  c = document.createElement('canvas'); const q = c.getContext('2d');
+  if (id === 'res') {
+    const n = c.width = c.height = Math.ceil(T * 2.5), m = n / 2, gr = q.createRadialGradient(m, m, T * 0.2, m, m, m);
+    gr.addColorStop(0, 'rgba(255,170,60,0.55)'); gr.addColorStop(0.45, 'rgba(255,110,30,0.2)'); gr.addColorStop(1, 'rgba(255,90,20,0)'); q.fillStyle = gr; q.fillRect(0, 0, n, n);
+  } else if (id === 'vaho') {
+    const n = c.width = c.height = Math.ceil(T * 1.6), m = n / 2, gr = q.createRadialGradient(m, m, 0, m, m, m);
+    gr.addColorStop(0, 'rgba(120,255,100,0.5)'); gr.addColorStop(1, 'rgba(120,255,100,0)'); q.fillStyle = gr; q.fillRect(0, 0, n, n);
+  } else {
+    const n = c.width = c.height = Math.max(8, Math.ceil(T * 0.5)), m = n / 2, lava = id === 'bl';
+    q.beginPath(); q.arc(m, m, m * 0.8, 0, 7); q.fillStyle = lava ? '#ffd76a' : 'rgba(150,255,130,0.38)'; q.fill(); q.lineWidth = Math.max(1, n * 0.09); q.strokeStyle = lava ? '#fff3c4' : '#b9ffa6'; q.stroke();
+    q.fillStyle = '#ffffffd0'; q.beginPath(); q.arc(m * 0.7, m * 0.66, m * 0.2, 0, 7); q.fill();
+  }
+  return sprites.set(id, c), c;
 }
 
 /* ── Edificios: se pintan una vez en su propio lienzo ── */
@@ -1214,14 +1295,14 @@ function dibMaq(q, px, py, t, modelo, dir, vuela, perfDir, nombre, estado, mundo
     const z = (reloj * 9) % 1, base = '#d7dbe0', raya = '#7f8791';
     q.save();
     if (perfDir === 2) q.translate(px, y + h * 0.92); else { q.translate(px + perfDir * w * 0.46, py + h * 0.12); q.rotate(-perfDir * Math.PI / 2); }
-    const bw = w * 0.3, l = t * 0.36;
-    q.beginPath(); q.moveTo(-bw, 0); q.lineTo(bw, 0); q.lineTo(0, l); q.closePath(); q.fillStyle = base; q.fill(); q.save(); q.clip();
+    const bw = w * 0.3, l = t * 0.36, cono = () => { q.beginPath(); q.moveTo(-bw, 0); q.lineTo(bw, 0); q.lineTo(0, l); q.closePath(); };
+    cono(); q.fillStyle = base; q.fill(); q.save(); q.clip();
     q.strokeStyle = raya; q.lineWidth = t * 0.05; for (let i = -1; i < 4; i++) { const yy = (i + z) * l * 0.34; q.beginPath(); q.moveTo(-bw, yy); q.lineTo(bw, yy + l * 0.22); q.stroke(); }
-    q.restore(); q.strokeStyle = '#2b2b2b'; q.lineWidth = lw; q.stroke(); q.restore();
+    q.restore(); cono(); q.strokeStyle = '#2b2b2b'; q.lineWidth = lw; q.stroke(); q.restore();
   }
   if (vuela) {                                       // hélice
     q.fillStyle = '#555'; q.fillRect(px - t * 0.02, y - t * 0.1, t * 0.04, t * 0.16);
-    q.globalAlpha = 0.6; q.fillStyle = '#e8eef2'; q.beginPath(); q.ellipse(px, y - t * 0.1, w * (0.35 + 0.35 * Math.abs(Math.sin(reloj * 45))), t * 0.035, 0, 0, 7); q.fill(); q.globalAlpha = 1;
+    q.globalAlpha = 0.6; q.fillStyle = '#e8eef2'; q.beginPath(); q.ellipse(px, y - t * 0.1, w * (0.35 + 0.35 * Math.abs(Math.sin(reloj * 63))), t * 0.035, 0, 0, 7); q.fill(); q.globalAlpha = 1;
   }
   // orugas
   q.fillStyle = '#26221f'; q.beginPath(); q.roundRect(x - t * 0.03, y + h * 0.7, w + t * 0.06, h * 0.3, h * 0.15); q.fill();
@@ -1340,6 +1421,7 @@ function dibujar() {
   const x0 = Math.max(0, Math.floor(camX)), x1 = Math.min(W - 1, Math.ceil(camX + cols));
   const y0 = Math.max(0, Math.floor(camY)), y1 = Math.min(H - 1, Math.ceil(camY + filas));
   const fino = Math.max(1, Math.round(T * 0.07)), grueso = Math.max(2, Math.round(T * 0.13)), insinua = pistaGas();
+  calor.length = gases.length = 0;
   for (let y = y0; y <= y1; y++) {
     const m = (y + 1) * 2, zona = m < 210 ? 0 : m < 410 ? 1 : m < 650 ? 2 : 3, py = oy + y * T;
     for (let x = x0; x <= x1; x++) {
@@ -1349,15 +1431,13 @@ function dibujar() {
         if (y > 0 && celda(x, y - 1) !== 0) { g.fillStyle = '#00000055'; g.fillRect(px, py, T, grueso); }             // sombra del techo
         continue;
       }
-      const gasOculto = t === 4 && cfg.verGas !== 1;
+      const esGas = t === 4, gasOculto = esGas && cfg.verGas !== 1;
       if (gasOculto) t = 1;
-      g.drawImage(tile(t, zona, t === 1 ? (x * 7 + y * 13) & 3 : 0), px, py);
-      if (gasOculto && insinua) for (let k = 0; k < 3; k++) {          // burbujitas verdes que suben despacio
-        const s = (reloj * 0.45 + ((x * 37 + y * 91 + k * 53) % 100) / 100) % 1;
-        g.globalAlpha = 0.8 * Math.sin(Math.PI * s); g.fillStyle = '#a8ff94'; g.beginPath(); g.arc(px + T * (0.2 + ((x * 13 + y * 7 + k * 41) % 60) / 100), py + T * (0.85 - 0.7 * s), T * (0.045 + 0.02 * k), 0, 7); g.fill(); g.globalAlpha = 1;
-      }
-      if (t === 3) { g.fillStyle = `rgba(255,205,90,${0.1 + 0.1 * Math.sin(reloj * 3 + x * 1.7 + y)})`; g.fillRect(px, py, T, T); }
-      else if (t >= 10) {                            // destello
+      const vr = t === 1 ? (x * 7 + y * 13) & 3 : t === 3 ? (celda(x, y - 1) === 3 ? 1 : 0) | (celda(x + 1, y) === 3 ? 2 : 0) | (celda(x, y + 1) === 3 ? 4 : 0) | (celda(x - 1, y) === 3 ? 8 : 0) | (((x * 7 + y * 13) & 3) << 4) : 0;
+      g.drawImage(tile(t, zona, vr), px, py);
+      if (t === 3) calor.push(px, py, x, y);
+      else if (esGas) { if (!gasOculto || insinua) gases.push(px, py, x, y); }
+      else if (t >= 10) {                       // destello
         const s = Math.sin(reloj * 1.9 + ((x * 73 + y * 151) % 97));
         if (s > 0.9) { const k = (s - 0.9) * 10, bx = px + T * (0.25 + ((x * 31 + y * 17) % 50) / 100), by = py + T * (0.25 + ((x * 13 + y * 29) % 50) / 100), l = T * 0.16 * k; g.fillStyle = '#fff'; g.fillRect(bx - l, by - fino / 2, l * 2, fino); g.fillRect(bx - fino / 2, by - l, fino, l * 2); }
       }
@@ -1368,6 +1448,31 @@ function dibujar() {
       if (x > 0 && celda(x - 1, y) === 0) { g.fillStyle = '#00000038'; g.fillRect(px, py, fino, T); }
       if (x < W - 1 && celda(x + 1, y) === 0) { g.fillStyle = '#00000038'; g.fillRect(px + T - fino, py, fino, T); }
     }
+  }
+  // lava: un resplandor que late y una burbuja que crece y revienta
+  if (calor.length) {
+    const res = sprite('res'), bur = sprite('bl');
+    g.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < calor.length; i += 4) { g.globalAlpha = 0.34 + 0.16 * Math.sin(reloj * 2.2 + calor[i + 2] * 1.7 + calor[i + 3] * 0.9); g.drawImage(res, calor[i] - T * 0.75, calor[i + 1] - T * 0.75); }
+    g.globalCompositeOperation = 'source-over';
+    for (let i = 0; i < calor.length; i += 4) {
+      const x = calor[i + 2], y = calor[i + 3], s = (reloj * 0.42 + ((x * 37 + y * 91) % 100) / 100) % 1, k = T * (0.1 + 0.2 * s);
+      g.globalAlpha = Math.min(1, s * 4, (1 - s) * 6); g.drawImage(bur, calor[i] + T * (0.3 + ((x * 13 + y * 7) % 40) / 100) - k / 2, calor[i + 1] + T * (0.32 + ((x * 29 + y * 17) % 36) / 100) - k / 2, k, k);
+    }
+    g.globalAlpha = 1;
+  }
+  // gas: burbujas verdes que suben despacio
+  if (gases.length) {
+    const bur = sprite('bg'), vaho = sprite('vaho');
+    g.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < gases.length; i += 4) { g.globalAlpha = 0.2 + 0.1 * Math.sin(reloj * 1.3 + gases[i + 2] * 2.1 + gases[i + 3]); g.drawImage(vaho, gases[i] - T * 0.3, gases[i + 1] - T * 0.2); }
+    g.globalCompositeOperation = 'source-over';
+    for (let i = 0; i < gases.length; i += 4) for (let k = 0; k < 3; k++) {
+      const x = gases[i + 2], y = gases[i + 3], s = (reloj * (0.3 + k * 0.07) + ((x * 37 + y * 91 + k * 53) % 100) / 100) % 1, r = T * (0.105 + 0.035 * k) * (0.7 + 0.5 * s);
+      g.globalAlpha = Math.min(1, s * 5, (1 - s) * 4) * 0.95;
+      g.drawImage(bur, gases[i] + T * (0.22 + ((x * 13 + y * 7 + k * 41) % 56) / 100) + Math.sin(reloj * 2 + k + x) * T * 0.03 - r, gases[i + 1] + T * (0.86 - 0.7 * s) - r, r * 2, r * 2);
+    }
+    g.globalAlpha = 1;
   }
   // orillas y fondo del mundo
   g.fillStyle = '#120c09';
@@ -1398,7 +1503,16 @@ function dibujar() {
   const p = yo.perf, mx = ox + vis.x * T, my = oy + vis.y * T;
   dibMaq(g, mx, my, T, miModelo, yo.dir, yo.vuela, p ? (p.ty > Math.floor(p.oy) ? 2 : p.tx < Math.floor(p.ox) ? -1 : 1) : 0, op.nombres ? miNombre : '', '', vis.x);
   const lado = Math.max(1, Math.round(T * 0.09));
-  for (const q of parts) { g.globalAlpha = Math.min(1, q.t * 2); g.fillStyle = q.col; g.fillRect(ox + q.x * T, oy + q.y * T, lado * (q.g || 1), lado * (q.g || 1)); }
+  for (const q of parts) {                           // chispas cuadradas; el humo, en bolitas suaves
+    g.fillStyle = q.col;
+    if (q.g) { g.globalAlpha = Math.min(0.5, q.t * 0.7); g.beginPath(); g.arc(ox + q.x * T, oy + q.y * T, lado * q.g * 0.75, 0, 7); g.fill(); }
+    else { g.globalAlpha = Math.min(1, q.t * 2); g.fillRect(ox + q.x * T, oy + q.y * T, lado, lado); }
+  }
+  for (const o of ondas) {                           // ondas de choque: un fogonazo y un anillo que se abre
+    const k = o.t / o.d, r = o.r * T * (1 - (1 - k) * (1 - k)), px = ox + o.x * T, py = oy + o.y * T;
+    if (k < 0.3) { g.globalAlpha = (0.3 - k) * 2.2; g.fillStyle = '#fff6dc'; g.beginPath(); g.arc(px, py, r, 0, 7); g.fill(); }
+    g.globalAlpha = (1 - k) * 0.9; g.strokeStyle = o.col; g.lineWidth = Math.max(1, T * 0.22 * (1 - k)); g.beginPath(); g.arc(px, py, r, 0, 7); g.stroke();
+  }
   g.globalAlpha = 1;
   // bajo tierra oscurece poco a poco; la maquinita lleva su luz
   if (vis.y > 0.5 && oy < h) {
@@ -1410,6 +1524,10 @@ function dibujar() {
     g.font = `800 ${Math.max(12 * RES, T * 0.32)}px system-ui`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.lineWidth = Math.max(3, T * 0.09); g.strokeStyle = '#000d'; g.lineJoin = 'round';
     for (const f of flot) { g.globalAlpha = Math.min(1, f.t * 1.5); g.strokeText(f.txt, ox + f.x * T, oy + f.y * T); g.fillStyle = f.col; g.fillText(f.txt, ox + f.x * T, oy + f.y * T); }
     g.globalAlpha = 1;
+  }
+  if (golpeFx > 0.02) {                             // un golpe enrojece las orillas de la pantalla un instante
+    const v = g.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.3, w / 2, h / 2, Math.hypot(w, h) * 0.55);
+    v.addColorStop(0, 'rgba(255,40,20,0)'); v.addColorStop(1, `rgba(255,40,20,${0.5 * golpeFx})`); g.fillStyle = v; g.fillRect(0, 0, w, h);
   }
 }
 
@@ -1460,7 +1578,8 @@ function ciclo(t, id) {
   vis.x = salto ? yo.x : ant.x + (yo.x - ant.x) * a; vis.y = salto ? yo.y : ant.y + (yo.y - ant.y) * a;
   animar(d);
   dibujar();
-  if ((tPos += d) >= (red.lenta ? 0.125 : 0.066)) { tPos = 0; enviarPos(); sonarLazos(false); }
+  sonarLazos(false); gotear(d);                            // el sonido sigue a la maquinita cuadro por cuadro
+  if ((tPos += d) >= (red.lenta ? 0.125 : 0.066)) { tPos = 0; enviarPos(); }
   if ((tHud += d) > 0.12) { tHud = 0; cadaTanto(); }
   // la veta madre se busca con el oído
   if ((tBip -= d) < 0 && yo.y > 0) {
@@ -1481,7 +1600,14 @@ function animar(d) {
     o.x = lejos ? B.x : A.x + (B.x - A.x) * k; o.y = lejos ? B.y : A.y + (B.y - A.y) * k; o.fl = B.fl;
     if (o.fl & 4 && Math.random() < d * 20) chispas(o.x + (o.fl & 16 ? 0 : o.fl & 1 ? 0.5 : -0.5), o.y + (o.fl & 16 ? 0.5 : 0), '#a9744f', 1, 3);
   }
-  for (const q of parts) { q.x += q.vx * d; q.y += q.vy * d; q.vy += 9 * d; q.t -= d; }
+  for (const q of parts) { q.x += q.vx * d; q.y += q.vy * d; q.vy += (q.gr ?? 9) * d; q.t -= d; }
+  for (const o of ondas) o.t += d;
+  if (ondas.length) ondas = ondas.filter((o) => o.t < o.d);
+  golpeFx *= Math.pow(0.02, d);
+  if (calor.length && op.part && Math.random() < d * 2.5) {       // brasas que suben de la lava
+    const i = (Math.random() * calor.length / 4 | 0) * 4;
+    parts.push({ x: calor[i + 2] + 0.25 + Math.random() * 0.5, y: calor[i + 3] + 0.25, vx: (Math.random() - 0.5) * 0.5, vy: -0.7 - Math.random() * 0.8, t: 0.8 + Math.random() * 0.6, col: Math.random() < 0.5 ? '#ffb347' : '#ffe27a', gr: -0.4 });
+  }
   if (parts.length) parts = parts.filter((q) => q.t > 0);
   for (const f of flot) { f.t -= d; f.y -= d * 0.7; }
   if (flot.length) flot = flot.filter((f) => f.t > 0);
@@ -1516,14 +1642,14 @@ function queEs() {
     if (t >= 10 && t < 20) { const m = MIN[t - 10]; txt = S.st.rec[t - 10] ? `${m.n} · ${fmt(m.v)} · ${m.kg} kg` : 'Mineral sin descubrir'; }
     else if (t >= 20) txt = 'Algo enterrado…';
     else if (t === 2) txt = 'Piedra · no se perfora';
-    else if (t === 3) txt = 'Lava · hace daño';
-    else if (t === 4 && (cfg.verGas === 1 || pistaGas())) txt = 'Bolsa de gas · al perforarla explota';
+    else if (t === 3) { const [a, b] = danoLava(); txt = cfg.lava ? `Lava · perforarla quita de ${a} a ${b} de casco · traes ${Math.ceil(S.vida)}` : 'Lava · en este mundo no quema'; }
+    else if (t === 4 && (cfg.verGas === 1 || pistaGas())) txt = cfg.gas ? `Bolsa de gas · si la perforas explota y quita ${danoGas(Math.floor(camY + raton.y * RES / T))} de casco · traes ${Math.ceil(S.vida)}` : 'Bolsa de gas · en este mundo no explota';
   }
   if (o._t !== txt) { o._t = txt; o.textContent = txt; o.style.display = txt ? 'block' : 'none'; }
   if (txt) { o.style.left = raton.x + 16 + 'px'; o.style.top = raton.y + 18 + 'px'; }
 }
 let tGas = -9, crucero = false;
-let pistaDe = null, tAlarma = 0, estabaAbajo = false, tTabla = 0, tGrua = -9;
+let pistaDe = null, tAlarma = 0, estabaAbajo = false, tTabla = 0;
 function pista(x) { const p = $('#pista'); if (p._t !== x) { p._t = x; p.textContent = x; p.style.display = x ? 'block' : 'none'; } }
 // La grúa te deja en la Gasolinera. Cobra por lo lejos que estás y por lo que pesas.
 function costoGrua() { return Math.max(10, Math.round(0.75 * Math.hypot(yo.x - 41.5, yo.y + HH) * 2 * (1980 + kgCarga()) / 1000)); }
@@ -1533,7 +1659,7 @@ function grua() {
   const c = costoGrua();
   if (S.d < c) { son.no(); return aviso('La grúa cuesta ' + fmt(c) + ' y traes ' + fmt(S.d) + '.'); }
   S.d -= c; S.st.gruas++; son.grua(); chispas(yo.x, yo.y, '#ffd23f', 30, 8);
-  yo.x = 41.5; yo.y = INICIO_Y; yo.vx = yo.vy = 0; yo.suelo = true; vistaLibre = false; tGrua = -9;
+  yo.x = 41.5; yo.y = INICIO_Y; yo.vx = yo.vy = 0; yo.suelo = true; vistaLibre = false;
   tarjeta('🚁 Grúa · ' + fmt(c), 'Te dejó en la Gasolinera.'); difundir('pidió la grúa'); sucio = true; pintarHud(true);
 }
 function cadaTanto() {
@@ -1575,15 +1701,19 @@ function cadaTanto() {
   if (yo.suelo && yo.y < 0) e = EDIF.find((b) => yo.x > b.x + 0.2 && yo.x < b.x + 2.8) || null;
   pistaDe = e;
   pista(crucero ? '🚀  Subiendo sola · barra espaciadora o ↓ para soltar' : yo.y < -25 && teclas.arr ? 'Barra espaciadora: seguir subiendo sin sostener la tecla' : vistaLibre ? '🖱  Vista libre · pulsa una flecha para volver a tu maquinita' : e ? '↓  Entrar a ' + e.n + ' · ' + e.h.toLowerCase() : '');
-  // la grúa se ofrece mientras vas subiendo
-  if ((yo.y > 1 && (teclas.arr || yo.vy < -1)) || (yo.y < -20 && yo.vy > -1)) tGrua = tiempo;       // bajo tierra al subir; en el cielo al caer
-  const c = costoGrua(), ver = (yo.y > 1 || yo.y < -20) && tiempo - tGrua < 3.5, gr = $('#grua');
-  const txt = ver ? `🚁 Grúa a la Gasolinera · <b>${fmt(c)}</b> · tecla E${S.d < c ? ' · no te alcanza' : ''}` : '';
-  if (gr._h !== txt) { gr._h = txt; gr.innerHTML = txt; gr.style.display = txt ? 'block' : 'none'; }
+  // la primera vez que hay lava o gas cerca, se explica con números
+  if (yo.y > 0 && (!S.fl.vioLava || !S.fl.vioGas)) {
+    const cx = Math.floor(yo.x), cy = Math.floor(yo.y);
+    for (let a = -2; a <= 2; a++) for (let b = -2; b <= 2; b++) {
+      const t = celda(cx + a, cy + b);
+      if (t === 3 && !S.fl.vioLava && cfg.lava) { S.fl.vioLava = 1; sucio = true; const [p, q] = danoLava(); tarjeta('🌋 Lava', `Se ve y se puede rodear. Perforarla quita de ${p} a ${q} de casco (traes ${Math.ceil(S.vida)}). El radiador del Taller la enfría.`, '', 9000); }
+      if (t === 4 && !S.fl.vioGas && cfg.gas && (cfg.verGas === 1 || pistaGas())) { S.fl.vioGas = 1; sucio = true; tarjeta('🫧 Bolsa de gas', `Esas burbujas verdes son gas: si perforas ahí, explota. Aquí pega ${danoGas(cy + b)} y tu casco aguanta ${vidaMax()}. Rodéala o vuélala con dinamita (X).`, '', 10000); }
+    }
+  }
   // huele a gas: hay una bolsa pegada a la maquinita
   if (yo.y > 0 && cfg.gas && pistaGas() && tiempo - tGas > 2.5) {
     const cx = Math.floor(yo.x), cy = Math.floor(yo.y);
-    if ([[0, 1], [-1, 0], [1, 0]].some(([a, b]) => celda(cx + a, cy + b) === 4)) { tGas = tiempo; flota(yo.x, yo.y - 0.9, '⚠ Huele a gas', '#a8ff94'); ruido(0.5, 0.07, 'peligro', 5200, 'highpass', 0.7); }
+    if ([[0, 1], [-1, 0], [1, 0]].some(([a, b]) => celda(cx + a, cy + b) === 4)) { tGas = tiempo; flota(yo.x, yo.y - 0.9, '⚠ Huele a gas', '#a8ff94'); son.huele(); }
   }
   pintarHud(); queEs();
   if (++tTabla % 4 === 0) pintarTabla();
@@ -1606,15 +1736,33 @@ function metas() {
 function pintarHud(forzar) {
   if (!S) return;
   const f = S.fuel / tanque(), v = S.vida / vidaMax();
-  const k = [Math.round(S.fuel * 10), S.vida, prof(), S.d, nCarga(), S.eq.join(''), S.obj.join(','), S.rec].join('|');
+  const k = [Math.round(S.fuel * 10), S.vida, prof(), altura() > 40, S.d, nCarga(), S.eq.join(''), S.obj.join(','), S.rec].join('|');
   if (k === hudAnt && !forzar) return; hudAnt = k;
   const bc = $('#bComb'), bv = $('#bCasco');
   bc.firstChild.style.width = f * 100 + '%'; bc.lastChild.textContent = S.fuel.toFixed(1) + ' / ' + tanque() + ' L'; bc.classList.toggle('bajo', f < 0.25);
   bv.firstChild.style.width = v * 100 + '%'; bv.lastChild.textContent = Math.max(0, Math.ceil(S.vida)) + ' / ' + vidaMax(); bv.classList.toggle('bajo', v < 0.3);
-  $('#prof').textContent = donde(yo.y); $('#din').textContent = fmt(S.d); $('#bod').textContent = '📦 ' + nCarga() + '/' + bodega() + (nCarga() ? ' · ' + fmt(valorCarga()) : '');
+  $('#prof').textContent = donde(yo.y); $('#din').textContent = fmt(S.d);
+  pintarViaje();
   poner($('#metas'), metas().map((m) => `<div class="m${m.ya ? ' ya' : ''}${m.mal ? ' mal' : ''}"><i style="width:${Math.round(Math.min(100, m.p * 100))}%"></i><span>${esc(m.tx)}</span></div>`).join(''));
   poner($('#objetos'), OBJ.map((o, i) => `<div data-u="${i}" class="${S.obj[i] ? '' : 'n0'}" title="${o.n}: ${o.ef}"><kbd>${o.k}</kbd>${CORTO[i]} ×${S.obj[i]}</div>`).join(''));
   if (forzar) pintarTabla();
+}
+// Lo que cuesta volver volando a la superficie, a ojo: la subida derecha, con lo que pesas.
+function costoSubir() {
+  const cab = hp(), empuje = 26 * (1 - (1980 + kgCarga()) / (cab * 29.5));
+  if (empuje <= 0.4) return Infinity;
+  const v = 6 + (cab - 150) / 20;
+  return 17 / 60 * ((yo.y + HH) / v * 1.15 + v / empuje * 0.5 + 1);
+}
+// El viaje, abajo a la izquierda: cuánto llevas, en cuánto se vende, si te alcanza para subir, y la grúa.
+function pintarViaje() {
+  const n = nCarga(), bd = bodega(), abajo = yo.y > 2.5, lejos = abajo || yo.y < -20;
+  let h = `<div class="l"><span>Llevas</span><b>${n} de ${bd}${n >= bd ? ' · llena' : ''}</b></div><div class="bar${n >= bd ? ' llena' : ''}"><i style="width:${Math.round(n / bd * 100)}%"></i></div><div class="l"><span>Se vende en</span><b>${fmt(venta().total)}</b></div>`;
+  if (abajo) { const c = costoSubir(), mal = c > S.fuel; h += `<div class="l${mal ? ' mal' : ''}"><span>Subir gasta</span><b>${c === Infinity ? 'vas muy pesado' : '≈ ' + Math.ceil(c) + ' L · ' + (mal ? 'no te alcanza' : 'traes ' + Math.floor(S.fuel))}</b></div>`; }
+  poner($('#vjDatos'), h);
+  const b = $('#bGrua'), c = lejos ? costoGrua() : 0;
+  poner(b, lejos ? `<span>🚁 Grúa a la Gasolinera · <b>${fmt(c)}</b>${S.d < c ? ' · no te alcanza' : ''}</span><kbd>E</kbd>` : '');
+  b.style.display = lejos ? 'flex' : 'none'; b.classList.toggle('no', S.d < c);
 }
 function pintarTabla() {
   if (!S) return;
@@ -1899,6 +2047,8 @@ $('#caja').addEventListener('change', (e) => {
   if (r !== 'no' && menu && menu !== 'inicio') pintarMenu();
 });
 $('#objetos').addEventListener('click', (e) => { const el = e.target.closest('[data-u]'); if (el) { audio(); usar(+el.dataset.u); } });
+$('#bGrua').addEventListener('click', (e) => { audio(); e.currentTarget.blur(); if (listo && !menu && !pausa) grua(); });
+$('#contratos').addEventListener('click', () => { audio(); if (listo && !menu) { pestana = 1; abrir('menu'); } });
 $('#bInv').addEventListener('click', (e) => { audio(); e.currentTarget.blur(); if (listo && !menu) abrir('inv'); });
 $('#bMenu').addEventListener('click', (e) => { audio(); e.currentTarget.blur(); if (listo && !menu) abrir('menu'); });
 
@@ -1906,24 +2056,27 @@ function sel(k, ops, quien = 'regla') {
   return `<select data-a="${quien}" data-k="${k}" ${soyCreador ? '' : 'disabled'}>${ops.map(([v, t]) => `<option value="${v}" ${cfg[k] == v ? 'selected' : ''}>${t}</option>`).join('')}</select>`;
 }
 function menuPrincipal() {
-  const P = ['Bodega', 'Logros', 'Catálogo', 'Estadísticas', 'Opciones', 'Mundo', 'Ayuda'];
+  const P = ['Bodega', 'Contratos', 'Logros', 'Catálogo', 'Estadísticas', 'Opciones', 'Mundo', 'Ayuda'];
   let h = cab('☰ ' + esc(cfg.nombre || 'Mina')) + `<div class="pest">${P.map((p, i) => `<button data-a="pest" data-v="${i}" class="${i === pestana ? 'on' : ''}">${p}</button>`).join('')}</div><div class="cuerpo">`;
   if (pestana === 0) {
     h += `<p class="nota">📦 ${nCarga()} de ${bodega()} espacios · ${kgCarga()} kg de carga (tu motor levanta ${Math.round(hp() * 29.5 - 1980)} kg). Tirar piezas libera espacio y peso.</p>` +
       (nCarga() ? S.carga.map((n, i) => n ? `<div class="fila"><div class="t"><b style="color:${MIN[i].col}">${MIN[i].n} × ${n}</b><small>${fmt(MIN[i].v)} · ${MIN[i].kg} kg la pieza</small></div><button class="s" data-a="tirar" data-v="${i}">Tirar una</button></div>` : '').join('') : '<p class="nota">Bodega vacía.</p>') +
       '<h4>Tu equipo</h4>' + PZ.map((p, i) => `<div class="fila"><div class="t"><b>${p.n}: ${p.niv[S.eq[i]][0]}</b><small>${p.niv[S.eq[i]][2]} ${p.u}</small></div></div>`).join('');
   } else if (pestana === 1) {
+    h += `<p class="nota">${S.con.tut < TUTORIAL.length ? 'Primeros pasos: cumple cada uno y llega el siguiente.' : 'Trabajos de la Compañía. Al cumplir uno se paga solo y llega otro.'}</p>` +
+      S.con.act.map((k) => `<div class="fila"><div class="t"><b>${esc(k.tx)}</b>${k.b > 1 ? `<small>Llevas ${k.pr | 0} de ${k.b}</small>` : ''}</div><div class="v">${fmt(k.pg)}</div></div>`).join('');
+  } else if (pestana === 2) {
     h += `<p class="nota">${S.log.length} de ${LOGROS.length} logros · Rango: <b>${RANGOS[S.rango][1]}</b></p><div class="rej">` +
       LOGROS.map((l) => { const ok = S.log.includes(l.id); return `<div class="${ok ? '' : 'no'}"><b>${ok ? '🏅 ' : ''}${ok && l.sec ? l.sec.split(':')[0] : l.n}</b><small>${ok && l.sec ? l.sec.split(': ')[1] : l.d}</small></div>`; }).join('') + '</div>';
-  } else if (pestana === 2) {
+  } else if (pestana === 3) {
     h += `<p class="nota">Capa 1 · Corteza. Completa la página y todo lo que vendas aquí vale <b>5 % más</b>${catalogoCompleto() ? ' — ¡ya lo tienes!' : ''}.</p><div class="rej">` +
       MIN.map((m, i) => S.st.rec[i] ? `<div><b style="color:${m.col}">${m.n}</b><small>${fmt(m.v)} · ${m.kg} kg · desde ${m.a} m<br>Vendidas: ${S.st.vend[i]}</small></div>` : '<div class="no"><b>???</b><small>Sin descubrir</small></div>').join('') +
       HALL.map((x, i) => S.st.hall[i] ? `<div><b>🏺 ${x.n}</b><small>${fmt(x.v)} · encontrados: ${S.st.hall[i]}</small></div>` : '<div class="no"><b>???</b><small>Hallazgo sin encontrar</small></div>').join('') + '</div>';
-  } else if (pestana === 3) {
+  } else if (pestana === 4) {
     const e = S.st;
     h += `<p><button data-a="menu" data-v="foto">📸 Presume tu maquinita y tus récords</button></p>` + [['Profundidad máxima', S.rec + ' m'], ['Altura máxima', fmtAlto(S.alt)], ['Total ganado', fmt(S.tot)], ['Viajes', e.viajes], ['Mejor viaje', fmt(e.mejorViaje)], ['Celdas perforadas', e.cavadas.toLocaleString('es-MX')], ['Piezas vendidas', e.vend.reduce((a, b) => a + b, 0)], ['Hallazgos', e.hall.reduce((a, b) => a + b, 0)], ['Explosivos usados', e.expl], ['Litros cargados', e.comb], ['Explosiones', e.muertes], ['Rescates gratis usados', S.resc], ['Remineralizaciones', e.remin]]
       .map(([a, b]) => `<div class="fila"><div class="t">${a}</div><div class="v">${b}</div></div>`).join('');
-  } else if (pestana === 4) {
+  } else if (pestana === 5) {
     const chk = (k, t) => `<label class="op"><span>${t}</span><input type="checkbox" data-a="op" data-k="${k}" ${op[k] ? 'checked' : ''}></label>`;
     h += `<p class="nota">El sonido se maneja con la bocina de arriba a la derecha: apagar, bajar, subir y elegir qué tipos se oyen.</p>
       <label class="op"><span>Tamaño del texto</span><button class="s" data-a="texto" data-v="-0.1">A−</button><button class="s" data-a="texto" data-v="0.1">A+</button></label>` +
@@ -1933,7 +2086,7 @@ function menuPrincipal() {
       chk('nombres', 'Mostrar los nombres de las maquinitas') +
       `<label class="op"><span>Cuadros por segundo</span><select data-a="op" data-k="fps">${[[0, 'Lo máximo de tu pantalla'], [60, '60'], [30, '30 (ahorra batería)']].map(([v, t]) => `<option value="${v}" ${op.fps == v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
       <p class="nota">Tu pantalla refresca a <b>${rit.hz} Hz</b> y el juego está mostrando <b>${Math.round(Math.min(rit.fps, rit.hz))} cuadros por segundo</b>, con nitidez al ${Math.round(NITIDEZ[rit.niv] * 100)} %. Señal con el mundo: ${red.rtt ? Math.round(red.rtt) + ' ms' : 'midiendo…'}. El juego se ajusta solo: si tu equipo no alcanza el refresco de su pantalla, baja la nitidez antes que la fluidez.</p>`;
-  } else if (pestana === 5) {
+  } else if (pestana === 6) {
     const o3 = [[0, 'Apagado'], [1, 'Normal'], [2, 'Fuerte']];
     h += `<div class="fila"><div class="t"><b>Invita a tu gente</b><small>${location.origin}/m/${mundoId}</small></div><button class="s" data-a="menu" data-v="inv">Ver código QR</button><button data-a="invitar">Copiar la liga</button></div>
       <h4>Dificultad del mundo ${soyCreador ? '' : '<small style="color:var(--su)">· solo la cambia quien creó el mundo</small>'}</h4>
@@ -1967,10 +2120,10 @@ function menuPrincipal() {
       <p><b>El ciclo:</b> baja, llena la bodega, sube, vende en La Báscula, carga combustible y mejora tu equipo en El Taller. En la superficie, párate frente a un edificio y pulsa ↓.</p>
       <p><b>Objetos:</b> F tanque de reserva · R nanobots · X dinamita · C explosivo plástico · Q teletransportador · M transmisor.</p>
       <p><b>Acompañado:</b> G deja una señal que todos ven · T le pasa 5 litros a la maquinita que tengas junto · P pausa tu maquinita.</p>
-      <p><b>Grúa:</b> mientras subes, la tecla E te lleva a la Gasolinera. Cobra según lo lejos que estés y lo que peses.</p>
+      <p><b>Tu viaje:</b> abajo a la izquierda ves cuánto llevas, en cuánto se vende y si el combustible te alcanza para subir. Ahí mismo está la <b>grúa</b> (tecla E): te deja en la Gasolinera y cobra según lo lejos que estés y lo que peses.</p>
       <p><b>Hacia arriba:</b> el cielo también se explora. A 100 km empieza el espacio y a 1,000 km la Luna llena la vista: son unos 15 minutos de vuelo. Entre más alto, menos combustible se gasta; con un tanque «Cisterna» alcanza. Pasando los 50 m de altura, la barra espaciadora deja a la maquinita subiendo sola.</p>
-      <p><b>Gas:</b> desde los 650 m hay bolsas de gas. Se notan por unas burbujitas verdes y por el aviso «Huele a gas». Vuélalas con dinamita o lleva casco y radiador suficientes: arriba, en las metas, dice hasta qué profundidad aguantas.</p>
-      <p><b>Sonido:</b> la bocina de arriba a la derecha lo apaga, lo baja y lo sube; «♪ Sonidos» deja elegir qué tipos se oyen.</p>
+      <p><b>Lava y gas:</b> la lava (desde 410 m) se ve y se rodea. Las bolsas de gas (desde 650 m) se notan por unas burbujitas verdes y por el aviso «Huele a gas». Pon el ratón encima de cualquiera y te dice cuánto casco te quita. Vuélalas con dinamita o lleva casco y radiador suficientes: arriba, en las metas, dice hasta qué profundidad aguantas.</p>
+      <p><b>Sonido:</b> la bocina de arriba a la derecha lo apaga, lo baja y lo sube; «♪ Sonidos» deja elegir qué se oye: música, taladro, hélice, motor (viene apagado) y lo demás, cada uno con su interruptor.</p>
       <p><b>Mirar alrededor:</b> la rueda del mouse o dos dedos en el trackpad mueven la vista; cualquier flecha la regresa a tu maquinita.</p>
       <p class="nota">Piedra desde 210 m: no se perfora. Lava desde 410 m: se ve, rodéala. Gas desde 650 m: no se ve.</p>`;
   }
@@ -2143,5 +2296,14 @@ function escenaDeMuestra() {
   document.body.appendChild(d);
 }
 // Para pruebas: window.__mina
-window.__mina = { get S() { return S; }, avanza(seg) { for (let i = 0, n = Math.round(seg * 120); i < n; i++) { tiempo += DT; ant.x = yo.x; ant.y = yo.y; fisica(DT); if (i % 14 === 0) cadaTanto(); } vis.x = yo.x; vis.y = yo.y; }, rit, red, animar, grua, costoGrua, dibujar, llegar, danar, get e() { return { corriendo, menu, pausa, listo, conectado, tiempo, perf: yo.perf, renace: yo.renace }; }, yo, otros, celda, gen, get cfg() { return cfg; }, usar, abrir, cerrar, teclas, enviarEst, veta, LOGROS };
+window.__mina = { get S() { return S; },
+  async sonido(fn, seg = 4, solo = null) {          // arma el sonido fuera de línea y devuelve pico, volumen medio y brillo por tramos
+    const g0 = [AC, maestro, ruidoBuf, eco, { ...bus }, { ...lazo }], limpia = () => { for (const k in bus) delete bus[k]; for (const k in lazo) delete lazo[k]; };
+    limpia(); AC = new OfflineAudioContext(1, 44100 * seg, 44100); montar(); maestro.gain.value = 1; for (const [id, , niv] of TIPOS) bus[id].gain.value = !solo || solo.includes(id) ? niv : 0;
+    let b; try { fn(); b = (await AC.startRendering()).getChannelData(0); } finally { limpia(); [AC, maestro, ruidoBuf, eco] = g0; Object.assign(bus, g0[4]); Object.assign(lazo, g0[5]); musica.t = 0; musica.z = ''; }
+    const tramo = (a, z) => { let p = 0, e = 0, c = 0; for (let i = a; i < z; i++) { const v = b[i]; p = Math.max(p, Math.abs(v)); e += v * v; if (i > a && (v > 0) !== (b[i - 1] > 0)) c++; } return [+p.toFixed(3), +Math.sqrt(e / (z - a)).toFixed(4), Math.round(c / 2 / ((z - a) / 44100))]; };
+    const n = Math.min(8, Math.ceil(seg)), paso = Math.floor(b.length / n);
+    return { todo: tramo(0, b.length), tramos: Array.from({ length: n }, (_, i) => tramo(i * paso, (i + 1) * paso)) };
+  },
+  son, sonarLazos, componer, piano, get op() { return op; }, avanza(seg) { for (let i = 0, n = Math.round(seg * 120); i < n; i++) { tiempo += DT; ant.x = yo.x; ant.y = yo.y; fisica(DT); if (i % 14 === 0) cadaTanto(); } vis.x = yo.x; vis.y = yo.y; }, rit, red, animar, grua, costoGrua, dibujar, llegar, danar, get e() { return { corriendo, menu, pausa, listo, conectado, tiempo, perf: yo.perf, renace: yo.renace }; }, yo, otros, celda, gen, get cfg() { return cfg; }, usar, abrir, cerrar, teclas, enviarEst, veta, LOGROS };
 /* RLR · Ricardo López Reyero · fin */

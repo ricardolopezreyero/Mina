@@ -38,6 +38,8 @@ body.jugando .hud{visibility:visible}
 .barra i{position:absolute;inset:0 auto 0 0;background:var(--ok);transition:width .15s}
 .barra b{position:absolute;inset:0;text-align:center;font-size:.72em;line-height:calc(14px*var(--f));font-weight:700}
 .barra.bajo i{background:var(--mal);animation:parp .5s infinite}
+.barra.golpe{animation:golpe .4s}
+@keyframes golpe{0%{box-shadow:0 0 0 3px var(--mal);transform:scale(1.05)}}
 @keyframes parp{50%{opacity:.4}}
 #datos{display:flex;gap:10px;font-weight:800;font-size:1.05em;flex-wrap:wrap}
 #datos span{background:#0007;border-radius:5px;padding:1px 7px}
@@ -61,9 +63,23 @@ body.jugando .hud{visibility:visible}
 #tabla div b{flex:1;overflow:hidden;text-overflow:ellipsis}
 #tabla i{width:9px;height:9px;border-radius:2px;display:inline-block;flex:none}
 #tabla .off{opacity:.5}
-#contratos{left:10px;bottom:10px;width:calc(270px*var(--f));font-size:.82em}
-#contratos .c{background:#0008;border-left:3px solid var(--ac);border-radius:4px;padding:3px 7px;margin-top:4px}
-#contratos .c small{color:var(--ac);font-weight:700}
+#viaje{left:10px;bottom:10px;width:calc(250px*var(--f));font-size:.86em}
+#vjDatos{background:#120b08e0;border:1px solid var(--borde);border-radius:8px;padding:6px 10px}
+#vjDatos .l{display:flex;justify-content:space-between;gap:10px;line-height:1.55;color:var(--su)}
+#vjDatos .l b{color:var(--tx);white-space:nowrap}
+#vjDatos .l:nth-child(3) b{color:var(--ac)}
+#vjDatos .l.mal,#vjDatos .l.mal b{color:var(--mal)}
+#vjDatos .bar{height:4px;background:#000a;border-radius:2px;margin:1px 0 3px;overflow:hidden}
+#vjDatos .bar i{display:block;height:100%;background:var(--ac);transition:width .2s}
+#vjDatos .bar.llena i{background:var(--ok)}
+#bGrua{display:none;width:100%;margin-top:5px;justify-content:space-between;align-items:center;gap:8px;text-align:left;background:#120b08e0;border:1px solid var(--ac);border-radius:8px;padding:.4em .75em;font-weight:600;text-shadow:none}
+#bGrua b{color:var(--ac)}
+#bGrua kbd{font:700 .9em system-ui;color:#1b120e;background:var(--ac);border-radius:4px;padding:0 .45em}
+#bGrua.no{border-color:var(--borde);color:var(--su)}#bGrua.no kbd{background:var(--su)}
+#contratos .c{margin-top:5px;padding:2px 2px;color:var(--su);font-size:.92em;line-height:1.3;cursor:pointer;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+#contratos .c:hover{color:var(--tx)}
+#contratos .c small{color:var(--ac);font-weight:700;font-size:1em}
+#contratos .c em{font-style:normal;background:#0008;border-radius:8px;padding:0 6px;margin-left:2px}
 #objetos{right:10px;bottom:10px;display:flex;gap:4px}
 #objetos div{background:#0008;border:1px solid var(--borde);border-radius:6px;padding:3px 6px;text-align:center;min-width:44px;font-size:.78em;cursor:pointer}
 #objetos kbd{display:block;font:700 1.15em system-ui;color:var(--ac)}
@@ -77,8 +93,6 @@ body.jugando .hud{visibility:visible}
 #tarjeta h3{margin:0;color:var(--ac);font-size:1em;line-height:1.25}#tarjeta .msj h3{color:var(--az)}
 #tarjeta p{margin:1px 0 0;color:var(--su);line-height:1.25}
 @keyframes pop{from{transform:translateX(14px);opacity:0}}
-#grua{left:50%;bottom:calc(16% + 34px);transform:translateX(-50%);background:#000b;border:1px solid var(--ac);border-radius:6px;padding:3px 12px;display:none;white-space:nowrap}
-#grua b{color:var(--ac)}
 #ojo{display:none;background:#000c;border:1px solid var(--borde);border-radius:5px;padding:2px 8px;font-size:.8em;font-weight:700;white-space:nowrap;z-index:2}
 .foto{position:static;display:inline-block;width:min(420px,78vw);height:auto;border-radius:10px;border:2px solid var(--borde)}
 #pista{left:50%;bottom:16%;white-space:nowrap;transform:translateX(-50%);background:#000a;border-radius:6px;padding:4px 12px;font-weight:700;display:none}
@@ -115,7 +129,7 @@ label.op{display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:1p
 label.op span{flex:1}
 h4{margin:12px 0 4px;color:var(--ac)}
 a{color:var(--az)}
-@media (max-width:760px){#metas{top:auto;bottom:calc(120px*var(--f));width:60vw}#avisos{display:none}}
+@media (max-width:760px){#metas{top:auto;bottom:calc(150px*var(--f));width:60vw}#avisos{display:none}}
 </style>
 </head>
 <body>
@@ -124,7 +138,7 @@ a{color:var(--az)}
 <div class="hud" id="izq">
   <div>Combustible</div><div class="barra" id="bComb"><i></i><b></b></div>
   <div>Casco</div><div class="barra" id="bCasco"><i></i><b></b></div>
-  <div id="datos"><span id="prof">0 m</span><span id="din">$0</span><span id="bod">0/7</span></div>
+  <div id="datos"><span id="prof">0 m</span><span id="din">$0</span></div>
 </div>
 <div class="hud" id="metas"></div>
 <div class="hud" id="der">
@@ -132,9 +146,8 @@ a{color:var(--az)}
   <div id="panSon"></div><div id="tabla"></div><div id="tarjeta"></div>
 </div>
 <div class="hud" id="avisos"></div>
-<div class="hud" id="contratos"></div>
+<div class="hud" id="viaje"><div id="vjDatos"></div><button id="bGrua" class="s" title="La grúa te deja en la Gasolinera. Cobra por lo lejos que estás y por lo que pesas."></button><div id="contratos"></div></div>
 <div class="hud" id="objetos"></div>
-<div class="hud" id="grua"></div>
 <div class="hud" id="ojo"></div>
 <div class="hud" id="pista"></div>
 <div class="hud" id="cuenta"></div>

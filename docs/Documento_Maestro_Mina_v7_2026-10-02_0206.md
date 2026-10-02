@@ -1,4 +1,4 @@
-# DOCUMENTO MAESTRO · «Mina» · v6
+# DOCUMENTO MAESTRO · «Mina» · v7
 
 **Ver en vivo: https://mina.capitaltorreon.com**
 
@@ -271,7 +271,7 @@ Falta para la visión completa: varias maquinitas por persona, comprarlas, dise�
 
 ### 8.2 Sonido
 
-- Siete tipos, cada uno con su canal y su interruptor: música, motor/hélice/taladro, minerales y dinero, explosiones y daño, avisos y logros, lo que hacen los demás, viento y cueva.
+- Nueve tipos, cada uno con su canal y su interruptor: música, taladro, hélice, motor (viene apagado), minerales y dinero, golpes/explosiones/daño, avisos y logros, lo que hacen los demás, viento y cueva. (Eran siete: en la séptima iteración se separaron taladro, hélice y motor; ver 9.2.)
 - Arriba a la derecha: bocina (apagar), − y + (volumen) y «♪ Sonidos» (elegir tipos). Todo queda guardado en el navegador.
 - Motor, hélice, taladro, viento y cueva son sonidos continuos que suben y bajan con lo que hace la maquinita. La música se compone sola según la zona: superficie, mina, fondo, cielo y espacio.
 - **Todo está fabricado por código**, sin archivos. El pedido exacto para reemplazarlo por sonidos grabados con ElevenLabs está en `sonidos-fuente/`; no se generó porque el permiso para usar la llave de la bóveda fue negado en esta sesión.
@@ -322,6 +322,31 @@ Salió de un video de Ricardo: a 704 m una bolsa de gas lo explotó y el juego n
 | La explosión explica | La tarjeta dice la causa, los números («el gas pegó 83 y tu casco aguanta 80») y qué hacer. Sale de inmediato aunque haya otros avisos en fila. |
 | Combustible en el cielo | El gasto baja con la altura (dividido entre 1 + altura ÷ 1,200 m) [N]. Medido con motor «Toro» y tanque «Cisterna» de 40 L: 3 km gastan 19.5 L, el espacio 29 L y los 1,000 km 30 L; el regreso en caída libre, 2 L. Con el tanque de fábrica se llega a 600 m. |
 | Subir sin sostener la tecla | Pasando los 50 m de altura, la barra espaciadora deja a la maquinita subiendo sola. Se suelta con la barra, con ↓, al llegar arriba o al 12 % de combustible. |
+
+### 9.2 Séptima iteración: sonido rehecho, el viaje abajo a la izquierda y peligros con cariño
+
+Salió de otro video de Ricardo y de sus palabras: no le gustó el sonido de la excavadora ni la música; al excavar salían «rayitas negras»; abajo a la izquierda había demasiado texto; y a la lava, al gas y a todo lo que daña «le faltaba cariño».
+
+| Cambio | Cómo quedó |
+|---|---|
+| Taladro, hélice y motor separados | Cada uno con su canal e interruptor en «♪ Sonidos». **El motor viene apagado** (también para quien ya jugaba). |
+| Taladro nuevo | Tierra que se muele (grano que vibra suave y un fondo grave) y el zumbido de la broca. El tono sube mientras muerde cada celda y se aclara contra el mineral. Cada celda arranca con un «mordisco». |
+| Hélice nueva | El aire que corta cada aspa (unas 20 por segundo) y el zumbido del rotor; al soltar la tecla el rotor se va frenando. El dibujo de las aspas gira al mismo ritmo. |
+| Motor nuevo | Explosiones lentas y graves con el soplido del escape; las vueltas suben al avanzar, perforar o volar. |
+| Sincronía | Los sonidos continuos se ajustan **en cada cuadro** (antes, 15 veces por segundo): arrancan y callan con la acción. |
+| Música nueva | Un piano suave que improvisa sobre cuatro acordes por zona, con pocas notas, eco de cueva y silencios: toca de 10 a 15 acordes y deja de 16 a 34 segundos solo el ambiente. Nunca repite la misma tonada. |
+| Eco | Un eco fabricado (sin archivos) le da aire a la música, a las campanas y a las explosiones. |
+| Mezcla medida | Como no se puede oír, se midió cada sonido fuera de línea (`__mina.sonido`): taladro, hélice y música quedaron a un volumen parecido; daño, mineral y clic, por encima; la cueva, muy abajo. |
+| Rayitas negras | Era un error del dibujo del taladro: se pintaba suelta la última raya en lugar del contorno. Corregido. |
+| El viaje | Abajo a la izquierda: «Llevas 34 de 120», «Se vende en $19,450» y, bajo tierra, «Subir gasta ≈ 12 L · traes 28» (en rojo si no alcanza o si vas muy pesado). Debajo, el botón de la **grúa** con su precio (tecla E), siempre que estés bajo tierra o volando alto. |
+| Contratos | Abajo queda uno solo, en una línea; todos están en Menú → Contratos. |
+| Lava | Una poza de roca fundida con orilla de basalto; las pozas vecinas se unen. Resplandor que late e ilumina alrededor, una burbuja que crece y revienta, y brasas que suben. |
+| Gas | Burbujas verdes con brillo y un vaho tenue; cuando se ve completo, una grieta que resplandece en verde. |
+| Los golpes se entienden | Letrero «−35 de casco» sobre la maquinita, las orillas de la pantalla enrojecen un instante y la barra del casco parpadea. |
+| Explosiones | Fogonazo, anillo que se abre y humo, en dinamita, gas, lava y al explotar la maquinita (también las de los demás). |
+| Números a la vista | El ratón sobre lava o gas dice cuánto casco quita y cuánto traes. La primera vez que hay lava o gas cerca, una tarjeta lo explica con números. |
+
+Sigue pendiente lo mismo del sonido: **nadie lo ha oído**; lo grabado con ElevenLabs espera el permiso de Ricardo.
 
 ---
 

@@ -27,6 +27,8 @@
 
 ## 2. Motor, hélice y taladro (continuos, en bucle perfecto: `loop: true`)
 
+Desde el 2 de octubre cada uno tiene su propio canal e interruptor en el juego, y el motor viene apagado.
+
 | Archivo | Cuándo suena | Texto exacto | Segundos |
 |---|---|---|---|
 | `motor` | Siempre, bajito; sube al avanzar | Seamless loop of a small diesel tracked mining vehicle engine idling and rolling on dirt, steady low rumble with soft track clatter, constant, no variation | 6 |
