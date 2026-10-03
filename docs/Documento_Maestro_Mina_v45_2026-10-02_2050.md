@@ -1,4 +1,4 @@
-# DOCUMENTO MAESTRO · «Mina» · v20
+# DOCUMENTO MAESTRO · «Mina» · v45
 
 **Ver en vivo: https://mina.capitaltorreon.com**
 
@@ -1084,6 +1084,73 @@ El README abre con un resumen del manifiesto.
 - **El mapa del menú:** el mundo completo con la misma imagen, ahora un píxel por fila (antes medio: se perdían túneles), las maquinitas en vivo, y a la derecha, fuera del mapa, la profundidad y los nombres de los lugares descubiertos («❔ sin descubrir» los demás).
 
 **Teclas.** **M** pasa a ser el mapa (la tecla que se espera en un juego) y el menú se abre con **Esc**. El botón del menú dice «Esc · Menú».
+
+### 9.39 Entrar con Google: una maquinita y todos los mundos que quieras
+
+**Lo que pidió Ricardo (ordenado).**
+
+1. Traer el login de Google del proyecto de ping pong, que es muy sencillo.
+2. Que jugar siga sin pedir login: quien entra al inicio ya está jugando en el menor tiempo posible.
+3. Cuando quieras guardar tu mundo y tu maquinita, ahí te pide entrar con Google para ligar tu correo.
+4. Con cuenta: **una sola maquinita** y **todos los mundos que quieras**, y la gente puede entrar a ellos.
+5. Si ya aceptaste a alguien en un mundo, queda aceptado: aunque vuelva en un mes, entra y juega sin volver a pedirlo. Los permisos duran hasta que el dueño los quita.
+6. No tocar nada de lo que ya funciona; solo agregar esto.
+
+**Cómo quedó.**
+
+- **El inicio no cambió.** Sin login se juega igual que antes, al instante. El botón de Google ni siquiera se carga hasta que se va a usar.
+- **Dónde se entra:** Menú → Mundo (la primera tarjeta, «Guarda tu maquinita y tus mundos») y la pantalla de Mis mundos. Es el botón oficial de Google, con el mismo identificador de app que el ping pong.
+- **Una sola invitación**: a los 10 minutos de juego real aparece una vez una tarjeta que sugiere guardar con Google. No vuelve a salir.
+- **La primera vez que entras**, tu cuenta se queda con la maquinita de ese equipo y con todos sus mundos.
+- **En otro equipo**, al entrar, ese equipo pasa a jugar con la maquinita de tu cuenta y ves todos tus mundos.
+  - Si la maquinita de ese equipo apenas nació (sin dinero y menos de 5 minutos de juego), se cambia sola.
+  - Si ya traía avance, se te pregunta con cuál sigues. Se enseñan las dos con su dinero, su récord y su tiempo jugado. Cada cuenta lleva una sola.
+- **Tus mundos viajan con la cuenta**, junto con las llaves de dueño de los que creaste. Así, en cualquier equipo sigues siendo quien manda en ellos.
+  - Desechar un mundo lo quita en todos tus equipos.
+  - Si vuelves a entrar a ese mundo después, regresa a la lista.
+- **Cerrar sesión** (en la misma tarjeta): tu maquinita y tus mundos quedan guardados en la cuenta y ese equipo empieza de cero. Sirve para una computadora prestada.
+- **Los permisos ya duraban para siempre**: una maquinita que jugó en un mundo, o a la que aceptaron, entra cuando quiera. Con la cuenta, eso te sigue a cualquier equipo, porque es la misma maquinita.
+- **Nuevo: quitar el permiso.** En el panel de la dueña (tecla **J**):
+  - «Quitar permiso» junto a quien está jugando.
+  - Una lista **🔑 Tienen permiso** con quienes ya jugaron ahí. Si son más de 6, se pliega.
+  - Una lista **🔒 Sin permiso** con «Devolver permiso».
+  - A quien le quitas el permiso sale del mundo y ve «Ya no tienes permiso en este mundo», con un botón para mirar y volver a pedirlo.
+  - «Sacar» sigue igual: saca y no deja ni mirar.
+
+**Cómo está amarrado.**
+
+- **Un Durable Object nuevo, `Cuenta`**, uno por persona, nombrado por su identificador de Google (migración v4; los otros tres no se tocaron). Guarda:
+  - el correo, el nombre y la foto;
+  - la llave de su única maquinita;
+  - sus mundos, con las llaves de dueño;
+  - los mundos desechados, para que no revivan;
+  - las sesiones de cada equipo, solo como huella.
+- **El servidor no le cree al navegador**: le pregunta a Google (`oauth2.googleapis.com/tokeninfo`), igual que el ping pong. Revisa:
+  - que el pase sea para la app de Mina;
+  - que lo haya emitido Google;
+  - que siga vigente;
+  - que el correo esté confirmado.
+- **Rutas:**
+  - `GET /api/cuenta/cliente`: el identificador de Google.
+  - `POST /api/cuenta/google`: entrar.
+  - `POST /api/cuenta/sync`: ponerse al corriente.
+  - `POST /api/cuenta/maquina`: elegir la maquinita de este equipo.
+  - `POST /api/cuenta/salir`: cerrar sesión.
+- **La sesión de cada equipo** se guarda en ese equipo (`mina_cuenta`). Hay hasta 20 por cuenta.
+- **Ponerse al corriente:** cada cambio a la lista de mundos se manda a los 2.5 s. Al abrir el juego se pide lo de la cuenta sin estorbar el arranque.
+- **El permiso** vive en el mundo: `m.ok` (aceptados) y `m.rev` (a quienes se lo quitaron). Una maquinita en `m.rev` no entra a jugar aunque la puerta esté abierta. Antes de revisarla no se mueve de mundo.
+- **El identificador de Google** está en `wrangler.jsonc` (`GOOGLE_CLIENT_ID`). Si algún día se usa uno propio de Mina, se cambia solo ahí.
+
+**Probado.**
+
+- **En local:** 27 pruebas automáticas, todas bien. Se probó entrar desde dos equipos con la misma cuenta, juntar y desechar mundos, que no revivan, elegir maquinita, cerrar sesión, y quitar, pedir, aceptar y devolver permisos.
+  - En la computadora de pruebas sirve un pase falso. Solo funciona con `MINA_PRUEBA` en `.dev.vars`, que nunca se publica, y desde la misma máquina.
+  - En el navegador local se probaron el login simulado, el cambio de equipo, la pantalla para elegir maquinita, cerrar sesión y el panel de permisos. La tarjeta se revisó también a ancho de teléfono.
+- **En vivo:** 12 pruebas en un mundo desechable, ya borrado. El pase falso no sirve, los pases y sesiones inventados se rechazan, y quitar, pedir, aceptar y conservar permisos funciona. El botón de Google carga en Mis mundos.
+
+**Lo que no pude probar.** No pude entrar con una cuenta real de Google: el navegador de pruebas bloquea la ventana de Google cuando la abro yo. Puede que el identificador del ping pong todavía no tenga autorizado el dominio de Mina. En ese caso, en Google Cloud Console → Credenciales → ese cliente de OAuth → «Orígenes autorizados de JavaScript» hay que agregar `https://mina.capitaltorreon.com`.
+
+**De paso.** En pantallas angostas, la liga de «Invita a tu gente» se encimaba con su botón. Ahora las ligas largas parten renglón.
 
 ## 10. Revisión de código del 2 de octubre
 

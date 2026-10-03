@@ -1954,6 +1954,12 @@ function recibir(d) {
       pintarTabla(); if (menu === 'menu' && document.activeElement?.tagName !== 'INPUT') pintarMenu();
       return;
     }
+    case 'revocado': {        // quien creó el mundo le quitó el permiso: puede mirar y volver a pedirlo
+      inicio(`<header><h2>🔒 Ya no tienes permiso en este mundo</h2></header><div class="cuerpo"><p>Quien lo creó te quitó el permiso para jugar aquí. Tu maquinita sigue siendo tuya, con todo lo que trae, y entra a cualquier otro mundo.</p><p>${d.ver ? '<button id="bMirar">👁 Mirar y pedir permiso</button> ' : ''}<button class="s" id="bIr">Ir a mis mundos</button></p></div>`);
+      if ($('#bMirar')) $('#bMirar').onclick = () => (location.href = '/ver/' + d.ver);
+      $('#bIr').onclick = () => (location.href = '/?mundos');
+      return;
+    }
     case 'noexiste': quitarMundo(mundoId); if (deCasa) return location.replace('/'); return pantallaFinal('Este mundo no existe', 'Puede que lo hayan borrado o que la liga esté incompleta.');
     case 'mira': return conMapa(d, iniciarVer);
     case 'fin': if (!S || d.r !== remin) return; if (!(S.fl.edenF && S.fl.edenF[mundoId + '|' + remin]) && !ceremonia) finDelMundo(d.i, d); else if (sinMineral !== remin) vaciarMinerales(); return;
@@ -3298,7 +3304,8 @@ $('#chatLista').addEventListener('scroll', (e) => {
 
 /* ════════ El público y las solicitudes ════════ RLR */
 // A quien creó el mundo le llegan: quién está mirando (solo se le avisa) y quién pide entrar a jugar (eso sí lo decide).
-let publico = { mira: [], nm: 0, sol: [], ban: [] };
+let publico = { mira: [], nm: 0, sol: [], ban: [], rev: [] }, verPermisos = false;
+$('#caja').addEventListener('toggle', (e) => { if (e.target.id === 'permisos') verPermisos = e.target.open; }, true);      // la lista abierta sigue abierta aunque llegue alguien
 const solVistas = new Set(); let miraAntes = 0;
 function recibirPublico(d) {
   const nuevas = d.sol.filter((x) => !solVistas.has(x.sid));
@@ -3313,11 +3320,19 @@ function htmlPublico() {
   const fila = (ic, n, sub, botones) => `<div class="fila"><div class="ic">${ic}</div><div class="t"><b>${n}</b><small>${sub}</small></div>${botones}</div>`;
   const hace = (h) => { const m = Math.max(0, Math.round((Date.now() - h) / 60000)); return m < 1 ? 'hace un momento' : 'hace ' + m + ' min'; };
   const jugando = [...otros.values()].filter((o) => o.on);
-  let h = soyCreador ? '<p class="nota">Mirar es libre: cualquiera con la liga para mirar entra sin pedir nada, y aquí solo se te avisa. Para <b>jugar</b> hay que pedirlo, y tú decides. Quien entra con la liga del mundo que tú mandas ya viene invitado. «Sacar» lo saca al instante y no lo deja volver, ni a jugar ni a mirar.</p>'
+  let h = soyCreador ? '<p class="nota">Mirar es libre: cualquiera con la liga para mirar entra sin pedir nada, y aquí solo se te avisa. Para <b>jugar</b> hay que pedirlo, y tú decides. Quien entra con la liga del mundo que tú mandas ya viene invitado. Quien ya jugó aquí conserva su permiso para siempre, hasta que tú se lo quites. «Quitar permiso» lo deja mirar y volver a pedirlo; «Sacar» lo saca al instante y no lo deja volver, ni a jugar ni a mirar.</p>'
     : '<p class="nota">Solo quien creó el mundo acepta solicitudes y saca jugadores.</p>';
   h += `<h4>🙋 Quieren jugar (${publico.sol.length})</h4>` + (publico.sol.length ? publico.sol.map((x, k) => fila('🙋', esc(x.n || 'Alguien'), 'Pidió entrar ' + hace(x.h), soyCreador ? `<button data-a="acepto" data-v="${x.sid}">${k === 0 ? '<kbd>Enter</kbd>' : ''}Aceptar</button><button class="s" data-a="rechazo" data-v="${x.sid}">Rechazar</button>` : '')).join('') : '<p class="nota">Nadie por ahora. Cuando alguien que está mirando pida jugar, te llega un aviso.</p>');
-  h += `<h4>⛏️ Jugando ahora (${jugando.length + 1})</h4>` + fila('⭐', esc(miNombre) + ' (tú)', 'Quien creó el mundo', '') + jugando.map((o) => fila('⛏️', `<span style="color:${colorTx(o.i)}">${esc(o.n)}</span>`, o.y !== undefined ? donde(o.y) : 'conectada', soyCreador ? `<button class="s mal" data-a="sacarJ" data-v="${o.i}">Sacar</button>` : '')).join('');
+  h += `<h4>⛏️ Jugando ahora (${jugando.length + 1})</h4>` + fila('⭐', esc(miNombre) + ' (tú)', 'Quien creó el mundo', '') + jugando.map((o) => fila('⛏️', `<span style="color:${colorTx(o.i)}">${esc(o.n)}</span>`, o.y !== undefined ? donde(o.y) : 'conectada', soyCreador ? `<button class="s" data-a="quitarP" data-v="${o.i}">Quitar permiso</button><button class="s mal" data-a="sacarJ" data-v="${o.i}">Sacar</button>` : '')).join('');
   h += `<h4>👁 Mirando (${publico.nm || mirones})</h4>` + (publico.mira.length ? publico.mira.map((x) => fila('👁', esc(x.n || 'Alguien'), x.n ? 'Tiene maquinita' : 'Sin maquinita', soyCreador ? `<button class="s mal" data-a="sacarM" data-v="${x.sid}">Sacar</button>` : '')).join('') : `<p class="nota">${mirones ? mirones + ' mirando.' : 'Nadie está mirando ahora.'}</p>`);
+  // Los permisos duran para siempre: quien ya jugó aquí entra cuando quiera hasta que se lo quiten. Una lista larga se pliega.
+  const rev = new Set(publico.rev || []), nom = (o) => `<span style="color:${colorTx(o.i)}">${esc(o.n)}</span>`;
+  if (soyCreador) {
+    const conPermiso = [...otros.values()].filter((o) => !o.on && !rev.has(o.i)), filas = conPermiso.map((o) => fila('🔑', nom(o), 'Ya jugó aquí: entra cuando quiera, sin volver a pedirlo', `<button class="s" data-a="quitarP" data-v="${o.i}">Quitar permiso</button>`)).join('');
+    if (conPermiso.length) h += `<h4>🔑 Tienen permiso (${conPermiso.length})</h4>` + (conPermiso.length > 6 ? `<details id="permisos" ${verPermisos ? 'open' : ''}><summary class="nota">Ver las ${conPermiso.length}</summary>${filas}</details>` : filas);
+    const sinPermiso = [...rev].map((i) => otros.get(i)).filter(Boolean);
+    if (sinPermiso.length) h += `<h4>🔒 Sin permiso (${sinPermiso.length})</h4>` + sinPermiso.map((o) => fila('🔒', nom(o), 'Puede mirar y volver a pedirlo', `<button class="s" data-a="devolverP" data-v="${o.i}">Devolver permiso</button>`)).join('');
+  }
   if (soyCreador && publico.ban.length) h += `<h4>🚫 Sacados (${publico.ban.length})</h4>` + publico.ban.map((b, k) => fila('🚫', esc(b.n || 'Alguien'), 'Sacado ' + hace(b.h), `<button class="s" data-a="perdonar" data-v="${k}">Perdonar</button>`)).join('');
   return h;
 }
@@ -3939,6 +3954,7 @@ function pintarMenu() {
     clearInterval(mapaMenuT); mapaMenuT = setInterval(() => { const m2 = $('#mapa'); if (!m2 || menu !== 'menu' || pestana !== 2) return clearInterval(mapaMenuT); pintarMapa(m2); }, 300);      // en vivo mientras esté abierto
   }
   const cm = $('#miMaq'); if (cm) dibMaq(cm.getContext('2d'), 80, 86, 132, miModelo, 1, false, 0, '', '');
+  const gb = $('#gBoton'); if (gb) botonGoogle(gb);
   if (topAbierta()) { animarTop(c); if (Date.now() - tablaM.pedido > 3500) pedirTop(); }
   const ql = $('#qrLienzo'); if (ql) pintarQR(ql, ql.dataset.t, 8);
   const fa = $('#fotoAqui'); if (fa) { const f = fotoRecord(); f.className = 'foto'; fa.appendChild(f); }
@@ -4225,6 +4241,9 @@ const acciones = {
     return 'no';
   },
   mundos() { enviarEst(); guardarCopia(); location.href = '/?mundos'; },
+  salirCuenta() { salirCuenta(); return 'no'; },
+  quitarP(v) { enviar({ t: 'quitar', i: +v }); const o = otros.get(+v); if (o) aviso('Le quitaste el permiso a ' + o.n + ': puede mirar y volver a pedirlo'); },
+  devolverP(v) { enviar({ t: 'devolver', i: +v }); const o = otros.get(+v); if (o) aviso(o.n + ' vuelve a tener permiso'); },
   desechar() { desechar(mundoId, soyCreador); },
 };
 $('#caja').addEventListener('click', (e) => {
@@ -4313,7 +4332,7 @@ function menuPrincipal() {
       <p class="nota">${rit.ult ? `En el último minuto de juego: <b>${rit.ult.lentos} de ${rit.ult.n.toLocaleString('es-MX')}</b> cuadros salieron lentos (${(rit.ult.lentos / Math.max(1, rit.ult.n) * 100).toFixed(2)} %) y el más lento tardó <b>${Math.round(rit.ult.peor)} ms</b> (lo ideal en tu pantalla: ${Math.round(1000 / rit.hz)} ms).` : 'Juega un minuto y aquí sale cuántos cuadros lentos hubo.'} El terreno está compuesto en ${bloques.size} bloques (${((bloques.size + bloquesLibres.length) * BL * BL * T * T * 4 / 1e6 + tiles.size * T * T * 4 / 1e6).toFixed(0)} MB de imágenes).</p>`;
   } else if (pestana === 8) {
     const o3 = [[0, 'Apagado'], [1, 'Normal'], [2, 'Fuerte']];
-    h += `<div class="fila"><div class="t"><b>Invita a tu gente</b><small>${mundoId ? location.origin + '/' + mundoId : 'Tu mundo se está creando…'}</small></div><button class="s" data-a="menu" data-v="inv">Ver código QR</button><button data-a="invitar">Copiar la liga</button></div>
+    h += htmlCuenta() + `<div class="fila"><div class="t"><b>Invita a tu gente</b><small>${mundoId ? location.origin + '/' + mundoId : 'Tu mundo se está creando…'}</small></div><button class="s" data-a="menu" data-v="inv">Ver código QR</button><button data-a="invitar">Copiar la liga</button></div>
       <h4>Dificultad del mundo ${soyCreador ? '' : '<small style="color:var(--su)">· solo la cambia quien creó el mundo</small>'}</h4>
       <label class="op"><span>Modo</span><select data-a="modo" ${soyCreador ? '' : 'disabled'}>${[['paseo', 'Paseo · nada mata'], ['clasico', 'Clásico'], ['rudo', 'Rudo'], ['medida', 'A la medida']].map(([v, t]) => `<option value="${v}" ${cfg.modo === v ? 'selected' : ''} ${v === 'medida' ? 'disabled' : ''}>${t}</option>`).join('')}</select></label>
       <label class="op"><span>Quedarse sin combustible</span>${sel('comb', [[0, 'Reserva (no explota)'], [1, 'Explota']])}</label>
@@ -4343,7 +4362,7 @@ function menuPrincipal() {
       <label class="op"><span>Nombre de tu maquinita</span><input data-a="nombreMaq" maxlength="14" value="${esc(miNombre)}" autocomplete="off"></label>
       <div class="maqs" id="modelos">${MODELOS.map((m, i) => `<button class="${i === miModelo ? 'on' : ''}" data-a="modeloMaq" data-v="${i}" title="Cambiar a este modelo"><canvas width="112" height="112"></canvas></button>`).join('')}</div>
       <details><summary class="nota">Ya tengo una maquinita en otro equipo y quiero usarla aquí</summary><p><input id="cod" placeholder="Pega aquí el código de tu maquinita" style="width:70%"> <button class="s" data-a="usarCodigo">Usar código</button></p></details>
-      <p class="nota"><b>Tu maquinita es tuya.</b> Entra contigo a cualquier mundo con todo lo que trae, y no se pierde aunque un mundo se borre. Para seguir con ella en otra computadora o en el teléfono, abre allá su liga o su código QR. <b>No los compartas:</b> quien los abra maneja tu maquinita.</p>
+      <p class="nota"><b>Tu maquinita es tuya.</b> Entra contigo a cualquier mundo con todo lo que trae, y no se pierde aunque un mundo se borre. Para seguir con ella en otra computadora o en el teléfono, entra allá con tu cuenta de Google, o abre su liga o su código QR. <b>No los compartas:</b> quien los abra maneja tu maquinita.</p>
       <div class="fila"><div class="t"><small>Código: <code>${esc(miK)}</code></small></div><button class="s" data-a="menu" data-v="qrmaq">Ver su código QR</button><button data-a="ligaMaq">Copiar su liga</button></div>
       <div class="fila"><div class="t"><b>Guardar este mundo en un archivo</b><small>Semilla, reglas, todos los túneles y la colección. Desde «Mis mundos» puedes abrirlo cuando quieras como un mundo nuevo, idéntico.</small></div><button data-a="guardarArchivo">💾 Guardar archivo</button></div>
       <div class="fila"><div class="t"></div><button class="s" data-a="mundos">Mis mundos · crear o cargar otro</button><button class="mal" data-a="desechar">Desechar este mundo</button></div>`;
@@ -4508,9 +4527,121 @@ function guardarMundo() {
   maqLocal = { k: miK, n: miNombre, m: miModelo }; escribir('mina_maq', maqLocal);      // la maquinita de este navegador: la misma en todos los mundos
   mundos = mundos.filter((m) => m.id !== mundoId);
   mundos.unshift({ id: mundoId, k: miK, nombre: cfg.nombre || 'Mundo ' + mundoId, maq: miNombre, modelo: miModelo, creador: soyCreador ? 1 : 0, ult: Date.now() });
-  escribir('mina_mundos', mundos);
+  escribir('mina_mundos', mundos); subirCuentaLuego();
 }
-function quitarMundo(id) { mundos = mundos.filter((m) => m.id !== id); escribir('mina_mundos', mundos); try { localStorage.removeItem('mina_copia_' + id); } catch {} }
+function quitarMundo(id) {
+  mundos = mundos.filter((m) => m.id !== id); escribir('mina_mundos', mundos); try { localStorage.removeItem('mina_copia_' + id); } catch {}
+  if (cuenta) { quitarPend = [...new Set([...quitarPend, id])]; escribir('mina_quitar', quitarPend); subirCuentaLuego(); }
+}
+
+/* ════════ La cuenta: guardar la maquinita y los mundos con Google ════════ RLR */
+// Jugar nunca pide nada. Quien quiere guardar su maquinita y sus mundos entra con Google cuando quiera: su correo queda ligado
+// a una sola maquinita y a todos sus mundos, y en cualquier otro equipo, al entrar, los recupera tal cual. El botón de Google
+// se carga solo cuando se va a usar: el inicio sigue siendo jugar al instante.
+let cuenta = leer('mina_cuenta', null), quitarPend = leer('mina_quitar', []), subirCuentaT = 0, gsi = null, avisoOtraMaq = false;
+const guardarCuenta = () => escribir('mina_cuenta', cuenta);
+const datosCuenta = () => ({ mundos: mundos.map((m) => ({ id: m.id, nombre: m.nombre, maq: m.maq, modelo: m.modelo, creador: m.creador, ult: m.ult })), duenos, quitar: quitarPend });
+function subirCuentaLuego() { if (!cuenta) return; clearTimeout(subirCuentaT); subirCuentaT = setTimeout(subirCuenta, 2500); }
+async function subirCuenta() {
+  if (!cuenta) return;
+  clearTimeout(subirCuentaT);
+  const enviado = Date.now(), q = quitarPend.slice();
+  try {
+    const r = await fetch('/api/cuenta/sync', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ses: cuenta.ses, ...datosCuenta() }) });
+    if (r.status === 401) { cuenta = null; try { localStorage.removeItem('mina_cuenta'); } catch {} return; }      // la sesión ya no sirve: se sigue jugando igual
+    const d = await r.json(); if (!Array.isArray(d.mundos)) return;
+    quitarPend = quitarPend.filter((id) => !q.includes(id)); escribir('mina_quitar', quitarPend);
+    deCuenta(d, enviado);
+  } catch {}
+}
+// Lo que guarda la cuenta llega a este equipo: los mundos que faltaban y las llaves de dueño. Lo que cambió aquí mientras
+// tanto se respeta.
+function deCuenta(d, enviado) {
+  const l = new Map(d.mundos.map((m) => [m.id, { ...(mundos.find((x) => x.id === m.id) || {}), ...m }]));
+  for (const m of mundos) if (m.ult > enviado) l.set(m.id, m);
+  mundos = [...l.values()].sort((a, b) => b.ult - a.ult); escribir('mina_mundos', mundos);
+  if (d.duenos) { Object.assign(duenos, d.duenos); escribir('mina_duenos', duenos); }
+  if (cuenta) {
+    cuenta = { ...cuenta, email: d.email || cuenta.email, nombre: d.nombre || cuenta.nombre, foto: d.foto || cuenta.foto, k: d.k || cuenta.k }; guardarCuenta();
+    if (cuenta.k && miK && cuenta.k !== miK && listo && !soloVer && !avisoOtraMaq) { avisoOtraMaq = true; tarjeta('Tu cuenta cambió de maquinita', 'La próxima vez que abras Mina entras con la de tu cuenta.', 'msj', 7000); }
+  }
+}
+// El botón oficial de Google, cargado solo cuando se va a usar.
+async function botonGoogle(caja) {
+  caja.innerHTML = '<small>Abriendo Google…</small>';
+  try {
+    if (!gsi) gsi = (async () => {
+      const id = (await (await fetch('/api/cuenta/cliente')).json()).id;
+      await new Promise((ok, mal) => { const sc = document.createElement('script'); sc.src = 'https://accounts.google.com/gsi/client'; sc.async = true; sc.onload = ok; sc.onerror = mal; document.head.appendChild(sc); });
+      google.accounts.id.initialize({ client_id: id, callback: alEntrarGoogle, auto_select: false, cancel_on_tap_outside: true, context: 'signin', ux_mode: 'popup', itp_support: true });
+    })();
+    await gsi;
+    if (!caja.isConnected) return;
+    caja.textContent = '';
+    google.accounts.id.renderButton(caja, { type: 'standard', theme: 'filled_blue', size: 'large', text: 'signin_with', shape: 'pill', locale: 'es', logo_alignment: 'left' });
+  } catch { gsi = null; if (caja.isConnected) caja.innerHTML = '<small>No se pudo abrir Google. Revisa tu conexión e inténtalo otra vez.</small>'; }
+}
+async function alEntrarGoogle(resp) {
+  const k = miK || (maqLocal && maqLocal.k) || '';
+  aviso('Entrando con Google…');
+  try {
+    const r = await fetch('/api/cuenta/google', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ credential: resp && resp.credential, k, n: miNombre, m: miModelo, ...datosCuenta() }) });
+    const d = await r.json(); if (!r.ok || !d.ses) throw 0;
+    quitarPend = []; escribir('mina_quitar', quitarPend);
+    cuenta = { ses: d.ses, email: d.email, nombre: d.nombre, foto: d.foto, k: d.k, n: (d.maq && d.maq.n) || '', m: (d.maq && d.maq.m) | 0 }; guardarCuenta();
+    deCuenta(d, Date.now());
+    if (!d.k || d.k === k) {
+      son.logro(); tarjeta('💾 Listo: todo queda guardado en tu cuenta', (d.email || '') + ' · tu maquinita y tus mundos, en cualquier equipo.', 'msj', 7000);
+      if (menu === 'menu') pintarMenu(); else if (menu === 'inicio' && location.search.includes('mundos')) pantallaMundos();
+      return;
+    }
+    const aqui = d.aqui;      // la cuenta ya tenía su maquinita y este equipo traía otra
+    if (!aqui || ((aqui.tot || 0) <= 0 && (aqui.seg || 0) < 300)) return usarMaquinaCuenta(d);      // la de aquí apenas nació: sigue la de la cuenta
+    elegirMaquina(d, k);
+  } catch { tarjeta('No se pudo entrar', 'Google no contestó o se fue la conexión. Inténtalo otra vez.', 'msj', 6000); }
+}
+// Este equipo pasa a jugar con la maquinita de la cuenta y abre «Mis mundos», ya con todos los mundos de la cuenta.
+function usarMaquinaCuenta(d) {
+  if (listo && !soloVer) { enviarEst(); guardarCopia(); }
+  maqLocal = { k: d.k, n: (d.maq && d.maq.n) || '', m: (d.maq && d.maq.m) | 0 }; escribir('mina_maq', maqLocal);
+  try { localStorage.removeItem('mina_est'); localStorage.removeItem('mina_maq_antes'); } catch {}
+  escribir('mina_nota', 'Entraste con tu cuenta: sigues con ' + (maqLocal.n || 'tu maquinita') + '.');
+  location.href = '/?mundos';
+}
+function elegirMaquina(d, k) {
+  const a = d.maq || { n: 'La de tu cuenta', tot: 0, rec: 0, seg: 0 }, b = d.aqui;
+  const sub = (x) => `${fmt(x.tot || 0)} ganados · récord ${num(x.rec || 0)} m · ⏱ ${tiempoLargo(x.seg || 0)}`;
+  if (listo && !soloVer) { enviarEst(); guardarCopia(); }
+  inicio(`<header><h2>💾 ¿Con cuál maquinita sigues?</h2></header><div class="cuerpo">
+    <p class="nota">Tu cuenta ya tiene su maquinita y en este equipo traes otra. Cada cuenta lleva una sola: la que no elijas se queda fuera de tu cuenta.</p>
+    <div class="fila"><div class="ic">⭐</div><div class="t"><b>${esc(a.n)}</b><small>La de tu cuenta · ${sub(a)}</small></div><button id="bCuenta">Seguir con esta</button></div>
+    <div class="fila"><div class="ic">⛏️</div><div class="t"><b>${esc(b.n)}</b><small>La de este equipo · ${sub(b)}</small></div><button class="s" id="bAqui">Quedarme con esta</button></div></div>`);
+  $('#bCuenta').onclick = () => usarMaquinaCuenta(d);
+  $('#bAqui').onclick = async (e) => {
+    e.target.disabled = true;
+    try {
+      const r = await fetch('/api/cuenta/maquina', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ses: cuenta.ses, k }) }), x = await r.json();
+      if (!r.ok || x.k !== k) throw 0;
+      cuenta = { ...cuenta, k, n: b.n, m: b.m | 0 }; guardarCuenta();
+      escribir('mina_nota', 'Listo: ' + b.n + ' es la maquinita de tu cuenta.'); location.reload();
+    } catch { e.target.disabled = false; tarjeta('No se pudo guardar', 'Se fue la conexión. Inténtalo otra vez.', 'msj', 5000); }
+  };
+}
+// Cerrar sesión: lo de la cuenta queda guardado en ella y este equipo empieza de cero (sirve en una computadora prestada).
+async function salirCuenta() {
+  if (!cuenta || !confirm('¿Cerrar sesión en este equipo?\n\nTu maquinita y tus mundos quedan guardados en tu cuenta. Este equipo empieza de cero, con una maquinita nueva.')) return;
+  if (listo && !soloVer) { enviarEst(); guardarCopia(); }
+  await subirCuenta();
+  try { await fetch('/api/cuenta/salir', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ses: cuenta && cuenta.ses }) }); } catch {}
+  try { window.google?.accounts.id.disableAutoSelect(); } catch {}
+  try { for (const k of Object.keys(localStorage)) if (k.startsWith('mina_') && k !== 'mina_op') localStorage.removeItem(k); } catch {}
+  location.href = '/';
+}
+// La tarjeta de la cuenta: en Menú → Mundo y en «Mis mundos».
+function htmlCuenta() {
+  if (cuenta) return `<div class="fila cuentaG"><div class="ic">${cuenta.foto ? `<img src="${esc(cuenta.foto)}" alt="" referrerpolicy="no-referrer">` : '✅'}</div><div class="t"><b>Guardado en tu cuenta</b><small>${esc(cuenta.email || '')} · tu maquinita y tus mundos quedan a salvo y se recuperan en cualquier equipo</small></div><button class="s" data-a="salirCuenta" id="bSalirCuenta">Cerrar sesión</button></div>`;
+  return `<div class="fila cuentaG"><div class="ic">💾</div><div class="t"><b>Guarda tu maquinita y tus mundos</b><small>Con tu correo de Google: los recuperas en cualquier equipo y retomas donde te quedaste. Jugar sigue sin pedir nada.</small></div><div class="gBoton" id="gBoton"></div></div>`;
+}
 // La copia de este equipo: el mundo (semilla, túneles, colección) y la maquinita. Con ella el juego abre al instante,
 // sin esperar al servidor, y se puede seguir jugando sin internet; al volver la señal, lo de aquí se manda al mundo.
 let dugCambios = 0, copiaDug = -1, copiaEst = '', tReloj = Date.now(), tEntrada = Date.now(), relojN = 0;
@@ -4566,14 +4697,17 @@ function pantallaFinal(t, x) {
   $('#bIr').onclick = () => (location.href = '/?mundos');
 }
 function pantallaMundos() {
-  inicio(`<header><h2>⛏️ Mina · Mis mundos</h2></header><div class="cuerpo">` +
+  const nota = leer('mina_nota', ''); if (nota) { try { localStorage.removeItem('mina_nota'); } catch {} }
+  inicio(`<header><h2>⛏️ Mina · Mis mundos</h2></header><div class="cuerpo">` + (nota ? `<p class="nota" style="color:var(--ac)"><b>${esc(nota)}</b></p>` : '') + htmlCuenta() +
     (maqLocal && maqLocal.n ? `<p class="nota">Tu maquinita <b>${esc(maqLocal.n)}</b> entra contigo al mundo que elijas, con todo lo que trae.</p>` : '') +
     mundos.map((m) => `<div class="fila"><div class="t"><b>${esc(m.nombre)}</b><small>${m.maq ? 'Tu maquinita: ' + esc(m.maq) + ' · ' : ''}${new Date(m.ult).toLocaleDateString('es-MX', { day: 'numeric', month: 'long' })} · ${m.id}</small></div>
       <button data-ir="${m.id}">Continuar</button><button class="s" data-des="${m.id}">Desechar</button></div>`).join('') +
     `<p style="margin-top:14px"><button id="bNuevo">＋ Crear mundo nuevo</button></p><p class="nota">Cada mundo nace con una semilla distinta y se guarda solo, completo y para siempre: con su liga se vuelve a entrar cuando sea, tal como se dejó. Para jugar acompañado, entra y copia su liga.</p></div>`);
   $('#bNuevo').onclick = pantallaCrear;
   $('#caja').querySelectorAll('[data-ir]').forEach((b) => (b.onclick = () => (location.href = '/' + b.dataset.ir)));
-  $('#caja').querySelectorAll('[data-des]').forEach((b) => (b.onclick = () => { const m = mundos.find((x) => x.id === b.dataset.des); desechar(m.id, m.creador, m.k); }));
+  $('#caja').querySelectorAll('[data-des]').forEach((b) => (b.onclick = () => { const m = mundos.find((x) => x.id === b.dataset.des); desechar(m.id, m.creador, m.k || (maqLocal && maqLocal.k)); }));
+  if ($('#gBoton')) botonGoogle($('#gBoton'));
+  if ($('#bSalirCuenta')) $('#bSalirCuenta').onclick = salirCuenta;
 }
 // Crear un mundo: de cero, o a partir de un archivo que alguien guardó. Siempre nace un mundo nuevo con su propia liga; nada se reemplaza.
 function pantallaCrear() {
@@ -4593,7 +4727,7 @@ function pantallaCrear() {
 function desechar(id, creador, k) {
   if (!confirm('¿Desechar este mundo? Sale de tu lista.')) return;
   const paraTodos = creador && confirm('Tú creaste este mundo. ¿Borrarlo también para todos los demás?\n\nAceptar = borrarlo para todos · Cancelar = solo quitarlo de mi lista');
-  const fin = () => { quitarMundo(id); location.href = '/?mundos'; };
+  const fin = async () => { quitarMundo(id); if (cuenta) await subirCuenta(); location.href = '/?mundos'; };
   if (!paraTodos) return fin();
   if (id === mundoId && conectado) { enviar({ t: 'borrar' }); return setTimeout(fin, 400); }
   const s = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws/' + id);
@@ -4636,6 +4770,7 @@ setInterval(() => {                       // lo poco que corre aunque el juego e
   // en la tabla abierta, el reloj de quien está jugando corre cada segundo
   if (topAbierta()) document.querySelectorAll('#caja .tt[data-vivo="1"]').forEach((el) => { el.dataset.seg = +el.dataset.seg + 1; el.textContent = '⏱ ' + tiempoLargo(+el.dataset.seg); });
   if (soloVer && (pido === 'espera' || pido === 'ausente')) pintarEspera();
+  if (!cuenta && S && listo && !soloVer && S.seg > 600 && !leer('mina_invitoG', 0)) { escribir('mina_invitoG', 1); tarjeta('💾 ¿Guardamos tu maquinita?', 'Con tu correo de Google la recuperas en cualquier equipo, con todos tus mundos. Cuando quieras: Menú → Mundo.', 'msj', 9000); }
   if (latido % 4 === 0) ocio(guardarCopia);
   if (!document.hidden && listo && Date.now() - tablaM.pedido > (topAbierta() ? 4000 : 60000) && (topAbierta() || (!soloVer && conectado && (!tablaM.t || S.tot >= tablaM.corte)))) pedirTop();
   if (latido % 9 === 0 && !document.hidden) subirFotos(!!menu);
@@ -4648,6 +4783,11 @@ setInterval(() => {                       // lo poco que corre aunque el juego e
 const ligaMaquinita = (location.hash.match(/maquinita=([0-9a-zA-Z]{16,64})/) || [])[1] || '';
 if (location.hash) history.replaceState(null, '', location.pathname);
 if (ligaMaquinita) { maqLocal = { k: ligaMaquinita }; escribir('mina_maq', maqLocal); }
+else if (cuenta && cuenta.k && (!maqLocal || maqLocal.k !== cuenta.k)) {      // con cuenta, este equipo juega con la maquinita de la cuenta
+  maqLocal = { k: cuenta.k, ...(cuenta.n ? { n: cuenta.n, m: cuenta.m | 0 } : {}) }; escribir('mina_maq', maqLocal);
+  try { localStorage.removeItem('mina_est'); } catch {}
+}
+if (cuenta) setTimeout(subirCuenta, 2500);
 aplicarOp(); sonidoUI();
 {
   const r = location.pathname.match(/^\/(?:m\/)?([2-9A-HJ-NP-Z]{8})\/?$/i);      // la liga es el dominio y las 8 letras; la de antes, con /m/, sigue sirviendo

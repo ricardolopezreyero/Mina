@@ -176,6 +176,14 @@ export class Maquina extends DurableObject {
     return { n: m.n, mo: m.mo, est: m.est };
   }
 
+  // Lo que la cuenta enseña de ella: nombre, modelo, cuánto ha ganado, hasta dónde bajó y cuánto ha jugado.
+  async resumen() {
+    const m = await this.ctx.storage.get("m");
+    if (!m) return null;
+    const e = m.est || {};
+    return { n: m.n, m: m.mo || 0, tot: Number.isFinite(e.tot) ? Math.floor(e.tot) : 0, rec: entero(e.rec, 0, H * 2, 0), seg: entero(e.seg, 0, 4e9, 0) };
+  }
+
   // Rebautizar: el nombre y el modelo son de la maquinita, no del mundo.
   async renombrar(n, mo) {
     const m = await this.ctx.storage.get("m");
@@ -195,6 +203,120 @@ export class Maquina extends DurableObject {
     await this.ctx.storage.put("m", m);
     return true;
   }
+}
+
+// RLR · la cuenta
+// Jugar nunca pide nada. Quien quiere guardar su maquinita y sus mundos entra con Google: su correo queda ligado a una sola
+// maquinita y a todos los mundos que quiera, y desde cualquier equipo los recupera. Un objeto por persona, nombrado por su
+// identificador de Google. La sesión de cada equipo se guarda solo como huella.
+const MUNDOS_CUENTA = 500, SESIONES = 20;
+const hex = (u) => [...u].map((b) => b.toString(16).padStart(2, "0")).join("");
+const sha = async (s) => hex(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode("mina-ses:" + s)))).slice(0, 40);
+const llaveOk = (k) => typeof k === "string" && /^[0-9a-zA-Z]{16,64}$/.test(k);
+const idOk = (id) => typeof id === "string" && /^[2-9A-HJ-NP-Z]{8}$/.test(id);
+export class Cuenta extends DurableObject {
+  // Junta lo que trae este equipo con lo guardado: de cada mundo gana lo más reciente, y uno desechado no revive
+  // salvo que se vuelva a entrar a él después.
+  juntar(c, mundos, duenos, quitar) {
+    const fuera = c.fuera || {}, ahora = Date.now();
+    for (const id of Array.isArray(quitar) ? quitar.slice(0, MUNDOS_CUENTA) : []) if (idOk(id)) fuera[id] = ahora;
+    const l = new Map((c.mundos || []).map((x) => [x.id, x]));
+    for (const x of Array.isArray(mundos) ? mundos.slice(0, MUNDOS_CUENTA) : []) {
+      if (!x || !idOk(x.id)) continue;
+      const m = { id: x.id, nombre: limpio(x.nombre, 24) || "Mundo " + x.id, maq: limpio(x.maq, 14), modelo: entero(x.modelo, 0, 7, 0), creador: x.creador ? 1 : 0, ult: entero(x.ult, 0, 9e15, 0) };
+      const a = l.get(m.id);
+      if (!a || m.ult >= a.ult) l.set(m.id, { ...m, creador: m.creador || (a ? a.creador : 0) });
+    }
+    for (const [id, t] of Object.entries(fuera)) { const x = l.get(id); if (x && x.ult <= t) l.delete(id); else if (x) delete fuera[id]; }
+    c.mundos = [...l.values()].sort((a, b) => b.ult - a.ult).slice(0, MUNDOS_CUENTA);
+    c.fuera = Object.fromEntries(Object.entries(fuera).sort((a, b) => b[1] - a[1]).slice(0, MUNDOS_CUENTA));
+    c.duenos = c.duenos || {};
+    for (const [id, d] of Object.entries(duenos && typeof duenos === "object" ? duenos : {}).slice(0, MUNDOS_CUENTA)) if (idOk(id) && /^[0-9a-f]{32}$/.test(d)) c.duenos[id] = d;
+  }
+  vista(c) { return { k: c.k, email: c.email, nombre: c.nombre, foto: c.foto, mundos: c.mundos, duenos: c.duenos }; }
+  async sesion(t) {
+    const c = await this.ctx.storage.get("c");
+    return c && t && (c.ses || []).includes(await sha(t)) ? c : null;
+  }
+  // Entró con Google: si la cuenta es nueva, su maquinita es la de este equipo; si ya existía, la cuenta conserva la suya.
+  async entrar(g, d) {
+    let c = await this.ctx.storage.get("c");
+    const nueva = !c;
+    if (!c) c = { sub: g.sub, k: "", mundos: [], duenos: {}, fuera: {}, ses: [], alta: Date.now() };
+    if (!c.k && llaveOk(d.k)) c.k = d.k;
+    c.email = g.email; c.nombre = g.nombre; c.foto = g.foto; c.visto = Date.now();
+    this.juntar(c, d.mundos, d.duenos, d.quitar);
+    const t = hex(crypto.getRandomValues(new Uint8Array(24)));
+    c.ses = [...(c.ses || []), await sha(t)].slice(-SESIONES);
+    await this.ctx.storage.put("c", c);
+    return { ...this.vista(c), ses: g.sub + "." + t, nueva: nueva ? 1 : 0 };
+  }
+  async sync(t, d) {
+    const c = await this.sesion(t);
+    if (!c) return null;
+    this.juntar(c, d.mundos, d.duenos, d.quitar); c.visto = Date.now();
+    await this.ctx.storage.put("c", c);
+    return this.vista(c);
+  }
+  // La única maquinita de la cuenta pasa a ser otra (la de este equipo, si así lo eligió quien entró).
+  async maquina(t, k) {
+    const c = await this.sesion(t);
+    if (!c || !llaveOk(k)) return null;
+    c.k = k; c.visto = Date.now();
+    await this.ctx.storage.put("c", c);
+    return this.vista(c);
+  }
+  async salir(t) {
+    const c = await this.sesion(t);
+    if (!c) return false;
+    const h = await sha(t);
+    c.ses = c.ses.filter((x) => x !== h);
+    await this.ctx.storage.put("c", c);
+    return true;
+  }
+}
+
+// Google dice quién es: se pregunta a Google por el pase que entregó su botón y se revisa que sea para Mina, vigente y con
+// el correo confirmado. En la computadora de pruebas (solo ahí: con MINA_PRUEBA en .dev.vars, que nunca se publica, y
+// desde la misma máquina) sirve un pase falso para probar sin Google.
+async function verificarGoogle(cred, ids, env, request) {
+  if (env.MINA_PRUEBA === "1" && ["::1", "127.0.0.1"].includes(request.headers.get("CF-Connecting-IP")) && cred.startsWith("prueba:")) {
+    const [, sub, email] = cred.split(":");
+    return /^[0-9a-z]{1,40}$/i.test(sub || "") ? { sub, email: limpio(email, 120) || sub + "@prueba.mx", nombre: "Prueba " + sub, foto: "" } : null;
+  }
+  if (cred.length < 100 || cred.length > 4096) return null;
+  let p;
+  try { const r = await fetch("https://oauth2.googleapis.com/tokeninfo?id_token=" + encodeURIComponent(cred)); if (!r.ok) return null; p = await r.json(); } catch { return null; }
+  if (!p || !ids.includes(p.aud) || !["accounts.google.com", "https://accounts.google.com"].includes(p.iss)) return null;
+  if (String(p.email_verified) !== "true" || !(Number(p.exp) * 1000 > Date.now()) || !/^\d{1,40}$/.test(p.sub || "")) return null;
+  const foto = /^https:\/\/[a-z0-9.-]+\.googleusercontent\.com\/[^\s"'<>]*$/.test(p.picture || "") ? String(p.picture).slice(0, 400) : "";
+  return { sub: p.sub, email: limpio(p.email, 120), nombre: limpio(p.name, 60), foto };
+}
+const ID_GOOGLE = "977641517971-23ouv33lu4s8ejrm6m4mgvuqcvpa9ucf.apps.googleusercontent.com";
+async function cuentaApi(u, request, env) {
+  const ids = String(env.GOOGLE_CLIENT_ID || ID_GOOGLE).split(",").map((x) => x.trim()).filter(Boolean);
+  if (u.pathname === "/api/cuenta/cliente" && request.method === "GET") return json({ id: ids[0] });
+  if (request.method !== "POST") return json({ error: "no" }, 404);
+  let d;
+  try { d = await request.json(); } catch { return json({ error: "datos" }, 400); }
+  if (!d || typeof d !== "object") return json({ error: "datos" }, 400);
+  const cuenta = (sub) => env.CUENTA.get(env.CUENTA.idFromName("g:" + sub));
+  const resumen = async (k) => { if (!llaveOk(k)) return null; try { return await env.MAQUINA.get(env.MAQUINA.idFromName(k)).resumen(); } catch { return null; } };
+  if (u.pathname === "/api/cuenta/google") {
+    const g = await verificarGoogle(String(d.credential || ""), ids, env, request);
+    if (!g) return json({ error: "google" }, 401);
+    const r = await cuenta(g.sub).entrar(g, d);
+    r.maq = await resumen(r.k);
+    if (llaveOk(d.k) && d.k !== r.k) r.aqui = await resumen(d.k);      // este equipo traía otra maquinita: se enseñan las dos
+    return json(r);
+  }
+  const ses = String(d.ses || ""), punto = ses.lastIndexOf("."), sub = ses.slice(0, punto), t = ses.slice(punto + 1);
+  if (punto < 1 || !/^[0-9A-Za-z]{1,40}$/.test(sub) || !/^[0-9a-f]{48}$/.test(t)) return json({ error: "sesion" }, 401);
+  const c = cuenta(sub);
+  if (u.pathname === "/api/cuenta/sync") { const r = await c.sync(t, d); return r ? json(r) : json({ error: "sesion" }, 401); }
+  if (u.pathname === "/api/cuenta/maquina") { const r = await c.maquina(t, d.k); if (!r) return json({ error: "sesion" }, 401); r.maq = await resumen(r.k); return json(r); }
+  if (u.pathname === "/api/cuenta/salir") { await c.salir(t); return json({ ok: 1 }); }
+  return json({ error: "no" }, 404);
 }
 
 // RLR · el mundo
@@ -297,7 +419,8 @@ export class Mundo extends DurableObject {
       if (mira.length < 200) mira.push(x);
       if (a.sol) sol.push({ ...x, h: a.sol.h });
     }
-    manda(ds, { t: "publico", mira, nm: this.ctx.getWebSockets("mira").length - (menos ? 1 : 0), sol, ban: (m.ban || []).map((b) => ({ n: b.n, h: b.h })) });
+    const rev = (m.rev || []).map((k) => this.jug.findIndex((j) => j && j.k === k)).filter((x) => x >= 0);
+    manda(ds, { t: "publico", mira, nm: this.ctx.getWebSockets("mira").length - (menos ? 1 : 0), sol, ban: (m.ban || []).map((b) => ({ n: b.n, h: b.h })), rev });
   }
   // A quienes esperan respuesta se les dice si quien creó el mundo está conectado (cambia cuando entra o sale).
   avisarPidiendo(menos) {
@@ -310,7 +433,7 @@ export class Mundo extends DurableObject {
     if (k.length < 16) return;
     if (this.baneado(k, this.ipDe(ws))) { manda(ws, { t: "baneado" }); try { ws.close(4002, "baneado"); } catch {} return; }
     a.n = limpio(d.n, 14) || a.n || ""; a.m = entero(d.m, 0, 7, a.m || 0);
-    const yaEs = this.jug.some((j) => j && j.k === k), dueno = this.creador();
+    const yaEs = this.jug.some((j) => j && j.k === k) && !(m.rev || []).includes(k), dueno = this.creador();
     if (yaEs || dueno < 0 || (m.ok || []).includes(k)) { ws.serializeAttachment(a); manda(ws, { t: "aceptado", id: m.id }); return; }
     if (this.jug.filter(Boolean).length >= MAX_MAQUINITAS) { manda(ws, { t: "lleno" }); return; }
     a.sol = { k, h: Date.now() }; ws.serializeAttachment(a);
@@ -321,7 +444,7 @@ export class Mundo extends DurableObject {
     const m = this.m, obs = (sid) => this.ctx.getWebSockets("mira").find((s) => { const a = s.deserializeAttachment(); return a && a.sid === sid; });
     if (d.t === "acepto" || d.t === "rechazo") {
       const s = obs(String(d.sid || "")); const a = s && s.deserializeAttachment(); if (!a || !a.sol) return;
-      if (d.t === "acepto") { m.ok = (m.ok || []).filter((x) => x !== a.sol.k).concat(a.sol.k).slice(-300); this.sucio.meta = true; manda(s, { t: "aceptado", id: m.id }); }
+      if (d.t === "acepto") { m.ok = (m.ok || []).filter((x) => x !== a.sol.k).concat(a.sol.k).slice(-300); m.rev = (m.rev || []).filter((x) => x !== a.sol.k); this.sucio.meta = true; manda(s, { t: "aceptado", id: m.id }); }
       else manda(s, { t: "rechazado" });
       delete a.sol; s.serializeAttachment(a);
     } else if (d.t === "sacar") {
@@ -343,6 +466,17 @@ export class Mundo extends DurableObject {
     } else if (d.t === "perdonar") {
       const x = entero(d.x, 0, 1000, -1); if (!m.ban || !m.ban[x]) return;
       m.ban.splice(x, 1); this.sucio.meta = true;
+    } else if (d.t === "quitar" || d.t === "devolver") {
+      // El permiso de una maquinita del mundo dura para siempre, hasta que quien lo creó se lo quita. Sin permiso puede mirar y volver a pedirlo.
+      const x = entero(d.i, 0, MAX_MAQUINITAS, -1), j = this.jug[x]; if (!j || x === yoI) return;
+      m.rev = (m.rev || []).filter((y) => y !== j.k); m.ok = (m.ok || []).filter((y) => y !== j.k);
+      if (d.t === "devolver") m.ok = m.ok.concat(j.k).slice(-300);
+      else {
+        m.rev = m.rev.concat(j.k).slice(-300);
+        const s = this.socketDe(x);
+        if (s) { manda(s, { t: "revocado", ver: m.cfg.mirar !== 0 ? m.ver || "" : "" }); s.serializeAttachment(null); try { s.close(4002, "revocado"); } catch {} this.pos.delete(x); this.xy.delete(x); this.difundir({ t: "sale", i: x }); }
+      }
+      this.sucio.meta = true;
     }
     this.avisarDueno();
     await this.programar();
@@ -626,7 +760,7 @@ export class Mundo extends DurableObject {
       case "chatAntes":
         this.chatMas(ws, d);
         return;
-      case "acepto": case "rechazo": case "sacar": case "perdonar":
+      case "acepto": case "rechazo": case "sacar": case "perdonar": case "quitar": case "devolver":
         if (i !== this.creador()) return;
         await this.ordenDueno(d, i);
         return;
@@ -709,6 +843,7 @@ export class Mundo extends DurableObject {
     // o en una red de celular varias personas comparten dirección, y no se debe sacar a las que ya juegan aquí.
     if (this.baneado(k, this.jug.some((j) => j && j.k === k) || (m.ok || []).includes(k) ? "" : this.ipDe(ws))) return fin({ t: "baneado" });      // a quien aceptaste no lo frena la dirección
     let i = this.jug.findIndex((j) => j && j.k === k);
+    if (i >= 0 && (m.rev || []).includes(k)) return fin({ t: "revocado", ver: m.cfg.mirar !== 0 ? m.ver || "" : "" });      // le quitaron el permiso: puede mirar y volver a pedirlo
     const previo = ws.deserializeAttachment();
     if (previo && previo.i !== i) { ws.serializeAttachment(null); this.pos.delete(previo.i); this.difundir({ t: "sale", i: previo.i }, ws); }
     // el tope de conectados se revisa antes de registrar a nadie
@@ -906,6 +1041,9 @@ export default {
 
     const ws = u.pathname.match(/^\/ws\/([2-9A-HJ-NP-Z]{8})$/);
     if (ws) return env.MUNDO.get(env.MUNDO.idFromName(ws[1])).fetch(new Request(new URL(u.pathname, request.url), request));      // sin parámetros: nadie se cuela como observador ni al revés
+
+    // La cuenta (entrar con Google, ponerse al corriente, salir). Jugar nunca la pide.
+    if (u.pathname.startsWith("/api/cuenta/")) return cuentaApi(u, request, env);
 
     if (u.pathname.startsWith("/api/") || u.pathname.startsWith("/ws/") || u.pathname.startsWith("/og/")) return json({ error: "no" }, 404);
     return env.ASSETS.fetch(request);

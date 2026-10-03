@@ -41,6 +41,8 @@ Este juego está hecho con todo el cariño con el que se puede hacer un juego. N
 - **Sin internet** se sigue jugando; al volver la señal, todo se manda al mundo.
 - El sonido se maneja con la bocina de arriba a la derecha: música, taladro, hélice y motor tienen cada uno su interruptor (el motor viene apagado).
 - Tu maquinita es tuya: entra contigo a cualquier mundo y a cualquier equipo.
+- **Guardar con Google** (Menú → Mundo, o Mis mundos): jugar nunca lo pide. Si quieres guardar tu maquinita y tus mundos, entras con tu correo de Google. Cada cuenta lleva una sola maquinita y todos los mundos que quieras, y los recupera en cualquier equipo. Cerrar sesión deja todo guardado en la cuenta y el equipo empieza de cero.
+- **Los permisos duran**: quien ya jugó en tu mundo, o a quien aceptaste, entra cuando quiera, aunque vuelva en un mes. En el panel (**J**) le quitas o le devuelves el permiso en un clic. Sin permiso puede mirar y volver a pedirlo.
 
 ## Qué hay en el repositorio
 
@@ -52,7 +54,7 @@ Este juego está hecho con todo el cariño con el que se puede hacer un juego. N
 | `wrangler.jsonc` | Configuración del Worker y del dominio |
 | `publico/sw.js`, `publico/manifest.webmanifest`, `publico/iconos/` | La aplicación instalable: lo que se guarda en el equipo para abrir sin internet, y sus iconos |
 | `diseno-fuente/` | El programa que dibuja el icono en todos sus tamaños |
-| `docs/Documento_Maestro_Mina_v44_2026-10-02_2023.md` | Qué está construido, con qué números y qué falta |
+| `docs/Documento_Maestro_Mina_v45_2026-10-02_2050.md` | Qué está construido, con qué números y qué falta |
 | `Prompt_Maestro_Mina_v4_2026-10-01_2336.md` | El diseño completo |
 | `sonidos-fuente/` | El pedido exacto de sonidos y música para ElevenLabs (aún sin generar) |
 
@@ -65,6 +67,8 @@ npx wrangler dev
 ```bash
 npx wrangler deploy
 ```
+
+Para probar la cuenta sin Google en tu computadora, crea un archivo `.dev.vars` con `MINA_PRUEBA=1` (no se sube al repositorio ni se publica). Con eso, el pase `prueba:<id>:<correo>` funciona en `POST /api/cuenta/google`, solo desde la misma máquina.
 
 Para pruebas desde la consola del navegador existe `window.__mina` (estado, `avanza(segundos)`, `usar(objeto)`, `abrir(menú)`).
 

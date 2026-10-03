@@ -12,9 +12,11 @@
     "run_worker_first": true
   },
   "durable_objects": {
-    "bindings": [{ "name": "MUNDO", "class_name": "Mundo" }, { "name": "MAQUINA", "class_name": "Maquina" }, { "name": "TABLA", "class_name": "Tabla" }]
+    "bindings": [{ "name": "MUNDO", "class_name": "Mundo" }, { "name": "MAQUINA", "class_name": "Maquina" }, { "name": "TABLA", "class_name": "Tabla" }, { "name": "CUENTA", "class_name": "Cuenta" }]
   },
-  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Mundo"] }, { "tag": "v2", "new_sqlite_classes": ["Maquina"] }, { "tag": "v3", "new_sqlite_classes": ["Tabla"] }],
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Mundo"] }, { "tag": "v2", "new_sqlite_classes": ["Maquina"] }, { "tag": "v3", "new_sqlite_classes": ["Tabla"] }, { "tag": "v4", "new_sqlite_classes": ["Cuenta"] }],
+  // El botón de Google: el identificador de la app en Google Cloud (sus orígenes autorizados deben incluir https://mina.capitaltorreon.com).
+  "vars": { "GOOGLE_CLIENT_ID": "977641517971-23ouv33lu4s8ejrm6m4mgvuqcvpa9ucf.apps.googleusercontent.com" },
   "routes": [{ "pattern": "mina.capitaltorreon.com", "custom_domain": true }],
   "workers_dev": false,
   "preview_urls": false
