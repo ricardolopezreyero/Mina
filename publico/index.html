@@ -205,8 +205,10 @@ body.viendo #verTeclado{display:flex}
 #contratos .c small{color:var(--ac);font-weight:700;font-size:1em}
 #contratos .c em{font-style:normal;background:#0008;border-radius:8px;padding:0 6px;margin-left:2px}
 #objetos{right:10px;bottom:10px;display:flex;gap:4px}
-#objetos div{background:#0008;border:1px solid var(--borde);border-radius:6px;padding:3px 6px;text-align:center;min-width:44px;font-size:.78em;cursor:pointer}
-#objetos kbd{display:block;font:700 1.15em system-ui;color:var(--ac)}
+#objetos div{background:#0008;border:1px solid var(--borde);border-radius:6px;padding:3px 7px;text-align:center;min-width:40px;font-size:.78em;cursor:pointer;line-height:1.15}
+#objetos kbd{display:block;font:800 1.15em system-ui;color:var(--ac)}
+#objetos i{display:block;font-style:normal;font-size:1.25em;line-height:1.2}
+#objetos small{display:block;font-weight:700;font-variant-numeric:tabular-nums}
 #objetos .n0{opacity:.4}
 #avisos{left:10px;top:calc(222px*var(--f));width:calc(260px*var(--f));font-size:.8em}
 body.libre #avisos{left:calc(150px*var(--f))}
@@ -240,7 +242,8 @@ body.libre.jugando #regla,body.libre.viendo #regla{display:block;visibility:visi
 #velo.on{display:flex}
 .caja{background:var(--caja);border:2px solid var(--borde);border-radius:12px;width:min(760px,100%);max-height:94vh;display:flex;flex-direction:column;box-shadow:0 12px 40px #000a}
 .caja header{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--borde)}
-.caja header h2{margin:0;font-size:1.2em;flex:1}
+.caja header h2{margin:0;font-size:1.2em;flex:1;display:flex;align-items:center;gap:.45em}
+.hamb{display:inline-block;width:.85em;height:.7em;flex:none;background:linear-gradient(currentColor 0 0) 0 0/100% 18% no-repeat,linear-gradient(currentColor 0 0) 0 50%/100% 18% no-repeat,linear-gradient(currentColor 0 0) 0 100%/100% 18% no-repeat;border-radius:1px}
 .caja header .d{color:var(--ac);font-weight:800}
 .cuerpo{padding:14px 14px 12px;overflow:auto;-webkit-user-select:text;user-select:text}
 .pest{display:flex;gap:4px;flex-wrap:wrap;padding:8px 14px 0}

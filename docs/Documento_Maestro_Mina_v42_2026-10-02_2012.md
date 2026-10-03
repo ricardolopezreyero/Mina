@@ -1041,6 +1041,16 @@ La liga de un mundo pasa de `mina.capitaltorreon.com/m/QSAHAZ3F` a **`mina.capit
 
 **Probado en local** con un dueño simulado: entra a mirar, «no está conectado», el dueño entra (la tarjeta cambia), acepta, y la pestaña pasa a jugar con su maquinita sin recargar.
 
+### 9.36 Limpieza: una sola imagen en Invitar, sin contratos y con números legibles
+
+- **Invitar** enseña una sola vista previa (la del mundo), debajo del código QR y los botones. La de la maquinita sigue existiendo para su liga, solo ya no se muestra ahí.
+- **Las imágenes de liga ya no enciman textos:** cada cifra se achica lo necesario para caber en su columna; el botón de abajo y la dirección del sitio solo se ponen si caben completos (si no, queda nada más el dominio). El llamado de la liga de la maquinita se acortó a «¿Me alcanzas?».
+- **Fuera «🏆 Lugar 1 del mundo»** de la lista de jugadores de arriba a la derecha (Ricardo: «es mucho ego, no agrega valor»). El lugar sigue en el Top 33 y en la tarjeta que avisa cuando subes.
+- **Objetos de abajo más compactos:** la letra amarilla arriba, el emoji y la cantidad debajo, uno sobre otro; el nombre queda en el letrero al pasar el ratón.
+- **Fuera los contratos** (la pestaña, el renglón de abajo a la izquierda y sus pagos). `evento()` y `surtirContratos()` quedan vacías.
+- **El icono del menú** (tres rayas) se dibuja con CSS y queda centrado con el título.
+- **Números con comas** en Estadísticas (10,000 m · 2,889 piezas · 1,859 explosivos…), en la profundidad de la esquina, en los récords de la lista de jugadores y en Mundo.
+
 ## 10. Revisión de código del 2 de octubre
 
 Se revisó todo el código buscando fallas y se corrigieron estas:

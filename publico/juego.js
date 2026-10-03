@@ -481,7 +481,7 @@ const valorCarga = () => S.carga.reduce((a, b, i) => a + b * MIN[i].v, 0);
 const kgCarga = () => S.carga.reduce((a, b, i) => a + b * MIN[i].kg, 0);
 const prof = () => Math.max(0, Math.round((yo.y + HH) * 2));
 const altura = () => Math.max(0, Math.round(-(yo.y + HH) * 2));     // metros sobre el suelo
-const donde = (y) => (y < -1.5 ? '↑ ' + fmtAlto(Math.round(-(y + HH) * 2)) : Math.max(0, Math.round((y + HH) * 2)) + ' m');
+const donde = (y) => (y < -1.5 ? '↑ ' + fmtAlto(Math.round(-(y + HH) * 2)) : Math.max(0, Math.round((y + HH) * 2)).toLocaleString('es-MX') + ' m');
 
 const ESC = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ESC[c]);
@@ -1475,7 +1475,9 @@ function nuevoContrato() {
   if (tp === 'viajeV') { const a = Math.round(tipico * 1.2 / 10) * 10; return { tp, a, pg, tx: `Vende ${fmt(a)} en un solo viaje` }; }
   return { tp: 'hall', pg: pg * 2, tx: 'Encuentra un hallazgo enterrado' };
 }
-function surtirContratos() {
+// Los contratos se quitaron (Ricardo: «solo agregan complejidad»). Las funciones quedan vacías por si algo las llama.
+function surtirContratos() { poner($('#contratos'), ''); }
+function surtirContratosAntes() {
   const c = S.con;
   if (c.tut < TUTORIAL.length) {
     if (!c.act.length) {
@@ -1486,7 +1488,7 @@ function surtirContratos() {
   pintarContratos();
 }
 function evento(tp, d) {
-  if (!S) return;
+  return;
   const c = S.con; let cambio = false;
   for (let i = c.act.length - 1; i >= 0; i--) {
     const k = c.act[i]; let ok = false;
@@ -3172,6 +3174,7 @@ function verOtra(paso) {
   const l = [...otros.values()].filter((o) => o.on).sort((a, b) => a.i - b.i); if (!l.length) return;
   const k = l.findIndex((o) => o.i === veo); veo = l[(k + paso + l.length) % l.length].i; pintarVer();
 }
+const num = (n) => Math.round(n || 0).toLocaleString('es-MX');      // todo número entero, con sus comas
 const dineroLargo = (n) => '$' + Math.floor(n || 0).toLocaleString('es-MX');
 // El tiempo que una maquinita lleva jugando: de segundos a años, con las unidades más grandes que le toquen.
 const UNIDADES = [[31536000, 'año', 'años'], [2592000, 'mes', 'meses'], [604800, 'sem', 'sem'], [86400, 'd', 'd'], [3600, 'h', 'h'], [60, 'min', 'min'], [1, 's', 's']];
@@ -3602,7 +3605,7 @@ function pintarHud(forzar) {
   $('#prof').textContent = donde(yo.y) + (yo.y > 105 ? ' · ' + ZONA_N[zonaDe(prof())].replace(/^(La|El|Las) /, '') : ''); $('#din').textContent = fmt(S.d - porCobrar);
   pintarViaje();
   poner($('#metas'), metas().map((m) => `<div class="m${m.ya ? ' ya' : ''}${m.mal ? ' mal' : ''}"><i style="width:${Math.round(Math.min(100, m.p * 100))}%"></i><span>${esc(m.tx)}</span></div>`).join(''));
-  poner($('#objetos'), OBJ.map((o, i) => `<div data-u="${i}" class="${S.obj[i] ? '' : 'n0'}" title="${o.n}: ${o.ef}"><kbd>${o.k}</kbd>${o.ic} ${CORTO[i]} ×${S.obj[i]}</div>`).join(''));
+  poner($('#objetos'), OBJ.map((o, i) => `<div data-u="${i}" class="${S.obj[i] ? '' : 'n0'}" title="${o.k} · ${o.n}: ${o.ef}"><kbd>${o.k}</kbd><i>${o.ic}</i><small>${S.obj[i].toLocaleString('es-MX')}</small></div>`).join(''));
   if (forzar) pintarTabla();
 }
 // Lo que cuesta volver volando a la superficie, a ojo: la subida derecha, con lo que pesas.
@@ -3640,8 +3643,8 @@ function pintarTabla() {
   const l = [{ n: miNombre, m: miModelo, rec: S.rec, on: 1, yo: 1, y: donde(yo.y) }, ...[...otros.values()].map((o) => ({ ...o, y: o.on && o.y !== undefined ? donde(o.y) : null }))];
   l.sort((a, b) => (b.on || 0) - (a.on || 0) || (b.rec || 0) - (a.rec || 0));        // primero quienes están jugando
   const mas = l.length - 8; if (mas > 0) { const yoJ = l.findIndex((j) => j.yo); l.length = 8; if (yoJ >= 8) l[7] = { n: miNombre, m: miModelo, rec: S.rec, on: 1, yo: 1, y: donde(yo.y) }; }
-  poner($('#tabla'), l.map((j) => `<div class="${j.on ? '' : 'off'}"><i style="background:${MODELOS[j.m]?.[0] || '#888'}"></i><b>${esc(j.n)}${j.yo ? ' (tú)' : ''}</b><span>${j.on && j.y !== null ? j.y + ' · ' : ''}récord ${j.rec || 0} m</span></div>`).join('') + (mas > 0 ? `<div class="off"><b>y ${mas} más</b></div>` : '') +
-    (tablaM.lugar ? `<div class="mund">🏆 Lugar ${tablaM.lugar} del mundo</div>` : '') + (soyCreador && publico.sol.length ? `<div class="mund pub" data-pub="1">🙋 ${publico.sol.length === 1 ? '1 quiere jugar' : publico.sol.length + ' quieren jugar'} · <kbd>J</kbd></div>` : '') + (mirones ? `<div class="mund pub" data-pub="1">👁 ${mirones === 1 ? '1 persona te mira' : mirones + ' personas te miran'}</div>` : ''));
+  poner($('#tabla'), l.map((j) => `<div class="${j.on ? '' : 'off'}"><i style="background:${MODELOS[j.m]?.[0] || '#888'}"></i><b>${esc(j.n)}${j.yo ? ' (tú)' : ''}</b><span>${j.on && j.y !== null ? j.y + ' · ' : ''}récord ${num(j.rec)} m</span></div>`).join('') + (mas > 0 ? `<div class="off"><b>y ${mas} más</b></div>` : '') +
+(soyCreador && publico.sol.length ? `<div class="mund pub" data-pub="1">🙋 ${publico.sol.length === 1 ? '1 quiere jugar' : publico.sol.length + ' quieren jugar'} · <kbd>J</kbd></div>` : '') + (mirones ? `<div class="mund pub" data-pub="1">👁 ${mirones === 1 ? '1 persona te mira' : mirones + ' personas te miran'}</div>` : ''));
 }
 
 /* ════════ Código QR ════════ RLR */
@@ -3784,14 +3787,20 @@ function fotoLiga(deMundo) {
     texto(miNombre, 50, 176, 60); texto(RANGOS[S.rango][1] + ' · ' + mundo, 50, 222, 30, '#f3e6d8', 700);
     dibMaq(q, 950, piso - 300 * 0.395, 300, miModelo, -1, false, 0, '', '', 0.4);
     cifras = [[miles(S.rec) + ' m', 'bajo tierra'], [fmt(S.tot), 'ganados'], S.alt >= 1000 ? [fmtAlto(S.alt), 'de altura'] : [S.log.length + '', S.log.length === 1 ? 'logro' : 'logros']];
-    llamado = '¿Me alcanzas? Entra a mi mundo';
+    llamado = '¿Me alcanzas?';
   }
-  const y1 = piso + (deMundo && gente.length > 1 ? 156 : 134);
-  cifras.forEach(([a, b], i) => { texto(a, 50 + i * 400, y1, 84, '#ffd23f'); texto(b, 53 + i * 400, y1 + 44, 33, '#f3e6d8', 700); });
-  q.font = '900 34px system-ui,-apple-system,"Segoe UI",Roboto,sans-serif'; const an = q.measureText('▶  ' + llamado).width + 56;
+  const y1 = piso + (deMundo && gente.length > 1 ? 156 : 134), col = (A - 100) / 3, cabe = 330;
+  const fuente = (peso, tam) => `${peso} ${tam}px system-ui,-apple-system,"Segoe UI",Roboto,sans-serif`;
+  cifras.forEach(([a, b], i) => {                    // la cifra se achica lo necesario para no invadir la columna de junto
+    q.font = fuente(900, 84); const tam = Math.min(84, Math.floor(84 * cabe / Math.max(1, q.measureText(a).width)));
+    texto(a, 50 + i * col, y1, tam, '#ffd23f'); texto(b, 53 + i * col, y1 + 44, 33, '#f3e6d8', 700);
+  });
+  q.font = fuente(900, 34); const an = q.measureText('▶  ' + llamado).width + 56;
   q.fillStyle = '#ffd23f'; q.beginPath(); q.roundRect(46, B - 86, an, 60, 30); q.fill(); q.lineWidth = 4; q.strokeStyle = '#2a1a14'; q.stroke();
   q.fillStyle = '#1b120e'; q.textAlign = 'left'; q.fillText('▶  ' + llamado, 74, B - 44);
-  texto('Gratis · sin registro · ' + location.host, A - 46, B - 44, 26, '#f3e6d8', 700, 'right');
+  const libre = A - 46 - (46 + an + 30);             // la dirección va a la derecha solo si cabe completa; si no, nada más el dominio
+  q.font = fuente(700, 26); const pie = q.measureText('Gratis · sin registro · ' + location.host).width <= libre ? 'Gratis · sin registro · ' + location.host : location.host;
+  if (q.measureText(pie).width <= libre) texto(pie, A - 46, B - 44, 26, '#f3e6d8', 700, 'right');
   return c;
 }
 // Se suben solas cuando algo que enseñan cambió (un récord, alguien nuevo, otro objeto de la colección), sin estorbar el juego.
@@ -3893,7 +3902,7 @@ function pintarMenu() {
       <p><button data-a="invitar">Copiar la liga del mundo</button> <button class="s" data-a="presumir">Copiar mi liga (presume tu maquinita)</button> ${navigator.share ? '<button class="s" data-a="compartir">Compartir…</button>' : ''} <button class="s" data-a="menu" data-v="foto">📸 Foto para presumir</button></p>
       <p class="nota">Con el teléfono: apunta la cámara al código y se abre el mundo. Quien entra ya está jugando: no hay registro ni nada que llenar.</p>
       <p class="nota" style="margin-top:14px">Así se ve la liga del mundo cuando la mandas por WhatsApp. Se actualiza sola con cada récord.</p><div id="ligaAqui" data-m="1"></div>
-      <p class="nota" style="margin-top:14px">Y así se ve tu liga, la que presume a tu maquinita.</p><div id="ligaAqui2"></div></div>`;
+</div>`;
   } else if (menu === 'foto') {
     h = cab('📸 Presume tu maquinita') + `<div class="cuerpo" style="text-align:center"><div id="fotoAqui"></div>
       <p><button data-a="compartirFoto">${navigator.canShare ? 'Compartir la foto' : 'Descargar la foto'}</button> <button class="s" data-a="presumir">Copiar mi liga</button> <button class="s" data-a="invitar">Copiar la liga del mundo</button></p>
@@ -3917,7 +3926,7 @@ function pintarMenu() {
   if (topAbierta()) { animarTop(c); if (Date.now() - tablaM.pedido > 3500) pedirTop(); }
   const ql = $('#qrLienzo'); if (ql) pintarQR(ql, ql.dataset.t, 8);
   const fa = $('#fotoAqui'); if (fa) { const f = fotoRecord(); f.className = 'foto'; fa.appendChild(f); }
-  for (const id of ['#ligaAqui', '#ligaAqui2']) { const la = $(id); if (la) { const f = fotoLiga(!!la.dataset.m); f.className = 'foto'; f.style.width = 'min(100%,520px)'; f.style.height = 'auto'; la.appendChild(f); subirFotos(true); } }
+  for (const id of ['#ligaAqui']) { const la = $(id); if (la) { const f = fotoLiga(!!la.dataset.m); f.className = 'foto'; f.style.width = 'min(100%,520px)'; f.style.height = 'auto'; la.appendChild(f); subirFotos(true); } }
   c.querySelectorAll('#modelos canvas').forEach((x, i) => dibMaq(x.getContext('2d'), 56, 60, 100, i, 1, false, 0, '', ''));
 }
 // El mapa: 3 px por celda a lo ancho y 1 px por cada 2 celdas a lo alto (10 km caben en 2,500 px).
@@ -4142,7 +4151,7 @@ $('#verChat').addEventListener('click', () => { audio(); if (chat.abierto) cerra
 $('#verTop').addEventListener('click', () => { audio(); abrir('top'); });
 $('#bGrua').addEventListener('click', (e) => { audio(); e.currentTarget.blur(); if (listo && !menu && !pausa) grua(); });
 $('#vjDatos').addEventListener('click', (e) => { audio(); if (listo && !menu) { pestana = e.target.closest('.col') ? 1 : 0; abrir('menu'); } });
-$('#contratos').addEventListener('click', () => { audio(); if (listo && !menu) { pestana = 3; abrir('menu'); } });
+
 $('#bInv').addEventListener('click', (e) => { audio(); e.currentTarget.blur(); if (listo && !menu) abrir('inv'); });
 $('#bMenu').addEventListener('click', (e) => { audio(); e.currentTarget.blur(); if (listo && !menu) abrir('menu'); });
 
@@ -4150,8 +4159,9 @@ function sel(k, ops, quien = 'regla') {
   return `<select data-a="${quien}" data-k="${k}" ${soyCreador ? '' : 'disabled'}>${ops.map(([v, t]) => `<option value="${v}" ${cfg[k] == v ? 'selected' : ''}>${t}</option>`).join('')}</select>`;
 }
 function menuPrincipal() {
-  const P = ['Bodega', 'Colección', 'Mapa', 'Contratos', 'Logros', 'Catálogo', 'Estadísticas', 'Opciones', 'Mundo', 'Ayuda', '🏆 Top 33'];
-  let h = cab('☰ ' + esc(cfg.nombre || 'Mina')) + `<div class="pest">${P.map((p, i) => `<button data-a="pest" data-v="${i}" class="${i === pestana ? 'on' : ''}">${p}</button>`).join('')}</div><div class="cuerpo">`;
+  const P = ['Bodega', 'Colección', 'Mapa', '', 'Logros', 'Catálogo', 'Estadísticas', 'Opciones', 'Mundo', 'Ayuda', '🏆 Top 33'];      // la 3 eran los contratos
+  if (pestana === 3) pestana = 0;
+  let h = cab('<span class="hamb"></span>' + esc(cfg.nombre || 'Mina')) + `<div class="pest">${P.map((p, i) => (p ? `<button data-a="pest" data-v="${i}" class="${i === pestana ? 'on' : ''}">${p}</button>` : '')).join('')}</div><div class="cuerpo">`;
   if (pestana === 0) {
     h += `<p class="nota">📦 ${nCarga()} de ${bodega()} espacios · ${kgCarga()} kg de carga (tu motor levanta ${Math.round(hp() * 29.5 - 1980)} kg). Tirar piezas libera espacio y peso.</p>` +
       (nCarga() ? S.carga.map((n, i) => n ? `<div class="fila"><div class="t"><b style="color:${MIN[i].col}">${MIN[i].n} × ${n}</b><small>${fmt(MIN[i].v)} · ${MIN[i].kg} kg la pieza</small></div><button class="s" data-a="tirar" data-v="${i}">Tirar una</button></div>` : '').join('') : '<p class="nota">Bodega vacía.</p>') +
@@ -4176,7 +4186,7 @@ function menuPrincipal() {
       HALL.map((x, i) => S.st.hall[i] ? `<div><b>🏺 ${x.n}</b><small>${fmt(x.v)} · encontrados: ${S.st.hall[i]}</small></div>` : '<div class="no"><b>???</b><small>Hallazgo sin encontrar</small></div>').join('') + '</div>';
   } else if (pestana === 6) {
     const e = S.st;
-    h += `<p><button data-a="menu" data-v="foto">📸 Presume tu maquinita y tus récords</button></p>` + [['Tiempo jugando', tiempoLargo(S.seg)], ['Profundidad máxima', S.rec + ' m'], ['Altura máxima', fmtAlto(S.alt)], ['Total ganado', fmt(S.tot)], ['Viajes', e.viajes], ['Mejor viaje', fmt(e.mejorViaje)], ['Celdas perforadas', e.cavadas.toLocaleString('es-MX')], ['Piezas vendidas', e.vend.reduce((a, b) => a + b, 0)], ['Hallazgos', e.hall.reduce((a, b) => a + b, 0)], ['Explosivos usados', e.expl], ['Litros cargados', e.comb], ['Explosiones', e.muertes], ['Rescates gratis usados', S.resc], ['Remineralizaciones', e.remin]]
+    h += `<p><button data-a="menu" data-v="foto">📸 Presume tu maquinita y tus récords</button></p>` + [['Tiempo jugando', tiempoLargo(S.seg)], ['Profundidad máxima', num(S.rec) + ' m'], ['Altura máxima', fmtAlto(S.alt)], ['Total ganado', fmt(S.tot)], ['Viajes', num(e.viajes)], ['Mejor viaje', fmt(e.mejorViaje)], ['Celdas perforadas', num(e.cavadas)], ['Piezas vendidas', num(e.vend.reduce((a, b) => a + b, 0))], ['Hallazgos', num(e.hall.reduce((a, b) => a + b, 0))], ['Explosivos usados', num(e.expl)], ['Litros cargados', num(e.comb)], ['Explosiones', num(e.muertes)], ['Rescates gratis usados', num(S.resc)], ['Remineralizaciones', num(e.remin)]]
       .map(([a, b]) => `<div class="fila"><div class="t">${a}</div><div class="v">${b}</div></div>`).join('');
   } else if (pestana === 7) {
     const chk = (k, t) => `<label class="op"><span>${t}</span><input type="checkbox" data-a="op" data-k="${k}" ${op[k] ? 'checked' : ''}></label>`;
@@ -4213,10 +4223,10 @@ function menuPrincipal() {
       ${cfg.mirar !== 0 && miVer ? `<div class="fila"><div class="t"><b>Liga para mirar</b><small>Quien la abra te ve jugar en vivo. No puede entrar a jugar ni conocer la liga de este mundo.${mirones ? ' Ahora mismo: 👁 ' + mirones + ' mirando.' : ''}</small></div><button class="s" data-a="ligaVer">Copiar liga para mirar</button></div>` : ''}
       <h4>Jugadores</h4><div class="fila"><div class="t"><b>Público y solicitudes</b><small>Quién mira, quién pide jugar${soyCreador ? ', y sacar a quien haga mala práctica' : ''}.</small></div><button data-a="menu" data-v="pub"><kbd>J</kbd>Abrir</button></div>` +
       ([...otros.values()].length ? `<label class="op"><span>Cantidad para regalar (en la superficie)</span><input id="cuanto" type="number" min="1" value="${Math.min(1000, Math.floor(S.d))}" style="width:9em"></label>` +
-        [...otros.values()].map((o) => `<div class="fila"><div class="t"><b>${esc(o.n)}</b><small>${o.on ? 'Conectado' : 'Desconectado'} · récord ${o.rec || 0} m · ganado ${fmt(o.tot || 0)}</small></div>${o.on && cfg.regalos && yo.y < 0 ? `<button class="s" data-a="regalar" data-v="${o.i}">Regalar</button>` : ''}</div>`).join('') : '<p class="nota">Estás solo en este mundo. Copia la liga y mándala.</p>') +
+        [...otros.values()].map((o) => `<div class="fila"><div class="t"><b>${esc(o.n)}</b><small>${o.on ? 'Conectado' : 'Desconectado'} · récord ${num(o.rec)} m · ganado ${fmt(o.tot || 0)}</small></div>${o.on && cfg.regalos && yo.y < 0 ? `<button class="s" data-a="regalar" data-v="${o.i}">Regalar</button>` : ''}</div>`).join('') : '<p class="nota">Estás solo en este mundo. Copia la liga y mándala.</p>') +
       `<h4>Mi maquinita</h4><div class="maq"><canvas id="miMaq" width="160" height="160"></canvas><div>
         <b>${esc(miNombre)}</b> · ${RANGOS[S.rango][1]}
-        <small>${fmt(S.d)} · récord ${S.rec} m · ${S.log.length} logros · ${S.st.viajes} viajes · ⏱ ${tiempoLargo(S.seg)} jugando</small>
+        <small>${fmt(S.d)} · récord ${num(S.rec)} m · ${S.log.length} logros · ${num(S.st.viajes)} viajes · ⏱ ${tiempoLargo(S.seg)} jugando</small>
         <small>Combustible ${S.fuel.toFixed(1)} / ${tanque()} L · casco ${Math.ceil(S.vida)} / ${vidaMax()} · bodega ${nCarga()} / ${bodega()}</small>
         <small>${PZ.map((z, i) => z.n + ': <b style="display:inline">' + z.niv[S.eq[i]][0] + '</b>').join(' · ')}</small>
         <small>Objetos: ${OBJ.map((o, i) => S.obj[i] ? CORTO[i] + ' ×' + S.obj[i] : '').filter(Boolean).join(' · ') || 'ninguno'}</small></div></div>
