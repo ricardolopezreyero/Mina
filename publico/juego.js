@@ -3321,6 +3321,18 @@ function htmlPublico() {
   return h;
 }
 
+/* ════════ Manifiesto ════════ RLR */
+// La carta de quien hizo el juego. Su nombre lleva a ricardolopezreyero.com, pero se ve igual que el resto del texto.
+const MANIFIESTO = `<article class="manifiesto">
+  <h3>Manifiesto</h3>
+  <p>Este juego está hecho con todo el cariño con el que se puede hacer un juego.</p>
+  <p>Nació de <i>Motherload</i>, un juego que jugué de niño durante decenas de horas. Todavía me acuerdo de lo que disfrutaba y de lo que no. Me quedé con lo bueno, lo multipliqué, y le di al juego mucho más sentido y una historia que contar.</p>
+  <p>Aquí no se excava solo: se baja con amigos, en el mismo mundo y al mismo tiempo. Cada lugar guarda algo, cada metro tiene su razón de ser, y hasta el fondo, debajo de todo, hay algo esperándote.</p>
+  <p>Ojalá sea un regalo para ti. Disfrútalo sin prisa, y si te gusta, compártelo con alguien que quieras: se disfruta más acompañado.</p>
+  <p>Y si llegas al final, que te deje un buen mensaje y un buen sabor de boca.</p>
+  <p class="firma">Con mucho cariño,<br><b>Ing. <a href="https://ricardolopezreyero.com" target="_blank" rel="noopener">Ricardo López Reyero</a></b><br><small>Torreón, Coahuila, México · 2 de octubre de 2026 · 8:12 p. m. · 21 °C</small></p>
+</article>`;
+
 /* ════════ La tabla mundial ════════ RLR */
 // Las veinte maquinitas que más han ganado, en todos los mundos. Con la tabla abierta se pregunta cada 4 s y los números
 // ruedan hasta su nuevo valor; jugando, cada minuto, para saber en qué lugar vas.
@@ -4159,7 +4171,7 @@ function sel(k, ops, quien = 'regla') {
   return `<select data-a="${quien}" data-k="${k}" ${soyCreador ? '' : 'disabled'}>${ops.map(([v, t]) => `<option value="${v}" ${cfg[k] == v ? 'selected' : ''}>${t}</option>`).join('')}</select>`;
 }
 function menuPrincipal() {
-  const P = ['Bodega', 'Colección', 'Mapa', '', 'Logros', 'Catálogo', 'Estadísticas', 'Opciones', 'Mundo', 'Ayuda', '🏆 Top 33'];      // la 3 eran los contratos
+  const P = ['Bodega', 'Colección', 'Mapa', '', 'Logros', 'Catálogo', 'Estadísticas', 'Opciones', 'Mundo', 'Ayuda', '🏆 Top 33', 'Manifiesto'];      // la 3 eran los contratos
   if (pestana === 3) pestana = 0;
   let h = cab('<span class="hamb"></span>' + esc(cfg.nombre || 'Mina')) + `<div class="pest">${P.map((p, i) => (p ? `<button data-a="pest" data-v="${i}" class="${i === pestana ? 'on' : ''}">${p}</button>` : '')).join('')}</div><div class="cuerpo">`;
   if (pestana === 0) {
@@ -4239,6 +4251,8 @@ function menuPrincipal() {
       <div class="fila"><div class="t"></div><button class="s" data-a="mundos">Mis mundos · crear o cargar otro</button><button class="mal" data-a="desechar">Desechar este mundo</button></div>`;
   } else if (pestana === 10) {
     h += htmlTop();
+  } else if (pestana === 11) {
+    h += MANIFIESTO;
   } else {
     h += `<p><b>Moverte:</b> con las flechas. <b>↑</b> vuela. <b>↓</b> perfora hacia abajo. <b>← →</b> contra una pared, perfora de lado. Nunca se perfora hacia arriba.</p>
       <p><b>El ciclo:</b> baja, llena la bodega, sube, vende en La Báscula, carga combustible y mejora tu equipo en El Taller. En la superficie, párate frente a un edificio y pulsa ↓.</p>

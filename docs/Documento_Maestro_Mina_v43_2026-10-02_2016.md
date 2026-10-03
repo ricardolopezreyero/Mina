@@ -1051,6 +1051,16 @@ La liga de un mundo pasa de `mina.capitaltorreon.com/m/QSAHAZ3F` a **`mina.capit
 - **El icono del menú** (tres rayas) se dibuja con CSS y queda centrado con el título.
 - **Números con comas** en Estadísticas (10,000 m · 2,889 piezas · 1,859 explosivos…), en la profundidad de la esquina, en los récords de la lista de jugadores y en Mundo.
 
+### 9.37 El manifiesto
+
+Menú → **Manifiesto** (la última pestaña): una carta de Ricardo, escrita a partir de su dictado y ajustada en su voz. Dice de dónde nació el juego (*Motherload*, que jugó de niño durante decenas de horas), qué se propuso (quedarse con lo bueno, multiplicarlo y darle sentido e historia), que aquí se juega acompañado, que hasta el fondo hay algo esperando, y que ojalá sea un regalo.
+
+Firma: **Ing. Ricardo López Reyero** · Torreón, Coahuila, México · 2 de octubre de 2026 · 8:12 p. m. · 21 °C.
+
+El nombre lleva a **ricardolopezreyero.com** (en otra pestaña, para no perder la partida), pero se ve exactamente igual que el resto del texto: mismo color, sin subrayado y sin la manita al pasar el ratón.
+
+El README abre con un resumen del manifiesto.
+
 ## 10. Revisión de código del 2 de octubre
 
 Se revisó todo el código buscando fallas y se corrigieron estas:

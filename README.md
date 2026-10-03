@@ -6,6 +6,12 @@ Juego de minería para navegador, infinito y compartido. Bajas con tu maquinita,
 
 Gratis y sin registro: entras y ya estás jugando, sin llenar nada. Se puede instalar como aplicación y sigue funcionando sin internet.
 
+## Manifiesto
+
+Este juego está hecho con todo el cariño con el que se puede hacer un juego. Nació de *Motherload*, que jugué de niño durante decenas de horas: me quedé con lo bueno, lo multipliqué, y le di mucho más sentido y una historia. Se lee completo dentro del juego, en Menú → Manifiesto.
+
+— Ing. Ricardo López Reyero · Torreón, Coahuila, México
+
 ## Cómo se juega
 
 - **Las flechas** para moverte. **↑** vuela, **↓** perfora hacia abajo, **← →** contra una pared perfora de lado.
@@ -45,7 +51,7 @@ Gratis y sin registro: entras y ya estás jugando, sin llenar nada. Se puede ins
 | `wrangler.jsonc` | Configuración del Worker y del dominio |
 | `publico/sw.js`, `publico/manifest.webmanifest`, `publico/iconos/` | La aplicación instalable: lo que se guarda en el equipo para abrir sin internet, y sus iconos |
 | `diseno-fuente/` | El programa que dibuja el icono en todos sus tamaños |
-| `docs/Documento_Maestro_Mina_v42_2026-10-02_2012.md` | Qué está construido, con qué números y qué falta |
+| `docs/Documento_Maestro_Mina_v43_2026-10-02_2016.md` | Qué está construido, con qué números y qué falta |
 | `Prompt_Maestro_Mina_v4_2026-10-01_2336.md` | El diseño completo |
 | `sonidos-fuente/` | El pedido exacto de sonidos y música para ElevenLabs (aún sin generar) |
 
