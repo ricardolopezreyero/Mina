@@ -960,7 +960,7 @@ Tres cosas más para el cierre, pedidas por Ricardo al llegar él mismo a la úl
 
 **Más luz.** En el jardín, la oscuridad de la profundidad se va quitando conforme se descubre: con el 70 % a la vista ya no hay sombra, y el cuadro se ve con sus colores.
 
-**Flechas a las últimas celdas.** Cuando faltan 33 celdas o menos, cada una que no está en pantalla se señala con una flecha amarilla en la orilla y los metros que hay hasta ella. Las que están en pantalla ya traían su aro. Nota: el Corazón de la Tierra cuenta como celda del jardín; se quita con el taladro (los explosivos no lo tocan).
+**Flechas a las últimas celdas.** Cuando faltan 33 celdas o menos, cada una que no está en pantalla se señala con una flecha amarilla en la orilla y los metros que hay hasta ella. Las que están en pantalla ya traían su aro. El Corazón de la Tierra cuenta como celda del jardín y se quita con el taladro (los explosivos no lo tocan). Cuelga en medio de su caverna, sin piso a un lado, así que antes solo se alcanzaba parándose encima: era la celda que Ricardo no encontraba. Ahora, cuando faltan 33 o menos, esas celdas se quitan de cualquier lado, también volando y hacia arriba, con solo empujar contra ellas; una tarjeta lo explica.
 
 **La lluvia de minerales.** Al quitar la última piedra:
 

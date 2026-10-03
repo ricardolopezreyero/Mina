@@ -1115,6 +1115,7 @@ function jardinDelFondo() {
   const p = medirEden(), clave = mundoId + '|' + remin; edenPct = p; edenVivo = p >= 1;
   if (soloVer || !mundoId) return;
   if (S.fl.edenM !== clave) { S.fl.edenM = clave; S.fl.edenH = 0; }
+  if (p < 1 && edenQuedan <= 33 && !S.fl.edenU) { S.fl.edenU = 1; sucio = true; tarjeta('🎯 Las últimas ' + edenQuedan, 'Las flechas amarillas te llevan a cada una. Estas ya se quitan de cualquier lado, también volando y hacia arriba: empuja contra ellas. El Corazón también cuenta: se quita con el taladro, los explosivos no lo tocan.', 'msj', 14000, true); }
   if (yo.y >= EDEN0 && !S.fl.eden1) { S.fl.eden1 = 1; sucio = true; son.descubre(); tarjeta('🌱 Hay algo detrás de la roca', 'Aquí abajo, cada celda que quitas no deja un hueco: deja ver un pedazo de otra cosa. Quítenla toda, entre todos, y verán qué es.', 'msj', 14000, true); }
   const hito = [[0.95, 'Casi. Las últimas celdas quedan marcadas con un aro amarillo.'], [0.8, 'Falta poco. Lo que queda suele ser roca dura: con taladro bueno o con dinamita.'], [0.6, 'Ya asoman letras. Sigan quitando.'], [0.4, 'Ya se alcanza a ver el cielo de adentro.']].find(([h]) => p >= h);
   if (hito && p < 1 && (S.fl.edenH || 0) < hito[0]) { S.fl.edenH = hito[0]; sucio = true; son.logro(); tarjeta(`🌱 El Jardín del Fondo · ${Math.floor(p * 100)} % a la vista`, hito[1], 'msj', 10000); }
@@ -1623,6 +1624,15 @@ function fisica(dt) {
     if (aba && !izq && !der) perforar(cx, cy + 1);
     else if (izq && !der && (toca < 0 || yo.x - HW - 0.16 <= cx)) perforar(cx - 1, cy);
     else if (der && !izq && (toca > 0 || yo.x + HW + 0.16 >= cx + 1)) perforar(cx + 1, cy);
+  }
+  // Las últimas celdas del Jardín del Fondo (y el Corazón, que cuelga en medio de su caverna) se quitan de cualquier lado,
+  // también volando y hacia arriba: basta con empujar contra ellas. Si no, alguna queda imposible de alcanzar.
+  else if (!yo.perf && !reserva && !yo.ataca && yo.y > EDEN0 - 2 && edenQuedan <= 33) {
+    const cx = Math.floor(yo.x), cy = Math.floor(yo.y), ultima = (x, y) => y >= EDEN0 && y < H && solida(x, y);
+    if (der && !izq && yo.x + HW + 0.2 >= cx + 1 && ultima(cx + 1, cy)) perforar(cx + 1, cy);
+    else if (izq && !der && yo.x - HW - 0.2 <= cx && ultima(cx - 1, cy)) perforar(cx - 1, cy);
+    else if (arr && !izq && !der && yo.y - HH - 0.2 <= cy && ultima(cx, cy - 1)) perforar(cx, cy - 1);
+    else if (aba && !izq && !der && ultima(cx, cy + 1)) perforar(cx, cy + 1);
   }
 }
 // Con la tecla apretada, al terminar una celda arranca la siguiente en el mismo paso: sin parones.
