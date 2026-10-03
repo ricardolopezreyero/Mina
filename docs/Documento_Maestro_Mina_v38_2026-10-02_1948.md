@@ -962,17 +962,29 @@ Tres cosas más para el cierre, pedidas por Ricardo al llegar él mismo a la úl
 
 **Flechas a las últimas celdas.** Cuando faltan 33 celdas o menos, cada una que no está en pantalla se señala con una flecha amarilla en la orilla y los metros que hay hasta ella. Las que están en pantalla ya traían su aro. El Corazón de la Tierra cuenta como celda del jardín y se quita con el taladro (los explosivos no lo tocan). Cuelga en medio de su caverna, sin piso a un lado, así que antes solo se alcanzaba parándose encima: era la celda que Ricardo no encontraba. Ahora, cuando faltan 33 o menos, esas celdas se quitan de cualquier lado, también volando y hacia arriba, con solo empujar contra ellas; una tarjeta lo explica.
 
-**La lluvia de minerales.** Al quitar la última piedra:
+**El final, rehecho a pedido de Ricardo (9.32).** La lluvia de minerales original (todo para quien quitaba la última piedra, 16 segundos) se reemplazó por el final de abajo.
 
-1. Todos los minerales que quedaban enterrados en el mundo entero (de la superficie al fondo) se desprenden: el mundo queda de pura tierra. Los tesoros, los huesos y la colección se quedan donde estaban.
-2. Durante 16 segundos llueven gemas desde arriba de la pantalla, caen medio segundo y luego van derecho a la maquinita; cada una que llega suena y la cartera va subiendo a la vista.
-3. **Se los queda la maquinita que quitó la última piedra**: el valor completo de todas las piezas (en el mundo de prueba fueron 65,745 piezas, $456,450 M). Las demás ven la lluvia caer hacia ella, pero no cobran.
-4. Después viene el recorrido a pantalla completa del jardín.
-5. Para que vuelva a haber mineral hay que remineralizar.
+### 9.32 El final: la unión, el reparto y el camino de luz
 
-El mundo apunta que ya no tiene mineral (`sinMineral = remin`), así que quien entre después, o quien mire, ve pura tierra. La copia local también lo guarda.
+**El Corazón es lo último.** No se puede explotar ni perforar de lado. Se abre solo cuando todo lo demás del jardín ya está a la vista, y solo desde arriba: hay que pararse encima y perforar hacia abajo. Para Ricardo simboliza la unión con el Corazón. Cuando solo falta él, una tarjeta lo dice.
 
-**Decisión que conviene revisar:** todo el botín va a quien quita la última piedra. Si varios jugadores limpiaron el jardín entre todos, repartirlo en partes iguales sería más justo; se dejó así por cómo lo describió Ricardo («te llega a ti»).
+**Tres tiempos** (todas las maquinitas conectadas los viven juntas, cada quien en su pantalla):
+
+1. **La unión** (6 s). Cada maquinita conectada baja volando hasta su retrato junto a la mesa (el retrato la espera, transparente) y se une con él: destello y campana.
+2. **La lluvia** (4 minutos). Todos los minerales que quedaban en el mundo entero caen desde arriba de la pantalla hasta las maquinitas unidas junto a la mesa. La cartera de cada una sube a la vista durante los 4 minutos. Abajo al centro corre la cuenta regresiva.
+3. **El camino de luz.** En fila, una cada 2.4 s, cada maquinita baja al lago y sube por los peldaños de luz que deja el sol en el agua; mientras sube se hace chica y transparente, con una frase de piano ascendente, y al final desaparece con una campana. Después sale el jardín entero a pantalla completa y cada quien vuelve a empezar en la superficie.
+
+Los retratos de la mesa ya no se pintan después: las maquinitas se fueron.
+
+**El reparto, en partes iguales.** El mundo (no el navegador) hace la cuenta: el valor de todos los minerales que quedaban se divide entre todas las maquinitas registradas en el mundo en ese momento. Las conectadas lo reciben durante la lluvia; las que no estaban, al volver a entrar, con una tarjeta que explica quién perforó el Corazón y cuánto le tocó. Cada maquinita cobra una sola vez por cierre. Además sigue el regalo de $1,000 M por completar el jardín, una vez por mundo.
+
+**El mundo queda de pura tierra.** Los tesoros, los huesos y la colección siguen donde estaban. Para que vuelva a haber mineral, la Remineralizadora.
+
+**Mientras dura el final** la maquinita no se mueve (la lleva el final); el chat y el menú sí funcionan. Dura unos 4 minutos y 15 segundos con una maquinita, y 2.4 s más por cada una adicional.
+
+**Piezas.** Juego: `contarMinerales`, `vaciarMinerales`, `finDelMundo(quien, fin)`, `posCeremonia`, `pasoCeremonia`, `dibujarCeremonia`, `lluviaDeMinerales` (destinos por maquinita), `CER` (tiempos), regla del Corazón en `perforar`. Mundo: mensaje `fin` con `{ i, r, n, total, parte }`, guardado en `m.fin` y enviado en el saludo.
+
+**Probado en local** con dos maquinitas (una real y una simulada): reparto calculado por el mundo, unión, lluvia, camino de luz en fila, regreso a la superficie y retratos borrados. **Sin probar:** con varias personas reales a la vez, y el cobro al volver de quien no estaba.
 
 ## 10. Revisión de código del 2 de octubre
 

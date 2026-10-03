@@ -546,10 +546,15 @@ export class Mundo extends DurableObject {
       case "chatAntes":
         this.chatMas(ws, d);
         return;
-      case "fin":                // el Jardín del Fondo quedó completo: se apunta la primera vez y se le avisa a todos
-        if (!m.fin) { m.fin = { t: Date.now(), i }; }
-        m.sinMineral = m.remin; this.sucio.meta = true;      // todos los minerales del mundo cayeron: queda de pura tierra hasta remineralizar
-        this.difundir({ t: "fin", i, r: m.remin }, ws);
+      case "fin": {              // el Jardín del Fondo quedó completo: los minerales que quedaban se reparten en partes iguales entre todas las maquinitas del mundo
+        if (!m.fin || m.fin.r !== m.remin) {
+          const n = Math.max(1, this.jug.filter(Boolean).length), total = Number.isFinite(d.total) && d.total >= 0 ? Math.min(d.total, 1e16) : 0;
+          m.fin = { h: Date.now(), i, r: m.remin, n, total, parte: Math.floor(total / n) };
+        }
+        m.sinMineral = m.remin; this.sucio.meta = true;      // queda de pura tierra hasta remineralizar
+        this.difundir({ ...m.fin, t: "fin" });               // a todos, también a quien perforó el Corazón: así todos arrancan con el mismo reparto
+        break;
+      }
         break;
       case "aviso":
         this.difundir({ t: "aviso", i, x: limpio(d.x, 90) }, ws);

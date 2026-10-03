@@ -1073,7 +1073,7 @@ function armarEden() {
       q.fillStyle = '#8a5a36'; q.fillRect(41, 106.25, 14, 0.14); });
   }
   // las maquinitas de este mundo, descansando junto a la mesa, cada una con su nombre
-  { const g = edenGente(), n = g.length, paso = Math.min(1.9, 17 / Math.max(1, n)), x0 = 48 - ((n - 1) * paso) / 2;
+  if (sinMineral !== remin) { const g = edenGente(), n = g.length, paso = Math.min(1.9, 17 / Math.max(1, n)), x0 = 48 - ((n - 1) * paso) / 2;
     g.forEach((j, k) => { const x = x0 + k * paso, y = 107.6; pon(x - 2.2, y - 1.2, x + 2.2, y + 1.9, (q) => { const m = q.getTransform(); q.save(); q.setTransform(1, 0, 0, 1, 0, 0); dibMaq(q, x * m.a + m.e, y * m.d + m.f, 1.5 * m.a, j.m, k % 2 ? -1 : 1, false, 0, '', '', 0.4); q.restore(); q.font = `800 ${n > 6 ? 0.36 : 0.42}px system-ui,sans-serif`; q.textAlign = 'center'; q.textBaseline = 'top'; q.lineJoin = 'round'; q.strokeStyle = 'rgba(20,60,30,.85)'; q.lineWidth = 0.12; const yn = y + 0.72 + (n > 6 && k % 2 ? 0.5 : 0); q.strokeText(j.n, x, yn); q.fillStyle = '#fff'; q.fillText(j.n, x, yn); }); }); }
   // trajineras en el lago
   for (let k = 0; k < 7; k++) { const x = 7 + k * 13.5 + R(-3, 3), y = R(112, 118), c = de(['#ff5a4d', '#ffb02e', '#3fb7a0', '#ff7ac8', '#6a8dff']), c2 = de(['#ffe14d', '#ffffff', '#ff9a1f']); if (Math.abs(x - 48.5) < 4 && y < 114) continue; pon(x - 2.2, y - 2, x + 2.2, y + 1.2, (q) => { q.fillStyle = 'rgba(20,70,110,.25)'; q.beginPath(); q.ellipse(x, y + 0.45, 1.9, 0.25, 0, 0, 7); q.fill(); q.fillStyle = c; q.beginPath(); q.moveTo(x - 1.8, y - 0.15); q.lineTo(x + 1.8, y - 0.15); q.lineTo(x + 1.45, y + 0.35); q.lineTo(x - 1.45, y + 0.35); q.fill(); q.strokeStyle = '#7a5230'; q.lineWidth = 0.08; for (const a of [-1, 1]) { q.beginPath(); q.moveTo(x + a, y - 0.15); q.lineTo(x + a, y - 1.1); q.stroke(); } q.strokeStyle = c2; q.lineWidth = 0.36; q.beginPath(); q.arc(x, y - 1.05, 1.02, Math.PI, Math.PI * 2); q.stroke(); q.fillStyle = c; for (let i = 0; i < 6; i++) bola(q, x + Math.cos(Math.PI + (i + 0.5) * 0.524) * 1.02, y - 1.05 + Math.sin(Math.PI + (i + 0.5) * 0.524) * 1.02, 0.12); }); }
@@ -1084,7 +1084,7 @@ function armarEden() {
   return E;
 }
 function pintarEden(q, bx, by) {              // el pedazo de jardín que le toca a un bloque (ya recortado a sus celdas abiertas)
-  const firma = seed + '|' + edenGente().map((j) => j.n + j.m).join(',');
+  const firma = seed + '|' + (sinMineral === remin ? 'fin' : edenGente().map((j) => j.n + j.m).join(','));
   if (!edenE || firma !== edenFirma) { edenFirma = firma; edenE = armarEden(); }
   const x0 = bx * BL, y0 = by * BL - EDEN0, x1 = x0 + BL, y1 = y0 + BL;
   q.setTransform(T, 0, 0, T, -x0 * T, -y0 * T);
@@ -1115,55 +1115,131 @@ function jardinDelFondo() {
   const p = medirEden(), clave = mundoId + '|' + remin; edenPct = p; edenVivo = p >= 1;
   if (soloVer || !mundoId) return;
   if (S.fl.edenM !== clave) { S.fl.edenM = clave; S.fl.edenH = 0; }
+  if (p < 1 && edenQuedan === 1 && celda(48, 4915) === 46 && S.fl.edenC !== mundoId + '|' + remin) { S.fl.edenC = mundoId + '|' + remin; sucio = true; son.descubre(); tarjeta('❤️ Solo falta el Corazón', 'Todo lo demás ya está a la vista. Párate encima del Corazón y perfóralo hacia abajo: es la unión, y ahí empieza el final.', 'msj', 16000, true); }
   if (p < 1 && edenQuedan <= 33 && !S.fl.edenU) { S.fl.edenU = 1; sucio = true; tarjeta('🎯 Las últimas ' + edenQuedan, 'Las flechas amarillas te llevan a cada una. Estas ya se quitan de cualquier lado, también volando y hacia arriba: empuja contra ellas. El Corazón también cuenta: se quita con el taladro, los explosivos no lo tocan.', 'msj', 14000, true); }
   if (yo.y >= EDEN0 && !S.fl.eden1) { S.fl.eden1 = 1; sucio = true; son.descubre(); tarjeta('🌱 Hay algo detrás de la roca', 'Aquí abajo, cada celda que quitas no deja un hueco: deja ver un pedazo de otra cosa. Quítenla toda, entre todos, y verán qué es.', 'msj', 14000, true); }
   const hito = [[0.95, 'Casi. Las últimas celdas quedan marcadas con un aro amarillo.'], [0.8, 'Falta poco. Lo que queda suele ser roca dura: con taladro bueno o con dinamita.'], [0.6, 'Ya asoman letras. Sigan quitando.'], [0.4, 'Ya se alcanza a ver el cielo de adentro.']].find(([h]) => p >= h);
   if (hito && p < 1 && (S.fl.edenH || 0) < hito[0]) { S.fl.edenH = hito[0]; sucio = true; son.logro(); tarjeta(`🌱 El Jardín del Fondo · ${Math.floor(p * 100)} % a la vista`, hito[1], 'msj', 10000); }
-  if (p >= 1 && !(S.fl.edenF && S.fl.edenF[clave])) { enviar({ t: 'fin' }); finDelMundo(miI); }      // cada maquinita celebra una vez cada cierre
+  if (p >= 1 && !(S.fl.edenF && S.fl.edenF[clave]) && !esperaFin) {     // se avisa al mundo; él reparte en partes iguales y le avisa a todos
+    esperaFin = true; const total = contarMinerales().total;
+    if (conectado) { enviar({ t: 'fin', total }); setTimeout(() => { if (!(S.fl.edenF && S.fl.edenF[clave])) finDelMundo(miI, solo(total)); }, 5000); }
+    else finDelMundo(miI, solo(total));
+  }
 }
 // El cierre: ya no queda nada que quitar. El jardín cobra vida y a cada maquinita le toca su parte, porque hay para todos.
 // Al quitar la última piedra, todos los minerales que quedaban en el mundo se desprenden y caen hasta la maquinita que lo
 // logró: el mundo queda de pura tierra (los tesoros, los huesos y la colección se quedan donde estaban) y ella se queda con
 // todo. Para volver a tener mineral hay que remineralizar.
-let lluvia = null, sinMineral = -1;
-function vaciarMinerales() {
-  sinMineral = remin;
+let lluvia = null, sinMineral = -1, esperaFin = false, ceremonia = null;
+function contarMinerales() {
   let total = 0, n = 0; const cuenta = new Map();
-  for (let i = 0; i < NB; i++) { const t = base[i]; if (t >= 10 && t < 10 + MIN.length) { if (!(dug[i >> 3] & (1 << (i & 7)))) { total += MIN[t - 10].v; n++; cuenta.set(t - 10, (cuenta.get(t - 10) || 0) + 1); } base[i] = 1; } }
-  mapa.fill(255); bloques.clear(); tiles.clear();
+  for (let i = 0; i < NB; i++) { const t = base[i]; if (t >= 10 && t < 10 + MIN.length && !(dug[i >> 3] & (1 << (i & 7)))) { total += MIN[t - 10].v; n++; cuenta.set(t - 10, (cuenta.get(t - 10) || 0) + 1); } }
   return { total, n, cuenta };
 }
+function vaciarMinerales() {
+  const r = contarMinerales(); sinMineral = remin;
+  for (let i = 0; i < NB; i++) { const t = base[i]; if (t >= 10 && t < 10 + MIN.length) base[i] = 1; }
+  mapa.fill(255); bloques.clear(); tiles.clear(); edenE = null;
+  return r;
+}
+// ── El final, en tres tiempos:
+//    1. La unión (6 s): cada maquinita conectada baja hasta su retrato junto a la mesa y se une con él.
+//    2. La lluvia (4 min): todos los minerales que quedaban en el mundo caen hasta ellas. Se reparten en partes iguales
+//       entre todas las maquinitas del mundo; las que no estaban reciben la suya al volver.
+//    3. El camino de luz: en fila, una por una, bajan al lago y suben por los peldaños de luz que deja el sol en el agua,
+//       hasta desaparecer. Después, el jardín entero a pantalla completa, y cada quien vuelve a empezar en la superficie.
+const CER = { union: 6, lluvia: 240, sepa: 2.4, baja: 2.6, sube: 4.6 };
+const retrato = (k, n) => { const paso = Math.min(1.9, 17 / Math.max(1, n)); return [48 - ((n - 1) * paso) / 2 + k * paso, EDEN0 + 107.6]; };
+const PELDANO0 = [48.5, EDEN0 + 119.2], PELDANO1 = [48.5, EDEN0 + 110.5];
+// Si el mundo no contesta, el reparto se hace aquí, entre las maquinitas que este equipo conoce.
+const solo = (total) => { const n = otros.size + 1; return { r: remin, total, n: Math.max(n, miI + 1), parte: Math.floor(total / n), i: miI }; };
+function finDelMundo(quien, fin) {
+  const clave = mundoId + '|' + remin, F = S.fl.edenF || (S.fl.edenF = {}), P = S.fl.edenP || (S.fl.edenP = {});
+  F[clave] = 1; esperaFin = false;
+  const botin = vaciarMinerales(), gente = edenGente();
+  const parte = soloVer || miI >= (fin.n || 1) || P[clave] ? 0 : Math.floor(fin.parte || 0); if (parte) P[clave] = 1;
+  const regalo = soloVer || F[mundoId] ? 0 : 1e9; if (!soloVer) F[mundoId] = 1; if (regalo) { S.d += regalo; S.tot += regalo; }
+  // quiénes participan: las maquinitas conectadas, cada una con su retrato
+  const part = gente.map((j, k) => ({ ...j, k, mio: !soloVer && j.i === miI, a: retrato(k, gente.length) })).filter((j) => j.mio || otros.get(j.i)?.on);
+  for (const j of part) { const o = j.mio ? yo : otros.get(j.i); j.d = o && o.x !== undefined ? [o.x, o.y] : [j.a[0], j.a[1] - 6]; }
+  ceremonia = { t0: performance.now(), part, ids: new Set(part.map((j) => j.i)), sonadas: new Set(), fin: false };
+  ceremonia.tFin = CER.union + CER.lluvia + 1 + Math.max(0, part.length - 1) * CER.sepa + CER.baja + CER.sube + 1.5;
+  if (botin.n) lluvia = { t0: performance.now() + CER.union * 1000, ult: performance.now(), dur: CER.lluvia, p: [], tipos: [...botin.cuenta.keys()], llegan: 0, sonados: 0, tSon: 0, total: parte, mio: parte > 0, d0: S.d, tot0: S.tot };
+  edenVivo = true; musica.z = ''; musica.quedan = 0; yo.perf = null; crucero = false;
+  for (const [f, k] of [[262, 0], [330, 0.25], [392, 0.5], [523, 0.8], [659, 1.15], [784, 1.5], [1047, 2]]) piano(f, 5, 0.08, k, 'avisos');
+  const nGente = Math.max(1, fin.n || 1);
+  tarjeta('❤️ La unión', `${quien === miI ? 'Perforaste el Corazón.' : nombreDe(quien) + ' perforó el Corazón.'} Todos los minerales que quedaban en el mundo (${botin.n.toLocaleString('es-MX')} piezas, ${fmt(fin.total || botin.total)}) van a caer en los próximos 4 minutos, repartidos en partes iguales entre las ${nGente} maquinitas de este mundo.${parte ? ' Tu parte: ' + fmt(parte) + '.' : ''}${regalo ? ' Y el regalo del jardín: ' + fmt(regalo) + '.' : ''} Hay para todos.`, 'msj', 30000, true);
+  sucio = true; pintarHud(true);
+}
+// Dónde va cada maquinita, qué tan grande y qué tan visible, a cada momento del final.
+function posCeremonia(j, t) {
+  const C = ceremonia, suave = (k) => k * k * (3 - 2 * k), mezcla2 = (a, b, k) => [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k];
+  if (t < CER.union) { const k = suave(tope(t / CER.union)); const p = mezcla2(j.d, j.a, k); p[1] -= Math.sin(k * Math.PI) * 3; return { p, esc: 1 + 0.5 * k, alfa: 1, vuela: 1 }; }
+  const t0 = CER.union + CER.lluvia + 1 + C.part.indexOf(j) * CER.sepa;
+  if (t < t0) return { p: [j.a[0], j.a[1] + Math.sin(t * 2 + j.k) * 0.05], esc: 1.5, alfa: 1, vuela: 0 };
+  if (t < t0 + CER.baja) { const k = suave((t - t0) / CER.baja); return { p: mezcla2(j.a, PELDANO0, k), esc: 1.5, alfa: 1, vuela: 2 }; }
+  if (t < t0 + CER.baja + CER.sube) { const k = (t - t0 - CER.baja) / CER.sube, p = mezcla2(PELDANO0, PELDANO1, suave(k)); p[1] -= Math.abs(Math.sin(k * Math.PI * 8)) * 0.25; return { p, esc: 1.5 - 1.2 * k, alfa: k < 0.65 ? 1 : 1 - (k - 0.65) / 0.35, vuela: 0, sube: k }; }
+  return null;
+}
+// Lo que hace el final en cada cuadro: mover la cámara, sonar, y terminar.
+function pasoCeremonia() {
+  const C = ceremonia, t = (performance.now() - C.t0) / 1000, mia = C.part.find((j) => j.mio);
+  let foco = [48, EDEN0 + 104];
+  if (t < CER.union && mia) foco = posCeremonia(mia, t).p;
+  else if (t > CER.union + CER.lluvia) foco = [48.5, EDEN0 + 112];
+  yo.vx = yo.vy = 0; yo.perf = null;
+  if (!soloVer) { yo.x = ant.x = vis.x = vis.x + (foco[0] - vis.x) * 0.08; yo.y = ant.y = vis.y = vis.y + (foco[1] - vis.y) * 0.08; }
+  else { vis.x += (foco[0] - vis.x) * 0.08; vis.y += (foco[1] - vis.y) * 0.08; yo.x = vis.x; yo.y = vis.y; }
+  for (const j of C.part) {                                   // sonidos: la unión, y cada maquinita que sube por la luz
+    const t0 = CER.union + CER.lluvia + 1 + C.part.indexOf(j) * CER.sepa;
+    if (t >= CER.union && !C.sonadas.has('u' + j.i)) { C.sonadas.add('u' + j.i); campana(880 + j.k * 60, 1.2, 0.06, 'avisos'); if (op.part) chispas(j.a[0], j.a[1], '#ffe9a8', 26, 6); }
+    if (t >= t0 + CER.baja && !C.sonadas.has('s' + j.i)) { C.sonadas.add('s' + j.i); [523, 659, 784, 1047, 1319].forEach((f, k) => piano(f * Math.pow(2, (j.k % 3) / 12), 3, 0.06, k * 0.55, 'avisos')); }
+    if (t >= t0 + CER.baja + CER.sube && !C.sonadas.has('f' + j.i)) { C.sonadas.add('f' + j.i); campana(1568, 2, 0.05, 'avisos'); campana(2093, 2.4, 0.03, 'avisos', 0.2); if (op.part) chispas(PELDANO1[0], PELDANO1[1], '#ffffff', 30, 5); }
+  }
+  const rest = CER.union + CER.lluvia - t;
+  pista(t < CER.union ? '❤️ La unión' : rest > 0 ? `💎 Llegan los minerales · ${Math.floor(rest / 60)}:${String(Math.floor(rest % 60)).padStart(2, '0')}` : '✨ El camino de luz', true);
+  if (t >= C.tFin && !C.fin) {
+    C.fin = true; ceremonia = null; lluvia = null; pista('');
+    if (!soloVer) {                                            // de vuelta a la superficie, para empezar otra vez
+      yo.x = ant.x = vis.x = INICIO_X; yo.y = ant.y = vis.y = INICIO_Y; yo.vx = yo.vy = 0; S.x = INICIO_X; S.y = INICIO_Y; sucio = true; enviarEst();
+      camX = Math.max(0, Math.min(W - cols, yo.x - cols / 2)); camY = Math.max(-filas * 0.68, yo.y - filas * 0.5);
+      verJardin();
+      tarjeta('🌅 Volviste a empezar', 'El mundo quedó de pura tierra; los tesoros, los huesos y la colección siguen donde estaban. Cuando quieras que vuelva a haber mineral, la Remineralizadora.', 'msj', 20000, true);
+    }
+  }
+}
+function dibujarCeremonia(ox, oy) {
+  const C = ceremonia, t = (performance.now() - C.t0) / 1000;
+  for (const j of C.part) {
+    if (t < CER.union) { g.globalAlpha = 0.35 + 0.25 * Math.sin(t * 4); dibMaq(g, ox + j.a[0] * T, oy + j.a[1] * T, T * 1.5, j.m, j.k % 2 ? -1 : 1, false, 0, '', '', j.a[0]); g.globalAlpha = 1; }      // el retrato, esperándola
+    const e = posCeremonia(j, t); if (!e) continue;
+    const px = ox + e.p[0] * T, py = oy + e.p[1] * T;
+    if (e.sube !== undefined || (t >= CER.union && t < CER.union + 0.8)) {            // luz al unirse y al subir
+      const rr = T * (1.6 + (e.sube || 0) * 1.5), gl = g.createRadialGradient(px, py, 0, px, py, rr); gl.addColorStop(0, `rgba(255,244,205,${0.55 * e.alfa})`); gl.addColorStop(1, 'rgba(255,244,205,0)');
+      g.globalCompositeOperation = 'lighter'; g.fillStyle = gl; g.fillRect(px - rr, py - rr, rr * 2, rr * 2); g.globalCompositeOperation = 'source-over';
+    }
+    g.globalAlpha = e.alfa; dibMaq(g, px, py, T * e.esc, j.m, j.k % 2 ? -1 : 1, e.vuela, 0, op.nombres && e.alfa > 0.6 ? j.n : '', '', e.p[0]); g.globalAlpha = 1;
+  }
+}
 function lluviaDeMinerales(ox, oy) {
-  const L = lluvia, t = (performance.now() - L.t0) / 1000, mx = ox + vis.x * T, my = oy + vis.y * T, w = lienzo.width, d = Math.min(0.05, (performance.now() - L.ult) / 1000); L.ult = performance.now();
-  if (t < L.dur - 2.5) for (let k = 0; k < 22 && L.p.length < 2200; k++) { const i = L.tipos[Math.floor(Math.random() * L.tipos.length)]; L.p.push({ x: Math.random() * w, y: -T * (0.5 + Math.random() * 6), vx: (Math.random() - 0.5) * T * 2, vy: T * (4 + Math.random() * 6), c: MIN[i].col, r: T * (0.09 + Math.random() * 0.1), a: Math.random() * 6, e: 0 }); }
+  const L = lluvia, ahora = performance.now(), t = (ahora - L.t0) / 1000, w = lienzo.width, d = Math.min(0.05, (ahora - L.ult) / 1000); L.ult = ahora;
+  if (t < 0) return;
+  const destinos = ceremonia ? ceremonia.part.map((j) => [ox + j.a[0] * T, oy + j.a[1] * T]) : [[ox + vis.x * T, oy + vis.y * T]];
+  if (!destinos.length) destinos.push([ox + 48 * T, oy + (EDEN0 + 105) * T]);
+  if (t < L.dur - 3) for (let k = 0; k < 7 && L.p.length < 1400; k++) { const i = L.tipos[Math.floor(Math.random() * L.tipos.length)]; L.p.push({ x: Math.random() * w, y: -T * (0.5 + Math.random() * 6), vx: (Math.random() - 0.5) * T * 2, vy: T * (4 + Math.random() * 6), c: MIN[i].col, r: T * (0.09 + Math.random() * 0.1), a: Math.random() * 6, e: 0, tg: Math.floor(Math.random() * destinos.length) }); }
   for (const q of L.p) {
-    q.e += d; const h = Math.min(1, Math.max(0, (q.e - 0.5) / 1.1));                 // cae medio segundo y luego se va derecho a la maquinita
+    const [mx, my] = destinos[q.tg % destinos.length];
+    q.e += d; const h = Math.min(1, Math.max(0, (q.e - 0.5) / 1.1));                 // cae medio segundo y luego se va derecho a su maquinita
     q.vx += ((mx - q.x) * 9 - q.vx * 2) * h * d; q.vy += ((my - q.y) * 9 - q.vy * 2) * h * d + T * 6 * (1 - h) * d;
     q.x += q.vx * d; q.y += q.vy * d; q.a += d * 5;
-    if (Math.hypot(q.x - mx, q.y - my) < T * 0.35) { q.fin = 1; L.llegan++; continue; }
+    if (Math.hypot(q.x - mx, q.y - my) < T * 0.45) { q.fin = 1; L.llegan++; continue; }
     g.save(); g.translate(q.x, q.y); g.rotate(q.a); g.strokeStyle = '#0006'; g.lineWidth = Math.max(1, T * 0.03); g.fillStyle = q.c; g.beginPath(); g.moveTo(0, -q.r * 1.4); g.lineTo(q.r, 0); g.lineTo(0, q.r * 1.4); g.lineTo(-q.r, 0); g.closePath(); g.fill(); g.stroke(); g.fillStyle = 'rgba(255,255,255,.55)'; g.beginPath(); g.moveTo(0, -q.r * 1.4); g.lineTo(q.r * 0.5, -q.r * 0.3); g.lineTo(-q.r * 0.5, -q.r * 0.3); g.fill(); g.restore();
   }
   if (L.p.length) { let n = 0; for (let i = 0; i < L.p.length; i++) if (!L.p[i].fin) L.p[n++] = L.p[i]; L.p.length = n; }
-  if (L.llegan > L.sonados && performance.now() - L.tSon > 70) { L.tSon = performance.now(); L.sonados = L.llegan; son.moneda(Math.min(24, L.llegan % 25)); if (op.part && Math.random() < 0.5) chispas(vis.x, vis.y - 0.3, L.tipos.length ? MIN[L.tipos[Math.floor(Math.random() * L.tipos.length)]].col : '#fff', 3, 4); }
+  if (L.llegan > L.sonados && ahora - L.tSon > 90) { L.tSon = ahora; L.sonados = L.llegan; son.moneda(Math.min(24, L.llegan % 25)); }
   const k = Math.min(1, t / L.dur), suave = 1 - Math.pow(1 - k, 3);
   if (L.mio) { S.d = L.d0 + Math.floor(L.total * suave); S.tot = L.tot0 + Math.floor(L.total * suave); }
   if (k >= 1) { lluvia = null; if (L.mio) { S.d = L.d0 + L.total; S.tot = L.tot0 + L.total; sucio = true; son.venta(); pintarHud(true); } }
-}
-function finDelMundo(quien) {
-  const F = S.fl.edenF || (S.fl.edenF = {}), g = edenGente().map((j) => j.n);
-  const botin = vaciarMinerales(), mio = quien === miI;
-  if (botin.n) { const tipos = [...botin.cuenta.keys()]; lluvia = { t0: performance.now(), ult: performance.now(), dur: 16, p: [], tipos, llegan: 0, sonados: 0, tSon: 0, total: botin.total, mio, d0: S.d, tot0: S.tot }; }
-  edenVivo = edenPct >= 1; musica.z = ''; musica.quedan = 0;
-  for (const [f, k] of [[392, 0], [494, 0.18], [587, 0.36], [784, 0.6], [988, 0.9], [1175, 1.25]]) piano(f, 4, 0.08, k, 'avisos');
-  if (op.part) for (let k = 0; k < 5; k++) chispas(yo.x + (k - 2) * 1.5, yo.y - 1, ['#ffd23f', '#ff7ac8', '#6ec3ff', '#6fdc7a', '#ffffff'][k], 16, 8);
-  const regalo = F[mundoId] ? 0 : 1e9; F[mundoId] = 1; F[mundoId + '|' + remin] = 1; if (regalo) { S.d += regalo; S.tot += regalo; }      // la parte de cada quien, una vez por mundo
-  sucio = true;
-  if (yo.y > EDEN0 - 60 && !soloVer) setTimeout(verJardin, botin.n ? 17500 : 900);
-  if (botin.n) { const lista = [...botin.cuenta.entries()].sort((a, b) => b[1] * MIN[b[0]].v - a[1] * MIN[a[0]].v).slice(0, 6).map(([i, c]) => MIN[i].n + ' ' + c.toLocaleString('es-MX')).join(' · ');
-    tarjeta(mio ? '💎 Todos los minerales del mundo son tuyos' : '💎 Todos los minerales del mundo cayeron hasta ' + nombreDe(quien), `${botin.n.toLocaleString('es-MX')} piezas que quedaban enterradas se desprendieron y bajaron hasta la maquinita${mio ? ': ' + fmt(botin.total) : ''}. El mundo queda de pura tierra; los tesoros, los huesos y la colección siguen arriba. Para que vuelva a haber mineral, la Remineralizadora. ${lista}.`, 'msj', 30000, true); }
-  tarjeta('🌳 El Jardín del Fondo, completo', `Quitaron hasta la última piedra, y esto era lo que había debajo de todo. Hay para todos. Siempre hubo. Todo está bien.${regalo ? ' Tu parte: ' + fmt(regalo) + '.' : ''} Lo descubrieron: ${g.join(', ')}.`, 'msj', 30000, true);
-  if (quien !== miI) aviso(nombreDe(quien) + ' quitó la última piedra del Jardín del Fondo');
-  pintarHud(true);
 }
 // El jardín entero, a pantalla completa: baja despacio desde las raíces hasta el lago y al final se aleja para verse todo de
 // una vez. Sale solo al quitar la última piedra, y después con la tecla V estando en el jardín.
@@ -1487,6 +1563,7 @@ function darVuelta() {
   if (S && !S.fl.vuelta) { S.fl.vuelta = 1; sucio = true; tarjeta('🌎 El mundo da la vuelta', 'Saliste por un lado y entraste por el otro. Todo está conectado: también los túneles y las explosiones.', 'msj', 10000); }
 }
 function fisica(dt) {
+  if (ceremonia) return;                         // durante el final, la maquinita la lleva el final
   if (yo.renace) { yo.renace = false; yo.x = INICIO_X; yo.y = INICIO_Y; yo.vx = yo.vy = 0; yo.perf = null; return; }
   const p = yo.perf;
   if (p) {                                   // perforando: avanza hacia la celda
@@ -1628,7 +1705,7 @@ function fisica(dt) {
   // Las últimas celdas del Jardín del Fondo (y el Corazón, que cuelga en medio de su caverna) se quitan de cualquier lado,
   // también volando y hacia arriba: basta con empujar contra ellas. Si no, alguna queda imposible de alcanzar.
   else if (!yo.perf && !reserva && !yo.ataca && yo.y > EDEN0 - 2 && edenQuedan <= 33) {
-    const cx = Math.floor(yo.x), cy = Math.floor(yo.y), ultima = (x, y) => y >= EDEN0 && y < H && solida(x, y);
+    const cx = Math.floor(yo.x), cy = Math.floor(yo.y), ultima = (x, y) => y >= EDEN0 && y < H && solida(x, y) && celda(x, y) !== 46;
     if (der && !izq && yo.x + HW + 0.2 >= cx + 1 && ultima(cx + 1, cy)) perforar(cx + 1, cy);
     else if (izq && !der && yo.x - HW - 0.2 <= cx && ultima(cx - 1, cy)) perforar(cx - 1, cy);
     else if (arr && !izq && !der && yo.y - HH - 0.2 <= cy && ultima(cx, cy - 1)) perforar(cx, cy - 1);
@@ -1678,6 +1755,10 @@ const tiempoPiedra = (m) => { const sobra = S.eq[0] - PIEDRA[durezaDe(m)][0]; re
 function perforar(x, y) {
   const t = celda(x, y);
   if (t === 0 || t === 6) return;
+  if (t === 46) {                                   // el Corazón se abre al final, y solo desde arriba: es la unión
+    medirEden();
+    if (edenQuedan > 1 || y !== Math.floor(yo.y) + 1) { if (tiempo - ultNo > 1.2) { ultNo = tiempo; son.latido ? son.latido() : son.piedra(); flota(x + 0.5, y - 0.2, edenQuedan > 1 ? '❤️ El Corazón se abre al final: quita primero todo lo demás' : '❤️ Párate encima del Corazón y perfora hacia abajo', '#ff9a8a'); } return; }
+  }
   const tp = t === 2 ? tiempoPiedra((y + 1) * 2) : 0;
   if (t === 5 || (t === 2 && !tp)) {
     if (tiempo - ultNo > 0.4) {
@@ -1862,7 +1943,7 @@ function recibir(d) {
     }
     case 'noexiste': quitarMundo(mundoId); if (deCasa) return location.replace('/'); return pantallaFinal('Este mundo no existe', 'Puede que lo hayan borrado o que la liga esté incompleta.');
     case 'mira': return conMapa(d, iniciarVer);
-    case 'fin': if (S && !soloVer && !(S.fl.edenF && S.fl.edenF[mundoId + '|' + remin])) { edenPct = medirEden(); if (edenPct >= 1) finDelMundo(d.i); } else if (S && d.r === remin) vaciarMinerales(); return;
+    case 'fin': if (!S || d.r !== remin) return; if (!(S.fl.edenF && S.fl.edenF[mundoId + '|' + remin]) && !ceremonia) finDelMundo(d.i, d); else if (sinMineral !== remin) vaciarMinerales(); return;
     case 'chat': if (d.id && typeof d.x === 'string') agregarChat(d); return;
     case 'chatMas': return chatViejos(d.l);
     case 'chatNo': return aviso('Vas muy rápido: espera un momento para escribir otra vez.');
@@ -1944,6 +2025,11 @@ function iniciarMundo(d, local) {
   seed = d.seed; remin = d.remin; cfg = d.cfg; miI = d.i; soyCreador = !!d.creador;
   if (!local) { miPid = d.pid || ''; miVer = d.ver || ''; mirones = d.obs | 0; finMundo = d.fin || null; }
   if (d.sinMineral === remin) vaciarMinerales();                 // en este mundo ya cayeron todos los minerales: queda pura tierra
+  if (!local && d.fin && d.fin.r === remin && d.fin.parte > 0 && miI < (d.fin.n || 0) && S && !(S.fl.edenP && S.fl.edenP[mundoId + '|' + remin])) {      // no estabas cuando se repartieron: aquí está tu parte
+    (S.fl.edenP || (S.fl.edenP = {}))[mundoId + '|' + remin] = 1; (S.fl.edenF || (S.fl.edenF = {}))[mundoId + '|' + remin] = 1;
+    S.d += d.fin.parte; S.tot += d.fin.parte; sucio = true; son.venta();
+    setTimeout(() => tarjeta('💎 Tu parte del Jardín del Fondo', `Mientras no estabas, ${nombreDe(d.fin.i)} perforó el Corazón y todos los minerales del mundo se repartieron en partes iguales entre las ${d.fin.n} maquinitas. La tuya: ${fmt(d.fin.parte)}.`, 'msj', 20000, true), 1500);
+  }
   edenE = null; edenT = -9;
   const b = atob(d.dug); for (let i = 0; i < dug.length; i++) dug[i] = b.charCodeAt(i);
   const misCol = mias ? hallados.slice() : null; hallados.fill(0); for (const k of d.col || []) if (k >= 0 && k < NCOL) hallados[k] = 1;
@@ -2838,7 +2924,7 @@ function dibujar() {
   }
   // las demás maquinitas y la mía
   for (const o of otros.values()) {
-    if (!o.on || o.x === undefined) continue;
+    if (!o.on || o.x === undefined || (ceremonia && ceremonia.ids.has(o.i))) continue;
     dibMaq(g, ox + o.x * T, oy + o.y * T, T, o.m, o.fl & 1 ? 1 : -1, o.fl & 2 ? 1 : o.fl & 96 ? 2 : 0, o.fl & 4 ? (o.fl & 16 ? 2 : o.fl & 1 ? 1 : -1) : 0, op.nombres ? o.n : '', o.fl & 8 ? 'en pausa' : '', o.x);
   }
   const p = yo.perf, mx = ox + vis.x * T, my = oy + vis.y * T;
@@ -2856,7 +2942,8 @@ function dibujar() {
   }
   const enPelea = tiempo - (yo.pelea || -9) < 0.7, bx = enPelea ? Math.sin(reloj * 70) * T * 0.035 : 0;       // en pelea la maquinita vibra y saca los rotorcitos
   faroCol = tiempo - tGas < 3 ? '#6fc3ff' : '#fff3b0';
-  if (!soloVer) dibMaq(g, mx + bx, my, T, miModelo, yo.dir, yo.vuela ? 1 : yo.planea || enPelea || (yo.agua && yo.picada) ? 2 : 0, p ? (p.ty > Math.floor(p.oy) ? 2 : p.tx < Math.floor(p.ox) ? -1 : 1) : yo.ataca || 0, op.nombres ? miNombre : '', '', vis.x);
+  if (ceremonia) dibujarCeremonia(ox, oy);
+  if (!soloVer && !ceremonia) dibMaq(g, mx + bx, my, T, miModelo, yo.dir, yo.vuela ? 1 : yo.planea || enPelea || (yo.agua && yo.picada) ? 2 : 0, p ? (p.ty > Math.floor(p.oy) ? 2 : p.tx < Math.floor(p.ox) ? -1 : 1) : yo.ataca || 0, op.nombres ? miNombre : '', '', vis.x);
   // el aire como resistencia: al caer rápido se forma un arco bajo la maquinita; muy rápido se pone al rojo y deja estela
   const dens = vis.y < 0 ? Math.max(0, 1 + (vis.y + HH) / 45000) : 0;
   if (yo.vy > 30 && dens > 0.02) {
@@ -2978,7 +3065,7 @@ function cicloVer(t, id) {
   if (d > 0.1) d = 0.1;
   reloj += d; tiempo += d;
   const o = otros.get(veo);
-  if (o && o.on && o.x !== undefined) { const lejos = Math.abs(o.x - yo.x) > 12 || Math.abs(o.y - yo.y) > 12; yo.x = vis.x = o.x; yo.y = vis.y = o.y; if (lejos) { camX = Math.max(0, Math.min(W - cols, o.x - cols / 2)); camY = o.y - filas * 0.5; } }
+  if (!ceremonia && o && o.on && o.x !== undefined) { const lejos = Math.abs(o.x - yo.x) > 12 || Math.abs(o.y - yo.y) > 12; yo.x = vis.x = o.x; yo.y = vis.y = o.y; if (lejos) { camX = Math.max(0, Math.min(W - cols, o.x - cols / 2)); camY = o.y - filas * 0.5; } }
   animar(d); dibujar(); gotear(d);
   if ((tHud += d) > 0.25) { tHud = 0; pintarVer(); if (yo.y > EDEN0 - 60 && tiempo - edenT > 1) { edenT = tiempo; jardinDelFondo(); } }
 }
@@ -3167,6 +3254,7 @@ function animarTop(c) {
 }
 
 function animar(d) {
+  if (ceremonia) pasoCeremonia();
   const ya = performance.now();
   for (const o of otros.values()) {
     const b = o.b; if (!o.on || !b || !b.length) continue;
@@ -4047,7 +4135,7 @@ function menuPrincipal() {
       <p><b>Pleitos:</b> en el aire las maquinitas rebotan y no pasa nada. Bajo tierra, si empujas tu taladro contra otra (← → a su lado, o ↓ encima de ella), le pegas: tu taladro contra su casco. Por la espalda o desde arriba pega 50 % más; taladro contra taladro pega la mitad y los dos salen rebotados. La que pierde vuelve a la superficie sin perder nada. En el pueblo no hay pleitos, y quien creó el mundo puede apagarlos.</p>
       <p><b>Mapa y archivo:</b> Menú → Mapa muestra todos los túneles abiertos. Menú → Mundo → Guardar archivo descarga el mundo completo; desde «Mis mundos» se abre como una copia idéntica.</p>
       <p><b>Ojo de minero:</b> una de cada catorce piedras es una geoda: búscale el brillo morado. Cuando la flama de tu lámpara se pone azul, hay grisú al lado. Y tres lugares guardan una sorpresa para quien se detiene a mirar, a tocar o a quedarse quieto.</p>
-      <p><b>El fondo:</b> los últimos 240 m guardan algo detrás de la roca. Cada celda que se quita ahí deja ver un pedazo. Se descubre entre todos.</p>
+      <p><b>El fondo:</b> los últimos 240 m guardan algo detrás de la roca. Cada celda que se quita ahí deja ver un pedazo. Se descubre entre todos, y al final, de pie sobre el Corazón, se perfora hacia abajo.</p>
       <p><b>Diez kilómetros:</b> debajo de la Corteza siguen el Acuífero, las Cavernas, la Cristalera y la Zona de presión, con doce minerales nuevos y cuatro lugares por descubrir. Cada lugar que encuentres queda apuntado en <b>El Elevador</b> (el último edificio), que también te regresa al punto donde te recogió la grúa.</p>
       <p><b>Sin internet y como aplicación:</b> Mina se puede instalar (Menú → Opciones) y abre aunque no haya señal. Lo que caves y ganes sin internet se queda en tu equipo y se manda al mundo cuando la señal vuelve. En pantallas táctiles, arrastra el dedo para moverte y da un toque frente a un edificio para entrar.</p>
       <p><b>Tu nombre y tus ligas:</b> la maquinita nace bautizada para que empieces a jugar sin llenar nada; el nombre y el modelo se cambian en Menú → Mundo. Hay dos ligas: la del mundo (invita a excavar) y la tuya (presume tu maquinita); cada una lleva su imagen al mandarla por WhatsApp.</p>
