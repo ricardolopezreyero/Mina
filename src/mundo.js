@@ -849,7 +849,7 @@ export default {
 
     // La liga de un mundo lleva su nombre, sus hitos y su imagen en la vista previa (WhatsApp, iMessage…): se nota quién invita.
     // Con ?j=3 presume a la maquinita 3 de ese mundo.
-    const liga = u.pathname.match(/^\/m\/([2-9A-HJ-NP-Z]{8})\/?$/i);
+    const liga = u.pathname.match(/^\/(?:m\/)?([2-9A-HJ-NP-Z]{8})\/?$/i);      // mina.capitaltorreon.com/QSAHAZ3F (y la de antes, con /m/)
     if (liga && request.method === "GET") {
       const pagina = await env.ASSETS.fetch(new Request(new URL("/", request.url), request));
       const id = liga[1].toUpperCase(), j = /^\d{1,2}$/.test(u.searchParams.get("j") || "") ? Number(u.searchParams.get("j")) : -1;
@@ -869,7 +869,7 @@ export default {
         .on('meta[property="og:title"]', pon(titulo))
         .on('meta[property="og:description"]', pon(texto))
         .on('meta[property="og:image"]', pon(imagen))
-        .on('meta[property="og:url"]', pon(u.origin + "/m/" + id + (p ? "?j=" + j : "")))
+        .on('meta[property="og:url"]', pon(u.origin + "/" + id + (p ? "?j=" + j : "")))
         .transform(pagina);
     }
 

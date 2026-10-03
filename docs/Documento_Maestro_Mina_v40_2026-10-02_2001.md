@@ -122,7 +122,7 @@ Cada celda se decide con un número al azar fijo, calculado con la semilla del m
 
 - **Página**: `publico/index.html` + `publico/juego.js`. Nada más.
 - **Servidor**: un Worker de Cloudflare (`src/mundo.js`) con un Durable Object por mundo. El objeto «portero» limita a 20 mundos nuevos por visitante al día; no guarda nada en disco.
-- **Liga de un mundo**: `mina.capitaltorreon.com/m/` + 8 caracteres (sin 0/O ni 1/I).
+- **Liga de un mundo**: `mina.capitaltorreon.com/` + 8 caracteres (sin 0/O ni 1/I), por ejemplo `mina.capitaltorreon.com/QSAHAZ3F`. La forma de antes, con `/m/`, sigue sirviendo (ver 9.34).
 
 ### 4.2 Qué guarda cada mundo
 
@@ -620,8 +620,8 @@ Cambio de fondo: la piedra, la lava, los minerales y los tesoros ahora se dibuja
 | Liga | Imagen | Cómo se hace |
 |---|---|---|
 | El inicio | `mina.jpg`, igual para todos | Escena fija (`/?foto=1`) fotografiada con Chrome sin ventana |
-| El mundo `/m/ID` | Nombre del mundo, hasta 5 maquinitas con su nombre, lo más hondo, km de túneles, colección | La dibuja el juego (`fotoLiga(true)`) y la sube al mundo |
-| El jugador `/m/ID?j=N` | Su maquinita, rango, metros, dinero ganado, logros o altura | `fotoLiga(false)` |
+| El mundo `/ID` | Nombre del mundo, hasta 5 maquinitas con su nombre, lo más hondo, km de túneles, colección | La dibuja el juego (`fotoLiga(true)`) y la sube al mundo |
+| El jugador `/ID?j=N` | Su maquinita, rango, metros, dinero ganado, logros o altura | `fotoLiga(false)` |
 
 El juego las vuelve a subir solo cuando algo que enseñan cambió (un récord, alguien nuevo, otro objeto), como mucho cada 2.5 minutos, o al abrir Invitar. Viajan por el mismo WebSocket (primer byte 2 = mundo, 3 = jugador), solo JPEG, hasta 300 KB, y el mundo las sirve en `/og/m/ID.jpg` y `/og/m/ID/N.jpg`; si aún no hay, sale la del inicio. La liga lleva además título y texto con los hitos. Menú → Invitar enseña cómo se ven las dos.
 
@@ -1012,6 +1012,14 @@ Los retratos de la mesa ya no se pintan después: las maquinitas se fueron.
 **Piezas.** Mundo: etiqueta `ip:` en cada socket, `huellaIp`, `baneado`, `avisarDueno` (mensaje `publico`), `pedir`, `ordenDueno` (`acepto`, `rechazo`, `sacar`, `perdonar`), `m.ok` (aceptados), `m.ban`. Juego: `mascaraTeclas`, `pintarTecladoVer`, `pedirJugar`, `recibirPublico`, `htmlPublico`, menú `pub`, `#verQuien`, `#verTeclado`, `#verPedir`.
 
 **Probado en local:** pedir, aceptar, rechazar, sacar a quien mira y que no pueda volver, sacar a una maquinita mientras juega y que no pueda volver, perdonar, que el dueño no quede sacado aunque comparta dirección, y las teclas de tres jugadores simulados en el teclado de quien mira.
+
+### 9.34 La liga del mundo, más corta
+
+La liga de un mundo pasa de `mina.capitaltorreon.com/m/QSAHAZ3F` a **`mina.capitaltorreon.com/QSAHAZ3F`**: el dominio y las 8 letras.
+
+- **Todo lo que genera ligas** usa la forma nueva: Invitar, el código QR (al ser más corta, el QR queda más simple), «Copiar mi liga», la liga de la maquinita, Compartir, la foto para presumir y la vista previa de WhatsApp (`og:url`).
+- **Las ligas de antes siguen sirviendo:** quien abra una con `/m/` entra igual, y la dirección se acomoda sola a la forma nueva. También funciona escrita en minúsculas.
+- **El Worker atiende ahora todas las rutas** (`run_worker_first: true`) para poder poner la vista previa de cada mundo en la ruta corta; lo que no es un mundo se sirve como antes.
 
 ## 10. Revisión de código del 2 de octubre
 

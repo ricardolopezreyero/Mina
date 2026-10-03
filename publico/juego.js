@@ -1965,7 +1965,7 @@ function recibir(d) {
     case 'baneado': detener(); quitarMundo(mundoId); return pantallaFinal('Ya no puedes entrar a este mundo', 'Quien lo creó te sacó. Tu maquinita sigue siendo tuya: puedes jugar en tus otros mundos o crear uno nuevo.');
     case 'publico': return recibirPublico(d);
     case 'pidiendo': pido = d.dueno ? 'espera' : 'ausente'; pidoDe = d.n || ''; return pintarVer();
-    case 'aceptado': pido = 'aceptado'; pintarVer(); son.logro(); tarjeta('🎉 ¡Te aceptaron!', 'Entrando a jugar con tu maquinita…', 'msj', 4000, true); setTimeout(() => { location.href = '/m/' + d.id; }, 1400); return;
+    case 'aceptado': pido = 'aceptado'; pintarVer(); son.logro(); tarjeta('🎉 ¡Te aceptaron!', 'Entrando a jugar con tu maquinita…', 'msj', 4000, true); setTimeout(() => { location.href = '/' + d.id; }, 1400); return;
     case 'rechazado': pido = 'no'; return pintarVer();
     case 'lleno': return pantallaFinal('Este mundo está lleno', soloVer ? 'Este mundo ya tiene sus 100 maquinitas: no caben más. Puedes seguir mirando.' : 'Caben 100 maquinitas por mundo y 40 jugando a la vez.');
     case 'otra': detener(); return pantallaFinal('Tu maquinita se abrió en otro lado', 'Está en otra pestaña o en otro dispositivo, con todo lo que trae. Aquí puedes volver a tomarla cuando quieras.');
@@ -3710,7 +3710,7 @@ function fotoRecord() {
   texto(RANGOS[S.rango][1], 60, 258, 36, '#f3e6d8', 700);
   const cifras = [[S.rec + ' m', 'bajo tierra']]; if (S.alt >= 1000) cifras.push([fmtAlto(S.alt), 'de altura']); cifras.push([fmt(S.tot), 'ganados']);
   cifras.forEach(([a, b], i) => { texto(a, 60, piso + 150 + i * 135, 86, '#ffd23f'); texto(b, 60, piso + 192 + i * 135, 34, '#f3e6d8', 700); });
-  const liga = location.origin + '/m/' + mundoId, cq = document.createElement('canvas');
+  const liga = location.origin + '/' + mundoId, cq = document.createElement('canvas');
   if (pintarQR(cq, liga, 8)) { q.fillStyle = '#fff'; q.beginPath(); q.roundRect(L - 372, piso + 100, 312, 312, 18); q.fill(); q.imageSmoothingEnabled = false; q.drawImage(cq, L - 360, piso + 112, 288, 288); q.imageSmoothingEnabled = true; }
   texto('Entra a mi mundo', L - 216, piso + 78, 36, '#fff', 800, 'center');
   texto(location.host, L - 216, piso + 452, 26, '#f3e6d8', 700, 'center');
@@ -3851,7 +3851,7 @@ function pintarMenu() {
       <p class="nota">Cuesta el <b>5 % de todo lo que has ganado</b> (llevas ${fmt(S.tot)}). Entre más ganes, más cuesta.${S.d < c ? ' Te faltan ' + fmt(c - S.d) + '.' : ''}</p>
       <button data-a="remin" ${!puedo || S.d < c || cuentaFin ? 'disabled' : ''}>${puedo ? 'Remineralizar el tablero' : 'Solo quien creó el mundo puede hacerlo'}</button></div>`;
   } else if (menu === 'inv') {
-    const liga = location.origin + '/m/' + mundoId;
+    const liga = location.origin + '/' + mundoId;
     h = cab('👥 Invita a tu gente') + `<div class="cuerpo" style="text-align:center"><p>Quien abra esta liga entra a <b>${esc(cfg.nombre || 'este mundo')}</b> con su propia maquinita. Juegan hasta 40 a la vez; mirando, sin límite.</p>
       <a href="${liga}" target="_blank" rel="noopener" title="Abrir la liga"><canvas id="qrLienzo" class="qr" data-t="${liga}"></canvas></a>
       <p><code>${liga}</code></p>
@@ -3864,7 +3864,7 @@ function pintarMenu() {
       <p><button data-a="compartirFoto">${navigator.canShare ? 'Compartir la foto' : 'Descargar la foto'}</button> <button class="s" data-a="presumir">Copiar mi liga</button> <button class="s" data-a="invitar">Copiar la liga del mundo</button></p>
       <p class="nota">La foto lleva tu maquinita, tus récords y el código QR de este mundo: quien lo escanee entra a excavar contigo.</p></div>`;
   } else if (menu === 'qrmaq') {
-    const liga = location.origin + '/m/' + mundoId + '#maquinita=' + miK;
+    const liga = location.origin + '/' + mundoId + '#maquinita=' + miK;
     h = cab('Tu maquinita en otro equipo') + `<div class="cuerpo" style="text-align:center"><p>Abre este código en tu otro equipo y <b>${esc(miNombre)}</b> llega con todo lo que trae.</p>
       <a href="${esc(liga)}" target="_blank" rel="noopener" title="Abrir la liga"><canvas id="qrLienzo" class="qr" data-t="${esc(liga)}"></canvas></a>
       <p><button data-a="ligaMaq">Copiar la liga de mi maquinita</button></p>
@@ -4006,18 +4006,18 @@ const acciones = {
   pest(v) { pestana = +v; },
   menu(v) { menu = v; },
   async compartirFoto() {
-    const blob = await new Promise((r) => fotoRecord().toBlob(r, 'image/png')), liga = location.origin + '/m/' + mundoId + '?j=' + miI;
+    const blob = await new Promise((r) => fotoRecord().toBlob(r, 'image/png')), liga = location.origin + '/' + mundoId + '?j=' + miI;
     const f = new File([blob], 'mina-' + miNombre.replace(/[^\w]+/g, '-') + '.png', { type: 'image/png' });
     if (navigator.canShare?.({ files: [f] })) { try { await navigator.share({ files: [f], title: 'Mina', text: `Llevo ${S.rec} m bajo tierra en Mina. Entra a mi mundo: ${liga}` }); return 'no'; } catch {} }
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = f.name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
     return 'no';
   },
-  compartir() { navigator.share?.({ title: 'Mina', text: 'Entra a excavar a mi mundo', url: location.origin + '/m/' + mundoId }).catch(() => {}); return 'no'; },
+  compartir() { navigator.share?.({ title: 'Mina', text: 'Entra a excavar a mi mundo', url: location.origin + '/' + mundoId }).catch(() => {}); return 'no'; },
   tirar(v) { if (S.carga[+v] > 0) S.carga[+v]--; },
   op(v, el) { const k = el.dataset.k; op[k] = el.type === 'checkbox' ? (el.checked ? 1 : 0) : +el.value; escribir('mina_op', op); aplicarOp(); return 'no'; },
   texto(v) { op.texto = Math.max(0.85, Math.min(1.5, op.texto + +v)); escribir('mina_op', op); aplicarOp(); },
   ligaMaq(v, el) {
-    const liga = location.origin + '/m/' + mundoId + '#maquinita=' + miK;
+    const liga = location.origin + '/' + mundoId + '#maquinita=' + miK;
     const hecho = () => { el.textContent = '¡Liga copiada!'; }, aMano = () => window.prompt('Copia la liga de tu maquinita:', liga);
     if (navigator.clipboard?.writeText) navigator.clipboard.writeText(liga).then(hecho, aMano); else aMano();
     return 'no';
@@ -4043,14 +4043,14 @@ const acciones = {
     return 'no';
   },
   presumir(v, el) {
-    const liga = location.origin + '/m/' + mundoId + '?j=' + miI; subirFotos(true);
+    const liga = location.origin + '/' + mundoId + '?j=' + miI; subirFotos(true);
     const hecho = () => { el.textContent = '¡Liga copiada!'; }, aMano = () => window.prompt('Copia tu liga:', liga);
     if (navigator.clipboard?.writeText) navigator.clipboard.writeText(liga).then(hecho, aMano); else aMano();
     return 'no';
   },
   invitar(v, el) {
     subirFotos(true);
-    const liga = location.origin + '/m/' + mundoId;
+    const liga = location.origin + '/' + mundoId;
     const hecho = () => { el.textContent = '¡Liga copiada!'; }, aMano = () => window.prompt('Copia la liga de tu mundo:', liga);
     if (navigator.clipboard?.writeText) navigator.clipboard.writeText(liga).then(hecho, aMano); else aMano();
     return 'no';
@@ -4158,7 +4158,7 @@ function menuPrincipal() {
       <p class="nota">${rit.ult ? `En el último minuto de juego: <b>${rit.ult.lentos} de ${rit.ult.n.toLocaleString('es-MX')}</b> cuadros salieron lentos (${(rit.ult.lentos / Math.max(1, rit.ult.n) * 100).toFixed(2)} %) y el más lento tardó <b>${Math.round(rit.ult.peor)} ms</b> (lo ideal en tu pantalla: ${Math.round(1000 / rit.hz)} ms).` : 'Juega un minuto y aquí sale cuántos cuadros lentos hubo.'} El terreno está compuesto en ${bloques.size} bloques (${((bloques.size + bloquesLibres.length) * BL * BL * T * T * 4 / 1e6 + tiles.size * T * T * 4 / 1e6).toFixed(0)} MB de imágenes).</p>`;
   } else if (pestana === 8) {
     const o3 = [[0, 'Apagado'], [1, 'Normal'], [2, 'Fuerte']];
-    h += `<div class="fila"><div class="t"><b>Invita a tu gente</b><small>${mundoId ? location.origin + '/m/' + mundoId : 'Tu mundo se está creando…'}</small></div><button class="s" data-a="menu" data-v="inv">Ver código QR</button><button data-a="invitar">Copiar la liga</button></div>
+    h += `<div class="fila"><div class="t"><b>Invita a tu gente</b><small>${mundoId ? location.origin + '/' + mundoId : 'Tu mundo se está creando…'}</small></div><button class="s" data-a="menu" data-v="inv">Ver código QR</button><button data-a="invitar">Copiar la liga</button></div>
       <h4>Dificultad del mundo ${soyCreador ? '' : '<small style="color:var(--su)">· solo la cambia quien creó el mundo</small>'}</h4>
       <label class="op"><span>Modo</span><select data-a="modo" ${soyCreador ? '' : 'disabled'}>${[['paseo', 'Paseo · nada mata'], ['clasico', 'Clásico'], ['rudo', 'Rudo'], ['medida', 'A la medida']].map(([v, t]) => `<option value="${v}" ${cfg.modo === v ? 'selected' : ''} ${v === 'medida' ? 'disabled' : ''}>${t}</option>`).join('')}</select></label>
       <label class="op"><span>Quedarse sin combustible</span>${sel('comb', [[0, 'Reserva (no explota)'], [1, 'Explota']])}</label>
@@ -4394,7 +4394,7 @@ async function nacer() {
     const r = await fetch('/api/mundo', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ archivo: archivoDelMundo(true) }) }), d = await r.json();      // el mundo nace con su terreno completo
     if (!d.id) throw 0;
     porNacer = false; if (d.d) { duenos[d.id] = d.d; escribir('mina_duenos', duenos); }
-    mundoId = d.id; history.replaceState(null, '', '/m/' + d.id); conectar();
+    mundoId = d.id; history.replaceState(null, '', '/' + d.id); conectar();
   } catch { setTimeout(() => { naciendo = false; nacer(); }, esperaNacer); esperaNacer = Math.min(30000, esperaNacer * 2); return; }
   naciendo = false;
 }
@@ -4411,7 +4411,7 @@ function pantallaMundos() {
       <button data-ir="${m.id}">Continuar</button><button class="s" data-des="${m.id}">Desechar</button></div>`).join('') +
     `<p style="margin-top:14px"><button id="bNuevo">＋ Crear mundo nuevo</button></p><p class="nota">Cada mundo nace con una semilla distinta y se guarda solo, completo y para siempre: con su liga se vuelve a entrar cuando sea, tal como se dejó. Para jugar acompañado, entra y copia su liga.</p></div>`);
   $('#bNuevo').onclick = pantallaCrear;
-  $('#caja').querySelectorAll('[data-ir]').forEach((b) => (b.onclick = () => (location.href = '/m/' + b.dataset.ir)));
+  $('#caja').querySelectorAll('[data-ir]').forEach((b) => (b.onclick = () => (location.href = '/' + b.dataset.ir)));
   $('#caja').querySelectorAll('[data-des]').forEach((b) => (b.onclick = () => { const m = mundos.find((x) => x.id === b.dataset.des); desechar(m.id, m.creador, m.k); }));
 }
 // Crear un mundo: de cero, o a partir de un archivo que alguien guardó. Siempre nace un mundo nuevo con su propia liga; nada se reemplaza.
@@ -4446,7 +4446,7 @@ async function crearMundo(archivo) {
     const r = await fetch('/api/mundo', archivo ? { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ archivo }) } : { method: 'POST' }), d = await r.json();
     if (!d.id) throw 0;
     if (d.d) { duenos[d.id] = d.d; escribir('mina_duenos', duenos); }
-    history.replaceState(null, '', '/m/' + d.id); entrar(d.id);
+    history.replaceState(null, '', '/' + d.id); entrar(d.id);
   } catch { pantallaFinal('No se pudo crear el mundo', 'Revisa tu conexión e inténtalo otra vez.'); }
 }
 function entrar(id) {
@@ -4488,7 +4488,8 @@ if (location.hash) history.replaceState(null, '', location.pathname);
 if (ligaMaquinita) { maqLocal = { k: ligaMaquinita }; escribir('mina_maq', maqLocal); }
 aplicarOp(); sonidoUI();
 {
-  const r = location.pathname.match(/^\/m\/([2-9A-HJ-NP-Z]{8})\/?$/i);
+  const r = location.pathname.match(/^\/(?:m\/)?([2-9A-HJ-NP-Z]{8})\/?$/i);      // la liga es el dominio y las 8 letras; la de antes, con /m/, sigue sirviendo
+  if (r && location.pathname !== '/' + r[1].toUpperCase()) history.replaceState(null, '', '/' + r[1].toUpperCase() + location.search);
   const v = location.pathname.match(/^\/ver\/([2-9A-HJ-NP-Z]{12})\/?$/i);
   if (location.search.includes('foto')) escenaDeMuestra();
   else if (v) {
@@ -4499,7 +4500,7 @@ aplicarOp(); sonidoUI();
   else if (r) entrar(r[1].toUpperCase());
   else if (location.pathname.length > 1) pantallaFinal('Esta liga está incompleta', 'La liga de un mundo termina en 8 letras y números. Pídela otra vez o entra a tus mundos.');
   else if (location.search.includes('mundos')) pantallaMundos();
-  else if (mundos.length) { deCasa = true; history.replaceState(null, '', '/m/' + mundos[0].id); entrar(mundos[0].id); }      // el inicio es jugar: abre el último mundo
+  else if (mundos.length) { deCasa = true; history.replaceState(null, '', '/' + mundos[0].id); entrar(mundos[0].id); }      // el inicio es jugar: abre el último mundo
   else mundoAlInstante();
 }
 function escenaDeMuestra() {
