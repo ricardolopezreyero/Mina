@@ -954,6 +954,26 @@ Dos franjas que cruzan el mundo de orilla a orilla (y empatan en la orilla, porq
 - Mientras sube se puede dirigir con ← →.
 - Para bajar no hay equivalente: hay que sostener ↓, a propósito.
 
+### 9.31 El gran final: todos los minerales caen
+
+Tres cosas más para el cierre, pedidas por Ricardo al llegar él mismo a la última celda.
+
+**Más luz.** En el jardín, la oscuridad de la profundidad se va quitando conforme se descubre: con el 70 % a la vista ya no hay sombra, y el cuadro se ve con sus colores.
+
+**Flechas a las últimas celdas.** Cuando faltan 33 celdas o menos, cada una que no está en pantalla se señala con una flecha amarilla en la orilla y los metros que hay hasta ella. Las que están en pantalla ya traían su aro. Nota: el Corazón de la Tierra cuenta como celda del jardín; se quita con el taladro (los explosivos no lo tocan).
+
+**La lluvia de minerales.** Al quitar la última piedra:
+
+1. Todos los minerales que quedaban enterrados en el mundo entero (de la superficie al fondo) se desprenden: el mundo queda de pura tierra. Los tesoros, los huesos y la colección se quedan donde estaban.
+2. Durante 16 segundos llueven gemas desde arriba de la pantalla, caen medio segundo y luego van derecho a la maquinita; cada una que llega suena y la cartera va subiendo a la vista.
+3. **Se los queda la maquinita que quitó la última piedra**: el valor completo de todas las piezas (en el mundo de prueba fueron 65,745 piezas, $456,450 M). Las demás ven la lluvia caer hacia ella, pero no cobran.
+4. Después viene el recorrido a pantalla completa del jardín.
+5. Para que vuelva a haber mineral hay que remineralizar.
+
+El mundo apunta que ya no tiene mineral (`sinMineral = remin`), así que quien entre después, o quien mire, ve pura tierra. La copia local también lo guarda.
+
+**Decisión que conviene revisar:** todo el botín va a quien quita la última piedra. Si varios jugadores limpiaron el jardín entre todos, repartirlo en partes iguales sería más justo; se dejó así por cómo lo describió Ricardo («te llega a ti»).
+
 ## 10. Revisión de código del 2 de octubre
 
 Se revisó todo el código buscando fallas y se corrigieron estas:

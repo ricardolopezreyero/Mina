@@ -1097,6 +1097,20 @@ function medirEden() {
   for (let y = EDEN0; y < H; y++) for (let x = 0; x < W; x++) { if (hueca(x, y)) n++; else if (f.length < 80) f.push(x, y); }
   edenQuedan = EDEN_N - n; edenFaltan = edenQuedan <= 40 ? f : []; return n / EDEN_N;
 }
+// Cuando faltan 33 celdas o menos, cada una que no está en pantalla se señala con una flecha en la orilla, con los metros que hay hasta ella.
+function flechasEden(ox, oy) {
+  if (!edenFaltan.length || edenQuedan > 33) return;
+  const w = lienzo.width, h = lienzo.height, mx = ox + vis.x * T, my = oy + vis.y * T, m = T * 0.9;
+  g.font = `800 ${Math.max(11 * RES, T * 0.26)}px system-ui`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.lineJoin = 'round';
+  for (let i = 0; i < edenFaltan.length; i += 2) {
+    const cx = edenFaltan[i] + 0.5, cy = edenFaltan[i + 1] + 0.5, px = ox + cx * T, py = oy + cy * T;
+    if (px > -T && px < w + T && py > -T && py < h + T) continue;              // la que se ve ya trae su aro
+    const dx = px - mx, dy = py - my, k = Math.min((dx > 0 ? w - m - mx : m - mx) / (dx || 1e-9), (dy > 0 ? h - m - my : m - my) / (dy || 1e-9)), ex = mx + dx * k, ey = my + dy * k, an = Math.atan2(dy, dx);
+    g.save(); g.translate(ex, ey); g.rotate(an); g.fillStyle = '#ffd23f'; g.strokeStyle = '#2a1a14'; g.lineWidth = Math.max(2, T * 0.05);
+    g.beginPath(); g.moveTo(T * 0.45, 0); g.lineTo(-T * 0.25, -T * 0.3); g.lineTo(-T * 0.1, 0); g.lineTo(-T * 0.25, T * 0.3); g.closePath(); g.fill(); g.stroke(); g.restore();
+    const tx = Math.round(Math.hypot(cx - vis.x, cy - vis.y) * 2) + ' m'; g.lineWidth = Math.max(3, T * 0.08); g.strokeStyle = '#000c'; g.strokeText(tx, ex - Math.cos(an) * T * 0.9, ey - Math.sin(an) * T * 0.9); g.fillStyle = '#ffd23f'; g.fillText(tx, ex - Math.cos(an) * T * 0.9, ey - Math.sin(an) * T * 0.9);
+  }
+}
 function jardinDelFondo() {
   const p = medirEden(), clave = mundoId + '|' + remin; edenPct = p; edenVivo = p >= 1;
   if (soloVer || !mundoId) return;
@@ -1107,14 +1121,45 @@ function jardinDelFondo() {
   if (p >= 1 && !(S.fl.edenF && S.fl.edenF[clave])) { enviar({ t: 'fin' }); finDelMundo(miI); }      // cada maquinita celebra una vez cada cierre
 }
 // El cierre: ya no queda nada que quitar. El jardín cobra vida y a cada maquinita le toca su parte, porque hay para todos.
+// Al quitar la última piedra, todos los minerales que quedaban en el mundo se desprenden y caen hasta la maquinita que lo
+// logró: el mundo queda de pura tierra (los tesoros, los huesos y la colección se quedan donde estaban) y ella se queda con
+// todo. Para volver a tener mineral hay que remineralizar.
+let lluvia = null, sinMineral = -1;
+function vaciarMinerales() {
+  sinMineral = remin;
+  let total = 0, n = 0; const cuenta = new Map();
+  for (let i = 0; i < NB; i++) { const t = base[i]; if (t >= 10 && t < 10 + MIN.length) { if (!(dug[i >> 3] & (1 << (i & 7)))) { total += MIN[t - 10].v; n++; cuenta.set(t - 10, (cuenta.get(t - 10) || 0) + 1); } base[i] = 1; } }
+  mapa.fill(255); bloques.clear(); tiles.clear();
+  return { total, n, cuenta };
+}
+function lluviaDeMinerales(ox, oy) {
+  const L = lluvia, t = (performance.now() - L.t0) / 1000, mx = ox + vis.x * T, my = oy + vis.y * T, w = lienzo.width, d = Math.min(0.05, (performance.now() - L.ult) / 1000); L.ult = performance.now();
+  if (t < L.dur - 2.5) for (let k = 0; k < 22 && L.p.length < 2200; k++) { const i = L.tipos[Math.floor(Math.random() * L.tipos.length)]; L.p.push({ x: Math.random() * w, y: -T * (0.5 + Math.random() * 6), vx: (Math.random() - 0.5) * T * 2, vy: T * (4 + Math.random() * 6), c: MIN[i].col, r: T * (0.09 + Math.random() * 0.1), a: Math.random() * 6, e: 0 }); }
+  for (const q of L.p) {
+    q.e += d; const h = Math.min(1, Math.max(0, (q.e - 0.5) / 1.1));                 // cae medio segundo y luego se va derecho a la maquinita
+    q.vx += ((mx - q.x) * 9 - q.vx * 2) * h * d; q.vy += ((my - q.y) * 9 - q.vy * 2) * h * d + T * 6 * (1 - h) * d;
+    q.x += q.vx * d; q.y += q.vy * d; q.a += d * 5;
+    if (Math.hypot(q.x - mx, q.y - my) < T * 0.35) { q.fin = 1; L.llegan++; continue; }
+    g.save(); g.translate(q.x, q.y); g.rotate(q.a); g.strokeStyle = '#0006'; g.lineWidth = Math.max(1, T * 0.03); g.fillStyle = q.c; g.beginPath(); g.moveTo(0, -q.r * 1.4); g.lineTo(q.r, 0); g.lineTo(0, q.r * 1.4); g.lineTo(-q.r, 0); g.closePath(); g.fill(); g.stroke(); g.fillStyle = 'rgba(255,255,255,.55)'; g.beginPath(); g.moveTo(0, -q.r * 1.4); g.lineTo(q.r * 0.5, -q.r * 0.3); g.lineTo(-q.r * 0.5, -q.r * 0.3); g.fill(); g.restore();
+  }
+  if (L.p.length) { let n = 0; for (let i = 0; i < L.p.length; i++) if (!L.p[i].fin) L.p[n++] = L.p[i]; L.p.length = n; }
+  if (L.llegan > L.sonados && performance.now() - L.tSon > 70) { L.tSon = performance.now(); L.sonados = L.llegan; son.moneda(Math.min(24, L.llegan % 25)); if (op.part && Math.random() < 0.5) chispas(vis.x, vis.y - 0.3, L.tipos.length ? MIN[L.tipos[Math.floor(Math.random() * L.tipos.length)]].col : '#fff', 3, 4); }
+  const k = Math.min(1, t / L.dur), suave = 1 - Math.pow(1 - k, 3);
+  if (L.mio) { S.d = L.d0 + Math.floor(L.total * suave); S.tot = L.tot0 + Math.floor(L.total * suave); }
+  if (k >= 1) { lluvia = null; if (L.mio) { S.d = L.d0 + L.total; S.tot = L.tot0 + L.total; sucio = true; son.venta(); pintarHud(true); } }
+}
 function finDelMundo(quien) {
   const F = S.fl.edenF || (S.fl.edenF = {}), g = edenGente().map((j) => j.n);
+  const botin = vaciarMinerales(), mio = quien === miI;
+  if (botin.n) { const tipos = [...botin.cuenta.keys()]; lluvia = { t0: performance.now(), ult: performance.now(), dur: 16, p: [], tipos, llegan: 0, sonados: 0, tSon: 0, total: botin.total, mio, d0: S.d, tot0: S.tot }; }
   edenVivo = edenPct >= 1; musica.z = ''; musica.quedan = 0;
   for (const [f, k] of [[392, 0], [494, 0.18], [587, 0.36], [784, 0.6], [988, 0.9], [1175, 1.25]]) piano(f, 4, 0.08, k, 'avisos');
   if (op.part) for (let k = 0; k < 5; k++) chispas(yo.x + (k - 2) * 1.5, yo.y - 1, ['#ffd23f', '#ff7ac8', '#6ec3ff', '#6fdc7a', '#ffffff'][k], 16, 8);
   const regalo = F[mundoId] ? 0 : 1e9; F[mundoId] = 1; F[mundoId + '|' + remin] = 1; if (regalo) { S.d += regalo; S.tot += regalo; }      // la parte de cada quien, una vez por mundo
   sucio = true;
-  if (yo.y > EDEN0 - 60 && !soloVer) setTimeout(verJardin, 900);
+  if (yo.y > EDEN0 - 60 && !soloVer) setTimeout(verJardin, botin.n ? 17500 : 900);
+  if (botin.n) { const lista = [...botin.cuenta.entries()].sort((a, b) => b[1] * MIN[b[0]].v - a[1] * MIN[a[0]].v).slice(0, 6).map(([i, c]) => MIN[i].n + ' ' + c.toLocaleString('es-MX')).join(' · ');
+    tarjeta(mio ? '💎 Todos los minerales del mundo son tuyos' : '💎 Todos los minerales del mundo cayeron hasta ' + nombreDe(quien), `${botin.n.toLocaleString('es-MX')} piezas que quedaban enterradas se desprendieron y bajaron hasta la maquinita${mio ? ': ' + fmt(botin.total) : ''}. El mundo queda de pura tierra; los tesoros, los huesos y la colección siguen arriba. Para que vuelva a haber mineral, la Remineralizadora. ${lista}.`, 'msj', 30000, true); }
   tarjeta('🌳 El Jardín del Fondo, completo', `Quitaron hasta la última piedra, y esto era lo que había debajo de todo. Hay para todos. Siempre hubo. Todo está bien.${regalo ? ' Tu parte: ' + fmt(regalo) + '.' : ''} Lo descubrieron: ${g.join(', ')}.`, 'msj', 30000, true);
   if (quien !== miI) aviso(nombreDe(quien) + ' quitó la última piedra del Jardín del Fondo');
   pintarHud(true);
@@ -1807,7 +1852,7 @@ function recibir(d) {
     }
     case 'noexiste': quitarMundo(mundoId); if (deCasa) return location.replace('/'); return pantallaFinal('Este mundo no existe', 'Puede que lo hayan borrado o que la liga esté incompleta.');
     case 'mira': return conMapa(d, iniciarVer);
-    case 'fin': if (S && !soloVer && !(S.fl.edenF && S.fl.edenF[mundoId + '|' + remin])) { edenPct = medirEden(); if (edenPct >= 1) finDelMundo(d.i); } return;
+    case 'fin': if (S && !soloVer && !(S.fl.edenF && S.fl.edenF[mundoId + '|' + remin])) { edenPct = medirEden(); if (edenPct >= 1) finDelMundo(d.i); } else if (S && d.r === remin) vaciarMinerales(); return;
     case 'chat': if (d.id && typeof d.x === 'string') agregarChat(d); return;
     case 'chatMas': return chatViejos(d.l);
     case 'chatNo': return aviso('Vas muy rápido: espera un momento para escribir otra vez.');
@@ -1888,6 +1933,7 @@ function iniciarMundo(d, local) {
   const mias = S && !otraTierra ? dug.slice() : null, faltan = [];
   seed = d.seed; remin = d.remin; cfg = d.cfg; miI = d.i; soyCreador = !!d.creador;
   if (!local) { miPid = d.pid || ''; miVer = d.ver || ''; mirones = d.obs | 0; finMundo = d.fin || null; }
+  if (d.sinMineral === remin) vaciarMinerales();                 // en este mundo ya cayeron todos los minerales: queda pura tierra
   edenE = null; edenT = -9;
   const b = atob(d.dug); for (let i = 0; i < dug.length; i++) dug[i] = b.charCodeAt(i);
   const misCol = mias ? hallados.slice() : null; hallados.fill(0); for (const k of d.col || []) if (k >= 0 && k < NCOL) hallados[k] = 1;
@@ -2641,6 +2687,8 @@ function dibujar() {
     }
   }
   if (y1 >= EDEN0) vidaEden(ox, oy, y0, y1);
+  if (yo.y > EDEN0 - 60) flechasEden(ox, oy);
+  if (lluvia) lluviaDeMinerales(ox, oy);
   // Los bloques que ya no se ven se sueltan en cuanto sobran: repintar uno cuesta casi nada, y así la memoria no crece.
   if (bloques.size > bloquesTope) for (const [k, v] of bloques) if (v.u !== cuadroN) { bloques.delete(k); if (bloquesLibres.length < 8) bloquesLibres.push(v); }
   // lo que vive en cada lugar
@@ -2823,7 +2871,7 @@ function dibujar() {
   g.globalAlpha = 1;
   // bajo tierra oscurece poco a poco; la maquinita lleva su luz
   if (vis.y > 0.5 && oy < h) {
-    const a = Math.min(0.62, 0.14 + (vis.y / 500) * 0.6) * (vis.y >= 165 && lugarDe(Math.floor(vis.x), Math.floor(vis.y)) >= 0 ? 0.5 : 1), luz = g.createRadialGradient(mx, my, T * 2, mx, my, T * 11);
+    const a = Math.min(0.62, 0.14 + (vis.y / 500) * 0.6) * (vis.y >= 165 && lugarDe(Math.floor(vis.x), Math.floor(vis.y)) >= 0 ? 0.5 : 1) * (vis.y > EDEN0 - 8 ? Math.max(0, 1 - edenPct * 1.4) : 1), luz = g.createRadialGradient(mx, my, T * 2, mx, my, T * 11);      // en el jardín, entre más se descubre, más luz
     luz.addColorStop(0, 'rgba(10,5,3,0)'); luz.addColorStop(1, `rgba(10,5,3,${a})`);
     g.fillStyle = luz; g.fillRect(0, Math.max(0, oy), w, h);
   }
@@ -2929,7 +2977,7 @@ function iniciarVer(d) {
   seed = d.seed; remin = d.remin; cfg = d.cfg; miI = -1; soyCreador = false; miNombre = ''; mundoId = '';
   const b = atob(d.dug); for (let i = 0; i < dug.length; i++) dug[i] = b.charCodeAt(i);
   hallados.fill(0); for (const k of d.col || []) if (k >= 0 && k < NCOL) hallados[k] = 1;
-  nuevaSemilla(); ponerTerreno(d); otros.clear();
+  nuevaSemilla(); ponerTerreno(d); if (d.sinMineral === remin) vaciarMinerales(); otros.clear();
   for (const j of d.jug) otros.set(j.i, j);
   if (!S) { S = sanear(null); S.fuel = tanque(); S.vida = vidaMax(); }
   if (!otros.has(veo)) veo = ([...otros.values()].find((o) => o.on) || [...otros.values()].sort((a, b) => (b.tot || 0) - (a.tot || 0))[0] || { i: -1 }).i;
@@ -3688,7 +3736,7 @@ function archivoDelMundo(conTerreno) {
   let fin = dug.length; while (fin > 0 && !dug[fin - 1]) fin--;
   let b = ''; for (let i = 0; i < fin; i += 8192) b += String.fromCharCode.apply(null, dug.subarray(i, Math.min(fin, i + 8192)));
   return { formato: 'mina-mundo', version: 1, guardado: new Date().toISOString(), nombre: cfg.nombre || 'Mundo', seed, remin, cfg, col: [...hallados].map((v, i) => (v ? i : -1)).filter((i) => i >= 0), ancho: W, alto: H, dug: btoa(b),
-    ...(conTerreno ? { gen: mundoGen, mapa: (() => { const u = empacar(); let t = ''; for (let i = 0; i < u.length; i += 8192) t += String.fromCharCode.apply(null, u.subarray(i, Math.min(u.length, i + 8192))); return btoa(t); })() } : { terreno: mapaHash ? { r: remin, h: mapaHash } : null }) };
+    ...(conTerreno ? { gen: mundoGen, mapa: (() => { const u = empacar(); let t = ''; for (let i = 0; i < u.length; i += 8192) t += String.fromCharCode.apply(null, u.subarray(i, Math.min(u.length, i + 8192))); return btoa(t); })() } : { terreno: mapaHash ? { r: remin, h: mapaHash } : null, sinMineral }) };
 }
 function venta() {
   const base = S.carga.reduce((a, n, i) => a + n * MIN[i].v, 0), piezas = nCarga();
@@ -4147,7 +4195,7 @@ async function abrirCopia(id) {
   try { atob(c.dug); } catch { return false; }
   const tr = c.terreno && c.terreno.h ? c.terreno : null, blob = tr ? await leerMapaLocal(tr.h) : null;      // el terreno guardado en este equipo
   if (listo || S || mundoId !== id) return true;                   // el mundo contestó antes: ya está adentro
-  iniciarMundo({ mapa: blob ? tr : null, blob, seed: c.seed, remin: c.remin | 0, cfg: c.cfg, i: c.i | 0, creador: c.creador ? 1 : 0, dug: c.dug, col: Array.isArray(c.col) ? c.col : [], est: e.e, jug: [{ i: c.i | 0, n: c.n, m: c.m | 0 }], cuenta: 0 }, true);
+  iniciarMundo({ mapa: blob ? tr : null, blob, sinMineral: c.sinMineral, seed: c.seed, remin: c.remin | 0, cfg: c.cfg, i: c.i | 0, creador: c.creador ? 1 : 0, dug: c.dug, col: Array.isArray(c.col) ? c.col : [], est: e.e, jug: [{ i: c.i | 0, n: c.n, m: c.m | 0 }], cuenta: 0 }, true);
   return true;
 }
 // Nadie llena nada para empezar: la maquinita nace con nombre de mina y modelo al azar. Se cambian en Menú → Mundo.
