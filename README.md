@@ -45,7 +45,7 @@ Gratis y sin registro: entras y ya estás jugando, sin llenar nada. Se puede ins
 | `wrangler.jsonc` | Configuración del Worker y del dominio |
 | `publico/sw.js`, `publico/manifest.webmanifest`, `publico/iconos/` | La aplicación instalable: lo que se guarda en el equipo para abrir sin internet, y sus iconos |
 | `diseno-fuente/` | El programa que dibuja el icono en todos sus tamaños |
-| `docs/Documento_Maestro_Mina_v40_2026-10-02_2001.md` | Qué está construido, con qué números y qué falta |
+| `docs/Documento_Maestro_Mina_v41_2026-10-02_2007.md` | Qué está construido, con qué números y qué falta |
 | `Prompt_Maestro_Mina_v4_2026-10-01_2336.md` | El diseño completo |
 | `sonidos-fuente/` | El pedido exacto de sonidos y música para ElevenLabs (aún sin generar) |
 

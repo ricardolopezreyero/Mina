@@ -1021,6 +1021,26 @@ La liga de un mundo pasa de `mina.capitaltorreon.com/m/QSAHAZ3F` a **`mina.capit
 - **Las ligas de antes siguen sirviendo:** quien abra una con `/m/` entra igual, y la dirección se acomoda sola a la forma nueva. También funciona escrita en minúsculas.
 - **El Worker atiende ahora todas las rutas** (`run_worker_first: true`) para poder poner la vista previa de cada mundo en la ruta corta; lo que no es un mundo se sirve como antes.
 
+### 9.35 Pedir jugar: entrar mirando de inmediato y jugar en cuanto te aceptan
+
+**Lo que vive quien pide jugar.**
+
+1. **Entra de inmediato a mirar.** Desde el Top 33 hay ahora dos botones por jugador en vivo: «👁 Ver» y «🙋 Jugar». «Jugar» abre la vista de observador y manda la solicitud sola. También con **J** desde la vista de observador, o llegando con la liga a un mundo con la puerta cerrada.
+2. **Una tarjeta clara abajo**, con su maquinita, dice en qué va:
+   - «Ya le avisamos a Ricardo que quieres jugar» + «Mientras decide, mira la partida… En cuanto diga que sí, entras solo con La Chispa, sin recargar nada», con un reloj de cuánto lleva esperando.
+   - Si el dueño no está conectado: «Tu solicitud está lista. Ricardo no está conectado ahora; en cuanto entre le llega». Cuando el dueño entra, la tarjeta cambia sola.
+   - «Ya no» (o Esc) cancela la solicitud.
+   - Rechazado: «Esta vez no te aceptaron», con «Pedir otra vez».
+3. **Al aceptarlo, pasa a jugar sin recargar la página:** la tarjeta se pone verde («¡Ricardo te aceptó! Entrando a jugar con La Chispa…»), se cierra la conexión de observador y entra al mismo mundo con su maquinita. El terreno ya estaba cargado, así que es instantáneo. Aparece en la superficie con una tarjeta de bienvenida, y en «Mis mundos» queda apuntado ese mundo.
+
+**Robustez.** Si la conexión de quien espera se cae y vuelve, la solicitud se manda otra vez sola; si mientras tanto ya lo habían aceptado, el mundo lo deja pasar de inmediato (la aceptación queda guardada en el mundo, `m.ok`). Esto se encontró probando: con la pestaña en segundo plano, el navegador puede reconectar y la aceptación se perdía.
+
+**Para el dueño:** si tiene la pestaña de Mina escondida, el título cambia a «🙋 (1) quiere jugar · Mina» para que lo note.
+
+**Piezas.** Juego: `pasarAJugar`, `pintarEspera`, `yaNoPido`, `#verEspera`. Mundo: `avisarPidiendo` (al entrar y al salir quien creó el mundo).
+
+**Probado en local** con un dueño simulado: entra a mirar, «no está conectado», el dueño entra (la tarjeta cambia), acepta, y la pestaña pasa a jugar con su maquinita sin recargar.
+
 ## 10. Revisión de código del 2 de octubre
 
 Se revisó todo el código buscando fallas y se corrigieron estas:

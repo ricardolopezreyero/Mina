@@ -1964,9 +1964,9 @@ function recibir(d) {
     case 'cerrado': if (d.ver) { location.href = '/ver/' + d.ver + '?pedir=1'; return; } return pantallaFinal('Este mundo cerró la puerta', 'Quien lo creó ya no admite maquinitas nuevas.');      // con la puerta cerrada se entra a mirar y desde ahí se pide permiso
     case 'baneado': detener(); quitarMundo(mundoId); return pantallaFinal('Ya no puedes entrar a este mundo', 'Quien lo creó te sacó. Tu maquinita sigue siendo tuya: puedes jugar en tus otros mundos o crear uno nuevo.');
     case 'publico': return recibirPublico(d);
-    case 'pidiendo': pido = d.dueno ? 'espera' : 'ausente'; pidoDe = d.n || ''; return pintarVer();
-    case 'aceptado': pido = 'aceptado'; pintarVer(); son.logro(); tarjeta('🎉 ¡Te aceptaron!', 'Entrando a jugar con tu maquinita…', 'msj', 4000, true); setTimeout(() => { location.href = '/' + d.id; }, 1400); return;
-    case 'rechazado': pido = 'no'; return pintarVer();
+    case 'pidiendo': if (pido === 'aceptado') return; pido = d.dueno ? 'espera' : 'ausente'; pidoDe = d.n || ''; pidoT = pidoT || Date.now(); return pintarVer();
+    case 'aceptado': pido = 'aceptado'; pintarVer(); son.logro(); if (document.hidden) document.title = '🎉 ¡Te aceptaron! · Mina'; setTimeout(() => pasarAJugar(d.id), 1600); return;
+    case 'rechazado': pido = 'no'; pidoT = 0; return pintarVer();
     case 'lleno': return pantallaFinal('Este mundo está lleno', soloVer ? 'Este mundo ya tiene sus 100 maquinitas: no caben más. Puedes seguir mirando.' : 'Caben 100 maquinitas por mundo y 40 jugando a la vez.');
     case 'otra': detener(); return pantallaFinal('Tu maquinita se abrió en otro lado', 'Está en otra pestaña o en otro dispositivo, con todo lo que trae. Aquí puedes volver a tomarla cuando quieras.');
     case 'borrado': quitarMundo(mundoId); detener(); return pantallaFinal('Este mundo fue borrado', 'Quien lo creó lo desechó.');
@@ -3099,18 +3099,51 @@ function iniciarVer(d) {
   if (menu === 'inicio') { menu = null; $('#velo').classList.remove('on'); }
   document.body.classList.add('viendo');
   ponerChat(d.chat); pintarVer(); arrancar();
-  if (primera) { enviarVer({ t: 'soy', n: (maqLocal && maqLocal.n) || '', m: (maqLocal && maqLocal.m) | 0 }); if (/[?&]pedir=1/.test(location.search)) pedirJugar(); }
+  enviarVer({ t: 'soy', n: (maqLocal && maqLocal.n) || '', m: (maqLocal && maqLocal.m) | 0 });
+  if (primera && /[?&]pedir=1/.test(location.search)) pedirJugar();
+  // Si la conexión se cayó mientras esperaba, la solicitud se vuelve a mandar sola; si ya lo habían aceptado, el mundo lo deja pasar de inmediato.
+  else if (!primera && (pido === 'espera' || pido === 'ausente' || pido === 'enviando') && maqLocal && maqLocal.k) enviarVer({ t: 'pido', k: maqLocal.k, n: maqLocal.n, m: maqLocal.m | 0 });
 }
 function enviarVer(o) { if (ws && ws.readyState === 1) ws.send(JSON.stringify(o)); }
 // Pedir entrar a jugar desde la vista de observador: va con la maquinita de este equipo (o con una nueva, ya bautizada).
-let pido = '', pidoDe = '';
+let pido = '', pidoDe = '', pidoT = 0;
 function pedirJugar() {
-  if (!soloVer || pido === 'espera' || pido === 'ausente' || pido === 'aceptado') return;
+  if (!soloVer || pido === 'espera' || pido === 'ausente' || pido === 'aceptado' || pido === 'enviando') return;
+  pidoT = Date.now();
   if (!maqLocal || !maqLocal.k) { const b = nombreNuevo(); maqLocal = { k: llave(), n: b.n, m: b.m }; }
   if (!maqLocal.n) { const b = nombreNuevo(); maqLocal.n = b.n; maqLocal.m = b.m; }
   escribir('mina_maq', maqLocal); pido = 'enviando'; pintarVer();
   enviarVer({ t: 'pido', k: maqLocal.k, n: maqLocal.n, m: maqLocal.m | 0 });
 }
+function yaNoPido() { if (pido !== 'espera' && pido !== 'ausente') return; enviarVer({ t: 'nopido' }); pido = ''; pidoT = 0; pintarVer(); }
+// Aceptado: de mirar a jugar sin recargar la página. Se cierra la conexión de observador y se entra al mismo mundo con la
+// maquinita de este equipo; el terreno ya está cargado, así que es instantáneo.
+function pasarAJugar(id) {
+  const v = ws; if (v) { v.onclose = v.onmessage = null; try { v.close(); } catch {} }
+  detener(); soloVer = false; verFicha = ''; pido = ''; pidoT = 0; pintarEspera(); document.body.classList.remove('viendo'); document.title = 'Mina · excava con tus amigos';
+  S = null; listo = false; conectado = false; otros.clear(); chat.l = []; mirones = 0; ceremonia = null; lluvia = null;
+  mundoId = id; history.replaceState(null, '', '/' + id);
+  miK = maqLocal.k; bautizo = maqLocal.n ? { n: maqLocal.n, m: maqLocal.m | 0 } : nombreNuevo();
+  conectar();
+  setTimeout(() => { if (S) tarjeta('⛏️ ¡Ya estás jugando con ' + (maqLocal.n || 'tu maquinita') + '!', 'Apareces en la superficie. Primero carga combustible en la Gasolinera (↓ para entrar) y baja. El chat se abre con C.', 'msj', 12000, true); }, 1500);
+}
+// Mientras espera respuesta: una tarjeta clara abajo, con su maquinita, el tiempo que lleva y cómo cancelar.
+function pintarEspera() {
+  const el = $('#verEspera'); if (!soloVer || !pido) { if (el._h) { el._h = ''; el.innerHTML = ''; } el.className = ''; return; }
+  const quien = esc(pidoDe || 'quien creó el mundo'), mia = esc((maqLocal && maqLocal.n) || 'tu maquinita'), seg = pidoT ? Math.floor((Date.now() - pidoT) / 1000) : 0, reloj = Math.floor(seg / 60) + ':' + String(seg % 60).padStart(2, '0');
+  const E = {
+    enviando: ['', '🙋 Mandando tu solicitud…', 'Un momento.', ''],
+    espera: ['', `🙋 Ya le avisamos a ${quien} que quieres jugar`, `Mientras decide, mira la partida: arriba eliges a quién seguir. En cuanto diga que sí, entras solo con <b>${mia}</b>, sin recargar nada.`, `<small class="reloj">Esperando su respuesta<i>.</i><i>.</i><i>.</i> ${reloj}</small><button class="s" data-a="yaNo">Ya no</button>`],
+    ausente: ['', '🙋 Tu solicitud está lista', `${quien.charAt(0).toUpperCase() + quien.slice(1)} no está conectado ahora. En cuanto entre le llega, y si dice que sí entras solo con <b>${mia}</b>. Mientras, sigue mirando.`, `<small class="reloj">Esperando ${reloj}</small><button class="s" data-a="yaNo">Ya no</button>`],
+    aceptado: ['ok', `🎉 ¡${quien.charAt(0).toUpperCase() + quien.slice(1)} te aceptó!`, `Entrando a jugar con <b>${mia}</b>…`, ''],
+    no: ['no', 'Esta vez no te aceptaron', 'Puedes seguir mirando, o pedirlo otra vez más tarde.', '<button data-a="otraVez"><kbd>J</kbd>Pedir otra vez</button><button class="s" data-a="cerrarEspera">Cerrar</button>'],
+  }[pido];
+  if (!E) return;
+  const h = `<canvas width="72" height="72"></canvas><div><b>${E[1]}</b><span>${E[2]}</span><div class="pie">${E[3]}</div></div>`;
+  el.className = 'on ' + E[0];
+  if (el._h !== h) { el._h = h; el.innerHTML = h; dibMaq(el.querySelector('canvas').getContext('2d'), 36, 39, 62, (maqLocal && maqLocal.m) | 0, 1, pido === 'aceptado' ? 1 : 0, 0, '', ''); }
+}
+$('#verEspera').addEventListener('click', (e) => { const b = e.target.closest('[data-a]'); if (!b) return; audio(); const a = b.dataset.a; if (a === 'yaNo') yaNoPido(); else if (a === 'otraVez') { pido = ''; pedirJugar(); } else if (a === 'cerrarEspera') { pido = ''; pintarVer(); } });
 // El teclado de la maquinita que estás mirando: se encienden las teclas que va apretando.
 let tkVisto = -1;
 function pintarTecladoVer() {
@@ -3131,8 +3164,9 @@ function pintarVer() {
   poner($('#verDatos'), o ? `<b>${o.on ? '<span class="vivo">● EN VIVO</span>' : '○ No está jugando ahora'} · ${esc(o.n)}</b><small>${o.on && o.y !== undefined ? donde(o.y) + ' · ' : ''}${dineroLargo(o.tot || 0)} ganados · ${esc(cfg.nombre || 'un mundo de Mina')}${mirones > 1 ? ' · 👁 ' + mirones + ' mirando' : ''}</small>` : '<b>Este mundo está vacío</b>');
   const l = [...otros.values()].filter((x) => x.on).sort((a, b) => a.i - b.i);
   poner($('#verQuien'), l.length ? l.map((x) => `<button class="s${x.i === veo ? ' on' : ''}" data-veo="${x.i}" style="--c:${colorTx(x.i)}"><i></i>${esc(x.n)}</button>`).join('') : '<small>Nadie está jugando ahora mismo</small>');
-  const P = { '': '<kbd>J</kbd>🙋 Pedir jugar aquí', enviando: 'Enviando…', espera: `⏳ Esperando a que ${esc(pidoDe || 'quien creó el mundo')} te acepte`, ausente: `⏳ ${esc(pidoDe || 'Quien creó el mundo')} no está conectado: tu solicitud espera mientras sigas aquí`, aceptado: '🎉 ¡Aceptado!', no: '<kbd>J</kbd>No te aceptaron esta vez · pedir otra vez' };
+  const P = { '': '<kbd>J</kbd>🙋 Pedir jugar aquí', enviando: '🙋 Mandando…', espera: '⏳ Solicitud enviada', ausente: '⏳ Solicitud enviada', aceptado: '🎉 ¡Aceptado!', no: '<kbd>J</kbd>🙋 Pedir otra vez' };
   poner($('#verPedir'), P[pido] ?? P['']); $('#verPedir').disabled = pido === 'espera' || pido === 'ausente' || pido === 'enviando' || pido === 'aceptado';
+  pintarEspera();
 }
 function verOtra(paso) {
   const l = [...otros.values()].filter((o) => o.on).sort((a, b) => a.i - b.i); if (!l.length) return;
@@ -3265,6 +3299,7 @@ const solVistas = new Set(); let miraAntes = 0;
 function recibirPublico(d) {
   const nuevas = d.sol.filter((x) => !solVistas.has(x.sid));
   for (const x of d.sol) solVistas.add(x.sid);
+  if (nuevas.length && document.hidden) document.title = '🙋 (' + d.sol.length + ') quiere jugar · Mina';
   if (nuevas.length) { son.entra(); tarjeta('🙋 ' + (nuevas.length === 1 ? (nuevas[0].n || 'Alguien') + ' quiere jugar en tu mundo' : nuevas.length + ' quieren jugar en tu mundo'), 'Estaba mirando y pidió entrar con su maquinita. Pulsa J para aceptar o rechazar.', 'msj', 12000, true); }
   if (d.nm > miraAntes) { const x = d.mira[d.mira.length - 1]; aviso('👁 ' + (x && x.n ? x.n : 'Alguien') + ' empezó a mirar tu mundo'); }
   miraAntes = d.nm; publico = d;
@@ -3306,7 +3341,7 @@ function htmlTop() {
   h += tablaM.l.map((e, k) => `<div class="fila top${e.p === miPid ? ' yo' : ''}"><div class="lug">${k < 3 ? ['🥇', '🥈', '🥉'][k] : k + 1}</div><canvas width="72" height="72" data-mo="${e.m | 0}"></canvas>
     <div class="t"><b>${esc(e.n)}${e.p === miPid ? ' (tú)' : ''}</b><small>${e.vivo ? '<span class="vivo">● jugando ahora</span>' : 'descansando'}</small></div>
     <div class="tv"><span class="v" data-p="${e.p}" data-tot="${e.tot}">${dineroLargo(tablaM.antes.get(e.p) ?? e.tot)}</span>${e.seg || e.vivo ? `<small class="tt" data-seg="${Math.floor(e.seg || 0)}" data-vivo="${e.vivo ? 1 : 0}">⏱ ${tiempoLargo(e.seg)}</small>` : ''}</div>
-    ${e.vivo && e.ver && e.p !== miPid ? `<a class="boton" href="/ver/${e.ver}?j=${e.i | 0}" ${soloVer ? '' : 'target="_blank" rel="noopener"'}>👁 Ver jugar</a>` : ''}</div>`).join('') || '<p class="nota">Todavía no hay nadie. La primera venta abre la tabla.</p>';
+    ${e.vivo && e.ver && e.p !== miPid ? `<a class="boton s" href="/ver/${e.ver}?j=${e.i | 0}" ${soloVer ? '' : 'target="_blank" rel="noopener"'}>👁 Ver</a><a class="boton" href="/ver/${e.ver}?j=${e.i | 0}&pedir=1" ${soloVer ? '' : 'target="_blank" rel="noopener"'} title="Entras mirando de inmediato y le avisamos a quien creó ese mundo que quieres jugar">🙋 Jugar</a>` : ''}</div>`).join('') || '<p class="nota">Todavía no hay nadie. La primera venta abre la tabla.</p>';
   if (!soloVer && S && miPid && !tablaM.lugar) h += `<p class="nota" style="margin-top:10px">Tú llevas <b>${dineroLargo(S.tot)}</b>. ${tablaM.l.length >= 33 ? 'Te faltan ' + dineroLargo(Math.max(1, tablaM.corte - S.tot + 1)) + ' para entrar a la tabla.' : 'Vende una carga y apareces aquí.'}</p>`;
   return h;
 }
@@ -4260,6 +4295,7 @@ addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && listo && !menu) { e.preventDefault(); return abrirChat(true); }
   if (e.key === 'Escape' && chat.abierto && !menu) return cerrarChat();
   if (soloVer) {                                   // mirando: solo se cambia de maquinita o se cierra la tabla
+    if (e.key === 'Escape' && !menu && (pido === 'espera' || pido === 'ausente')) return yaNoPido();
     if (e.key === 'Escape' && menu === 'top') cerrar(); else if (!menu && e.key === 'ArrowRight') verOtra(1); else if (!menu && e.key === 'ArrowLeft') verOtra(-1); else if (!menu && (e.key === 'j' || e.key === 'J')) pedirJugar();
     return;
   }
@@ -4462,7 +4498,7 @@ function entrar(id) {
 }
 
 addEventListener('resize', medir);
-document.addEventListener('visibilitychange', () => { if (document.hidden) { for (const k in teclas) teclas[k] = false; if (sucio) enviarEst(); guardarCopia(); } });
+document.addEventListener('visibilitychange', () => { if (!document.hidden && document.title !== 'Mina · excava con tus amigos' && !location.search.includes('foto')) document.title = 'Mina · excava con tus amigos'; if (document.hidden) { for (const k in teclas) teclas[k] = false; if (sucio) enviarEst(); guardarCopia(); } });
 addEventListener('pagehide', () => { enviarEst(); guardarCopia(); });
 setInterval(componer, 220);               // la música sigue aunque haya un menú abierto
 setInterval(() => {                       // lo poco que corre aunque el juego esté detenido
@@ -4474,6 +4510,7 @@ setInterval(() => {                       // lo poco que corre aunque el juego e
     if (S && listo && !soloVer && !document.hidden && !pausa && (ahora - tEntrada < 120000 || yo.perf || Math.abs(yo.vx) + Math.abs(yo.vy) > 0.5)) { S.seg = (S.seg || 0) + dt; if (++relojN % 30 === 0) sucio = true; } }
   // en la tabla abierta, el reloj de quien está jugando corre cada segundo
   if (topAbierta()) document.querySelectorAll('#caja .tt[data-vivo="1"]').forEach((el) => { el.dataset.seg = +el.dataset.seg + 1; el.textContent = '⏱ ' + tiempoLargo(+el.dataset.seg); });
+  if (soloVer && (pido === 'espera' || pido === 'ausente')) pintarEspera();
   if (latido % 4 === 0) ocio(guardarCopia);
   if (!document.hidden && listo && Date.now() - tablaM.pedido > (topAbierta() ? 4000 : 60000) && (topAbierta() || (!soloVer && conectado && (!tablaM.t || S.tot >= tablaM.corte)))) pedirTop();
   if (latido % 9 === 0 && !document.hidden) subirFotos(!!menu);

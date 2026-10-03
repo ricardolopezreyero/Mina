@@ -299,6 +299,11 @@ export class Mundo extends DurableObject {
     }
     manda(ds, { t: "publico", mira, nm: this.ctx.getWebSockets("mira").length - (menos ? 1 : 0), sol, ban: (m.ban || []).map((b) => ({ n: b.n, h: b.h })) });
   }
+  // A quienes esperan respuesta se les dice si quien creó el mundo está conectado (cambia cuando entra o sale).
+  avisarPidiendo(menos) {
+    const d = this.creador(), s0 = d >= 0 ? this.socketDe(d) : null, en = !!s0 && s0 !== menos, n = (this.jug[d] && this.jug[d].n) || "";
+    for (const s of this.ctx.getWebSockets("mira")) { const a = s.deserializeAttachment(); if (a && a.sol) manda(s, { t: "pidiendo", dueno: en ? 1 : 0, n }); }
+  }
   // Quien mira pide entrar a jugar con su maquinita. Si ya es de este mundo, entra; si no, espera a que lo acepten.
   async pedir(ws, a, d) {
     const m = this.m, k = limpio(d.k, 64);
@@ -762,7 +767,7 @@ export class Mundo extends DurableObject {
     });
     for (const [x, s] of this.pos) if (x !== i && on.has(x)) manda(ws, s);
     this.avisarTabla(i, true, true);
-    if (i === this.creador()) this.avisarDueno();
+    if (i === this.creador()) { this.avisarDueno(); this.avisarPidiendo(); }      // llegó quien decide: se le muestran las solicitudes y a quien espera se le avisa
     this.difundir({ t: "entra", j: this.publico(i, true), nuevo: estrena ? 1 : 0 }, ws);
     await this.programar();
   }
@@ -779,6 +784,7 @@ export class Mundo extends DurableObject {
       this.pos.delete(att.i); this.xy.delete(att.i);
       this.difundir({ t: "sale", i: att.i }, ws);
       this.avisarTabla(att.i, false, true);
+      if (att.i === this.creador()) this.avisarPidiendo(ws);
     }
     m.visto = Date.now();
     this.sucio.meta = true;
