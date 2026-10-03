@@ -16,7 +16,7 @@ Este juego está hecho con todo el cariño con el que se puede hacer un juego. N
 
 - **Las flechas** para moverte. **↑** vuela, **↓** perfora hacia abajo, **← →** contra una pared perfora de lado.
 - En la superficie, párate frente a un edificio y pulsa **↓** para entrar.
-- Las teclas son la inicial, en español, de lo que hacen: **R** Reserva, **N** Nanobots, **D** Dinamita, **P** Plástico, **Q** Cuántico, **T** Transmisor, **C** Chat, **S** Señal, **A** Ayudar (pasa 5 litros), **G** Grúa, **M** Menú (también **Esc**).
+- Las teclas son la inicial, en español, de lo que hacen: **R** Reserva, **N** Nanobots, **D** Dinamita, **P** Plástico, **Q** Cuántico, **T** Transmisor, **C** Chat, **S** Señal, **A** Ayudar (pasa 5 litros), **G** Grúa, **M** Mapa, **Esc** Menú.
 - **Dos toques a ↑** (o la barra espaciadora): la maquinita se queda subiendo sola, desde donde sea, hasta que topa con techo o hasta el espacio. Se suelta con **↓**.
 - De regreso planea sola con sus rotorcitos; con **↓** cae en picada y con **↑** frena. El velocímetro de la izquierda dice a cuánto vas.
 - Abajo a la izquierda está tu viaje: cuánto llevas, en cuánto se vende y si el combustible alcanza para subir. Ahí mismo, la **grúa** a la Gasolinera (tecla **G**).
@@ -34,6 +34,7 @@ Este juego está hecho con todo el cariño con el que se puede hacer un juego. N
 - **El mundo da la vuelta**: lo que sale por la orilla derecha entra por la izquierda, y al revés.
 - **El Taller** tiene 26 mejoras por pieza, hasta $25 billones. **La Remineralizadora** cuesta el 5 % de todo lo ganado.
 - **Con puro teclado**: en el chat, **Enter** manda, **Enter** vacío o **Esc** cierra y **Tab** regresa al juego; en los edificios, **Enter** hace lo principal, **← →** cambian de pestaña y **↑ ↓** recorren.
+- **Mapa** (tecla **M**): se abre de un lado como el chat; solo enseña lo descubierto y dónde está cada jugador, en vivo.
 - **Chat del mundo** (tecla **C**): se abre de izquierda a derecha con todo lo dicho, que queda guardado. Cada maquinita tiene su color; el texto se puede copiar y las ligas se abren con un clic.
 - **Jugar o mirar**: mirar es libre y sin límite (se elige con un clic a qué maquinita seguir y se ven sus teclas); para jugar se pide con **J** y quien creó el mundo acepta, rechaza o saca a alguien en un clic (**J** abre su panel). Juegan hasta 40 a la vez.
 - **Top 33 mundial** (Menú → Top 33): las 33 maquinitas que más han ganado en todos los mundos y cuánto tiempo lleva jugando cada una, en vivo. A la que esté jugando se le puede ir a ver, con una liga de observador que no revela la del mundo.
@@ -51,7 +52,7 @@ Este juego está hecho con todo el cariño con el que se puede hacer un juego. N
 | `wrangler.jsonc` | Configuración del Worker y del dominio |
 | `publico/sw.js`, `publico/manifest.webmanifest`, `publico/iconos/` | La aplicación instalable: lo que se guarda en el equipo para abrir sin internet, y sus iconos |
 | `diseno-fuente/` | El programa que dibuja el icono en todos sus tamaños |
-| `docs/Documento_Maestro_Mina_v43_2026-10-02_2016.md` | Qué está construido, con qué números y qué falta |
+| `docs/Documento_Maestro_Mina_v44_2026-10-02_2023.md` | Qué está construido, con qué números y qué falta |
 | `Prompt_Maestro_Mina_v4_2026-10-01_2336.md` | El diseño completo |
 | `sonidos-fuente/` | El pedido exacto de sonidos y música para ElevenLabs (aún sin generar) |
 

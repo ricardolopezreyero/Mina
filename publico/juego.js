@@ -3016,7 +3016,7 @@ const NITIDEZ = [1, 0.75, 0.5];          // escalones de nitidez: se baja solo s
 const RITMOS = [30, 48, 50, 60, 72, 75, 90, 100, 120, 144, 165, 240];
 const rit = { hz: 60, fps: 60, niv: NITIDEZ.length - 1, sonda: true, d: [], lento: 0, bien: 0, veto: 0, sube: 0, peor: 0, lentos: 0, n: 0, t0: 0, ult: null };
 const ant = { x: INICIO_X, y: INICIO_Y };
-let ult = 0, acum = 0, tHud = 0, tPos = 0, tBip = 0, cicloId = 0, tCerca = 0, hayCerca = false;
+let mapaCuadro = 0, ult = 0, acum = 0, tHud = 0, tPos = 0, tBip = 0, cicloId = 0, tCerca = 0, hayCerca = false;
 
 function medirRitmo(ms) {
   const d = rit.d; d.push(ms); if (d.length < 40) return;
@@ -3058,6 +3058,7 @@ function ciclo(t, id) {
   vis.x = salto ? yo.x : ant.x + (yo.x - ant.x) * a; vis.y = salto ? yo.y : ant.y + (yo.y - ant.y) * a;
   animar(d);
   dibujar();
+  if (mapaL.abierto && (++mapaCuadro & 1)) pintarMapaLat();
   sonarLazos(false); gotear(d);                            // el sonido sigue a la maquinita cuadro por cuadro
   // La posición se manda 30 veces por segundo cuando hay alguien cerca (o mirando), para que se vea en tiempo real,
   // y 10 cuando los demás andan lejos, donde no hace falta.
@@ -3084,7 +3085,7 @@ function cicloVer(t, id) {
   reloj += d; tiempo += d;
   const o = otros.get(veo);
   if (!ceremonia && o && o.on && o.x !== undefined) { const lejos = Math.abs(o.x - yo.x) > 12 || Math.abs(o.y - yo.y) > 12; yo.x = vis.x = o.x; yo.y = vis.y = o.y; if (lejos) { camX = Math.max(0, Math.min(W - cols, o.x - cols / 2)); camY = o.y - filas * 0.5; } }
-  animar(d); dibujar(); gotear(d); pintarTecladoVer();
+  animar(d); dibujar(); gotear(d); pintarTecladoVer(); if (mapaL.abierto && (++mapaCuadro & 1)) pintarMapaLat();
   if ((tHud += d) > 0.25) { tHud = 0; pintarVer(); if (yo.y > EDEN0 - 60 && tiempo - edenT > 1) { edenT = tiempo; jardinDelFondo(); } }
 }
 function iniciarVer(d) {
@@ -3846,7 +3847,7 @@ function pintarQR(lienzoQR, texto, lado = 8) {
 }
 
 /* ════════ Menús ════════ RLR */
-let pestana = 0, pieza = 0, cuantos = 1, eleM = 0, ultVenta = 0, porCobrar = 0;      // porCobrar: lo vendido que todavía va «en camino» a la cartera
+let mapaMenuT = 0, pestana = 0, pieza = 0, cuantos = 1, eleM = 0, ultVenta = 0, porCobrar = 0;      // porCobrar: lo vendido que todavía va «en camino» a la cartera
 function abrir(id) {
   if (!S || (soloVer && id !== 'top')) return;
   son.clic();
@@ -3930,10 +3931,13 @@ function pintarMenu() {
   else if (menu === 'menu') h = menuPrincipal();
   else return;
   const sube = c.querySelector('.cuerpo')?.scrollTop || 0, misma = c._m === menu + pieza; c._m = menu + pieza;
-  c.innerHTML = h + (tactil || !listo ? '' : `<div class="tecl">${TECLAS_MENU[menu] ? TECLAS_MENU[menu] + ' · ' : ''}<kbd>↑</kbd> <kbd>↓</kbd> recorren · <kbd>Esc</kbd> o <kbd>M</kbd> cierra</div>`);
+  c.innerHTML = h + (tactil || !listo ? '' : `<div class="tecl">${TECLAS_MENU[menu] ? TECLAS_MENU[menu] + ' · ' : ''}<kbd>↑</kbd> <kbd>↓</kbd> recorren · <kbd>Esc</kbd> cierra</div>`);
   const cu = c.querySelector('.cuerpo'), act = menu === 'tal' && c.querySelector('.fila.act');
   if (cu) { if (misma) cu.scrollTop = sube; else if (act) cu.scrollTop = Math.max(0, act.offsetTop - cu.offsetTop - 70); }
-  const mp = $('#mapa'); if (mp) { pintarMapa(mp); c.querySelector('.cuerpo').scrollTop = Math.max(0, mp.offsetTop + Math.max(0, yo.y) / 2 / (mp.height / mp.clientHeight) - 220); }
+  const mp = $('#mapa'); if (mp) {
+    pintarMapa(mp); c.querySelector('.cuerpo').scrollTop = Math.max(0, mp.offsetTop + Math.max(0, yo.y) / (mp.height / mp.clientHeight) - 220);
+    clearInterval(mapaMenuT); mapaMenuT = setInterval(() => { const m2 = $('#mapa'); if (!m2 || menu !== 'menu' || pestana !== 2) return clearInterval(mapaMenuT); pintarMapa(m2); }, 300);      // en vivo mientras esté abierto
+  }
   const cm = $('#miMaq'); if (cm) dibMaq(cm.getContext('2d'), 80, 86, 132, miModelo, 1, false, 0, '', '');
   if (topAbierta()) { animarTop(c); if (Date.now() - tablaM.pedido > 3500) pedirTop(); }
   const ql = $('#qrLienzo'); if (ql) pintarQR(ql, ql.dataset.t, 8);
@@ -3942,20 +3946,114 @@ function pintarMenu() {
   c.querySelectorAll('#modelos canvas').forEach((x, i) => dibMaq(x.getContext('2d'), 56, 60, 100, i, 1, false, 0, '', ''));
 }
 // El mapa: 3 px por celda a lo ancho y 1 px por cada 2 celdas a lo alto (10 km caben en 2,500 px).
-function pintarMapa(cv) {
-  const A = 3, an = W * A, ex = 230; cv.width = an + ex; cv.height = H / 2;
-  const q = cv.getContext('2d');
-  for (let y = 0; y < H; y += 2) { q.fillStyle = mezcla(TIERRA[zonaDe((y + 1) * 2)][0], -0.55); q.fillRect(0, y / 2, an, 1); }
-  q.fillStyle = '#0c2c44'; q.fillRect(0, AGUA0 / 2, an, (AGUA1 - AGUA0) / 2);
-  q.fillStyle = '#f3e6d8';
-  for (let i = 0; i < dug.length; i++) { const b = dug[i]; if (!b) continue; for (let k = 0; k < 8; k++) if (b & (1 << k)) { const c = i * 8 + k; q.fillRect((c % W) * A, Math.floor(c / W) / 2, A, 1); } }
-  q.font = '600 12px system-ui'; q.textBaseline = 'middle';
-  for (let m = 0; m <= 10000; m += 500) { q.fillStyle = '#ffffff22'; q.fillRect(0, m / 4, an, 1); q.fillStyle = '#c9b29c'; q.fillText(m.toLocaleString('es-MX') + ' m', an + 6, Math.min(cv.height - 8, Math.max(8, m / 4))); }
-  LUGARES.forEach((L, i) => { const y = L.m / 4 + 8; q.fillStyle = S.lug[i] ? '#ffd23f' : '#ffffff55'; q.fillText(S.lug[i] ? L.ic + ' ' + L.n : '❔', an + 70, y); if (S.lug[i]) { q.fillStyle = '#ffd23f55'; q.fillRect(0, y - 8, an, 2); } });
-  for (const o of otros.values()) if (o.on && o.x !== undefined) { q.fillStyle = MODELOS[o.m]?.[0] || '#fff'; q.beginPath(); q.arc(o.x * A, Math.max(0, o.y) / 2, 4, 0, 7); q.fill(); q.fillText(o.n, o.x * A + 7, Math.max(6, o.y / 2)); }
-  q.fillStyle = '#ffd23f'; q.strokeStyle = '#000'; q.lineWidth = 2; q.beginPath(); q.arc(yo.x * A, Math.max(0, yo.y) / 2, 5, 0, 7); q.fill(); q.stroke();
+// ── El mapa: una imagen del mundo de 96 × 5,000 (un píxel por celda) donde solo se ve lo descubierto: lo cavado y lo que
+//    alcanza a ver la lámpara alrededor (2 celdas), los lugares ya descubiertos completos y la superficie. Lo demás queda
+//    como «no descubierto». Se rehace cuando cambia el terreno, a lo mucho una vez por segundo y medio.
+let mapaImg = null, mapaImgQ = null, mapaImgD = null, mapaFirma = '', mapaT = -9999;
+const visto = new Uint8Array(W * H);
+const rgbDe = (hex, k = 0) => { const n = parseInt(hex.slice(1), 16), m = k < 0 ? 0 : 255, a = Math.abs(k), c = (v) => Math.round(v + (m - v) * a); return [c(n >> 16), c((n >> 8) & 255), c(n & 255)]; };
+function zonaLugar(i) {                     // filas donde vive cada lugar, para encenderlo completo al descubrirlo
+  const L = LUGARES[i]; if (L.t) return [Math.floor(L.cy - L.ry * 1.25 - 1), Math.ceil(L.cy + L.ry * 1.25 + 1)];
+  return [[AGUA0 - 2, AGUA1 + 3], [1468, 1522], [2788, 2827], [4878, 4952]][i];
 }
-// El mundo en un archivo: semilla, reglas, todo lo cavado y la colección. Con él se puede abrir una copia idéntica cuando sea.
+function armarMapa() {
+  const firma = dugCambios + '|' + remin + '|' + (S ? S.lug.join('') : '') + '|' + cfg.verGas;
+  if (mapaImg && (firma === mapaFirma || performance.now() - mapaT < 1500)) return mapaImg;
+  mapaFirma = firma; mapaT = performance.now();
+  if (!mapaImg) { mapaImg = document.createElement('canvas'); mapaImg.width = W; mapaImg.height = H; mapaImgQ = mapaImg.getContext('2d'); mapaImgD = mapaImgQ.createImageData(W, H); }
+  visto.fill(0); visto.fill(1, 0, W * 2);
+  for (let i = 0; i < dug.length; i++) { const b = dug[i]; if (!b) continue; for (let k = 0; k < 8; k++) if (b & (1 << k)) { const c = i * 8 + k, x = c % W, y = (c - x) / W; for (let yy = Math.max(0, y - 2); yy <= Math.min(H - 1, y + 2); yy++) for (let dx = -2; dx <= 2; dx++) visto[yy * W + ((x + dx + W) % W)] = 1; } }
+  if (S) LUGARES.forEach((L, i) => { if (!S.lug[i]) return; const [a, b] = zonaLugar(i); for (let y = Math.max(0, a); y <= Math.min(H - 1, b); y++) for (let x = 0; x < W; x++) if (!visto[y * W + x] && lugarDe(x, y, true) === i) visto[y * W + x] = 1; });
+  const px = mapaImgD.data, Z = TIERRA.map((t) => rgbDe(t[0], -0.3)), PZ2 = PIEDRA.map((p) => rgbDe(p[2][0], -0.15)), MC = MIN.map((m) => rgbDe(m.col));
+  const HUECO_C = [236, 226, 206], AGUA_C = [74, 152, 206], LAVA_C = [255, 122, 40], GAS_C = [126, 214, 120], FIRME_C = [62, 60, 62], LADR_C = [166, 96, 72], ORO_C = [255, 210, 63], EDEN_C = [150, 214, 140];
+  for (let y = 0, i = 0; y < H; y++) {
+    const z = zonaDe((y + 1) * 2), dirt = Z[z], piedra = PZ2[durezaDe((y + 1) * 2)];
+    for (let x = 0; x < W; x++, i++) {
+      let c;
+      if (!visto[i]) { const f = ((x >> 2) + (y >> 2)) & 1; px[i * 4] = f ? 26 : 21; px[i * 4 + 1] = f ? 20 : 16; px[i * 4 + 2] = f ? 16 : 13; px[i * 4 + 3] = 255; continue; }      // no descubierto
+      const t = celda(x, y);
+      c = t === 0 ? (y >= EDEN0 ? EDEN_C : HUECO_C) : t === 6 ? AGUA_C : t === 2 ? piedra : t === 3 ? LAVA_C : t === 4 ? (cfg.verGas === 1 ? GAS_C : dirt) : t === 5 ? FIRME_C : t === 7 ? LADR_C : t >= 10 && t < 10 + MIN.length ? MC[t - 10] : t >= 40 ? ORO_C : dirt;
+      px[i * 4] = c[0]; px[i * 4 + 1] = c[1]; px[i * 4 + 2] = c[2]; px[i * 4 + 3] = 255;
+    }
+  }
+  mapaImgQ.putImageData(mapaImgD, 0, 0);
+  return mapaImg;
+}
+// Dónde va cada maquinita: con el juego corriendo, su posición dibujada; con un menú abierto, la última que llegó.
+const posDe = (o) => { const b = o.b && o.b[o.b.length - 1]; return o.x !== undefined ? [o.x, o.y] : b ? [b.x, b.y] : null; };
+function quienesEnMapa() {
+  const l = [];
+  if (!soloVer && S) l.push({ i: miI, n: miNombre, p: [vis.x, vis.y], yo: 1 });
+  for (const o of otros.values()) { if (!o.on) continue; const p = posDe(o); if (p) l.push({ i: o.i, n: o.n, p }); }
+  return l;
+}
+// Una ventana del mapa: filas y0 a y0 + filas, en el rectángulo (0, 0, cw, ch). Encima, cada maquinita con su color.
+function dibujarMapa(q, cw, ch, y0, filas, conIconos) {
+  const img = armarMapa(), k = ch / filas;
+  q.imageSmoothingEnabled = false;
+  q.fillStyle = '#5f83bd'; if (y0 < 0) q.fillRect(0, 0, cw, Math.min(ch, -y0 * k));      // el cielo
+  const a = Math.max(0, Math.floor(y0)), b = Math.min(H, Math.ceil(y0 + filas));
+  if (b > a) q.drawImage(img, 0, a, W, b - a, 0, (a - y0) * k, cw, (b - a) * k);
+  if (b < y0 + filas) { q.fillStyle = '#0b0807'; q.fillRect(0, (b - y0) * k, cw, ch); }
+  if (conIconos && S) { q.font = `${Math.max(12, Math.round(cw / 26))}px system-ui,"Apple Color Emoji","Segoe UI Emoji"`; q.textAlign = 'center'; q.textBaseline = 'middle'; LUGARES.forEach((L, i) => { if (!S.lug[i]) return; const y = (L.y - y0) * k; if (y > -10 && y < ch + 10) q.fillText(L.ic, (L.x + 0.5) / W * cw, y); }); }
+  for (const j of quienesEnMapa().sort((u, v) => (u.yo ? 1 : 0) - (v.yo ? 1 : 0))) {     // yo, encima de todos
+    const x = (((j.p[0] % W) + W) % W) / W * cw, yy = (j.p[1] - y0) * k, y = Math.max(7, Math.min(ch - 7, yy)), r = j.yo ? 6 : 5;
+    q.fillStyle = j.yo ? '#ffd23f' : colorTx(j.i); q.strokeStyle = '#000'; q.lineWidth = 2;
+    if (yy < 0 || yy > ch) { q.beginPath(); const s = yy < 0 ? -1 : 1; q.moveTo(x, y + s * r); q.lineTo(x - r, y - s * r * 0.6); q.lineTo(x + r, y - s * r * 0.6); q.closePath(); q.fill(); q.stroke(); }      // fuera de la ventana: una flechita en la orilla
+    else { q.beginPath(); q.arc(x, y, r, 0, 7); q.fill(); q.stroke(); if (j.yo) { q.strokeStyle = 'rgba(255,210,63,' + (0.5 + 0.5 * Math.sin(performance.now() / 260)) + ')'; q.lineWidth = 2; q.beginPath(); q.arc(x, y, r + 4, 0, 7); q.stroke(); } }
+  }
+}
+// El mapa del menú: el mundo completo de arriba abajo, con la profundidad y los lugares a la derecha (fuera del mapa).
+function pintarMapa(cv) {
+  const A = 4, an = W * A, ex = 330, alto = H;
+  if (cv.width !== an + ex) { cv.width = an + ex; cv.height = alto; }
+  const q = cv.getContext('2d'); q.clearRect(0, 0, cv.width, cv.height);
+  dibujarMapa(q, an, alto, 0, H, false);
+  q.font = '600 13px system-ui'; q.textBaseline = 'middle'; q.textAlign = 'left';
+  for (let m = 0; m <= 10000; m += 500) { const y = Math.min(alto - 8, Math.max(8, m / 2)); q.fillStyle = '#ffffff1f'; q.fillRect(0, m / 2, an, 1); q.fillStyle = '#c9b29c'; q.fillText(m.toLocaleString('es-MX') + ' m', an + 8, y); }
+  LUGARES.forEach((L, i) => { const y = Math.min(alto - 8, L.y); if (S.lug[i]) { q.fillStyle = '#ffd23f'; q.fillText(L.ic + ' ' + L.n, an + 78, y); q.fillStyle = '#ffd23f66'; q.fillRect(an - 6, y - 1, 6, 2); } else { q.fillStyle = '#ffffff44'; q.fillText('❔ sin descubrir', an + 78, y); } });
+}
+
+// ── El mapa de un lado: se abre de izquierda a derecha como el chat (y encima de él, si está abierto). Arriba, quién está
+//    jugando y a qué profundidad; a la izquierda, todo el mundo en una tira con la marca de cada quien; al centro, la zona
+//    alrededor de tu maquinita (o de la que estés mirando), sin nombres encima para que no estorben.
+const mapaL = { abierto: false, y0: 0, libre: false };
+function abrirMapa() { if (!listo) return; mapaL.abierto = true; mapaL.libre = false; document.body.classList.add('mapa'); pintarMapaLat(true); }
+function cerrarMapa() { mapaL.abierto = false; document.body.classList.remove('mapa'); }
+function pintarMapaLat(ya) {
+  if (!mapaL.abierto || !S) return;
+  const vista = $('#mapaVista'), tira = $('#mapaTira'), dpr = Math.min(2, window.devicePixelRatio || 1);
+  const cw = vista.clientWidth, ch = vista.clientHeight, tw = tira.clientWidth; if (!cw || !ch) return;
+  if (vista.width !== Math.round(cw * dpr) || vista.height !== Math.round(ch * dpr)) { vista.width = Math.round(cw * dpr); vista.height = Math.round(ch * dpr); }
+  if (tira.width !== Math.round(tw * dpr) || tira.height !== Math.round(ch * dpr)) { tira.width = Math.round(tw * dpr); tira.height = Math.round(ch * dpr); }
+  const filas = ch / 1.15;                                    // poco más de una fila por píxel: así ningún túnel se pierde
+  const sig = soloVer ? otros.get(veo) : null, ty = soloVer ? (sig && posDe(sig) ? posDe(sig)[1] : 0) : vis.y;
+  if (!mapaL.libre) { const meta = ty - filas / 2; mapaL.y0 = ya ? meta : mapaL.y0 + (meta - mapaL.y0) * 0.12; }
+  mapaL.y0 = Math.max(-filas * 0.25, Math.min(H - filas * 0.75, mapaL.y0));
+  const q = vista.getContext('2d'); q.setTransform(dpr, 0, 0, dpr, 0, 0); dibujarMapa(q, cw, ch, mapaL.y0, filas, true);
+  // la tira: el mundo entero y dónde anda cada quien
+  const t = tira.getContext('2d'), k = ch / H; t.setTransform(dpr, 0, 0, dpr, 0, 0); t.imageSmoothingEnabled = true;
+  t.drawImage(armarMapa(), 0, 0, W, H, 0, 0, tw, ch);
+  t.strokeStyle = '#fff'; t.lineWidth = 1.5; t.strokeRect(1, Math.max(0, mapaL.y0) * k, tw - 2, Math.max(4, filas * k));
+  for (const j of quienesEnMapa()) { t.fillStyle = j.yo ? '#ffd23f' : colorTx(j.i); t.fillRect(0, Math.max(0, Math.min(ch - 3, j.p[1] * k - 1.5)), tw, 3); }
+  // quién está jugando y dónde
+  const l = quienesEnMapa();
+  poner($('#mapaQuien'), l.map((j) => `<button class="s" data-mi="${j.i}" style="--c:${j.yo ? '#ffd23f' : colorTx(j.i)}"><i></i>${esc(j.n)}${j.yo ? ' (tú)' : ''}<small>${donde(j.p[1])}</small></button>`).join('') + (mapaL.libre ? '<button data-mi="centrar">◎ Volver a mí</button>' : ''));
+}
+$('#mapaX').addEventListener('click', () => { audio(); cerrarMapa(); });
+$('#bMapa').addEventListener('click', (e) => { audio(); e.currentTarget.blur(); if (mapaL.abierto) cerrarMapa(); else abrirMapa(); });
+$('#mapaQuien').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-mi]'); if (!b) return;
+  if (b.dataset.mi === 'centrar') { mapaL.libre = false; return; }
+  const j = quienesEnMapa().find((x) => String(x.i) === b.dataset.mi); if (!j) return;
+  if (j.yo) { mapaL.libre = false; return; }
+  mapaL.libre = true; mapaL.y0 = j.p[1] - $('#mapaVista').clientHeight / 1.15 / 2;
+});
+$('#mapaVista').addEventListener('wheel', (e) => { e.preventDefault(); e.stopPropagation(); mapaL.libre = true; mapaL.y0 += (e.deltaMode === 1 ? 30 : 1) * e.deltaY * 0.9; }, { passive: false });
+$('#mapaTira').addEventListener('click', (e) => { const r = e.currentTarget.getBoundingClientRect(); mapaL.libre = true; mapaL.y0 = (e.clientY - r.top) / r.height * H - $('#mapaVista').clientHeight / 1.15 / 2; });
+setInterval(() => { if (mapaL.abierto && !corriendo) pintarMapaLat(); }, 250);      // con el juego detenido (un menú abierto) también se mueve
+
+// El mundo en un archivo:// El mundo en un archivo: semilla, reglas, todo lo cavado y la colección. Con él se puede abrir una copia idéntica cuando sea.
 function archivoDelMundo(conTerreno) {
   let fin = dug.length; while (fin > 0 && !dug[fin - 1]) fin--;
   let b = ''; for (let i = 0; i < fin; i += 8192) b += String.fromCharCode.apply(null, dug.subarray(i, Math.min(fin, i + 8192)));
@@ -4185,7 +4283,7 @@ function menuPrincipal() {
       COLEC.map(([ic, nom], k) => { const c = hallados[k * 3] + hallados[k * 3 + 1] + hallados[k * 3 + 2], de = Math.round((10 + k * FRANJA) * 2 / 50) * 50, a = Math.round((10 + (k + 1) * FRANJA) * 2 / 50) * 50;
         return `<div class="${c ? (c === 3 ? 'ok' : '') : 'no'}"><i>${ic}</i><b>${c ? nom : '???'}</b><span>${[0, 1, 2].map((j) => `<u class="${j < c ? 'on' : ''}"></u>`).join('')}</span><small>${de.toLocaleString('es-MX')} a ${a.toLocaleString('es-MX')} m · ${fmt(valorCol(k))}</small></div>`; }).join('') + '</div>';
   } else if (pestana === 2) {
-    h += `<p class="nota">Todo el mundo, de la superficie a los 10,000 m. En claro, los túneles que ya abrió el equipo: así no repites camino. Tú eres el punto amarillo; las demás maquinitas, los puntos de su color.</p><canvas id="mapa" class="mapa"></canvas>`;
+    h += `<p class="nota">El mundo de la superficie a los 10,000 m. Solo se ve lo que ya descubrió el equipo: los túneles en claro, lo que alcanzó a ver la lámpara y los lugares encontrados; lo demás queda oscuro, sin descubrir. Tú eres el punto amarillo y cada maquinita, el de su color, en vivo. El mapa de un lado se abre con <b>M</b>.</p><canvas id="mapa" class="mapa"></canvas>`;
   } else if (pestana === 3) {
     h += `<p class="nota">${S.con.tut < TUTORIAL.length ? 'Primeros pasos: cumple cada uno y llega el siguiente.' : 'Trabajos de la Compañía. Al cumplir uno se paga solo y llega otro.'}</p>` +
       S.con.act.map((k) => `<div class="fila"><div class="t"><b>${esc(k.tx)}</b>${k.b > 1 ? `<small>Llevas ${k.pr | 0} de ${k.b}</small>` : ''}</div><div class="v">${fmt(k.pg)}</div></div>`).join('');
@@ -4256,10 +4354,11 @@ function menuPrincipal() {
   } else {
     h += `<p><b>Moverte:</b> con las flechas. <b>↑</b> vuela. <b>↓</b> perfora hacia abajo. <b>← →</b> contra una pared, perfora de lado. Nunca se perfora hacia arriba.</p>
       <p><b>El ciclo:</b> baja, llena la bodega, sube, vende en La Báscula, carga combustible y mejora tu equipo en El Taller. En la superficie, párate frente a un edificio y pulsa ↓.</p>
-      <p><b>Las teclas son la inicial de lo que hacen:</b> <b>R</b> Reserva · <b>N</b> Nanobots · <b>D</b> Dinamita · <b>P</b> Plástico · <b>Q</b> Cuántico · <b>T</b> Transmisor · <b>C</b> Chat · <b>S</b> Señal · <b>A</b> Ayudar · <b>G</b> Grúa · <b>M</b> Menú.</p>
+      <p><b>Las teclas son la inicial de lo que hacen:</b> <b>R</b> Reserva · <b>N</b> Nanobots · <b>D</b> Dinamita · <b>P</b> Plástico · <b>Q</b> Cuántico · <b>T</b> Transmisor · <b>C</b> Chat · <b>S</b> Señal · <b>A</b> Ayudar · <b>G</b> Grúa · <b>M</b> Mapa · <b>Esc</b> Menú.</p>
+      <p><b>El mapa (M):</b> se abre de un lado, como el chat (y encima de él si está abierto). Solo enseña lo que ya descubrió el equipo; lo demás queda oscuro. Arriba dice quién está jugando y a qué profundidad, y un clic en un nombre lleva el mapa hasta esa maquinita; a la izquierda, una tira con el mundo entero y la marca de cada quien. La rueda del ratón recorre el mapa.</p>
       <p><b>Objetos:</b> R tanque de reserva · N nanobots · D dinamita · P explosivo plástico · Q teletransportador cuántico · T transmisor. En El Almacén se compran de a 1, 5, 10, 50 o 100.</p>
       <p><b>El Taller:</b> cada pieza tiene veintiséis mejoras, de $750 a $25 billones ($25 T). Siempre ves las que ya compraste y las diez que siguen.</p>
-      <p><b>Acompañado:</b> S deja una señal que todos ven · A ayuda a la maquinita que tengas junto: le pasa 5 litros · C abre el chat. Para descansar, abre el menú (M o Esc): con el menú abierto tu maquinita no gasta.</p>
+      <p><b>Acompañado:</b> S deja una señal que todos ven · A ayuda a la maquinita que tengas junto: le pasa 5 litros · C abre el chat. Para descansar, abre el menú (Esc): con el menú abierto tu maquinita no gasta.</p>
       <p><b>Tu viaje:</b> abajo a la izquierda ves cuánto llevas, en cuánto se vende y si el combustible te alcanza para subir. Ahí mismo está la <b>grúa</b> (tecla G): te deja en la Gasolinera y cobra según lo lejos que estés y lo que peses.</p>
       <p><b>Bajo el agua:</b> el agua te sostiene y frena la caída, pero con <b>↓</b> los rotorcitos empujan hacia abajo y la cruzas tan rápido como el aire. Ahí abajo no hay golpe de caída.</p>
       <p><b>De regreso:</b> sin tocar nada, la maquinita planea con sus rotorcitos. Con <b>↓</b> los guarda y cae en picada, tres veces más rápido; con <b>↑</b> frena. El velocímetro de la izquierda dice a cuánto vas, y si pasas de Mach 1 dentro del aire, truena.</p>
@@ -4296,7 +4395,7 @@ function aplicarOp() {
 
 /* ════════ Teclado ════════ */
 // Con un menú abierto también se juega sin ratón: Enter hace lo principal, ← → cambian de pestaña (o de cantidad en El Almacén),
-// ↑ ↓ recorren la lista, y en El Almacén las letras de los objetos los compran. Esc o M cierran.
+// ↑ ↓ recorren la lista, y en El Almacén las letras de los objetos los compran. Esc cierra.
 function tecladoMenu(e, k) {
   const c = $('#caja'), clic = (sel) => { const b = c.querySelector(sel); if (b && !b.disabled) b.click(); };
   if (k === 'ArrowUp' || k === 'ArrowDown') { const cu = c.querySelector('.cuerpo'); if (cu) { e.preventDefault(); cu.scrollTop += k === 'ArrowDown' ? 90 : -90; } return; }
@@ -4309,7 +4408,7 @@ function tecladoMenu(e, k) {
 }
 const TECLAS_MENU = { pub: '<kbd>Enter</kbd> acepta la primera solicitud', gas: '<kbd>Enter</kbd> carga', bas: '<kbd>Enter</kbd> vende', tal: '<kbd>←</kbd> <kbd>→</kbd> cambian de pieza · <kbd>Enter</kbd> compra la siguiente', alm: '<kbd>←</kbd> <kbd>→</kbd> cantidad · la letra de cada objeto lo compra · <kbd>Enter</kbd> repara', ele: '<kbd>Enter</kbd> para escribir los metros, y otra vez <kbd>Enter</kbd> para bajar', menu: '<kbd>←</kbd> <kbd>→</kbd> cambian de pestaña' };
 // Las teclas son la inicial, en español, de lo que hacen: Reserva, Nanobots, Dinamita, Plástico, Transmisor (y Q de cuántico),
-// Chat, Señal, Ayudar, Grúa, Menú. Para moverse, las flechas. Por eso ya no hay W A S D: esas letras tienen dueño.
+// Chat, Señal, Ayudar, Grúa, Mapa (el menú es Esc). Para moverse, las flechas. Por eso ya no hay W A S D: esas letras tienen dueño.
 const MAPA = { ArrowLeft: 'izq', ArrowRight: 'der', ArrowUp: 'arr', ArrowDown: 'aba' };
 addEventListener('keydown', (e) => {
   if (cine) { e.preventDefault(); return cerrarCine(); }      // cualquier tecla regresa del jardín entero al juego
@@ -4317,6 +4416,8 @@ addEventListener('keydown', (e) => {
   audio(); nacer();
   if ((e.key === 'c' || e.key === 'C') && listo && !menu && !e.repeat) { e.preventDefault(); return chat.abierto ? cerrarChat() : abrirChat(true); }      // C abre y cierra el chat, con el cursor listo para escribir
   if (e.key === 'Enter' && listo && !menu) { e.preventDefault(); return abrirChat(true); }
+  if ((e.key === 'm' || e.key === 'M') && listo && !menu && !e.repeat) { e.preventDefault(); return mapaL.abierto ? cerrarMapa() : abrirMapa(); }      // M abre y cierra el mapa
+  if (e.key === 'Escape' && mapaL.abierto && !menu) return cerrarMapa();
   if (e.key === 'Escape' && chat.abierto && !menu) return cerrarChat();
   if (soloVer) {                                   // mirando: solo se cambia de maquinita o se cierra la tabla
     if (e.key === 'Escape' && !menu && (pido === 'espera' || pido === 'ausente')) return yaNoPido();
@@ -4325,7 +4426,7 @@ addEventListener('keydown', (e) => {
   }
   const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
   if (e.repeat && !MAPA[k]) return;                 // dejar apretada una tecla no la dispara treinta veces por segundo
-  if (k === 'Escape' || k === 'm') { if (menu && menu !== 'inicio') cerrar(); else if (listo && !menu) abrir('menu'); return; }      // M o Esc: el menú (y con el menú abierto, la maquinita descansa)
+  if (k === 'Escape') { if (menu && menu !== 'inicio') cerrar(); else if (listo && !menu) abrir('menu'); return; }      // Esc: el menú (y con el menú abierto, la maquinita descansa)
   if (menu && menu !== 'inicio') return tecladoMenu(e, k);
   if (!listo || menu) return;
   if (pausa) return;

@@ -145,7 +145,22 @@ body.chat #chatVivo{display:none}
 #botones kbd,#chat header kbd,#verBarra kbd{font:800 1em system-ui;color:var(--ac);margin-right:6px}
 #bChat i,#verChat i{font-style:normal;background:var(--mal);color:#fff;border-radius:99px;padding:0 6px;margin-left:5px;font-size:.8em}
 @media (min-width:761px){#izq,#viaje,#avisos,#regla{transition:left .22s ease}
-  body.chat #izq,body.chat #viaje{left:calc(var(--cw) + 10px)}body.chat #avisos{left:calc(var(--cw) + 10px)}body.chat.libre #avisos{left:calc(var(--cw) + 150px*var(--f))}body.chat #regla{left:calc(var(--cw) + 14px)}}
+  body.chat #izq,body.chat #viaje,body.mapa #izq,body.mapa #viaje{left:calc(var(--cw) + 10px)}body.chat #avisos,body.mapa #avisos{left:calc(var(--cw) + 10px)}body.chat.libre #avisos,body.mapa.libre #avisos{left:calc(var(--cw) + 150px*var(--f))}body.chat #regla,body.mapa #regla{left:calc(var(--cw) + 14px)}
+  body.mapa #chatVivo{left:calc(var(--cw) + 280px*var(--f))}}
+/* El mapa de un lado: mismo lugar que el chat; si los dos están abiertos, el mapa va encima */
+#mapaLat{position:fixed;left:0;top:0;bottom:0;width:var(--cw);z-index:4;display:flex;flex-direction:column;background:#17100cf7;border-right:1px solid var(--borde);box-shadow:8px 0 26px #0009;transform:translateX(-104%);visibility:hidden;transition:transform .22s ease,visibility 0s .22s}
+body.mapa #mapaLat{transform:none;visibility:visible;transition:transform .22s ease,visibility 0s}
+#mapaLat header{display:flex;gap:10px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--borde)}#mapaLat header b{flex:1}
+#mapaLat header kbd{font:800 1em system-ui;color:var(--ac);margin-right:6px}
+#mapaQuien{display:flex;flex-wrap:wrap;gap:4px;padding:8px 10px;max-height:30%;overflow-y:auto;border-bottom:1px solid #ffffff14}
+#mapaQuien button{display:inline-flex;align-items:center;gap:6px;padding:.2em .6em;font-weight:700;font-size:.82em}
+#mapaQuien button i{width:9px;height:9px;border-radius:50%;background:var(--c);flex:none}
+#mapaQuien button small{color:var(--su);font-weight:600}
+#mapaCuerpo{flex:1;display:flex;gap:8px;padding:8px 10px;min-height:0}
+#mapaTira{position:static;width:22px;height:100%;border-radius:4px;cursor:pointer;flex:none;border:1px solid var(--borde)}
+#mapaVista{position:static;flex:1;width:auto;height:100%;border-radius:6px;border:1px solid var(--borde);min-width:0}
+#mapaLat .tecl{padding:2px 12px 9px}
+@media (pointer:coarse){#mapaLat .tecl{display:none}}
 @media (max-width:760px){#chatVivo{left:10px;right:10px;width:auto;bottom:auto;top:calc(118px*var(--f))}}
 #verBarra{position:fixed;left:50%;top:10px;transform:translateX(-50%);display:none;align-items:center;gap:10px;background:#000b;border:1px solid var(--borde);border-radius:10px;padding:8px 12px;max-width:calc(100vw - 20px);z-index:3;text-shadow:0 1px 2px #000}
 body.viendo #verBarra{display:flex}
@@ -190,7 +205,7 @@ body.viendo #verTeclado{display:flex}
 #vjDatos .l.rec{font-size:.9em;margin-top:3px;padding-top:3px;border-top:1px solid #ffffff1c}
 #vjDatos .l.rec b{color:var(--su);font-weight:600}
 #vjDatos .l.col b{color:var(--ac)}
-.mapa{position:static;display:block;width:min(100%,528px);height:auto;margin:0 auto;border:1px solid var(--borde);border-radius:8px;image-rendering:pixelated}
+.mapa{position:static;display:block;width:min(100%,640px);height:auto;margin:0 auto;border:1px solid var(--borde);border-radius:8px;image-rendering:pixelated}
 .vitrina{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:8px}
 .vitrina>div{background:#0004;border:1px solid var(--borde);border-radius:10px;padding:8px 6px 7px;text-align:center}
 .vitrina i{display:block;font-style:normal;font-size:2.1em;line-height:1.15}
@@ -317,7 +332,7 @@ a{color:var(--az)}
 </div>
 <div class="hud" id="metas"></div>
 <div class="hud" id="der">
-  <div id="botones"><button id="bSon" class="s" title="Apagar el sonido">🔊</button><button id="bMenos" class="s" title="Bajar el volumen">−</button><span id="bVol">70 %</span><button id="bMas" class="s" title="Subir el volumen">+</button><button id="bTipos" class="s" title="Elegir qué sonidos se oyen">♪ Sonidos</button><button id="bChat" class="s" title="Abrir y cerrar el chat de este mundo (tecla C)"><kbd>C</kbd>💬 Chat</button><button id="bInv" class="s" title="Invitar a tu gente (tecla I)"><kbd>I</kbd>👥 Invitar</button><button id="bMenu" class="s" title="Abrir el menú (tecla M o Esc)"><kbd>M</kbd>☰ Menú</button></div>
+  <div id="botones"><button id="bSon" class="s" title="Apagar el sonido">🔊</button><button id="bMenos" class="s" title="Bajar el volumen">−</button><span id="bVol">70 %</span><button id="bMas" class="s" title="Subir el volumen">+</button><button id="bTipos" class="s" title="Elegir qué sonidos se oyen">♪ Sonidos</button><button id="bChat" class="s" title="Abrir y cerrar el chat de este mundo (tecla C)"><kbd>C</kbd>💬 Chat</button><button id="bInv" class="s" title="Invitar a tu gente (tecla I)"><kbd>I</kbd>👥 Invitar</button><button id="bMapa" class="s" title="Abrir y cerrar el mapa (tecla M)"><kbd>M</kbd>🗺️ Mapa</button><button id="bMenu" class="s" title="Abrir el menú (tecla Esc)"><kbd>Esc</kbd>☰ Menú</button></div>
   <div id="panSon"></div><div id="tabla"></div><div id="tarjeta"></div>
 </div>
 <div class="hud" id="avisos"></div>
@@ -335,6 +350,10 @@ a{color:var(--az)}
   <form id="chatForm" autocomplete="off"><input id="chatIn" maxlength="300" enterkeyhint="send" placeholder="Escribe y pulsa Enter…"><button>Enviar</button></form>
   <div id="chatTeclas"><kbd>Enter</kbd> manda · <kbd>Enter</kbd> vacío o <kbd>Esc</kbd> cierra · <kbd>Tab</kbd> al juego · <kbd>↑</kbd> <kbd>↓</kbd> recorren</div></aside>
 <div id="chatVivo"></div>
+<aside id="mapaLat"><header><b><kbd>M</kbd>🗺️ Mapa</b><button class="s" id="mapaX" title="Cerrar el mapa (M o Esc)">✕</button></header>
+  <div id="mapaQuien"></div>
+  <div id="mapaCuerpo"><canvas id="mapaTira" title="El mundo entero: clic para ir a esa profundidad"></canvas><canvas id="mapaVista"></canvas></div>
+  <div class="tecl"><kbd>M</kbd> o <kbd>Esc</kbd> cierra · la rueda recorre · clic en un nombre lo busca</div></aside>
 <div id="verBarra"><div id="verDatos"></div><button id="verPedir" title="Pedir entrar a jugar en este mundo con tu maquinita (J)"></button><button class="s" id="verChat" title="Leer el chat de este mundo">💬</button><button class="s" id="verTop">🏆 Top 33</button><a class="boton s" href="/">⛏️ Mi mundo</a><div id="verQuien" title="Clic en una maquinita para ver lo que ella ve (también ← →)"></div></div>
 <div id="verEspera"></div>
 <div id="verTeclado"><div><kbd data-b="5">R</kbd><kbd data-b="6">N</kbd><kbd data-b="7">D</kbd><kbd data-b="8">P</kbd><kbd data-b="9">Q</kbd><kbd data-b="10">T</kbd></div><div><kbd data-b="11">C</kbd><kbd data-b="12">S</kbd><kbd data-b="13">A</kbd><kbd data-b="14">G</kbd><kbd data-b="15">M</kbd><kbd data-b="4" class="esp">espacio</kbd></div><div class="fl"><kbd data-b="2">↑</kbd><br><kbd data-b="0">←</kbd><kbd data-b="3">↓</kbd><kbd data-b="1">→</kbd></div></div>

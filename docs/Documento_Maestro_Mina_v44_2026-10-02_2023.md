@@ -1061,6 +1061,30 @@ El nombre lleva a **ricardolopezreyero.com** (en otra pestaña, para no perder l
 
 El README abre con un resumen del manifiesto.
 
+### 9.38 El mapa: solo lo descubierto, todos en vivo, y un mapa de un lado como el chat
+
+**Lo que pidió Ricardo (ordenado).**
+
+1. En el mapa se ve **en vivo** dónde está cada jugador.
+2. Un **mapa de un lado**, que se abre de izquierda a derecha igual que el chat: si el chat está abierto, el mapa sale encima; si no, sale solo.
+3. **Solo se ve lo descubierto**; todo lo demás queda como «no descubierto».
+4. **Sin nombres encima del mapa**, porque estorban la vista; los nombres van al lado.
+5. Mejorar los dos mapas: el del menú y el de un lado.
+
+**Cómo quedó.**
+
+- **Una sola imagen del mundo** (96 × 5,000, un píxel por celda) para los dos mapas. Se ve lo cavado, lo que alcanzó a ver la lámpara alrededor (2 celdas), los lugares ya descubiertos completos (el lago del Acuífero, la Gruta, la Ciudad…) y la superficie. Lo demás va en un tono oscuro con un tramado suave: no descubierto. Los minerales que ya se vieron aparecen con su color. La imagen se rehace cuando cambia el terreno, a lo mucho cada segundo y medio (unos 22 ms).
+- **Cada maquinita en vivo**, con su color del chat; la tuya en amarillo con un pulso. Si una queda fuera de la ventana, una flechita en la orilla dice hacia dónde está.
+- **El mapa de un lado (tecla M o el botón 🗺️ Mapa):**
+  - Arriba, quién está jugando y a qué profundidad («Don Pepita · 1,201 m»). Un clic en un nombre lleva el mapa hasta esa maquinita; «◎ Volver a mí» lo regresa.
+  - A la izquierda, una tira con el mundo entero, la marca de cada quien y un rectángulo con la zona que estás viendo; un clic en la tira lleva ahí.
+  - Al centro, la zona alrededor de tu maquinita (o de la que estés mirando, si eres observador). Te sigue sola; la rueda del ratón la recorre.
+  - Los lugares descubiertos aparecen solo con su icono, sin nombre.
+  - Se cierra con M o Esc. El tablero de la izquierda se recorre para no quedar tapado, igual que con el chat.
+- **El mapa del menú:** el mundo completo con la misma imagen, ahora un píxel por fila (antes medio: se perdían túneles), las maquinitas en vivo, y a la derecha, fuera del mapa, la profundidad y los nombres de los lugares descubiertos («❔ sin descubrir» los demás).
+
+**Teclas.** **M** pasa a ser el mapa (la tecla que se espera en un juego) y el menú se abre con **Esc**. El botón del menú dice «Esc · Menú».
+
 ## 10. Revisión de código del 2 de octubre
 
 Se revisó todo el código buscando fallas y se corrigieron estas:
