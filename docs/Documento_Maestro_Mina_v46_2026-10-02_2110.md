@@ -1,4 +1,4 @@
-# DOCUMENTO MAESTRO · «Mina» · v45
+# DOCUMENTO MAESTRO · «Mina» · v46
 
 **Ver en vivo: https://mina.capitaltorreon.com**
 
@@ -971,8 +971,8 @@ Tres cosas más para el cierre, pedidas por Ricardo al llegar él mismo a la úl
 **Tres tiempos** (todas las maquinitas conectadas los viven juntas, cada quien en su pantalla):
 
 1. **La unión** (6 s). Cada maquinita conectada baja volando hasta su retrato junto a la mesa (el retrato la espera, transparente) y se une con él: destello y campana.
-2. **La lluvia** (4 minutos). Todos los minerales que quedaban en el mundo entero caen desde arriba de la pantalla hasta las maquinitas unidas junto a la mesa. La cartera de cada una sube a la vista durante los 4 minutos. Abajo al centro corre la cuenta regresiva.
-3. **El camino de luz.** En fila, una cada 2.4 s, cada maquinita baja al lago y sube por los peldaños de luz que deja el sol en el agua; mientras sube se hace chica y transparente, con una frase de piano ascendente, y al final desaparece con una campana. Después sale el jardín entero a pantalla completa y cada quien vuelve a empezar en la superficie.
+2. **El torbellino** (33 s; antes era una lluvia de 4 minutos, ver 9.40). Todos los minerales que quedaban en el mundo entero bajan a la vez y se arremolinan en un tornado rapidísimo sobre cada maquinita, hasta entrar en ella. La cartera de cada una sube a la vista durante esos 33 s. Abajo al centro corre la cuenta regresiva.
+3. **El camino de luz.** En fila, una cada 2.4 s (con mucha gente la fila se aprieta para que la última arranque a más tardar 10 s después de la primera), cada maquinita baja al lago y sube por los peldaños de luz que deja el sol en el agua; mientras sube se hace chica y transparente, con una frase de piano ascendente, y al final desaparece con una campana. Después sale el jardín entero a pantalla completa y cada quien vuelve a empezar en la superficie.
 
 Los retratos de la mesa ya no se pintan después: las maquinitas se fueron.
 
@@ -980,7 +980,7 @@ Los retratos de la mesa ya no se pintan después: las maquinitas se fueron.
 
 **El mundo queda de pura tierra.** Los tesoros, los huesos y la colección siguen donde estaban. Para que vuelva a haber mineral, la Remineralizadora.
 
-**Mientras dura el final** la maquinita no se mueve (la lleva el final); el chat y el menú sí funcionan. Dura unos 4 minutos y 15 segundos con una maquinita, y 2.4 s más por cada una adicional.
+**Mientras dura el final** la maquinita no se mueve (la lleva el final); el chat y el menú sí funcionan. Dura unos 54 s con una maquinita, y como mucho 10 s más con muchas.
 
 **Piezas.** Juego: `contarMinerales`, `vaciarMinerales`, `finDelMundo(quien, fin)`, `posCeremonia`, `pasoCeremonia`, `dibujarCeremonia`, `lluviaDeMinerales` (destinos por maquinita), `CER` (tiempos), regla del Corazón en `perforar`. Mundo: mensaje `fin` con `{ i, r, n, total, parte }`, guardado en `m.fin` y enviado en el saludo.
 
@@ -1151,6 +1151,32 @@ El README abre con un resumen del manifiesto.
 **Lo que no pude probar.** No pude entrar con una cuenta real de Google: el navegador de pruebas bloquea la ventana de Google cuando la abro yo. Puede que el identificador del ping pong todavía no tenga autorizado el dominio de Mina. En ese caso, en Google Cloud Console → Credenciales → ese cliente de OAuth → «Orígenes autorizados de JavaScript» hay que agregar `https://mina.capitaltorreon.com`.
 
 **De paso.** En pantallas angostas, la liga de «Invita a tu gente» se encimaba con su botón. Ahora las ligas largas parten renglón.
+
+### 9.40 El final, mucho más rápido: un torbellino de 33 segundos
+
+**Lo que pidió Ricardo.** El final era demasiado lento: 4 minutos de lluvia. Quiere que en 33 segundos bajen todos los minerales del mapa al mismo tiempo, en un torbellino rapidísimo que se va a cada uno de los jugadores, y que luego sigan con el camino.
+
+**Cómo quedó.**
+
+- **33 segundos** (`CER.lluvia = 33`). El final completo pasó de más de 4 minutos y medio a unos 54 segundos con una maquinita.
+- **Todo baja a la vez.** En los primeros 2.5 s nacen piezas de golpe por todos lados: desde arriba de la pantalla y desde las dos orillas. Luego siguen llegando hasta 4 s antes del final, para que todas entren a tiempo.
+- **Un tornado sobre cada maquinita.**
+  - Cada pieza entra a un embudo que es ancho arriba y tiene la punta en la maquinita.
+  - Gira cada vez más rápido mientras el embudo se cierra: de 7 a 29 vueltas en radianes por segundo, unas 4.6 vueltas por segundo al final.
+  - Todas giran hacia el mismo lado, como un solo remolino, y el embudo se mece un poco.
+  - Encima se ven unos anillos de aire girando, y cada maquinita brilla mientras recibe.
+  - Con varias maquinitas, las piezas se reparten por turno entre ellas.
+- **Viento**: un silbido que sube y otro que baja al arrancar el torbellino. Las monedas suenan mientras las piezas entran.
+- **En pantalla** van hasta 1,600 piezas a la vez. Con «Partículas: pocas» son 700 y con «ninguna», 300.
+- **El camino de luz** arranca 1 s después. Con mucha gente, la fila se aprieta: la última maquinita sale a más tardar 10 s después de la primera (antes eran 2.4 s por cada una, hasta 94 s con 40).
+- La tarjeta de la unión dice ahora que los minerales «bajan ahora mismo en un torbellino de 33 segundos».
+
+**Probado.** En local, avanzando el reloj del juego a mano, con 3 maquinitas:
+- el torbellino termina a los 33 s sin piezas sueltas;
+- el camino de luz sigue, y todo el final cierra a los 54 s;
+- cada cuadro tarda en promedio 1.5 ms con 1,500 piezas en pantalla.
+
+No se pudo ver el movimiento en vivo porque el navegador de pruebas está oculto y no dibuja cuadros solo.
 
 ## 10. Revisión de código del 2 de octubre
 

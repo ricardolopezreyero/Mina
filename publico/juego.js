@@ -1144,11 +1144,13 @@ function vaciarMinerales() {
 }
 // ── El final, en tres tiempos:
 //    1. La unión (6 s): cada maquinita conectada baja hasta su retrato junto a la mesa y se une con él.
-//    2. La lluvia (4 min): todos los minerales que quedaban en el mundo caen hasta ellas. Se reparten en partes iguales
-//       entre todas las maquinitas del mundo; las que no estaban reciben la suya al volver.
-//    3. El camino de luz: en fila, una por una, bajan al lago y suben por los peldaños de luz que deja el sol en el agua,
-//       hasta desaparecer. Después, el jardín entero a pantalla completa, y cada quien vuelve a empezar en la superficie.
-const CER = { union: 6, lluvia: 240, sepa: 2.4, baja: 2.6, sube: 4.6 };
+//    2. El torbellino (33 s): todos los minerales que quedaban en el mundo bajan a la vez y se arremolinan, rapidísimo,
+//       alrededor de cada maquinita hasta entrar en ella. Se reparten en partes iguales entre todas las maquinitas del
+//       mundo; las que no estaban reciben la suya al volver.
+//    3. El camino de luz: en fila, una tras otra, bajan al lago y suben por los peldaños de luz que deja el sol en el agua,
+//       hasta desaparecer. Con mucha gente la fila se aprieta: nunca tarda más de 10 s en arrancar la última. Después, el
+//       jardín entero a pantalla completa, y cada quien vuelve a empezar en la superficie.
+const CER = { union: 6, lluvia: 33, sepa: 2.4, baja: 2.6, sube: 4.6 };
 const retrato = (k, n) => { const paso = Math.min(1.9, 17 / Math.max(1, n)); return [48 - ((n - 1) * paso) / 2 + k * paso, EDEN0 + 107.6]; };
 const PELDANO0 = [48.5, EDEN0 + 119.2], PELDANO1 = [48.5, EDEN0 + 110.5];
 // Si el mundo no contesta, el reparto se hace aquí, entre las maquinitas que este equipo conoce.
@@ -1162,20 +1164,20 @@ function finDelMundo(quien, fin) {
   // quiénes participan: las maquinitas conectadas, cada una con su retrato
   const part = gente.map((j, k) => ({ ...j, k, mio: !soloVer && j.i === miI, a: retrato(k, gente.length) })).filter((j) => j.mio || otros.get(j.i)?.on);
   for (const j of part) { const o = j.mio ? yo : otros.get(j.i); j.d = o && o.x !== undefined ? [o.x, o.y] : [j.a[0], j.a[1] - 6]; }
-  ceremonia = { t0: performance.now(), part, ids: new Set(part.map((j) => j.i)), sonadas: new Set(), fin: false };
-  ceremonia.tFin = CER.union + CER.lluvia + 1 + Math.max(0, part.length - 1) * CER.sepa + CER.baja + CER.sube + 1.5;
+  ceremonia = { t0: performance.now(), part, ids: new Set(part.map((j) => j.i)), sonadas: new Set(), fin: false, sepa: Math.min(CER.sepa, 10 / Math.max(1, part.length - 1)) };
+  ceremonia.tFin = CER.union + CER.lluvia + 1 + Math.max(0, part.length - 1) * ceremonia.sepa + CER.baja + CER.sube + 1.5;
   if (botin.n) lluvia = { t0: performance.now() + CER.union * 1000, ult: performance.now(), dur: CER.lluvia, p: [], tipos: [...botin.cuenta.keys()], llegan: 0, sonados: 0, tSon: 0, total: parte, mio: parte > 0, d0: S.d, tot0: S.tot };
   edenVivo = true; musica.z = ''; musica.quedan = 0; yo.perf = null; crucero = false;
   for (const [f, k] of [[262, 0], [330, 0.25], [392, 0.5], [523, 0.8], [659, 1.15], [784, 1.5], [1047, 2]]) piano(f, 5, 0.08, k, 'avisos');
   const nGente = Math.max(1, fin.n || 1);
-  tarjeta('❤️ La unión', `${quien === miI ? 'Perforaste el Corazón.' : nombreDe(quien) + ' perforó el Corazón.'} Todos los minerales que quedaban en el mundo (${botin.n.toLocaleString('es-MX')} piezas, ${fmt(fin.total || botin.total)}) van a caer en los próximos 4 minutos, repartidos en partes iguales entre las ${nGente} maquinitas de este mundo.${parte ? ' Tu parte: ' + fmt(parte) + '.' : ''}${regalo ? ' Y el regalo del jardín: ' + fmt(regalo) + '.' : ''} Hay para todos.`, 'msj', 30000, true);
+  tarjeta('❤️ La unión', `${quien === miI ? 'Perforaste el Corazón.' : nombreDe(quien) + ' perforó el Corazón.'} Todos los minerales que quedaban en el mundo (${botin.n.toLocaleString('es-MX')} piezas, ${fmt(fin.total || botin.total)}) bajan ahora mismo en un torbellino de 33 segundos, repartidos en partes iguales entre las ${nGente} maquinitas de este mundo.${parte ? ' Tu parte: ' + fmt(parte) + '.' : ''}${regalo ? ' Y el regalo del jardín: ' + fmt(regalo) + '.' : ''} Hay para todos.`, 'msj', 30000, true);
   sucio = true; pintarHud(true);
 }
 // Dónde va cada maquinita, qué tan grande y qué tan visible, a cada momento del final.
 function posCeremonia(j, t) {
   const C = ceremonia, suave = (k) => k * k * (3 - 2 * k), mezcla2 = (a, b, k) => [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k];
   if (t < CER.union) { const k = suave(tope(t / CER.union)); const p = mezcla2(j.d, j.a, k); p[1] -= Math.sin(k * Math.PI) * 3; return { p, esc: 1 + 0.5 * k, alfa: 1, vuela: 1 }; }
-  const t0 = CER.union + CER.lluvia + 1 + C.part.indexOf(j) * CER.sepa;
+  const t0 = CER.union + CER.lluvia + 1 + C.part.indexOf(j) * C.sepa;
   if (t < t0) return { p: [j.a[0], j.a[1] + Math.sin(t * 2 + j.k) * 0.05], esc: 1.5, alfa: 1, vuela: 0 };
   if (t < t0 + CER.baja) { const k = suave((t - t0) / CER.baja); return { p: mezcla2(j.a, PELDANO0, k), esc: 1.5, alfa: 1, vuela: 2 }; }
   if (t < t0 + CER.baja + CER.sube) { const k = (t - t0 - CER.baja) / CER.sube, p = mezcla2(PELDANO0, PELDANO1, suave(k)); p[1] -= Math.abs(Math.sin(k * Math.PI * 8)) * 0.25; return { p, esc: 1.5 - 1.2 * k, alfa: k < 0.65 ? 1 : 1 - (k - 0.65) / 0.35, vuela: 0, sube: k }; }
@@ -1191,7 +1193,7 @@ function pasoCeremonia() {
   if (!soloVer) { yo.x = ant.x = vis.x = vis.x + (foco[0] - vis.x) * 0.08; yo.y = ant.y = vis.y = vis.y + (foco[1] - vis.y) * 0.08; }
   else { vis.x += (foco[0] - vis.x) * 0.08; vis.y += (foco[1] - vis.y) * 0.08; yo.x = vis.x; yo.y = vis.y; }
   for (const j of C.part) {                                   // sonidos: la unión, y cada maquinita que sube por la luz
-    const t0 = CER.union + CER.lluvia + 1 + C.part.indexOf(j) * CER.sepa;
+    const t0 = CER.union + CER.lluvia + 1 + C.part.indexOf(j) * C.sepa;
     if (t >= CER.union && !C.sonadas.has('u' + j.i)) { C.sonadas.add('u' + j.i); campana(880 + j.k * 60, 1.2, 0.06, 'avisos'); if (op.part) chispas(j.a[0], j.a[1], '#ffe9a8', 26, 6); }
     if (t >= t0 + CER.baja && !C.sonadas.has('s' + j.i)) { C.sonadas.add('s' + j.i); [523, 659, 784, 1047, 1319].forEach((f, k) => piano(f * Math.pow(2, (j.k % 3) / 12), 3, 0.06, k * 0.55, 'avisos')); }
     if (t >= t0 + CER.baja + CER.sube && !C.sonadas.has('f' + j.i)) { C.sonadas.add('f' + j.i); campana(1568, 2, 0.05, 'avisos'); campana(2093, 2.4, 0.03, 'avisos', 0.2); if (op.part) chispas(PELDANO1[0], PELDANO1[1], '#ffffff', 30, 5); }
@@ -1221,22 +1223,45 @@ function dibujarCeremonia(ox, oy) {
     g.globalAlpha = e.alfa; dibMaq(g, px, py, T * e.esc, j.m, j.k % 2 ? -1 : 1, e.vuela, 0, op.nombres && e.alfa > 0.6 ? j.n : '', '', e.p[0]); g.globalAlpha = 1;
   }
 }
+// El torbellino: los minerales nacen de golpe por todos lados (el mundo entero baja a la vez), entran a un embudo sobre cada
+// maquinita, giran cada vez más rápido mientras se cierra y entran en ella. Todas giran hacia el mismo lado, como un solo
+// remolino. En pantalla van hasta 1,600 piezas a la vez (700 con «Partículas: pocas», 300 con «ninguna»).
 function lluviaDeMinerales(ox, oy) {
-  const L = lluvia, ahora = performance.now(), t = (ahora - L.t0) / 1000, w = lienzo.width, d = Math.min(0.05, (ahora - L.ult) / 1000); L.ult = ahora;
+  const L = lluvia, ahora = performance.now(), t = (ahora - L.t0) / 1000, w = lienzo.width, h = lienzo.height, d = Math.min(0.05, (ahora - L.ult) / 1000); L.ult = ahora;
   if (t < 0) return;
   const destinos = ceremonia ? ceremonia.part.map((j) => [ox + j.a[0] * T, oy + j.a[1] * T]) : [[ox + vis.x * T, oy + vis.y * T]];
   if (!destinos.length) destinos.push([ox + 48 * T, oy + (EDEN0 + 105) * T]);
-  if (t < L.dur - 3) for (let k = 0; k < 7 && L.p.length < 1400; k++) { const i = L.tipos[Math.floor(Math.random() * L.tipos.length)]; L.p.push({ x: Math.random() * w, y: -T * (0.5 + Math.random() * 6), vx: (Math.random() - 0.5) * T * 2, vy: T * (4 + Math.random() * 6), c: MIN[i].col, r: T * (0.09 + Math.random() * 0.1), a: Math.random() * 6, e: 0, tg: Math.floor(Math.random() * destinos.length) }); }
+  if (!L.viento) { L.viento = 1; ruido(2.6, 0.07, 'avisos', 240, 'bandpass', 1.1, 0, 1900); ruido(3.4, 0.05, 'avisos', 1900, 'bandpass', 0.9, 2.3, 380); }
+  const cupo = [300, 700, 1600][op.part] ?? 1600;
+  if (t < L.dur - 4.4) {                                  // de golpe los primeros 2.5 s; luego siguen llegando hasta 4 s antes del final
+    L.acc = (L.acc || 0) + d * (t < 2.5 ? 2600 : 560);
+    while (L.acc >= 1 && L.p.length < cupo) {
+      L.acc--;
+      const lado = Math.random(), x0 = lado < 0.6 ? Math.random() * w : lado < 0.8 ? -T * (1 + Math.random() * 4) : w + T * (1 + Math.random() * 4), y0 = lado < 0.6 ? -T - Math.random() * h * 0.35 : Math.random() * h * 0.75;
+      L.p.push({ x0, y0, x: x0, y: y0, tg: (L.n = (L.n || 0) + 1) % destinos.length, e: 0, ta: 0.45 + Math.random() * 0.5, ts: 1.3 + Math.random() * 1.6, r0: T * (1.5 + Math.random() * 2.5), th: Math.random() * 6.283, c: MIN[L.tipos[Math.floor(Math.random() * L.tipos.length)]].col, r: T * (0.09 + Math.random() * 0.1), a: Math.random() * 6 });
+    }
+    if (L.p.length >= cupo) L.acc = 0;
+  }
+  if (t < L.dur - 1) {                                    // el remolino de aire sobre cada maquinita
+    g.lineWidth = Math.max(1.5, T * 0.05);
+    for (const [mx, my] of destinos) for (let k = 0; k < 4; k++) { const rr = T * (0.6 + k * 0.85), giro = reloj * (13 - k * 2.5); g.strokeStyle = `rgba(255,255,255,${0.3 - k * 0.06})`; g.beginPath(); g.ellipse(mx + Math.sin(reloj * 3 + rr / T) * rr * 0.18, my - rr * 2.1, rr, rr * 0.3, 0, giro, giro + 3.9); g.stroke(); }
+    g.globalCompositeOperation = 'lighter';           // cada maquinita brilla mientras los recibe
+    for (const [mx, my] of destinos) { const rr = T * (1.2 + 0.15 * Math.sin(reloj * 9)), gl = g.createRadialGradient(mx, my, 0, mx, my, rr); gl.addColorStop(0, 'rgba(255,244,205,.45)'); gl.addColorStop(1, 'rgba(255,244,205,0)'); g.fillStyle = gl; g.fillRect(mx - rr, my - rr, rr * 2, rr * 2); }
+    g.globalCompositeOperation = 'source-over';
+  }
   for (const q of L.p) {
     const [mx, my] = destinos[q.tg % destinos.length];
-    q.e += d; const h = Math.min(1, Math.max(0, (q.e - 0.5) / 1.1));                 // cae medio segundo y luego se va derecho a su maquinita
-    q.vx += ((mx - q.x) * 9 - q.vx * 2) * h * d; q.vy += ((my - q.y) * 9 - q.vy * 2) * h * d + T * 6 * (1 - h) * d;
-    q.x += q.vx * d; q.y += q.vy * d; q.a += d * 5;
-    if (Math.hypot(q.x - mx, q.y - my) < T * 0.45) { q.fin = 1; L.llegan++; continue; }
-    g.save(); g.translate(q.x, q.y); g.rotate(q.a); g.strokeStyle = '#0006'; g.lineWidth = Math.max(1, T * 0.03); g.fillStyle = q.c; g.beginPath(); g.moveTo(0, -q.r * 1.4); g.lineTo(q.r, 0); g.lineTo(0, q.r * 1.4); g.lineTo(-q.r, 0); g.closePath(); g.fill(); g.stroke(); g.fillStyle = 'rgba(255,255,255,.55)'; g.beginPath(); g.moveTo(0, -q.r * 1.4); g.lineTo(q.r * 0.5, -q.r * 0.3); g.lineTo(-q.r * 0.5, -q.r * 0.3); g.fill(); g.restore();
+    q.e += d; q.a += d * 9;
+    const s = Math.max(0, (q.e - q.ta) / q.ts), rad = q.r0 * Math.max(0, 1 - s);
+    q.th += d * (7 + 22 * Math.min(1, s));               // gira cada vez más rápido mientras el embudo se cierra
+    const ex = mx + Math.cos(q.th) * rad + Math.sin(reloj * 3 + rad / T) * rad * 0.18, ey = my - rad * 2.1 + Math.sin(q.th) * rad * 0.3;      // un tornado: ancho arriba, la punta en la maquinita
+    if (q.e < q.ta) { const k = q.e / q.ta, kk = k * k * (3 - 2 * k); q.x = q.x0 + (ex - q.x0) * kk; q.y = q.y0 + (ey - q.y0) * kk; } else { q.x = ex; q.y = ey; }
+    if (s >= 1) { q.fin = 1; L.llegan++; continue; }
+    const r = q.r * (s > 0.88 ? 1 - (s - 0.88) * 5 : 1);
+    g.save(); g.translate(q.x, q.y); g.rotate(q.a); g.strokeStyle = '#0006'; g.lineWidth = Math.max(1, T * 0.03); g.fillStyle = q.c; g.beginPath(); g.moveTo(0, -r * 1.4); g.lineTo(r, 0); g.lineTo(0, r * 1.4); g.lineTo(-r, 0); g.closePath(); g.fill(); g.stroke(); g.fillStyle = 'rgba(255,255,255,.55)'; g.beginPath(); g.moveTo(0, -r * 1.4); g.lineTo(r * 0.5, -r * 0.3); g.lineTo(-r * 0.5, -r * 0.3); g.fill(); g.restore();
   }
   if (L.p.length) { let n = 0; for (let i = 0; i < L.p.length; i++) if (!L.p[i].fin) L.p[n++] = L.p[i]; L.p.length = n; }
-  if (L.llegan > L.sonados && ahora - L.tSon > 90) { L.tSon = ahora; L.sonados = L.llegan; son.moneda(Math.min(24, L.llegan % 25)); }
+  if (L.llegan > L.sonados && ahora - L.tSon > 70) { L.tSon = ahora; L.sonados = L.llegan; son.moneda(Math.min(24, L.llegan % 25)); }
   const k = Math.min(1, t / L.dur), suave = 1 - Math.pow(1 - k, 3);
   if (L.mio) { S.d = L.d0 + Math.floor(L.total * suave); S.tot = L.tot0 + Math.floor(L.total * suave); }
   if (k >= 1) { lluvia = null; if (L.mio) { S.d = L.d0 + L.total; S.tot = L.tot0 + L.total; sucio = true; son.venta(); pintarHud(true); } }

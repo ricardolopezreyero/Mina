@@ -29,7 +29,7 @@ Este juego está hecho con todo el cariño con el que se puede hacer un juego. N
 - Para jugar acompañado: botón **Invitar** (liga y código QR).
 - **Dos ligas, cada una con su imagen** al mandarla por WhatsApp: la del mundo (sus hitos y su gente) y la tuya (presume tu maquinita).
 - **En el teléfono**: arrastra el dedo para moverte; un toque frente a un edificio entra.
-- **El cierre**: los últimos 240 m guardan un jardín pintado detrás de la roca. Se descubre entre todos, celda por celda. Al final, de pie sobre el Corazón, se perfora hacia abajo: las maquinitas se unen con sus retratos, todos los minerales del mundo caen y se reparten en partes iguales, y en fila se van por el camino de luz del lago.
+- **El cierre**: los últimos 240 m guardan un jardín pintado detrás de la roca. Se descubre entre todos, celda por celda. Al final, de pie sobre el Corazón, se perfora hacia abajo: las maquinitas se unen con sus retratos, todos los minerales del mundo bajan a la vez en un torbellino de 33 segundos que se reparte en partes iguales, y en fila se van por el camino de luz del lago.
 - **Los mundos son para siempre**: cada uno se guarda completo (terreno, túneles, reglas y colección) y no se borra nunca, salvo que quien lo creó lo deseche. Con su liga se vuelve a entrar cuando sea, exactamente donde se dejó.
 - **El mundo da la vuelta**: lo que sale por la orilla derecha entra por la izquierda, y al revés.
 - **El Taller** tiene 26 mejoras por pieza, hasta $25 billones. **La Remineralizadora** cuesta el 5 % de todo lo ganado.
@@ -54,7 +54,7 @@ Este juego está hecho con todo el cariño con el que se puede hacer un juego. N
 | `wrangler.jsonc` | Configuración del Worker y del dominio |
 | `publico/sw.js`, `publico/manifest.webmanifest`, `publico/iconos/` | La aplicación instalable: lo que se guarda en el equipo para abrir sin internet, y sus iconos |
 | `diseno-fuente/` | El programa que dibuja el icono en todos sus tamaños |
-| `docs/Documento_Maestro_Mina_v45_2026-10-02_2050.md` | Qué está construido, con qué números y qué falta |
+| `docs/Documento_Maestro_Mina_v46_2026-10-02_2110.md` | Qué está construido, con qué números y qué falta |
 | `Prompt_Maestro_Mina_v4_2026-10-01_2336.md` | El diseño completo |
 | `sonidos-fuente/` | El pedido exacto de sonidos y música para ElevenLabs (aún sin generar) |
 
