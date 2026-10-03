@@ -986,6 +986,33 @@ Los retratos de la mesa ya no se pintan después: las maquinitas se fueron.
 
 **Probado en local** con dos maquinitas (una real y una simulada): reparto calculado por el mundo, unión, lluvia, camino de luz en fila, regreso a la superficie y retratos borrados. **Sin probar:** con varias personas reales a la vez, y el cobro al volver de quien no estaba.
 
+### 9.33 Mirar o jugar: el público, las solicitudes y sacar a alguien
+
+**Topes.** Juegan hasta 40 maquinitas a la vez (100 registradas por mundo). Mirando: sin tope (antes 30).
+
+**Quien mira** (liga `/ver/…`, desde el Top 33 o la que manda un jugador):
+
+- Arriba tiene una fila con las maquinitas que están jugando, cada una con su color: **un clic** y la vista se va con ella, como seleccionar una base en StarCraft. También un clic sobre la maquinita en el mundo, o ← →.
+- Abajo ve **el teclado de esa maquinita**: se encienden las teclas que va apretando (flechas, barra y las letras R N D P Q T C S A G M). Las teclas viajan con la posición (2 bytes más; el servidor acepta el paquete viejo y el nuevo).
+- **Pedir jugar aquí** (tecla **J**, un clic): manda una solicitud con la maquinita de su equipo (o con una nueva, ya bautizada). Ve el estado: esperando, «quien creó el mundo no está conectado», aceptado o rechazado. Si lo aceptan, entra a jugar solo.
+
+**Quien creó el mundo:**
+
+- Le llegan los avisos: «Lupita empezó a mirar tu mundo» (solo aviso) y «Lupita quiere jugar en tu mundo · pulsa J» (eso sí lo decide).
+- **Tecla J** (o clic en el renglón «🙋 1 quiere jugar» de la lista de arriba, o Menú → Mundo → Público y solicitudes) abre el panel: quién quiere jugar (Aceptar / Rechazar; **Enter** acepta la primera), quién juega y quién mira (**Sacar**, un clic), y la lista de sacados (**Perdonar**).
+- **Sacar** saca al instante y no deja volver: a una maquinita por su llave, y a quien mira por una huella de su dirección de internet (nunca se guarda la dirección). Una maquinita sacada aparece como «fue sacada del mundo».
+
+**Decisiones.**
+
+- **La liga del mundo sigue siendo una invitación:** quien entra con ella juega sin pedir permiso, porque se la mandó quien ya juega ahí. Lo que necesita aceptación es entrar a jugar desde la vista de observador, que es pública.
+- **Puerta cerrada:** si el mundo tiene la puerta cerrada, quien llega con la liga ya no ve «cerró la puerta»: entra a mirar y su solicitud sale sola.
+- **La dirección de internet solo frena a quien llega nuevo.** En una casa o en una red de celular varias personas comparten dirección; por eso no saca a las maquinitas que ya juegan en el mundo, ni a quien aceptaste.
+- **Si el mundo no tiene dueño registrado** (mundos muy viejos), las solicitudes se aceptan solas.
+
+**Piezas.** Mundo: etiqueta `ip:` en cada socket, `huellaIp`, `baneado`, `avisarDueno` (mensaje `publico`), `pedir`, `ordenDueno` (`acepto`, `rechazo`, `sacar`, `perdonar`), `m.ok` (aceptados), `m.ban`. Juego: `mascaraTeclas`, `pintarTecladoVer`, `pedirJugar`, `recibirPublico`, `htmlPublico`, menú `pub`, `#verQuien`, `#verTeclado`, `#verPedir`.
+
+**Probado en local:** pedir, aceptar, rechazar, sacar a quien mira y que no pueda volver, sacar a una maquinita mientras juega y que no pueda volver, perdonar, que el dueño no quede sacado aunque comparta dirección, y las teclas de tres jugadores simulados en el teclado de quien mira.
+
 ## 10. Revisión de código del 2 de octubre
 
 Se revisó todo el código buscando fallas y se corrigieron estas:

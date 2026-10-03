@@ -1860,14 +1860,24 @@ function enviarEst() {
   enviar({ t: 'est', e: S, rec: S.rec, tot: Math.floor(S.tot) });
   sucio = false;
 }
-const bufPos = new Uint8Array(8), datoPos = new DataView(bufPos.buffer); let ultPos = '';
+const bufPos = new Uint8Array(10), datoPos = new DataView(bufPos.buffer); let ultPos = '';
+// Qué teclas está apretando (o apretó hace un instante): ← → ↑ ↓, barra, y las letras de acción. Viajan en 16 bits.
+const TECLAS_VER = ['izq', 'der', 'arr', 'aba', ' ', 'r', 'n', 'd', 'p', 'q', 't', 'c', 's', 'a', 'g', 'm'];
+const apretadas = new Map();
+addEventListener('keydown', (e) => { if (e.target.tagName !== 'INPUT') apretadas.set(e.key.length === 1 ? e.key.toLowerCase() : e.key, performance.now()); }, true);
+addEventListener('keyup', (e) => { const k = e.key.length === 1 ? e.key.toLowerCase() : e.key, t = apretadas.get(k); if (t) apretadas.set(k, -t); }, true);
+function mascaraTeclas() {
+  const ahora = performance.now(); let b = 0;
+  TECLAS_VER.forEach((k, i) => { if (i < 4 ? teclas[k] : (() => { const t = apretadas.get(k); return t > 0 || (t < 0 && ahora + t < 320); })()) b |= 1 << i; });
+  return b;
+}
 function enviarPos() {
   if (!conectado || soloVer || !(mirones || [...otros.values()].some((o) => o.on))) return;
   const x = Math.round(yo.x * 256), y = Math.round(yo.y * 64);
   const f = (yo.dir > 0 ? 1 : 0) | (yo.vuela ? 2 : 0) | (yo.planea || (yo.agua && yo.picada) ? 32 : 0) | (tiempo - (yo.pelea || -9) < 0.7 ? 64 : 0) | (yo.perf || yo.ataca ? 4 : 0) | (menu || pausa ? 8 : 0) | ((yo.perf && yo.perf.ty > Math.floor(yo.perf.oy)) || yo.ataca === 2 ? 16 : 0);
-  const k = x + ',' + y + ',' + f;
+  const tk = mirones ? mascaraTeclas() : 0, k = x + ',' + y + ',' + f + ',' + tk;
   if (k === ultPos) return; ultPos = k;
-  bufPos[0] = 1; datoPos.setUint16(1, x, true); datoPos.setInt32(3, y, true); bufPos[7] = f;
+  bufPos[0] = 1; datoPos.setUint16(1, x, true); datoPos.setInt32(3, y, true); bufPos[7] = f; datoPos.setUint16(8, tk, true);
   ws.send(bufPos);
 }
 function hola(extra) { enviar({ t: 'hola', k: miK, ...(extra || {}), ...(duenos[mundoId] ? { d: duenos[mundoId] } : {}) }); }
@@ -1909,6 +1919,7 @@ function recibePos(b) {
   if (u && t - u.t > 400) q.push({ t: t - 66, x: u.x, y: u.y, fl: u.fl });      // estuvo quieta: que no se deslice desde lejos
   q.push({ t, x, y, fl }); if (q.length > 24) q.shift();
   o.on = 1; if (o.x === undefined) { o.x = x; o.y = y; o.fl = fl; }
+  if (b.length >= 11) { o.tk = dato.getUint16(9, true); o.tkT = t; }
 }
 // Lo que hacen los demás se ve y se oye, según qué tan cerca esté.
 function efectoAjeno(c) {
@@ -1950,8 +1961,13 @@ function recibir(d) {
     case 'mapa': mapaOk = d.r; if (d.r === remin && d.h !== mapaHash) cambiarMapa(d); return;
     case 'nomira': detener(); return pantallaFinal('Este mundo no admite observadores', 'Quien lo creó prefirió jugar sin público.');
     case 'obs': mirones = d.n | 0; ultPos = ''; if (soloVer) pintarVer(); else { enviarPos(); pintarTabla(); } return;      // que quien llega a mirar me vea aunque esté quieto
-    case 'cerrado': return pantallaFinal('Este mundo cerró la puerta', 'Quien lo creó ya no admite maquinitas nuevas.');
-    case 'lleno': return pantallaFinal('Este mundo está lleno', soloVer ? 'Ya hay 30 personas mirando. Intenta en un rato.' : 'Caben 100 maquinitas por mundo y 40 jugando a la vez.');
+    case 'cerrado': if (d.ver) { location.href = '/ver/' + d.ver + '?pedir=1'; return; } return pantallaFinal('Este mundo cerró la puerta', 'Quien lo creó ya no admite maquinitas nuevas.');      // con la puerta cerrada se entra a mirar y desde ahí se pide permiso
+    case 'baneado': detener(); quitarMundo(mundoId); return pantallaFinal('Ya no puedes entrar a este mundo', 'Quien lo creó te sacó. Tu maquinita sigue siendo tuya: puedes jugar en tus otros mundos o crear uno nuevo.');
+    case 'publico': return recibirPublico(d);
+    case 'pidiendo': pido = d.dueno ? 'espera' : 'ausente'; pidoDe = d.n || ''; return pintarVer();
+    case 'aceptado': pido = 'aceptado'; pintarVer(); son.logro(); tarjeta('🎉 ¡Te aceptaron!', 'Entrando a jugar con tu maquinita…', 'msj', 4000, true); setTimeout(() => { location.href = '/m/' + d.id; }, 1400); return;
+    case 'rechazado': pido = 'no'; return pintarVer();
+    case 'lleno': return pantallaFinal('Este mundo está lleno', soloVer ? 'Este mundo ya tiene sus 100 maquinitas: no caben más. Puedes seguir mirando.' : 'Caben 100 maquinitas por mundo y 40 jugando a la vez.');
     case 'otra': detener(); return pantallaFinal('Tu maquinita se abrió en otro lado', 'Está en otra pestaña o en otro dispositivo, con todo lo que trae. Aquí puedes volver a tomarla cuando quieras.');
     case 'borrado': quitarMundo(mundoId); detener(); return pantallaFinal('Este mundo fue borrado', 'Quien lo creó lo desechó.');
     case 'mundo': return conMapa(d, iniciarMundo);
@@ -1963,7 +1979,7 @@ function recibir(d) {
       else aviso(d.j.n + ' entró al mundo');
       notaChat(d.j.n + (d.nuevo ? ' llegó al mundo por primera vez' : ' entró')); pintarChatQuien(); if (d.nuevo) { edenE = null; bloques.clear(); }
       son.entra(); ultPos = ''; enviarPos(); return pintarTabla();   // que el recién llegado me vea aunque yo esté quieto
-    case 'sale': { const o = otros.get(d.i); if (o) { o.on = 0; o.x = undefined; o.b = []; aviso(o.n + ' salió'); notaChat(o.n + ' salió'); pintarChatQuien(); } return pintarTabla(); }
+    case 'sale': { const o = otros.get(d.i); if (o) { o.on = 0; o.x = undefined; o.b = []; aviso(o.n + (d.sacada ? ' fue sacada del mundo' : ' salió')); notaChat(o.n + (d.sacada ? ' fue sacada del mundo' : ' salió')); pintarChatQuien(); } return pintarTabla(); }
     case 'j': { const o = otros.get(d.i); if (o) { o.rec = d.rec; o.tot = d.tot; } return pintarTabla(); }
     case 'col': if (d.k >= 0 && d.k < NCOL) { hallados[d.k] = 1; dugCambios++; mapa.fill(255); bloques.clear(); pintarHud(true); if (menu === 'menu') pintarMenu(); } return;
     case 'golpe': {            // otra maquinita me alcanzó con su taladro: pega según su taladro y la clase de golpe; lo que aguanto es mi casco
@@ -3066,7 +3082,7 @@ function cicloVer(t, id) {
   reloj += d; tiempo += d;
   const o = otros.get(veo);
   if (!ceremonia && o && o.on && o.x !== undefined) { const lejos = Math.abs(o.x - yo.x) > 12 || Math.abs(o.y - yo.y) > 12; yo.x = vis.x = o.x; yo.y = vis.y = o.y; if (lejos) { camX = Math.max(0, Math.min(W - cols, o.x - cols / 2)); camY = o.y - filas * 0.5; } }
-  animar(d); dibujar(); gotear(d);
+  animar(d); dibujar(); gotear(d); pintarTecladoVer();
   if ((tHud += d) > 0.25) { tHud = 0; pintarVer(); if (yo.y > EDEN0 - 60 && tiempo - edenT > 1) { edenT = tiempo; jardinDelFondo(); } }
 }
 function iniciarVer(d) {
@@ -3083,12 +3099,40 @@ function iniciarVer(d) {
   if (menu === 'inicio') { menu = null; $('#velo').classList.remove('on'); }
   document.body.classList.add('viendo');
   ponerChat(d.chat); pintarVer(); arrancar();
+  if (primera) { enviarVer({ t: 'soy', n: (maqLocal && maqLocal.n) || '', m: (maqLocal && maqLocal.m) | 0 }); if (/[?&]pedir=1/.test(location.search)) pedirJugar(); }
 }
+function enviarVer(o) { if (ws && ws.readyState === 1) ws.send(JSON.stringify(o)); }
+// Pedir entrar a jugar desde la vista de observador: va con la maquinita de este equipo (o con una nueva, ya bautizada).
+let pido = '', pidoDe = '';
+function pedirJugar() {
+  if (!soloVer || pido === 'espera' || pido === 'ausente' || pido === 'aceptado') return;
+  if (!maqLocal || !maqLocal.k) { const b = nombreNuevo(); maqLocal = { k: llave(), n: b.n, m: b.m }; }
+  if (!maqLocal.n) { const b = nombreNuevo(); maqLocal.n = b.n; maqLocal.m = b.m; }
+  escribir('mina_maq', maqLocal); pido = 'enviando'; pintarVer();
+  enviarVer({ t: 'pido', k: maqLocal.k, n: maqLocal.n, m: maqLocal.m | 0 });
+}
+// El teclado de la maquinita que estás mirando: se encienden las teclas que va apretando.
+let tkVisto = -1;
+function pintarTecladoVer() {
+  const o = otros.get(veo), tk = o && o.on && performance.now() - (o.tkT || 0) < 1500 ? o.tk | 0 : 0;
+  if (tk === tkVisto) return; tkVisto = tk;
+  $('#verTeclado').querySelectorAll('[data-b]').forEach((el) => el.classList.toggle('on', !!(tk & (1 << +el.dataset.b))));
+}
+// Un clic en una maquinita (en el mundo o en la lista de arriba) y la vista se va con ella.
+lienzo.addEventListener('click', (e) => {
+  if (!soloVer || !listo) return;
+  const wx = camX + (e.clientX * RES) / T, wy = camY + (e.clientY * RES) / T;
+  let mejor = null, dm = 2.2; for (const o of otros.values()) { if (!o.on || o.x === undefined) continue; const dd = Math.hypot(o.x - wx, o.y - wy); if (dd < dm) { dm = dd; mejor = o; } }
+  if (mejor) { veo = mejor.i; tkVisto = -1; pintarVer(); }
+});
 // La barra de quien mira: a quién ve, cuánto lleva, cuántos más miran, y cómo cambiar de maquinita o ponerse a jugar.
 function pintarVer() {
   const o = otros.get(veo), vivos = [...otros.values()].filter((x) => x.on).length;
   poner($('#verDatos'), o ? `<b>${o.on ? '<span class="vivo">● EN VIVO</span>' : '○ No está jugando ahora'} · ${esc(o.n)}</b><small>${o.on && o.y !== undefined ? donde(o.y) + ' · ' : ''}${dineroLargo(o.tot || 0)} ganados · ${esc(cfg.nombre || 'un mundo de Mina')}${mirones > 1 ? ' · 👁 ' + mirones + ' mirando' : ''}</small>` : '<b>Este mundo está vacío</b>');
-  $('#verOtra').style.display = vivos > 1 || (vivos === 1 && !(o && o.on)) ? '' : 'none';
+  const l = [...otros.values()].filter((x) => x.on).sort((a, b) => a.i - b.i);
+  poner($('#verQuien'), l.length ? l.map((x) => `<button class="s${x.i === veo ? ' on' : ''}" data-veo="${x.i}" style="--c:${colorTx(x.i)}"><i></i>${esc(x.n)}</button>`).join('') : '<small>Nadie está jugando ahora mismo</small>');
+  const P = { '': '<kbd>J</kbd>🙋 Pedir jugar aquí', enviando: 'Enviando…', espera: `⏳ Esperando a que ${esc(pidoDe || 'quien creó el mundo')} te acepte`, ausente: `⏳ ${esc(pidoDe || 'Quien creó el mundo')} no está conectado: tu solicitud espera mientras sigas aquí`, aceptado: '🎉 ¡Aceptado!', no: '<kbd>J</kbd>No te aceptaron esta vez · pedir otra vez' };
+  poner($('#verPedir'), P[pido] ?? P['']); $('#verPedir').disabled = pido === 'espera' || pido === 'ausente' || pido === 'enviando' || pido === 'aceptado';
 }
 function verOtra(paso) {
   const l = [...otros.values()].filter((o) => o.on).sort((a, b) => a.i - b.i); if (!l.length) return;
@@ -3213,6 +3257,31 @@ $('#chatLista').addEventListener('scroll', (e) => {
   const L = e.currentTarget; if (chatAbajo()) { chat.nuevos = 0; $('#chatNuevos').style.display = 'none'; }
   if (L.scrollTop < 60 && !chat.completo && !chat.pidiendo && ws && ws.readyState === 1) { const p = chat.l.find((m) => m.id); if (p) { chat.pidiendo = true; ws.send(JSON.stringify({ t: 'chatAntes', id: p.id })); } }
 });
+
+/* ════════ El público y las solicitudes ════════ RLR */
+// A quien creó el mundo le llegan: quién está mirando (solo se le avisa) y quién pide entrar a jugar (eso sí lo decide).
+let publico = { mira: [], nm: 0, sol: [], ban: [] };
+const solVistas = new Set(); let miraAntes = 0;
+function recibirPublico(d) {
+  const nuevas = d.sol.filter((x) => !solVistas.has(x.sid));
+  for (const x of d.sol) solVistas.add(x.sid);
+  if (nuevas.length) { son.entra(); tarjeta('🙋 ' + (nuevas.length === 1 ? (nuevas[0].n || 'Alguien') + ' quiere jugar en tu mundo' : nuevas.length + ' quieren jugar en tu mundo'), 'Estaba mirando y pidió entrar con su maquinita. Pulsa J para aceptar o rechazar.', 'msj', 12000, true); }
+  if (d.nm > miraAntes) { const x = d.mira[d.mira.length - 1]; aviso('👁 ' + (x && x.n ? x.n : 'Alguien') + ' empezó a mirar tu mundo'); }
+  miraAntes = d.nm; publico = d;
+  pintarTabla(); if (menu === 'pub') pintarMenu();
+}
+function htmlPublico() {
+  const fila = (ic, n, sub, botones) => `<div class="fila"><div class="ic">${ic}</div><div class="t"><b>${n}</b><small>${sub}</small></div>${botones}</div>`;
+  const hace = (h) => { const m = Math.max(0, Math.round((Date.now() - h) / 60000)); return m < 1 ? 'hace un momento' : 'hace ' + m + ' min'; };
+  const jugando = [...otros.values()].filter((o) => o.on);
+  let h = soyCreador ? '<p class="nota">Mirar es libre: cualquiera con la liga para mirar entra sin pedir nada, y aquí solo se te avisa. Para <b>jugar</b> hay que pedirlo, y tú decides. Quien entra con la liga del mundo que tú mandas ya viene invitado. «Sacar» lo saca al instante y no lo deja volver, ni a jugar ni a mirar.</p>'
+    : '<p class="nota">Solo quien creó el mundo acepta solicitudes y saca jugadores.</p>';
+  h += `<h4>🙋 Quieren jugar (${publico.sol.length})</h4>` + (publico.sol.length ? publico.sol.map((x, k) => fila('🙋', esc(x.n || 'Alguien'), 'Pidió entrar ' + hace(x.h), soyCreador ? `<button data-a="acepto" data-v="${x.sid}">${k === 0 ? '<kbd>Enter</kbd>' : ''}Aceptar</button><button class="s" data-a="rechazo" data-v="${x.sid}">Rechazar</button>` : '')).join('') : '<p class="nota">Nadie por ahora. Cuando alguien que está mirando pida jugar, te llega un aviso.</p>');
+  h += `<h4>⛏️ Jugando ahora (${jugando.length + 1})</h4>` + fila('⭐', esc(miNombre) + ' (tú)', 'Quien creó el mundo', '') + jugando.map((o) => fila('⛏️', `<span style="color:${colorTx(o.i)}">${esc(o.n)}</span>`, o.y !== undefined ? donde(o.y) : 'conectada', soyCreador ? `<button class="s mal" data-a="sacarJ" data-v="${o.i}">Sacar</button>` : '')).join('');
+  h += `<h4>👁 Mirando (${publico.nm || mirones})</h4>` + (publico.mira.length ? publico.mira.map((x) => fila('👁', esc(x.n || 'Alguien'), x.n ? 'Tiene maquinita' : 'Sin maquinita', soyCreador ? `<button class="s mal" data-a="sacarM" data-v="${x.sid}">Sacar</button>` : '')).join('') : `<p class="nota">${mirones ? mirones + ' mirando.' : 'Nadie está mirando ahora.'}</p>`);
+  if (soyCreador && publico.ban.length) h += `<h4>🚫 Sacados (${publico.ban.length})</h4>` + publico.ban.map((b, k) => fila('🚫', esc(b.n || 'Alguien'), 'Sacado ' + hace(b.h), `<button class="s" data-a="perdonar" data-v="${k}">Perdonar</button>`)).join('');
+  return h;
+}
 
 /* ════════ La tabla mundial ════════ RLR */
 // Las veinte maquinitas que más han ganado, en todos los mundos. Con la tabla abierta se pregunta cada 4 s y los números
@@ -3537,7 +3606,7 @@ function pintarTabla() {
   l.sort((a, b) => (b.on || 0) - (a.on || 0) || (b.rec || 0) - (a.rec || 0));        // primero quienes están jugando
   const mas = l.length - 8; if (mas > 0) { const yoJ = l.findIndex((j) => j.yo); l.length = 8; if (yoJ >= 8) l[7] = { n: miNombre, m: miModelo, rec: S.rec, on: 1, yo: 1, y: donde(yo.y) }; }
   poner($('#tabla'), l.map((j) => `<div class="${j.on ? '' : 'off'}"><i style="background:${MODELOS[j.m]?.[0] || '#888'}"></i><b>${esc(j.n)}${j.yo ? ' (tú)' : ''}</b><span>${j.on && j.y !== null ? j.y + ' · ' : ''}récord ${j.rec || 0} m</span></div>`).join('') + (mas > 0 ? `<div class="off"><b>y ${mas} más</b></div>` : '') +
-    (tablaM.lugar ? `<div class="mund">🏆 Lugar ${tablaM.lugar} del mundo</div>` : '') + (mirones ? `<div class="mund">👁 ${mirones === 1 ? '1 persona te mira' : mirones + ' personas te miran'}</div>` : ''));
+    (tablaM.lugar ? `<div class="mund">🏆 Lugar ${tablaM.lugar} del mundo</div>` : '') + (soyCreador && publico.sol.length ? `<div class="mund pub" data-pub="1">🙋 ${publico.sol.length === 1 ? '1 quiere jugar' : publico.sol.length + ' quieren jugar'} · <kbd>J</kbd></div>` : '') + (mirones ? `<div class="mund pub" data-pub="1">👁 ${mirones === 1 ? '1 persona te mira' : mirones + ' personas te miran'}</div>` : ''));
 }
 
 /* ════════ Código QR ════════ RLR */
@@ -3783,7 +3852,7 @@ function pintarMenu() {
       <button data-a="remin" ${!puedo || S.d < c || cuentaFin ? 'disabled' : ''}>${puedo ? 'Remineralizar el tablero' : 'Solo quien creó el mundo puede hacerlo'}</button></div>`;
   } else if (menu === 'inv') {
     const liga = location.origin + '/m/' + mundoId;
-    h = cab('👥 Invita a tu gente') + `<div class="cuerpo" style="text-align:center"><p>Quien abra esta liga entra a <b>${esc(cfg.nombre || 'este mundo')}</b> con su propia maquinita. Caben 100 maquinitas por mundo, 40 jugando a la vez.</p>
+    h = cab('👥 Invita a tu gente') + `<div class="cuerpo" style="text-align:center"><p>Quien abra esta liga entra a <b>${esc(cfg.nombre || 'este mundo')}</b> con su propia maquinita. Juegan hasta 40 a la vez; mirando, sin límite.</p>
       <a href="${liga}" target="_blank" rel="noopener" title="Abrir la liga"><canvas id="qrLienzo" class="qr" data-t="${liga}"></canvas></a>
       <p><code>${liga}</code></p>
       <p><button data-a="invitar">Copiar la liga del mundo</button> <button class="s" data-a="presumir">Copiar mi liga (presume tu maquinita)</button> ${navigator.share ? '<button class="s" data-a="compartir">Compartir…</button>' : ''} <button class="s" data-a="menu" data-v="foto">📸 Foto para presumir</button></p>
@@ -3800,7 +3869,8 @@ function pintarMenu() {
       <a href="${esc(liga)}" target="_blank" rel="noopener" title="Abrir la liga"><canvas id="qrLienzo" class="qr" data-t="${esc(liga)}"></canvas></a>
       <p><button data-a="ligaMaq">Copiar la liga de mi maquinita</button></p>
       <p class="nota"><b>No lo compartas ni lo enseñes en pantalla:</b> quien lo abra maneja tu maquinita. Para invitar gente usa el botón Invitar.</p></div>`;
-  } else if (menu === 'top') h = cab('🏆 Top 33 mundial') + '<div class="cuerpo">' + htmlTop() + '</div>';
+  } else if (menu === 'pub') h = cab('👥 Tu mundo y su público') + '<div class="cuerpo">' + htmlPublico() + '</div>';
+  else if (menu === 'top') h = cab('🏆 Top 33 mundial') + '<div class="cuerpo">' + htmlTop() + '</div>';
   else if (menu === 'menu') h = menuPrincipal();
   else return;
   const sube = c.querySelector('.cuerpo')?.scrollTop || 0, misma = c._m === menu + pieza; c._m = menu + pieza;
@@ -3961,6 +4031,11 @@ const acciones = {
     location.reload(); return 'no';
   },
   instalar() { if (instalar) { instalar.prompt(); instalar = null; } },
+  acepto(v) { enviar({ t: 'acepto', sid: v }); },
+  rechazo(v) { enviar({ t: 'rechazo', sid: v }); },
+  sacarJ(v) { enviar({ t: 'sacar', i: +v }); const o = otros.get(+v); if (o) aviso('Sacaste a ' + o.n); },
+  sacarM(v) { enviar({ t: 'sacar', sid: v }); aviso('Lo sacaste: ya no puede mirar ni entrar'); },
+  perdonar(v) { enviar({ t: 'perdonar', x: +v }); },
   ligaVer(v, el) {
     const liga = location.origin + '/ver/' + miVer + '?j=' + miI;
     const hecho = () => { el.textContent = '¡Liga copiada!'; }, aMano = () => window.prompt('Copia la liga para mirar:', liga);
@@ -4025,7 +4100,9 @@ $('#reglaVia').addEventListener('click', (e) => {          // un clic en la regl
   const r = e.currentTarget.getBoundingClientRect(), rec = Math.max(20, soloVer ? (otros.get(veo)?.rec || 0) : S.rec), fila = Math.max(0, Math.min(1, (e.clientY - r.top) / r.height)) * rec / 2 - HH;
   panY += fila - (camY + filas / 2); camY = fila - filas / 2; vistaLibre = true;
 });
-$('#verOtra').addEventListener('click', () => { audio(); verOtra(1); });
+$('#verQuien').addEventListener('click', (e) => { const b = e.target.closest('[data-veo]'); if (b) { audio(); veo = +b.dataset.veo; tkVisto = -1; pintarVer(); } });
+$('#verPedir').addEventListener('click', () => { audio(); pedirJugar(); });
+$('#tabla').addEventListener('click', (e) => { if (e.target.closest('[data-pub]') && listo && !menu && !soloVer) { audio(); abrir('pub'); } });
 $('#verChat').addEventListener('click', () => { audio(); if (chat.abierto) cerrarChat(); else abrirChat(); });
 $('#verTop').addEventListener('click', () => { audio(); abrir('top'); });
 $('#bGrua').addEventListener('click', (e) => { audio(); e.currentTarget.blur(); if (listo && !menu && !pausa) grua(); });
@@ -4099,7 +4176,7 @@ function menuPrincipal() {
       <label class="op"><span>Pleitos entre maquinitas (bajo tierra)</span>${sel('pleitos', [[1, 'Sí'], [0, 'No']])}</label>
       <label class="op"><span>Dejar que nos vean jugar (observadores)</span><select data-a="regla" data-k="mirar" ${soyCreador ? '' : 'disabled'}><option value="1" ${cfg.mirar !== 0 ? 'selected' : ''}>Sí</option><option value="0" ${cfg.mirar === 0 ? 'selected' : ''}>No</option></select></label>
       ${cfg.mirar !== 0 && miVer ? `<div class="fila"><div class="t"><b>Liga para mirar</b><small>Quien la abra te ve jugar en vivo. No puede entrar a jugar ni conocer la liga de este mundo.${mirones ? ' Ahora mismo: 👁 ' + mirones + ' mirando.' : ''}</small></div><button class="s" data-a="ligaVer">Copiar liga para mirar</button></div>` : ''}
-      <h4>Jugadores</h4>` +
+      <h4>Jugadores</h4><div class="fila"><div class="t"><b>Público y solicitudes</b><small>Quién mira, quién pide jugar${soyCreador ? ', y sacar a quien haga mala práctica' : ''}.</small></div><button data-a="menu" data-v="pub"><kbd>J</kbd>Abrir</button></div>` +
       ([...otros.values()].length ? `<label class="op"><span>Cantidad para regalar (en la superficie)</span><input id="cuanto" type="number" min="1" value="${Math.min(1000, Math.floor(S.d))}" style="width:9em"></label>` +
         [...otros.values()].map((o) => `<div class="fila"><div class="t"><b>${esc(o.n)}</b><small>${o.on ? 'Conectado' : 'Desconectado'} · récord ${o.rec || 0} m · ganado ${fmt(o.tot || 0)}</small></div>${o.on && cfg.regalos && yo.y < 0 ? `<button class="s" data-a="regalar" data-v="${o.i}">Regalar</button>` : ''}</div>`).join('') : '<p class="nota">Estás solo en este mundo. Copia la liga y mándala.</p>') +
       `<h4>Mi maquinita</h4><div class="maq"><canvas id="miMaq" width="160" height="160"></canvas><div>
@@ -4141,6 +4218,7 @@ function menuPrincipal() {
       <p><b>Tu nombre y tus ligas:</b> la maquinita nace bautizada para que empieces a jugar sin llenar nada; el nombre y el modelo se cambian en Menú → Mundo. Hay dos ligas: la del mundo (invita a excavar) y la tuya (presume tu maquinita); cada una lleva su imagen al mandarla por WhatsApp.</p>
       <p><b>Con puro teclado:</b> <b>C</b> abre el chat; escribes y <b>Enter</b> manda; <b>Enter</b> con la caja vacía, o <b>Esc</b>, lo cierra; <b>Tab</b> te regresa al juego dejándolo a la vista y las flechas ↑ ↓ recorren la conversación. En los edificios, <b>Enter</b> hace lo principal (cargar, vender, comprar la siguiente mejora, reparar), <b>← →</b> cambian de pestaña o de cantidad, <b>↑ ↓</b> recorren y en El Almacén la letra de cada objeto lo compra. <b>I</b> abre Invitar.</p>
       <p><b>El chat:</b> pulsa <b>C</b> (o el botón 💬 Chat) y escribe. Se abre de izquierda a derecha con todo lo que se ha dicho en este mundo, que queda guardado. Con el chat cerrado, lo que alguien escriba sale abajo un momento. Enter con la caja vacía te regresa al juego con el chat a la vista; Esc lo cierra. Cada maquinita tiene su color, de los cien que hay, según el orden en que entró. El texto se puede seleccionar y copiar, y las ligas se abren con un clic.</p>
+      <p><b>Jugar o mirar:</b> con la liga para mirar entra quien sea, sin pedir nada, y elige con un clic a qué maquinita seguir; ve lo que ella ve y las teclas que va apretando. Para entrar a jugar desde ahí se pulsa <b>J</b> (Pedir jugar aquí) y quien creó el mundo decide. A él le llegan los avisos; con <b>J</b> abre el panel del público, donde acepta, rechaza o saca a alguien en un clic. Juegan hasta 40 a la vez; mirando, sin límite.</p>
       <p><b>Top 33 y público:</b> Menú → Top 33 enseña las 33 maquinitas que más han ganado en todos los mundos y cuánto tiempo lleva jugando cada una, en vivo. A la que esté jugando se le puede ir a ver: quien mira entra con una liga propia, no puede jugar ni conoce la liga del mundo. Tu liga para que te vean está en Menú → Mundo, y ahí mismo quien creó el mundo puede cerrarlo al público.</p>
       <p><b>El mundo da la vuelta:</b> si sales por la orilla derecha entras por la izquierda, y al revés, perforando o volando. Todo está conectado.</p>
       <p><b>La Remineralizadora:</b> cuesta el 5 % de todo lo que has ganado en la vida de tu maquinita. Entre más llevas, más cuesta.</p>
@@ -4167,10 +4245,10 @@ function tecladoMenu(e, k) {
     const bs = [...c.querySelectorAll(menu === 'alm' ? '.cant button' : '.pest button')]; if (!bs.length) return;
     e.preventDefault(); const i = Math.max(0, bs.findIndex((b) => b.classList.contains('on'))); bs[(i + (k === 'ArrowRight' ? 1 : bs.length - 1)) % bs.length].click(); return;
   }
-  if (k === 'Enter') { e.preventDefault(); const P = { gas: '[data-a="llenar"]', bas: '#bVender', tal: '[data-a="mejorar"]:not(:disabled)', alm: '[data-a="reparar"]' }[menu]; if (P) clic(P); else if (menu === 'ele') { const m = $('#eleM'); if (m) { m.focus(); m.select(); } } return; }      // remineralizar cuesta mucho: eso no va en una tecla
+  if (k === 'Enter') { e.preventDefault(); const P = { gas: '[data-a="llenar"]', bas: '#bVender', tal: '[data-a="mejorar"]:not(:disabled)', alm: '[data-a="reparar"]', pub: '[data-a="acepto"]' }[menu]; if (P) clic(P); else if (menu === 'ele') { const m = $('#eleM'); if (m) { m.focus(); m.select(); } } return; }      // remineralizar cuesta mucho: eso no va en una tecla
   if (menu === 'alm') { const i = 'rndpqt'.indexOf(k); if (i >= 0) clic(`[data-a="objeto"][data-v="${i}"]`); }
 }
-const TECLAS_MENU = { gas: '<kbd>Enter</kbd> carga', bas: '<kbd>Enter</kbd> vende', tal: '<kbd>←</kbd> <kbd>→</kbd> cambian de pieza · <kbd>Enter</kbd> compra la siguiente', alm: '<kbd>←</kbd> <kbd>→</kbd> cantidad · la letra de cada objeto lo compra · <kbd>Enter</kbd> repara', ele: '<kbd>Enter</kbd> para escribir los metros, y otra vez <kbd>Enter</kbd> para bajar', menu: '<kbd>←</kbd> <kbd>→</kbd> cambian de pestaña' };
+const TECLAS_MENU = { pub: '<kbd>Enter</kbd> acepta la primera solicitud', gas: '<kbd>Enter</kbd> carga', bas: '<kbd>Enter</kbd> vende', tal: '<kbd>←</kbd> <kbd>→</kbd> cambian de pieza · <kbd>Enter</kbd> compra la siguiente', alm: '<kbd>←</kbd> <kbd>→</kbd> cantidad · la letra de cada objeto lo compra · <kbd>Enter</kbd> repara', ele: '<kbd>Enter</kbd> para escribir los metros, y otra vez <kbd>Enter</kbd> para bajar', menu: '<kbd>←</kbd> <kbd>→</kbd> cambian de pestaña' };
 // Las teclas son la inicial, en español, de lo que hacen: Reserva, Nanobots, Dinamita, Plástico, Transmisor (y Q de cuántico),
 // Chat, Señal, Ayudar, Grúa, Menú. Para moverse, las flechas. Por eso ya no hay W A S D: esas letras tienen dueño.
 const MAPA = { ArrowLeft: 'izq', ArrowRight: 'der', ArrowUp: 'arr', ArrowDown: 'aba' };
@@ -4182,7 +4260,7 @@ addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && listo && !menu) { e.preventDefault(); return abrirChat(true); }
   if (e.key === 'Escape' && chat.abierto && !menu) return cerrarChat();
   if (soloVer) {                                   // mirando: solo se cambia de maquinita o se cierra la tabla
-    if (e.key === 'Escape' && menu === 'top') cerrar(); else if (!menu && e.key === 'ArrowRight') verOtra(1); else if (!menu && e.key === 'ArrowLeft') verOtra(-1);
+    if (e.key === 'Escape' && menu === 'top') cerrar(); else if (!menu && e.key === 'ArrowRight') verOtra(1); else if (!menu && e.key === 'ArrowLeft') verOtra(-1); else if (!menu && (e.key === 'j' || e.key === 'J')) pedirJugar();
     return;
   }
   const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
@@ -4203,6 +4281,7 @@ addEventListener('keydown', (e) => {
   if (k === 'a') pasarCombustible();                // Ayudar: 5 litros a la maquinita de junto
   if (k === 'g') grua();                            // Grúa
   if (k === 'i') abrir('inv');                      // Invitar
+  if (k === 'j') abrir('pub');                      // Jugadores y público: solicitudes, quién mira, sacar
   if (k === 'v' && edenVivo && yo.y > EDEN0 - 6) verJardin();      // Ver el jardín entero
   if (k === ' ') { e.preventDefault(); if (crucero) crucero = false; else subirSola(); }
 });

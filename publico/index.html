@@ -142,6 +142,21 @@ body.chat #chatVivo{display:none}
 @media (max-width:760px){#chatVivo{left:10px;right:10px;width:auto;bottom:auto;top:calc(118px*var(--f))}}
 #verBarra{position:fixed;left:50%;top:10px;transform:translateX(-50%);display:none;align-items:center;gap:10px;background:#000b;border:1px solid var(--borde);border-radius:10px;padding:8px 12px;max-width:calc(100vw - 20px);z-index:3;text-shadow:0 1px 2px #000}
 body.viendo #verBarra{display:flex}
+#verBarra{flex-wrap:wrap;justify-content:center;max-width:min(980px,calc(100vw - 20px))}
+#verQuien{flex-basis:100%;display:flex;gap:5px;overflow-x:auto;padding-top:6px;border-top:1px solid #ffffff1a}
+#verQuien button{white-space:nowrap;display:inline-flex;align-items:center;gap:6px;padding:.25em .7em;font-weight:700}
+#verQuien button i{width:9px;height:9px;border-radius:50%;background:var(--c)}
+#verQuien button.on{background:var(--ac);color:#1b120e;border-color:var(--ac)}
+#verPedir kbd{color:#1b120e!important}
+/* El teclado de la maquinita que estás mirando */
+#verTeclado{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);display:none;gap:14px;align-items:flex-end;background:#000b;border:1px solid var(--borde);border-radius:10px;padding:8px 12px;z-index:3}
+body.viendo #verTeclado{display:flex}
+#verTeclado>div{display:flex;flex-wrap:wrap;gap:4px;max-width:200px}#verTeclado .fl{display:block;text-align:center;max-width:none}
+#verTeclado kbd{display:inline-block;min-width:28px;padding:5px 6px;border-radius:6px;background:#1b120e;border:1px solid var(--borde);color:var(--su);font:800 .85em system-ui;text-align:center;transition:background .06s,color .06s,transform .06s}
+#verTeclado kbd.esp{min-width:90px}
+#verTeclado kbd.on{background:var(--ac);color:#1b120e;border-color:var(--ac);transform:translateY(1px)}
+#tabla .pub{cursor:pointer}#tabla .pub kbd{font:800 1em system-ui;color:var(--ac)}
+@media (max-width:700px){#verTeclado{transform:translateX(-50%) scale(.8);transform-origin:bottom center}}
 #verDatos{min-width:0}#verDatos b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#verDatos small{display:block;color:var(--su);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media (max-width:700px){#verBarra{flex-wrap:wrap;justify-content:center}}
 #viaje{left:10px;bottom:10px;width:calc(250px*var(--f));font-size:.86em}
@@ -299,7 +314,8 @@ a{color:var(--az)}
   <form id="chatForm" autocomplete="off"><input id="chatIn" maxlength="300" enterkeyhint="send" placeholder="Escribe y pulsa Enter…"><button>Enviar</button></form>
   <div id="chatTeclas"><kbd>Enter</kbd> manda · <kbd>Enter</kbd> vacío o <kbd>Esc</kbd> cierra · <kbd>Tab</kbd> al juego · <kbd>↑</kbd> <kbd>↓</kbd> recorren</div></aside>
 <div id="chatVivo"></div>
-<div id="verBarra"><div id="verDatos"></div><button class="s" id="verOtra" title="Ver a otra maquinita de este mundo (← →)">Otra ▶</button><button class="s" id="verChat" title="Leer el chat de este mundo">💬</button><button class="s" id="verTop">🏆 Top 33</button><a class="boton" href="/">⛏️ Jugar yo</a></div>
+<div id="verBarra"><div id="verDatos"></div><button id="verPedir" title="Pedir entrar a jugar en este mundo con tu maquinita (J)"></button><button class="s" id="verChat" title="Leer el chat de este mundo">💬</button><button class="s" id="verTop">🏆 Top 33</button><a class="boton s" href="/">⛏️ Mi mundo</a><div id="verQuien" title="Clic en una maquinita para ver lo que ella ve (también ← →)"></div></div>
+<div id="verTeclado"><div><kbd data-b="5">R</kbd><kbd data-b="6">N</kbd><kbd data-b="7">D</kbd><kbd data-b="8">P</kbd><kbd data-b="9">Q</kbd><kbd data-b="10">T</kbd></div><div><kbd data-b="11">C</kbd><kbd data-b="12">S</kbd><kbd data-b="13">A</kbd><kbd data-b="14">G</kbd><kbd data-b="15">M</kbd><kbd data-b="4" class="esp">espacio</kbd></div><div class="fl"><kbd data-b="2">↑</kbd><br><kbd data-b="0">←</kbd><kbd data-b="3">↓</kbd><kbd data-b="1">→</kbd></div></div>
 
 <div id="velo"><div class="caja" id="caja"></div></div>
 

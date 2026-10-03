@@ -76,6 +76,12 @@ function fichaNueva() {
   for (const x of b) s += ALFA[x & 31];
   return s;
 }
+// Quien entra se reconoce por una huella de su dirección de internet (nunca se guarda la dirección): así quien creó el mundo
+// puede sacar a alguien aunque no tenga maquinita, y que no vuelva a entrar.
+async function huellaIp(ip) {
+  const h = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode("mina-ip:" + (ip || ""))));
+  return [...h.subarray(0, 8)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
 // La maquinita en la tabla mundial se reconoce por una huella de su llave: la llave nunca sale de aquí.
 async function huella(k) {
   const h = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode("mina:" + k)));
@@ -276,6 +282,67 @@ export class Mundo extends DurableObject {
     this.ctx.waitUntil(this.tabla().reportar({ p: j.pid, n: j.n, m: j.m, tot, seg: j.seg || 0, vivo: vivo ? 1 : 0, i, ver: mira ? m.ver : "", mundo: mira ? m.id : "" })
       .then((c) => { this.corte = c; this.corteT = Date.now(); }, () => {}));
   }
+  // ── El público: quién mira, quién pide jugar, a quién sacaron
+  ipDe(ws) { const t = this.ctx.getTags(ws).find((x) => x.startsWith("ip:")); return t ? t.slice(3) : ""; }
+  baneado(k, ip) { const b = (this.m && this.m.ban) || []; return b.some((x) => (k && x.k === k) || (ip && x.ip === ip)); }
+  // A quien creó el mundo le llega, cada vez que algo cambia, quién está mirando, quién quiere jugar y a quién sacó.
+  avisarDueno(menos) {
+    const m = this.m; if (!m) return;
+    const ds = this.socketDe(this.creador()); if (!ds) return;
+    const mira = [], sol = [];
+    for (const s of this.ctx.getWebSockets("mira")) {
+      if (s === menos) continue;
+      const a = s.deserializeAttachment(); if (!a) continue;
+      const x = { sid: a.sid, n: a.n || "", m: a.m || 0 };
+      if (mira.length < 200) mira.push(x);
+      if (a.sol) sol.push({ ...x, h: a.sol.h });
+    }
+    manda(ds, { t: "publico", mira, nm: this.ctx.getWebSockets("mira").length - (menos ? 1 : 0), sol, ban: (m.ban || []).map((b) => ({ n: b.n, h: b.h })) });
+  }
+  // Quien mira pide entrar a jugar con su maquinita. Si ya es de este mundo, entra; si no, espera a que lo acepten.
+  async pedir(ws, a, d) {
+    const m = this.m, k = limpio(d.k, 64);
+    if (k.length < 16) return;
+    if (this.baneado(k, this.ipDe(ws))) { manda(ws, { t: "baneado" }); try { ws.close(4002, "baneado"); } catch {} return; }
+    a.n = limpio(d.n, 14) || a.n || ""; a.m = entero(d.m, 0, 7, a.m || 0);
+    const yaEs = this.jug.some((j) => j && j.k === k), dueno = this.creador();
+    if (yaEs || dueno < 0 || (m.ok || []).includes(k)) { ws.serializeAttachment(a); manda(ws, { t: "aceptado", id: m.id }); return; }
+    if (this.jug.filter(Boolean).length >= MAX_MAQUINITAS) { manda(ws, { t: "lleno" }); return; }
+    a.sol = { k, h: Date.now() }; ws.serializeAttachment(a);
+    manda(ws, { t: "pidiendo", dueno: this.socketDe(dueno) ? 1 : 0, n: (this.jug[dueno] && this.jug[dueno].n) || "" });
+    this.avisarDueno();
+  }
+  async ordenDueno(d, yoI) {
+    const m = this.m, obs = (sid) => this.ctx.getWebSockets("mira").find((s) => { const a = s.deserializeAttachment(); return a && a.sid === sid; });
+    if (d.t === "acepto" || d.t === "rechazo") {
+      const s = obs(String(d.sid || "")); const a = s && s.deserializeAttachment(); if (!a || !a.sol) return;
+      if (d.t === "acepto") { m.ok = (m.ok || []).filter((x) => x !== a.sol.k).concat(a.sol.k).slice(-300); this.sucio.meta = true; manda(s, { t: "aceptado", id: m.id }); }
+      else manda(s, { t: "rechazado" });
+      delete a.sol; s.serializeAttachment(a);
+    } else if (d.t === "sacar") {
+      const ban = (b) => { m.ban = (m.ban || []).concat({ ...b, h: Date.now() }).slice(-300); this.sucio.meta = true; };
+      if (d.sid) {                                       // alguien que mira
+        const s = obs(String(d.sid)); if (!s) return; const a = s.deserializeAttachment() || {};
+        ban({ n: a.n || "Alguien que miraba", ip: this.ipDe(s), k: a.sol ? a.sol.k : "" });
+        manda(s, { t: "baneado" }); s.serializeAttachment(null); try { s.close(4002, "baneado"); } catch {}
+        this.contarMirones(s);
+      } else {                                           // una maquinita del mundo
+        const x = entero(d.i, 0, MAX_MAQUINITAS, -1), j = this.jug[x]; if (!j || x === yoI) return;
+        const s = this.socketDe(x);
+        ban({ n: j.n, k: j.k, ip: s ? this.ipDe(s) : "" });
+        m.ok = (m.ok || []).filter((y) => y !== j.k);
+        if (s) { manda(s, { t: "baneado" }); s.serializeAttachment(null); try { s.close(4002, "baneado"); } catch {} }
+        this.pos.delete(x); this.xy.delete(x);
+        this.difundir({ t: "sale", i: x, sacada: 1 });
+      }
+    } else if (d.t === "perdonar") {
+      const x = entero(d.x, 0, 1000, -1); if (!m.ban || !m.ban[x]) return;
+      m.ban.splice(x, 1); this.sucio.meta = true;
+    }
+    this.avisarDueno();
+    await this.programar();
+  }
+
   contarMirones(menos) {
     let n = 0;
     for (const ws of this.ctx.getWebSockets("mira")) if (ws !== menos) n++;
@@ -407,28 +474,29 @@ export class Mundo extends DurableObject {
     if (/^[2-9A-HJ-NP-Z]{8}$/.test(id)) this.idVisto = id;        // mundos anteriores no guardaban su propio nombre
     if (request.headers.get("Upgrade") !== "websocket") return new Response("Se esperaba websocket", { status: 426 });
     const [cliente, servidor] = Object.values(new WebSocketPair());
+    const ip = await huellaIp(request.headers.get("CF-Connecting-IP"));
     // Quien mira entra por su ficha: recibe el mundo y lo que pasa en él, pero nada de lo que mande se atiende,
     // y en ningún mensaje viaja la liga del mundo.
     if (new URL(request.url).searchParams.get("mira") === "1") {
       const m = await this.cargar();
-      this.ctx.acceptWebSocket(servidor, ["mira"]);
-      servidor.serializeAttachment({ o: 1 });
+      this.ctx.acceptWebSocket(servidor, ["mira", "ip:" + ip]);
+      servidor.serializeAttachment({ o: 1, sid: fichaNueva().slice(0, 8), n: "", m: 0 });
       const fin = (o) => { manda(servidor, o); servidor.serializeAttachment(null); try { servidor.close(4002, o.t); } catch {} };
       if (!m) fin({ t: "noexiste" });
       else if (m.cfg.mirar === 0) fin({ t: "nomira" });
-      else if (this.ctx.getWebSockets("mira").length > 30) fin({ t: "lleno" });
-      else {
+      else if (this.baneado("", ip)) fin({ t: "baneado" });
+      else {                                                  // mirando caben todos los que quieran
         const on = this.conectados();
         let hasta = BYTES; while (hasta > 0 && !this.dug[hasta - 1]) hasta--;
         let b = "";
         for (let x = 0; x < hasta; x += 8192) b += String.fromCharCode.apply(null, this.dug.subarray(x, Math.min(hasta, x + 8192)));
         manda(servidor, { t: "mira", chat: this.chatUltimos(60), sinMineral: m.sinMineral ?? -1, mapa: this.mapaDe(m), seed: m.seed, remin: m.remin, cfg: m.cfg, jug: this.jug.map((j, x) => (j ? this.publico(x, on.has(x)) : null)).filter(Boolean), dug: btoa(b), col: m.col || [] });
         for (const [x, s] of this.pos) if (on.has(x)) manda(servidor, s);
-        this.contarMirones();
+        this.contarMirones(); this.avisarDueno();
       }
       return new Response(null, { status: 101, webSocket: cliente });
     }
-    this.ctx.acceptWebSocket(servidor);
+    this.ctx.acceptWebSocket(servidor, ["ip:" + ip]);
     return new Response(null, { status: 101, webSocket: cliente });
   }
 
@@ -437,7 +505,14 @@ export class Mundo extends DurableObject {
     const m = await this.cargar();
     const att = ws.deserializeAttachment();
     if ((att && att.o) || this.ctx.getTags(ws).includes("mira")) {             // quien mira no puede hacer nada… salvo leer el chat hacia atrás
-      if (m && typeof msg === "string" && msg.length < 80) { try { const d = JSON.parse(msg); if (d && d.t === "chatAntes") this.chatMas(ws, d); } catch {} }
+      if (m && att && typeof msg === "string" && msg.length < 400) {
+        let d; try { d = JSON.parse(msg); } catch { return; }
+        if (!d) return;
+        if (d.t === "chatAntes") this.chatMas(ws, d);
+        else if (d.t === "soy") { att.n = limpio(d.n, 14); att.m = entero(d.m, 0, 7, 0); ws.serializeAttachment(att); this.avisarDueno(); }
+        else if (d.t === "pido") await this.pedir(ws, att, d);
+        else if (d.t === "nopido") { delete att.sol; ws.serializeAttachment(att); this.avisarDueno(); }
+      }
       return;
     }
 
@@ -445,7 +520,7 @@ export class Mundo extends DurableObject {
     if (typeof msg !== "string") {
       if (!att) return;
       // Imagen de la liga: 2 = la del mundo, 3 = la de esta maquinita. Solo JPEG, con tope de peso y de frecuencia.
-      if (msg.byteLength > 8) {
+      if (msg.byteLength > 16) {
         const f = new Uint8Array(msg), yo = m && this.jug[att.i];
         if (yo && f[0] === 4 && f.length === MAPA_BYTES + 5) return this.recibirMapa(f.slice(5), new DataView(f.buffer, f.byteOffset).getUint32(1, true));      // el terreno completo
         if (!yo || (f[0] !== 2 && f[0] !== 3) || f.length < 2000 || f.length > 300000 || f[1] !== 0xff || f[2] !== 0xd8 || f[3] !== 0xff) return;
@@ -457,8 +532,8 @@ export class Mundo extends DurableObject {
         await this.programar();
         return;
       }
-      if (msg.byteLength !== 8) return;
-      const e = new Uint8Array(msg), s = new Uint8Array(9);
+      if (msg.byteLength !== 8 && msg.byteLength !== 10) return;
+      const e = new Uint8Array(msg), s = new Uint8Array(msg.byteLength + 1);
       s[0] = 1; s[1] = att.i; s.set(e.subarray(1), 2);
       this.pos.set(att.i, s);
       // A quien está cerca le llegan todas (para verse en tiempo real); a quien anda lejos, una de cada cinco: le basta para
@@ -546,6 +621,10 @@ export class Mundo extends DurableObject {
       case "chatAntes":
         this.chatMas(ws, d);
         return;
+      case "acepto": case "rechazo": case "sacar": case "perdonar":
+        if (i !== this.creador()) return;
+        await this.ordenDueno(d, i);
+        return;
       case "fin": {              // el Jardín del Fondo quedó completo: los minerales que quedaban se reparten en partes iguales entre todas las maquinitas del mundo
         if (!m.fin || m.fin.r !== m.remin) {
           const n = Math.max(1, this.jug.filter(Boolean).length), total = Number.isFinite(d.total) && d.total >= 0 ? Math.min(d.total, 1e16) : 0;
@@ -621,6 +700,9 @@ export class Mundo extends DurableObject {
     if (!m) return fin({ t: "noexiste" });
     const k = limpio(d.k, 64);
     if (k.length < 16) return fin({ t: "noexiste" });
+    // A una maquinita sacada no la deja volver su llave. La dirección de internet solo frena a quien llega nuevo: en una casa
+    // o en una red de celular varias personas comparten dirección, y no se debe sacar a las que ya juegan aquí.
+    if (this.baneado(k, this.jug.some((j) => j && j.k === k) || (m.ok || []).includes(k) ? "" : this.ipDe(ws))) return fin({ t: "baneado" });      // a quien aceptaste no lo frena la dirección
     let i = this.jug.findIndex((j) => j && j.k === k);
     const previo = ws.deserializeAttachment();
     if (previo && previo.i !== i) { ws.serializeAttachment(null); this.pos.delete(previo.i); this.difundir({ t: "sale", i: previo.i }, ws); }
@@ -642,7 +724,7 @@ export class Mundo extends DurableObject {
     let estrena = false;
     if (i < 0) {
       estrena = this.jug.length > 0 && this.jug.length < 10;   // maquinita nueva en un mundo que ya tiene gente: todos ganan
-      if (m.cfg.puerta && this.jug.length) return fin({ t: "cerrado" });
+      if (m.cfg.puerta && this.jug.length && !(m.ok || []).includes(k)) return fin({ t: "cerrado", ver: m.cfg.mirar !== 0 ? m.ver || "" : "" });      // con la puerta cerrada se entra a mirar, y desde ahí se pide permiso
       if (this.jug.length >= MAX_MAQUINITAS) return fin({ t: "lleno" });
       i = this.jug.length;
       this.jug[i] = { k, n: r.n, m: r.mo, est: r.est, rec: 0, tot: 0, alta: Date.now() };
@@ -680,6 +762,7 @@ export class Mundo extends DurableObject {
     });
     for (const [x, s] of this.pos) if (x !== i && on.has(x)) manda(ws, s);
     this.avisarTabla(i, true, true);
+    if (i === this.creador()) this.avisarDueno();
     this.difundir({ t: "entra", j: this.publico(i, true), nuevo: estrena ? 1 : 0 }, ws);
     await this.programar();
   }
@@ -688,7 +771,7 @@ export class Mundo extends DurableObject {
     try { ws.close(code > 1000 && code < 5000 && code !== 1005 && code !== 1006 ? code : 1000); } catch {}
     const att = ws.deserializeAttachment();
     const m = await this.cargar();
-    if (m && this.ctx.getTags(ws).includes("mira")) { this.contarMirones(ws); return; }
+    if (m && this.ctx.getTags(ws).includes("mira")) { this.contarMirones(ws); this.avisarDueno(ws); return; }
     if (!m || !att) return;
     // Si la maquinita ya entró por otra pestaña, este cierre no la saca del mundo.
     const otro = this.ctx.getWebSockets().some((s) => s !== ws && s.deserializeAttachment()?.i === att.i);
