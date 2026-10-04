@@ -104,6 +104,26 @@ Ricardo pidió un motor que decida el precio exacto para cada persona, leyéndol
 
 **Lo que ve la persona:** «$79 de lista · 40 % menos, tu precio · vale hasta el 11 de octubre. Mina ajusta descuentos según cómo juega cada quien; nunca cobra más que el precio de lista». Los regalos y el Fondo común van a lista. El tope de cuidado y las devoluciones siguen igual.
 
+## 6c. El momento: el precio también se mueve durante el día (hora de Torreón)
+
+Ricardo pidió que el motor leyera más: la hora del día, si es de madrugada, si es día festivo, el ánimo con el que la persona le está dando a la maquinita, y que el precio se mueva también durante el día hasta ser lo más cómodo posible para todas las partes. Y una cosa más: el cumpleaños como momento de gratitud, con una invitación a dar las gracias a las 3:33 de la tarde, hora de Torreón.
+
+**La misma regla:** el momento solo baja. Se suma al descuento del motor de confort y nunca nada queda arriba de la lista.
+
+**Todo en hora de Torreón.** Las 3:33 de la tarde son las mismas para todos, estén donde estén; los festivos son los de México; la madrugada es la de Torreón. Estamos en CapitalTorreon.
+
+**De qué se compone el ajuste del momento** (`momento` en `src/tienda.js`, tope 25 %):
+- 🎂 Su cumpleaños: −15 % todo el día (y gorrito de fiesta en la maquinita, que ven todos).
+- Día festivo de México (fijos y movibles: Constitución, Juárez, Revolución, Semana Santa, Día del Padre, Torreón el 15 de septiembre…): −10 %, con el nombre del día en la tienda.
+- Noche tranquila (7 pm en adelante): −5 %. Mañana (6 a 11): −3 %.
+- Los días antes de la quincena (12 al 14 y del 27 en adelante): −5 %. En México la quincena manda.
+- Domingo sin festivo: −3 %.
+- Ánimo tranquilo (el juego mide cuánto cavó en tres minutos y cuántas explosiones y pleitos en diez): −2 %. Jugar tranquilo es cuando mejor se decide.
+
+**Lo que el momento NO hace:** no sube nunca, y no empuja. De madrugada no se abren experimentos nuevos ni se mete prisa: la tienda dice «es de madrugada en Torreón; tu precio te espera igual mañana, y tienes 15 días para cambiar de idea». A quien va a tope (cavando como loco, en pleito) la tienda le dice «sigue en lo tuyo; esto te espera, con calma». El precio exacto se redondea a número limpio: pesos enteros abajo de $100, de cinco en cinco hasta $1,000, de diez en diez arriba.
+
+**La gratitud de cumpleaños.** La persona da su cumpleaños (día y mes, nada más) en La Pinturería; se puede quitar cuando quiera. Ese día: gorrito, −15 %, una felicitación al entrar y, a las 3:33 de la tarde (hora de Torreón), una tarjeta en el juego y, si entró con su cuenta, un correo cortito desde hola@capitaltorreon.com: «si Mina te ha dado buenos ratos, hoy es buen día para darle las gracias a quien lo hace». Desde $33, nada obligatorio, no cambia nada en el juego, y llega a quien hace Mina en CapitalTorreon. Uno al año. El correo sale por un cron a las 21:33 UTC (Coahuila no cambia de horario). Por celular, por ahora, es la tarjeta dentro del juego; una notificación de verdad al teléfono es infraestructura nueva (Web Push) y queda como decisión.
+
 ## 7. Lo que se mide (y lo que no)
 
 Se mide para cuidar, no para exprimir: cuántos abren la tienda, cuántos se prueban algo, cuántos compran, cuántos regalan, cuántas devoluciones, cuántas quejas. La meta no es «más conversión»: es que **nadie se sienta empujado** (cero quejas) y que quien compra lo haga contento (devoluciones casi en cero). Si un cambio sube la venta pero sube las quejas, se revierte.

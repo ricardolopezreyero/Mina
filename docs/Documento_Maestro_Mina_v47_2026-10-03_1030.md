@@ -1331,6 +1331,20 @@ No se pudo ver el movimiento en vivo porque el navegador de pruebas está oculto
 
 **Probado** con ocho pruebas unitarias del motor y, en el servidor local con ganchos de prueba, la secuencia completa: lista → 20 % → 40 %, compra con 40 % → siguiente 30 % y nivel 10, oferta estable entre aperturas y con vencimiento a siete días; la tienda muestra el precio tachado y el personal. En vivo, `/api/tienda` ya devuelve `oferta`. Falta lo de siempre: una compra real para cerrar el ciclo con Stripe.
 
+### 9.52 El momento: hora, festivos, cumpleaños, ánimo y quincena, en hora de Torreón
+
+**Lo que pidió Ricardo.** Que el motor tome en cuenta también la hora del día, la madrugada, los festivos, el ánimo (qué tan fuerte le está dando a la maquinita), y que el precio se mueva durante el día. Y el cumpleaños como momento de gratitud: una invitación a donar que se manda a las 3:33 pm, hora de Torreón, por correo o celular. Todo en hora de Torreón, siempre.
+
+**Cómo quedó.**
+- `momento(ts, m, animo)` en `src/tienda.js`: hora de Torreón (`America/Monterrey`, sin horario de verano), festivos fijos y movibles (`festivoDe`, con Pascua calculada), cumpleaños, quincena, ánimo. Devuelve el ajuste (tope 25 %) y sus partes con nombre. `precioFinal` = lista × (1 − confort) × (1 − momento), redondeado limpio, nunca más que la lista.
+- El juego mide el ánimo (`animoReciente`: celdas cavadas en tres minutos, explosiones y pleitos en diez) y lo manda al abrir la tienda y al pagar. Solo sirve para bajar y para el tono.
+- `/api/tienda` devuelve `momento`, `cumple`, `gratitud`; `/pagar` recalcula el momento en el servidor y manda `ajuste` y las partes al nombre del cobro de Stripe; `/api/tienda/cumple` guarda día y mes en la maquinita y, con cuenta, en la tabla mundial (`cumples`) para el correo.
+- Gorrito de fiesta (`p.cu`) en la pintura pública de la maquinita el día de su cumpleaños; el nombre sube para dejarle sitio.
+- La tarjeta de las 3:33 (hora de Torreón, calculada en el navegador) con botón «Sí, quiero dar las gracias», una vez al año; la sección «🎂 Gracias de cumpleaños» (desde $33, fichas $33/$99/$333/$999) tres días antes y después del cumpleaños; la liga del correo `?gracias=cumple` abre ahí.
+- Cron `33 21 * * *` (= 15:33 Torreón) → `correosDeCumple`: Resend desde `hola@capitaltorreon.com`, uno por persona y año, con la llave `RESEND_API_KEY` ligada de la bóveda.
+
+**Probado** en local: el momento en tres instantes (cumpleaños de noche tranquilo = 22 %; madrugada del 12 de diciembre a tope = Guadalupe 10 % + quincena 5 %, con aviso de madrugada; Navidad por la mañana = 13 %), festivos movibles de 2026 (Revolución 16 de noviembre, Viernes Santo 3 de abril, Día del Padre 21 de junio), el cumpleaños guardado hoy (gorrito en la maquinita, sección de gratitud, precio de lista $6,000 → $3,490 con 30 % del motor + 15 % cumpleaños + 2 % tranquilo), y la ruta del cron (local sin llave). **No probado:** el envío real del correo (sale a las 3:33 pm de Torreón solo a quien tenga cumpleaños registrado con cuenta) y el cobro real.
+
 ## 10. Revisión de código del 2 de octubre
 
 Se revisó todo el código buscando fallas y se corrigieron estas:

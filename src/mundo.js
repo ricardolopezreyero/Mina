@@ -8,7 +8,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { DurableObject } from "cloudflare:workers";
 import { verificarPase } from "./verificar.js";      // el pase del Login de CapitalTorreon (login.capitaltorreon.com)
-import { NIVELES, MECENAS_MIN, FONDO_PRECIO, TOPE_MES, precioDe, filtrarPinta, motorConfort, OFERTA_DIAS, EXPERIMENTOS } from "./tienda.js";      // La Pinturería: precios y pintura
+import { NIVELES, MECENAS_MIN, FONDO_PRECIO, TOPE_MES, precioDe, filtrarPinta, motorConfort, OFERTA_DIAS, EXPERIMENTOS, momento, precioFinal, cumpleOk, cumpleCerca, horaTorreon, GRATITUD_MIN, GRATITUD_HORA } from "./tienda.js";      // La Pinturería: precios y pintura
 // Un secreto de la bóveda (Secrets Store) llega como objeto con .get(); en local, como texto de .dev.vars. Sin él: "".
 async function secreto(v) { if (!v) return ""; if (typeof v === "string") return v; try { return (await v.get()) || ""; } catch { return ""; } }
 
@@ -163,6 +163,10 @@ export class Tabla extends DurableObject {
   // La economía que vamos percibiendo: con qué descuento compra la gente. De ahí sale el descuento con el que arrancan
   // los experimentos de cada quien (desc0): si todos compran solo con rebaja, se arranca más abajo; si compran a lista, en cero.
   async economia() { const e = (await this.ctx.storage.get("eco")) || { n: 0, suma: 0 }; return { desc0: e.n >= 10 ? Math.max(0, Math.min(0.3, Math.round((e.suma / e.n - 0.1) * 20) / 20)) : 0, n: e.n }; }
+  // Los cumpleaños de quien los dio con su cuenta: para el correo de gratitud de las 3:33 pm (hora de Torreón). Nada más.
+  async ponerCumple(k, dato) { const c = (await this.ctx.storage.get("cumples")) || {}; if (dato) c[k] = dato; else delete c[k]; await this.ctx.storage.put("cumples", c); return 1; }
+  async cumplesDe(md, y) { const c = (await this.ctx.storage.get("cumples")) || {}; return Object.entries(c).filter(([, d]) => d.md === md && d.y !== y).map(([k, d]) => ({ k, ...d })); }
+  async felicitado(k, y) { const c = (await this.ctx.storage.get("cumples")) || {}; if (c[k]) { c[k].y = y; await this.ctx.storage.put("cumples", c); } }
   async anotarCompra(desc) { const e = (await this.ctx.storage.get("eco")) || { n: 0, suma: 0 }; e.n++; e.suma += desc; await this.ctx.storage.put("eco", e); }
   async tomarRegalo() { const f = (await this.ctx.storage.get("fondo")) || 0; if (f <= 0) return 0; await this.ctx.storage.put("fondo", f - 1); return 1; }
 }
@@ -189,13 +193,16 @@ export class Maquina extends DurableObject {
     m.mundo = mundo; m.vista = Date.now();
     await this.ctx.storage.put("m", m);
     const t = this.tiendaDe(m);
-    return { n: m.n, mo: m.mo, est: m.est, p: filtrarPinta(m.pinta, t.nivel), nv: t.nivel, me: t.mecenas > 0 ? 1 : 0, regalo };
+    return { n: m.n, mo: m.mo, est: m.est, p: this.pintaPublica(m), nv: t.nivel, me: t.mecenas > 0 ? 1 : 0, regalo };
   }
+  // La pintura que ven todos: lo del nivel comprado y, el día de su cumpleaños (hora de Torreón), un gorrito de fiesta (cu).
+  pintaPublica(m) { const t = this.tiendaDe(m), p = filtrarPinta(m.pinta, t.nivel); if (cumpleOk(t.cumple) && t.cumple === horaTorreon().md) p.cu = 1; return p; }
+  async ponerCumple(md) { const m = await this.ctx.storage.get("m"); if (!m) return null; const t = this.tiendaDe(m); if (md) t.cumple = md; else delete t.cumple; await this.ctx.storage.put("m", m); return { cumple: t.cumple || "", p: this.pintaPublica(m), nv: t.nivel, me: t.mecenas > 0 ? 1 : 0 }; }
 
   // ── La Pinturería: lo comprado y la pintura son de la maquinita (y la maquinita, de su cuenta).
   tiendaDe(m) { return m.tienda || (m.tienda = { nivel: 0, mecenas: 0, compras: [] }); }
   gastado30(t) { const h = Date.now() - 30 * 86400000; return t.compras.filter((c) => c.h > h).reduce((a, c) => a + (c.monto || 0), 0); }
-  vistaTienda(m) { const t = this.tiendaDe(m); return { nivel: t.nivel, mecenas: t.mecenas, compras: t.compras.length, gastado30: this.gastado30(t), pinta: filtrarPinta(m.pinta, t.nivel) }; }
+  vistaTienda(m) { const t = this.tiendaDe(m); return { nivel: t.nivel, mecenas: t.mecenas, compras: t.compras.length, gastado30: this.gastado30(t), pinta: this.pintaPublica(m) }; }
   async tienda() { const m = await this.ctx.storage.get("m"); return m ? this.vistaTienda(m) : { nivel: 0, mecenas: 0, compras: 0, gastado30: 0, pinta: {} }; }
   async cerrarExperimento() { const m = await this.ctx.storage.get("m"); if (!m) return null; const t = this.tiendaDe(m), o = (t.exp || [])[t.exp.length - 1]; if (o && o.r === "abierto") { o.r = "ignorado"; await this.ctx.storage.put("m", m); } return o; }
   async ponerSenales(seg, rec, tot) { const m = await this.ctx.storage.get("m"); if (!m) return null; m.est = { ...(m.est || {}), seg, rec, tot }; await this.ctx.storage.put("m", m); return 1; }
@@ -212,15 +219,16 @@ export class Maquina extends DurableObject {
     }
     if (abrir) { o.vistas++; t.vistas = (t.vistas || 0) + 1; cambio = true; }
     if (cambio) await this.ctx.storage.put("m", m);
-    return { nivel: o.nivel, desc: o.desc, hasta: o.h + OFERTA_DIAS * 86400000, n: o.n, de: EXPERIMENTOS, s: o.s };
+    return { nivel: o.nivel, desc: o.desc, hasta: o.h + OFERTA_DIAS * 86400000, n: o.n, de: EXPERIMENTOS, s: o.s, cumple: t.cumple || "", seg: (m.est || {}).seg || 0, gratitud: t.gratitud || 0 };
   }
   // Entregar una compra: una sola vez por sesión de pago; el nivel solo sube.
-  async entregar({ sid, tipo, nivel, monto, de, desc }) {
+  async entregar({ sid, tipo, nivel, monto, de, desc, motivo }) {
     const m = await this.ctx.storage.get("m"); if (!m) return null;
     const t = this.tiendaDe(m); let nuevo = 0;
     if (!t.compras.some((c) => c.sid === sid)) {
       nuevo = 1;
-      t.compras = t.compras.concat({ sid, tipo, n: nivel || 0, monto: monto || 0, de: de || "", h: Date.now() }).slice(-200);
+      t.compras = t.compras.concat({ sid, tipo, n: nivel || 0, monto: monto || 0, de: de || "", h: Date.now(), ...(motivo ? { motivo } : {}) }).slice(-200);
+      if (motivo === "gratitud") t.gratitud = Date.now();
       if (tipo === "nivel") t.nivel = Math.max(t.nivel, nivel || 0);
       if (tipo === "nivel" && desc !== undefined && desc !== null) {           // el experimento abierto se cierra como comprado; ese descuento es su punto cómodo
         t.exp = t.exp || []; const o = t.exp[t.exp.length - 1]; if (o && o.r === "abierto") { o.r = "comprado"; o.desc = desc; o.hc = Date.now(); }
@@ -232,7 +240,7 @@ export class Maquina extends DurableObject {
     return { ...this.vistaTienda(m), nuevo };
   }
   // La pintura: se guarda solo lo que el nivel comprado permite.
-  async ponerPinta(p) { const m = await this.ctx.storage.get("m"); if (!m) return null; const t = this.tiendaDe(m); m.pinta = filtrarPinta(p, t.nivel); await this.ctx.storage.put("m", m); return { p: m.pinta, nv: t.nivel, me: t.mecenas > 0 ? 1 : 0 }; }
+  async ponerPinta(p) { const m = await this.ctx.storage.get("m"); if (!m) return null; const t = this.tiendaDe(m); m.pinta = filtrarPinta(p, t.nivel); await this.ctx.storage.put("m", m); return { p: this.pintaPublica(m), nv: t.nivel, me: t.mecenas > 0 ? 1 : 0 }; }
 
   // Lo que la cuenta enseña de ella: nombre, modelo, cuánto ha ganado, hasta dónde bajó y cuánto ha jugado.
   async resumen() {
@@ -398,12 +406,28 @@ async function tiendaApi(u, request, env) {
     const mio = llaveOk(d.k) ? await maq(d.k).tienda() : { nivel: 0, mecenas: 0, compras: 0, gastado30: 0, pinta: {} };
     let fondo = 0, eco = { desc0: 0 }, oferta = null; try { fondo = await tabla().fondo(); eco = await tabla().economia(); } catch {}
     if (llaveOk(d.k)) { try { oferta = await maq(d.k).oferta(eco, true); } catch {} }
-    return json({ niveles: NIVELES, mecenasMin: MECENAS_MIN, fondoPrecio: FONDO_PRECIO, tope: TOPE_MES, fondo, pagos: stripe ? 1 : 0, mio, oferta });
+    // el momento (hora de Torreón): lo que hoy, a esta hora y con este ánimo, baja el precio. Solo baja.
+    const mom = momento(Date.now(), { tienda: { cumple: oferta && oferta.cumple }, est: { seg: oferta ? oferta.seg : 0 } }, d.animo);
+    return json({ niveles: NIVELES, mecenasMin: MECENAS_MIN, gratitudMin: GRATITUD_MIN, gratitudHora: GRATITUD_HORA, fondoPrecio: FONDO_PRECIO, tope: TOPE_MES, fondo, pagos: stripe ? 1 : 0, mio, oferta, momento: mom, cumple: (oferta && oferta.cumple) || "", gratitud: (oferta && oferta.gratitud) || 0 });
+  }
+  // El cumpleaños (día y mes, nada más): para el gorrito ese día y, si entró con su cuenta, el correo de gratitud a las 3:33 pm.
+  if (u.pathname === "/api/tienda/cumple") {
+    if (!llaveOk(d.k)) return json({ error: "datos" }, 400);
+    const md = d.md ? String(d.md) : ""; if (md && !cumpleOk(md)) return json({ error: "fecha" }, 400);
+    const r = await maq(d.k).ponerCumple(md); if (!r) return json({ error: "maquina" }, 404);
+    let correo = 0;
+    const ses = String(d.ses || ""), punto = ses.lastIndexOf("."), sub = ses.slice(0, punto), tk = ses.slice(punto + 1);
+    if (punto > 0 && /^[0-9A-Za-z]{1,40}$/.test(sub) && /^[0-9a-f]{48}$/.test(tk)) {
+      const c = await env.CUENTA.get(env.CUENTA.idFromName("g:" + sub)).sesion(tk);
+      if (c && c.k === d.k && c.email) { try { await tabla().ponerCumple(d.k, md ? { md, correo: c.email, nombre: c.nombre || "", mundo: /^[2-9A-HJ-NP-Z]{8}$/.test(String(d.mundo || "")) ? d.mundo : "" } : null); correo = md ? 1 : 0; } catch {} }
+    }
+    return json({ ok: 1, cumple: r.cumple, p: r.p, correo });
   }
   // Solo en la computadora de pruebas (MINA_PRUEBA en .dev.vars, nunca publicado): entregar un nivel sin pagar, para probar la tienda.
   if (u.pathname === "/api/tienda/prueba") {
     if (env.MINA_PRUEBA !== "1" || !["::1", "127.0.0.1"].includes(request.headers.get("CF-Connecting-IP")) || !llaveOk(d.k)) return json({ error: "no" }, 404);
     if (d.exp === "cerrar") { const o = await maq(d.k).cerrarExperimento(); return json({ ok: 1, cerrado: o }); }      // cerrar el experimento abierto como ignorado (solo pruebas)
+    if (d.exp === "momento") return json({ ok: 1, momento: momento(d.ts || Date.now(), { tienda: { cumple: d.cumple }, est: { seg: d.seg || 0 } }, d.animo) });
     if (d.exp === "senales") { const m = await env.MAQUINA.get(env.MAQUINA.idFromName(d.k)).ponerSenales(d.seg, d.rec, d.tot); return json({ ok: 1, m }); }
     const e = await maq(d.k).entregar({ sid: "prueba-" + Date.now(), tipo: d.tipo === "mecenas" ? "mecenas" : "nivel", nivel: entero(d.nivel, 0, 10, 0), monto: entero(d.monto, 0, 1e6, 0), de: "prueba", desc: d.desc });
     return e ? json({ ok: 1, mio: e }) : json({ error: "maquina" }, 404);
@@ -416,7 +440,7 @@ async function tiendaApi(u, request, env) {
     if (!c || !llaveOk(d.k) || c.k !== d.k) return json({ error: "cuenta" }, 401);
     let volver = u.origin + "/"; try { const x = new URL(String(d.volver || ""), u.origin); if (x.origin === u.origin) volver = x.origin + x.pathname; } catch {}
     const tipo = d.tipo === "mecenas" ? "mecenas" : d.tipo === "fondo" ? "fondo" : "nivel";
-    let monto = 0, nombre = "", para = d.k, nivel = 0, cantidad = 1, desc = 0;
+    let monto = 0, nombre = "", para = d.k, nivel = 0, cantidad = 1, desc = 0, ajuste = 0, momentoTx = "", motivo = "";
     if (tipo === "nivel") {
       nivel = entero(d.nivel, 1, 10, 0); if (!nivel) return json({ error: "datos" }, 400);
       // regalo: la maquinita número i de un mundo (su llave la da el mundo, nunca el navegador)
@@ -425,11 +449,18 @@ async function tiendaApi(u, request, env) {
       if (nivel <= actual) return json({ error: "ya", actual }, 400);
       monto = precioDe(nivel) - precioDe(actual);
       // el precio exacto de esta persona: su descuento del motor de confort (solo para ella, nunca arriba de lista; los regalos van a lista)
-      if (para === d.k) { let eco = { desc0: 0 }; try { eco = await tabla().economia(); } catch {} const o = await maq(d.k).oferta(eco, false); if (o && o.desc > 0) { desc = o.desc; monto = Math.max(1, Math.round(monto * (1 - desc))); } }
-      nombre = `Mina · La Pinturería · nivel ${nivel} «${NIVELES[nivel - 1].nombre}»` + (para !== d.k ? " · regalo" : "") + (actual ? ` (solo la diferencia desde el nivel ${actual})` : "") + (desc ? ` · ${Math.round(desc * 100)} % menos` : "");
+      if (para === d.k) {
+        let eco = { desc0: 0 }; try { eco = await tabla().economia(); } catch {}
+        const o = await maq(d.k).oferta(eco, false), mom = momento(Date.now(), { tienda: { cumple: o && o.cumple }, est: { seg: o ? o.seg : 0 } }, d.animo);
+        desc = o && o.desc > 0 ? o.desc : 0; ajuste = mom.ajuste; monto = precioFinal(monto, desc, ajuste);
+        if (mom.partes.length) momentoTx = mom.partes.map((p) => p[0]).join(", ");
+      }
+      nombre = `Mina · La Pinturería · nivel ${nivel} «${NIVELES[nivel - 1].nombre}»` + (para !== d.k ? " · regalo" : "") + (actual ? ` (solo la diferencia desde el nivel ${actual})` : "") + (desc || ajuste ? ` · tu precio (${Math.round((1 - monto / (precioDe(nivel) - precioDe(actual))) * 100)} % menos${momentoTx ? ": " + momentoTx : ""})` : "");
     } else if (tipo === "mecenas") {
-      monto = entero(d.monto, MECENAS_MIN, 100000, 0); if (!monto) return json({ error: "datos" }, 400);
-      nombre = "Mina · ✦ Mecenas · gracias por sostener el juego";
+      // La gratitud de cumpleaños: cerca de su cumpleaños (tres días antes o después) se puede dar desde $33.
+      if (d.motivo === "gratitud") { const o = await maq(d.k).oferta({ desc0: 0 }, false); if (o && cumpleCerca(o.cumple, horaTorreon()) !== 9) motivo = "gratitud"; }
+      monto = entero(d.monto, motivo ? GRATITUD_MIN : MECENAS_MIN, 100000, 0); if (!monto) return json({ error: "datos" }, 400);
+      nombre = motivo ? "Mina · 🎂 Gracias de cumpleaños · para quien hace Mina" : "Mina · ✦ Mecenas · gracias por sostener el juego";
     } else {
       cantidad = entero(d.cantidad, 1, 200, 0); if (!cantidad) return json({ error: "datos" }, 400);
       monto = FONDO_PRECIO * cantidad; nombre = `Mina · Fondo común · la primera pintura de ${cantidad} ${cantidad === 1 ? "maquinita nueva" : "maquinitas nuevas"}`;
@@ -439,7 +470,7 @@ async function tiendaApi(u, request, env) {
     const f = new URLSearchParams();
     f.set("mode", "payment"); f.set("success_url", volver + "?compra={CHECKOUT_SESSION_ID}"); f.set("cancel_url", volver + "?tienda=" + (nivel || 1));
     f.set("line_items[0][quantity]", "1"); f.set("line_items[0][price_data][currency]", "mxn"); f.set("line_items[0][price_data][unit_amount]", String(monto * 100)); f.set("line_items[0][price_data][product_data][name]", nombre);
-    f.set("metadata[k]", d.k); f.set("metadata[para]", para); f.set("metadata[tipo]", tipo); f.set("metadata[nivel]", String(nivel)); f.set("metadata[cantidad]", String(cantidad)); f.set("metadata[monto]", String(monto)); f.set("metadata[de]", sub); f.set("metadata[desc]", String(desc));
+    f.set("metadata[k]", d.k); f.set("metadata[para]", para); f.set("metadata[tipo]", tipo); f.set("metadata[nivel]", String(nivel)); f.set("metadata[cantidad]", String(cantidad)); f.set("metadata[monto]", String(monto)); f.set("metadata[de]", sub); f.set("metadata[desc]", String(desc)); f.set("metadata[ajuste]", String(ajuste)); if (motivo) f.set("metadata[motivo]", motivo);
     f.set("locale", "es-419"); if (c.email) f.set("customer_email", c.email);
     let r, sesion; try { r = await fetch("https://api.stripe.com/v1/checkout/sessions", { method: "POST", headers: { authorization: "Bearer " + stripe, "content-type": "application/x-www-form-urlencoded" }, body: f }); sesion = await r.json(); } catch { return json({ error: "stripe" }, 502); }
     if (!r.ok || !sesion.url) return json({ error: "stripe" }, 502);
@@ -457,10 +488,10 @@ async function tiendaApi(u, request, env) {
     let e = null;
     const desc = Math.max(0, Math.min(0.6, Number(md.desc) || 0));
     if (tipo === "nivel") { e = await maq(para).entregar({ sid, tipo, nivel, monto, de: md.de, desc: para === md.k ? desc : undefined }); if (e && e.nuevo && para === md.k) { try { await tabla().anotarCompra(desc); } catch {} } }
-    else if (tipo === "mecenas") e = await maq(md.k).entregar({ sid, tipo, monto, de: md.de });
+    else if (tipo === "mecenas") e = await maq(md.k).entregar({ sid, tipo, monto, de: md.de, motivo: md.motivo === "gratitud" ? "gratitud" : "" });
     else if (tipo === "fondo") { e = await maq(md.k).entregar({ sid, tipo, monto, de: md.de }); if (e && e.nuevo) await tabla().sumarFondo(Math.max(1, cantidad)); }
     if (!e) return json({ error: "maquina" }, 404);
-    return json({ ok: 1, tipo, nivel, regalo: para !== md.k ? 1 : 0, cantidad, monto, mio: await maq(md.k).tienda() });
+    return json({ ok: 1, tipo, nivel, regalo: para !== md.k ? 1 : 0, cantidad, monto, motivo: md.motivo || "", mio: await maq(md.k).tienda() });
   }
   return json({ error: "no" }, 404);
 }
@@ -1149,9 +1180,35 @@ export class Mundo extends DurableObject {
 }
 
 // RLR · puerta de entrada
+// RLR · A las 3:33 de la tarde, hora de Torreón, a quien cumple años hoy y dio su correo le llega un correo cortito:
+// felicidades y, si Mina le ha dado buenos ratos, una liga para dar las gracias. Uno al año, y solo si lo pidió con su cuenta.
+async function correosDeCumple(env) {
+  const t = horaTorreon(), tabla = env.TABLA.get(env.TABLA.idFromName("mundial")), llave = await secreto(env.RESEND_API_KEY);
+  if (!llave) return { error: "sin llave" };
+  const lista = await tabla.cumplesDe(t.md, t.y); let enviados = 0;
+  for (const c of lista) {
+    const liga = "https://mina.capitaltorreon.com/" + (c.mundo || "") + "?gracias=cumple", nombre = (c.nombre || "").split(" ")[0] || "";
+    const html = `<div style="background:#fff;color:#1b1b1b;font:16px/1.55 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:28px 22px;max-width:520px;margin:0 auto">
+      <p style="font-size:28px;margin:0 0 10px">🎂</p>
+      <p style="margin:0 0 14px"><b>Feliz cumpleaños${nombre ? ", " + nombre : ""}.</b></p>
+      <p style="margin:0 0 14px">Hoy tu maquinita trae gorrito de fiesta en Mina. Si el juego te ha dado buenos ratos, hoy es buen día para darle las gracias a quien lo hace: lo que tú quieras, desde $33. No cambia nada en el juego y no hace ninguna falta; es solo gratitud.</p>
+      <p style="margin:22px 0"><a href="${liga}" style="background:#1b1b1b;color:#fff;text-decoration:none;padding:12px 20px;border-radius:10px;display:inline-block">Sí, quiero dar las gracias</a></p>
+      <p style="margin:0;color:#777;font-size:13px">Mina · CapitalTorreon · este correo llega una vez al año, a las 3:33 de la tarde, hora de Torreón. Si no quieres recibirlo, quita tu cumpleaños en La Pinturería.</p></div>`;
+    try {
+      const r = await fetch("https://api.resend.com/emails", { method: "POST", headers: { authorization: "Bearer " + llave, "content-type": "application/json" }, body: JSON.stringify({ from: "Mina <hola@capitaltorreon.com>", to: c.correo, subject: "🎂 Feliz cumpleaños" + (nombre ? ", " + nombre : "") + " · Mina", html, text: `Feliz cumpleaños${nombre ? ", " + nombre : ""}. Si Mina te ha dado buenos ratos, hoy es buen día para dar las gracias (desde $33, nada obligatorio): ${liga}` }) });
+      if (r.ok) { enviados++; await tabla.felicitado(c.k, t.y); }
+    } catch {}
+  }
+  return { hoy: t.md, candidatos: lista.length, enviados };
+}
+
 export default {
+  // El cron corre a las 21:33 UTC = 3:33 pm en Torreón (Coahuila no cambia de horario).
+  async scheduled(ev, env, ctx) { ctx.waitUntil(correosDeCumple(env)); },
   async fetch(request, env) {
     const u = new URL(request.url);
+    // Solo en pruebas locales: disparar el correo de cumpleaños a mano.
+    if (u.pathname === "/api/tienda/cron" && env.MINA_PRUEBA === "1" && ["::1", "127.0.0.1"].includes(request.headers.get("CF-Connecting-IP"))) return json(await correosDeCumple(env));
 
     if (u.pathname === "/api/mundo" && request.method === "POST") {
       const quien = request.headers.get("CF-Connecting-IP") || "local";

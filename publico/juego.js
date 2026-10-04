@@ -1585,7 +1585,7 @@ function morir(causa) {
   }
   const tenia = vidaMax(), dondeFue = donde(yo.y); recordar();
   son.boom(); temblar(16); chispas(yo.x, yo.y, '#ffb347', 40, 10); onda(yo.x, yo.y, 4.5, '#ffd9a0', 0.7); humo(yo.x, yo.y, 18);
-  S.st.muertes++;
+  S.st.muertes++; ritmoFuerte.push(Date.now());
   const gratis = cfg.rescates < 0 || S.resc < cfg.rescates;
   let x = '';
   if (cfg.pierde >= 1 && nCarga()) { S.carga.fill(0); x = 'Perdiste la carga. '; }
@@ -1754,7 +1754,7 @@ function fisica(dt) {
       if (tiempo - tAtaque > 0.4) {
         tAtaque = tiempo; const q = Math.round(pot() * [1, 1.5, 1.5, 0.5][k]);
         enviar({ t: 'golpe', a: o.i, q, k, x: Math.round(yo.x), y: Math.round(yo.y) }); enviarVida();
-        rival = o.n; rivalI = o.i; if (!enPleito(miI)) { peleas.set(miI, { con: o.i, h: tiempo }); peleas.set(o.i, { con: miI, h: tiempo }); } else { peleas.get(miI).h = tiempo; (peleas.get(o.i) || {}).h = tiempo; }
+        rival = o.n; rivalI = o.i; if (!enPleito(miI)) { peleas.set(miI, { con: o.i, h: tiempo }); peleas.set(o.i, { con: miI, h: tiempo }); ritmoFuerte.push(Date.now()); } else { peleas.get(miI).h = tiempo; (peleas.get(o.i) || {}).h = tiempo; }
         chispas(cx, cy, '#fff3b0', 16, 8); chispas(cx, cy, '#ff9a3a', 8, 5); chispas(cx, cy, '#d7dbe0', 6, 9); onda(cx, cy, k === 3 ? 1.6 : 0.9, '#fff3b0', 0.3); temblar(k === 3 ? 6 : 3); golpeFx = Math.max(golpeFx, 0.15);
         flota(o.x, o.y - 1.25, '−' + Math.max(1, Math.round(q * 0.25)) + ['', ' · ¡por la espalda!', ' · ¡desde arriba!', ' · ¡choque de taladros!'][k], k === 3 ? '#ffffff' : '#ffd76a');
         if (k === 3) { son.choque(); yo.vx = -s * 6; yo.vy = -3; } else son.piedra();
@@ -1897,7 +1897,7 @@ function perforar(x, y) {
   if (t === 3) { dur = Math.max(0.6, dur * (cfg.lava ? 1.6 : 3)); son.lava(); }          // cortar lava toma su tiempo: al menos 0.6 s, para que se vea
   yo.perf = { tx: x, ty: y, t: 0, dur, tipo: t, ox: yo.x, oy: yo.y, idx: y * W + (x + W) % W };
   cavar([[x, y]]); if (tiempo - tMuerde > 0.11) { tMuerde = tiempo; son.muerde((t >= 10 && t < 40) || t === 2); }
-  S.st.cavadas++;
+  S.st.cavadas++; if (ritmo.length < 600) ritmo.push(Date.now());
 }
 function llegar(p) {
   const t = p.tipo, x = p.tx + 0.5, y = p.ty + 0.5;
@@ -2705,9 +2705,16 @@ function dibMaq(q, px, py, t, modelo, dir, vuela, perfDir, nombre, estado, mundo
     const ha = q.createRadialGradient(fx, fy, 0, fx, fy, h * 0.22); ha.addColorStop(0, rgba(P.luz, 0.9)); ha.addColorStop(1, rgba(P.luz, 0)); q.fillStyle = ha; q.fillRect(fx - h * 0.22, fy - h * 0.22, h * 0.44, h * 0.44);
   }
   q.fillStyle = P.luz || (q === g ? faroCol : '#fff3b0'); q.beginPath(); q.arc(px + dir * w * 0.44, y + h * 0.5, h * 0.06, 0, 7); q.fill(); if (q === g) faroCol = '#fff3b0';
+  if (P.cu) {                                        // 🎂 gorrito de fiesta: solo el día de su cumpleaños
+    const gx = px - dir * w * 0.12, gy = y - h * 0.02, gh = t * 0.34, gw = t * 0.22;
+    q.save(); q.translate(gx, gy); q.rotate(-dir * 0.18);
+    q.fillStyle = '#ff7ac8'; q.beginPath(); q.moveTo(-gw / 2, 0); q.lineTo(gw / 2, 0); q.lineTo(0, -gh); q.closePath(); q.fill();
+    q.fillStyle = '#ffd23f'; for (const [a, b] of [[-0.12, -0.3], [0.1, -0.55], [-0.04, -0.78]]) { q.beginPath(); q.arc(a * gw * 2, b * gh, t * 0.025, 0, 7); q.fill(); }
+    q.fillStyle = '#6ec3ff'; q.beginPath(); q.arc(0, -gh, t * 0.045, 0, 7); q.fill(); q.restore();
+  }
   if (P.mascota) dibMascota(q, P.mascota, px - dir * w * 0.98, y + (P.mascota === 2 ? h * 0.62 : -h * 0.05), t, dir, reloj + px * 0.013);
   if (nombre) {
-    const placa = P.placa | 0, tx = estado ? nombre + ' · ' + estado : nombre, ty = y - t * 0.16, tam = Math.max(10 * RES, t * 0.27);
+    const placa = P.placa | 0, tx = estado ? nombre + ' · ' + estado : nombre, ty = y - t * (P.cu ? 0.46 : 0.16), tam = Math.max(10 * RES, t * 0.27);      // con gorrito de cumpleaños, el nombre sube
     q.font = `700 ${tam}px system-ui`; q.textAlign = 'center'; q.textBaseline = 'bottom';
     const an = q.measureText(tx).width;
     if (placa === 3) {                               // con marco: una placa de metal con remaches
@@ -3663,15 +3670,26 @@ $('#bFoto').addEventListener('click', (e) => { audio(); e.currentTarget.blur(); 
 const TC = { COLORES: ['#ffd23f', '#ff6b5a', '#6ec3ff', '#6fdc7a', '#c05cff', '#ff9f40', '#f3e6d8', '#ff7ac8', '#ffffff', '#1b1b1b', '#e0483a', '#2f8a3a', '#2a6fa8', '#7426a8', '#b05e12', '#9a8774', '#00c2a8', '#f5e663', '#ff3d7f', '#3d5afe', '#8bc34a', '#795548', '#607d8b', '#c0a16b'], CALCAS: ['⭐', '❤️', '⚡', '🔥', '🌈', '🌙', '☀️', '🌵', '🌸', '🍀', '🍉', '🌶️', '🦅', '🐺', '🦂', '🐢', '🐝', '🦋', '🐉', '🦈', '⚓', '🎸', '🎵', '🎲', '⚽', '🏀', '🏁', '🚀', '💎', '👑', '💀', '🤖', '👾', '🎯', '🧭', '⛏️', '🔱', '✝️', '☮️', '♾️', '🇲🇽', '🏳️‍🌈', '🍕', '🌮', '🥑', '🐾', '🧿', '✨'], LUCES: ['#fff3b0', '#ff4d4d', '#4dff88', '#4da6ff', '#ff4df2', '#ffd23f', '#ffffff', '#9d4dff'], ESTELAS: ['Ninguna', 'Chispas doradas', 'Arcoíris', 'Estrellas', 'Corazones', 'Burbujas'], BOCINAS: ['Pip-pip', 'Mariachi', 'Tren', 'Barco', 'Risa', 'Campanitas'], PLACAS: ['Normal', 'Dorada', 'Con corona', 'Con marco'], CARROS: ['De fábrica', 'El Escarabajo', 'La Locomotora', 'El Submarino'], MASCOTAS: ['Ninguna', 'Pájaro', 'Perro', 'Dron', 'Mariposa', 'Luciérnaga'], MASC_EMOJI: ['', '🐦', '🐕', '🛸', '🦋', ''] };
 const NIVEL_CLAVE = { c1: 1, c2: 2, c3: 2, calca: 3, luz: 4, estela: 5, bocina: 6, placa: 6, carro: 7, mascota: 8 };
 let miPinta = {}, miMe = 0, edenPiedras = [], tiendaAnimT = 0, tBocina = 0, estelaN = 0;
-let tienda = { niveles: [], mio: { nivel: 0, mecenas: 0, pinta: {} }, fondo: 0, pagos: 0, cargada: 0, cargando: 0, nivelVista: 0, prueba: null, regaloA: -1, mecenasMonto: 99, fondoN: 3, mecenasMin: 99, fondoPrecio: 19, tope: 5000, error: '' };
+let tienda = { niveles: [], mio: { nivel: 0, mecenas: 0, pinta: {} }, fondo: 0, pagos: 0, cargada: 0, cargando: 0, nivelVista: 0, prueba: null, regaloA: -1, mecenasMonto: 99, fondoN: 3, mecenasMin: 99, gratitudMin: 33, gratitudHora: '15:33', fondoPrecio: 19, tope: 5000, error: '', momento: null, cumple: '', gratitud: 0, gracias: 0 };
+// El ánimo con el que estás jugando, para el momento del precio: cuánto cavaste en los últimos tres minutos y cuántos golpes
+// fuertes (explosiones, pleitos) en los últimos diez. 0 = tranquilo … 1 = a tope. Solo sirve para bajar el precio y para el tono.
+const ritmo = [], ritmoFuerte = [];
+function animoReciente() { const a = Date.now(); while (ritmo.length && a - ritmo[0] > 180000) ritmo.shift(); while (ritmoFuerte.length && a - ritmoFuerte[0] > 600000) ritmoFuerte.shift(); return Math.min(1, ritmo.length / 150 + ritmoFuerte.length * 0.25); }
+// La hora de Torreón, en el navegador: para la tarjeta de las 3:33 y para decir «hoy» igual que el servidor.
+function horaTorreon() { const p = {}; for (const x of new Intl.DateTimeFormat('en-US', { timeZone: 'America/Monterrey', hour12: false, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).formatToParts(new Date())) p[x.type] = x.value; return { y: +p.year, h: +p.hour % 24, min: +p.minute, md: p.month + '-' + p.day }; }
+const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+const cumpleTexto = (md) => md ? +md.slice(3) + ' de ' + MESES[+md.slice(0, 2) - 1] : '';
+// Cuántos días faltan (−) o pasaron (+) de su cumpleaños, si anda a tres días; 9 si no.
+function cumpleCerca(md) { if (!md) return 9; const t = horaTorreon(), hoy = Date.UTC(t.y, +t.md.slice(0, 2) - 1, +t.md.slice(3)), c = Date.UTC(t.y, +md.slice(0, 2) - 1, +md.slice(3)), d = Math.round((hoy - c) / 86400000); return Math.abs(d) <= 3 ? d : Math.abs(d - 365) <= 3 ? d - 365 : Math.abs(d + 365) <= 3 ? d + 365 : 9; }
 const pintaDe = (i) => (i === miI ? miPinta : (otros.get(i)?.p || null));
 const pintaVista = () => (menu === 'pin' && tienda.prueba ? tienda.prueba : miPinta);
 const nivelMio = () => tienda.mio.nivel | 0;
 const pesos = (n) => '$' + Math.round(n).toLocaleString('es-MX');
+const precioBonito = (x) => Math.max(1, x < 100 ? Math.round(x) : x < 1000 ? Math.round(x / 5) * 5 : Math.round(x / 10) * 10);      // igual que en el servidor
 async function cargarTienda() {
   tienda.cargando = 1;
   try {
-    const r = await fetch('/api/tienda', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ k: miK }) }), d = await r.json();
+    const r = await fetch('/api/tienda', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ k: miK, animo: animoReciente() }) }), d = await r.json();
     if (!d.niveles) throw 0;
     tienda = { ...tienda, ...d, cargada: 1, error: '' }; miPinta = d.mio.pinta || {}; miMe = d.mio.mecenas > 0 ? 1 : 0;
   } catch { tienda.error = 'No se pudo abrir la tienda. Revisa tu conexión e inténtalo otra vez.'; }
@@ -3692,18 +3710,32 @@ function htmlTienda() {
   h += `<div class="carpeta"><div><div class="vista"><canvas id="pintaMaq" width="420" height="340"></canvas><small>${esc(miNombre)}</small></div>${tuyo ? '<p class="nota">Lo que cambies aquí se guarda al momento y lo ven todos.</p>' : '<p class="nota">Lo que cambies aquí se ve, pero no se guarda hasta que el nivel sea tuyo.</p>'}</div><div>`;
   h += `<h4>Nivel ${N.n} · ${esc(N.nombre)} · ${pesos(N.precio)}${tuyo ? ' · <span style="color:var(--ok)">tuyo</span>' : ''}</h4><p class="nota">${esc(N.que)}${N.n > 1 ? ' Incluye todo lo de los niveles anteriores.' : ''}</p>`;
   h += editorNivel(nv) + (tuyo ? '' : htmlPago(nv)) + '</div></div>';
+  const cerca = cumpleCerca(tienda.cumple), hoyCumple = cerca === 0, gracias = tienda.gracias || cerca !== 9;
+  if (gracias) h += `<div class="aparte gracias"><h4>🎂 ${hoyCumple ? '¡Feliz cumpleaños!' : 'Gracias de cumpleaños'}</h4><p class="nota">${hoyCumple ? 'Hoy tu maquinita trae gorrito de fiesta. ' : ''}Si Mina te ha dado buenos ratos, estos días puedes darle las gracias a quien lo hace: lo que tú quieras, desde ${pesos(tienda.gratitudMin)}. No cambia nada en el juego y no hace ninguna falta. Es solo gratitud, y llega a quien hace Mina, en CapitalTorreon.${tienda.gratitud ? ' Ya diste las gracias. De corazón.' : ''}</p>
+    <div class="chips">${[33, 99, 333, 999].map((v) => `<button class="s${tienda.mecenasMonto === v ? ' on' : ''}" data-a="tGracias" data-v="${v}">${pesos(v)}</button>`).join('')}</div>
+    <div class="fila"><div class="t"><label class="op"><span>O la cantidad que quieras (pesos)</span><input id="tGra" type="number" min="${tienda.gratitudMin}" step="1" value="${Math.max(tienda.gratitudMin, tienda.mecenasMonto)}" inputmode="numeric"></label></div><button class="s" data-a="tGraciasDar">🎂 Dar las gracias</button></div></div>`;
   h += `<div class="aparte"><h4>✦ Mecenas</h4><p class="nota">Lo que quieras dar, desde ${pesos(tienda.mecenasMin)}. No da nada más que un ✦ junto a tu nombre y nuestras gracias: es para quien quiere que Mina siga existiendo.${tienda.mio.mecenas ? ` Ya diste ${pesos(tienda.mio.mecenas)}. Gracias.` : ''}</p>
     <div class="fila"><div class="t"><label class="op"><span>Cantidad (pesos)</span><input id="tMec" type="number" min="${tienda.mecenasMin}" step="1" value="${tienda.mecenasMonto}" inputmode="numeric"></label></div><button class="s" data-a="tMecenas">✦ Dar</button></div>
     <h4>🎁 Fondo común</h4><p class="nota">Paga la primera pintura (${pesos(tienda.fondoPrecio)}) de las siguientes maquinitas nuevas que lleguen a Mina. Quien llega la recibe con un «alguien pagó tu primera pintura: hay para todos».${tienda.fondo ? ` Ahora mismo hay <b>${tienda.fondo}</b> esperando.` : ''}</p>
     <div class="fila"><div class="t"><label class="op"><span>Maquinitas</span><input id="tFondo" type="number" min="1" max="200" step="1" value="${tienda.fondoN}" inputmode="numeric"></label></div><button class="s" data-a="tFondo">🎁 Pagar adelante</button></div>
+    <h4>🎂 Tu cumpleaños</h4><p class="nota">${tienda.cumple ? `Lo tenemos: <b>${cumpleTexto(tienda.cumple)}</b>. Ese día tu maquinita trae gorrito de fiesta y el precio de la tienda baja 15 %${cuenta ? ', y a las 3:33 de la tarde (hora de Torreón) te llega un correo para dar las gracias, si quieres' : ''}.` : `Día y mes, nada más. Ese día tu maquinita trae gorrito de fiesta, la tienda baja 15 %${cuenta ? ', y a las 3:33 de la tarde (hora de Torreón) te llega un correo cortito' : ''}. Lo quitas cuando quieras.`}</p>
+    <div class="fila"><div class="t" style="display:flex;gap:6px;flex-wrap:wrap"><select id="tCumD">${Array.from({ length: 31 }, (_, i) => `<option value="${i + 1}" ${tienda.cumple && +tienda.cumple.slice(3) === i + 1 ? 'selected' : ''}>${i + 1}</option>`).join('')}</select><select id="tCumM">${MESES.map((m, i) => `<option value="${i + 1}" ${tienda.cumple && +tienda.cumple.slice(0, 2) === i + 1 ? 'selected' : ''}>${m}</option>`).join('')}</select></div><button class="s" data-a="tCumple">${tienda.cumple ? 'Cambiar' : 'Guardar'}</button>${tienda.cumple ? '<button class="s" data-a="tCumpleQuitar">Quitar</button>' : ''}</div>
     <h4>Cómo se sostiene Mina</h4><p class="nota">Sin anuncios, sin cajas sorpresa, sin prisas inventadas, sin ventajas compradas. Mismo precio para todos; subir de nivel cuesta solo la diferencia; tope de ${pesos(tienda.tope)} por maquinita cada 30 días; devoluciones sin preguntas durante 15 días (contacto@ingenieriadigital.mx). Si un día esto deja de ser cierto, está mal y se quita. <a href="#" data-a="tManifiesto">Leer el manifiesto</a>.</p></div>`;
   return h + '</div>';
 }
 function htmlPago(nv) {
   const L = tienda.niveles, mio = nivelMio(), precio = L[nv - 1].precio - (mio ? L[mio - 1].precio : 0), vivos = [...otros.values()].filter((o) => o.on);
-  const o = tienda.oferta, desc = o && o.desc > 0 && tienda.regaloA < 0 ? o.desc : 0, tuPrecio = desc ? Math.max(1, Math.round(precio * (1 - desc))) : precio;
-  let h = `<div class="pago"><p class="grande">${pesos(tuPrecio)} <small style="font-size:.5em;color:var(--su)">pesos${mio ? ' · solo la diferencia desde tu nivel ' + mio : ''}</small></p>` +
-    (desc ? `<p class="nota"><s>${pesos(precio)} de lista</s> · <b style="display:inline;color:var(--ok)">${Math.round(desc * 100)} % menos, tu precio</b> · vale hasta el ${new Date(o.hasta).toLocaleDateString('es-MX', { day: 'numeric', month: 'long' })}. Mina ajusta descuentos según cómo juega cada quien; nunca cobra más que el precio de lista.</p>` : '');
+  const o = tienda.oferta, M = tienda.momento, propio = tienda.regaloA < 0, desc = o && o.desc > 0 && propio ? o.desc : 0, ajuste = M && propio ? M.ajuste : 0;
+  const tuPrecio = Math.min(precio, Math.max(1, precioBonito(precio * (1 - desc) * (1 - ajuste)))), menos = Math.round((1 - tuPrecio / precio) * 100);
+  let h = `<div class="pago"><p class="grande">${pesos(tuPrecio)} <small style="font-size:.5em;color:var(--su)">pesos${mio ? ' · solo la diferencia desde tu nivel ' + mio : ''}</small></p>`;
+  if (tuPrecio < precio) {
+    const partes = (M && propio ? M.partes : []).map(([n, f]) => `${esc(n)} −${Math.round(f * 100)} %`);
+    h += `<p class="nota"><s>${pesos(precio)} de lista</s> · <b style="display:inline;color:var(--ok)">${menos} % menos, tu precio</b>` +
+      (desc ? ` · ${Math.round(desc * 100)} % por cómo juegas, vale hasta el ${new Date(o.hasta).toLocaleDateString('es-MX', { day: 'numeric', month: 'long' })}` : '') +
+      (partes.length ? ` · hoy: ${partes.join(', ')}` : '') + `. El precio se mueve con la hora del día (hora de Torreón) y solo baja: nunca más que la lista.</p>`;
+  }
+  if (M && propio && M.madrugada) h += '<p class="nota">🌙 Es de madrugada en Torreón. No hay prisa: tu precio te espera igual mañana, y si compras hoy tienes 15 días para cambiar de idea.</p>';
+  else if (M && propio && M.animo === 'a tope') h += '<p class="nota">⛏️ Vas a tope. Sigue en lo tuyo: esto te espera aquí, con calma.</p>';
   if (!tienda.pagos) return h + '<p class="nota">Los pagos se abren en unos días. Mientras, pruébatelo todo.</p></div>';
   if (vivos.length) h += `<label class="op"><span>¿Es un regalo?</span><select data-a="tPara">${[[-1, 'No, es para mí']].concat(vivos.map((o) => [o.i, 'Para ' + o.n])).map(([v, t]) => `<option value="${v}" ${v === tienda.regaloA ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select></label>${tienda.regaloA >= 0 ? '<p class="nota">Si quien lo recibe ya tiene un nivel, se cobra solo la diferencia.</p>' : ''}`;
   if (!cuenta) h += '<p class="nota">Para comprar hay que entrar con tu cuenta: así lo comprado se queda contigo en cualquier equipo.</p><div class="fila"><div class="t"></div><button data-a="tEntrar">Entrar con Google</button></div>';
@@ -3737,14 +3769,23 @@ function ponerPinta(k, v) {
     miPinta = p; tienda.prueba = null; if (conectado) enviar({ t: 'pinta', p }); son.clic();
   } else { const p = { ...(tienda.prueba || miPinta) }; if (val === undefined) delete p[k]; else p[k] = val; tienda.prueba = p; }
 }
+async function ponerCumple(md) {
+  try {
+    const r = await fetch('/api/tienda/cumple', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ k: miK, md, ses: cuenta ? cuenta.ses : '', mundo: mundoId }) }), d = await r.json();
+    if (!d.ok) throw 0;
+    tienda.cumple = d.cumple; if (d.p) { miPinta = d.p; if (conectado) enviar({ t: 'pinta', p: miPinta }); } son.clic();
+    tarjeta(md ? '🎂 Guardado' : 'Cumpleaños quitado', md ? `El ${cumpleTexto(md)} tu maquinita trae gorrito de fiesta${d.correo ? ' y te llega un correo a las 3:33 de la tarde, hora de Torreón' : ''}.` : 'Ya no guardamos tu fecha.', 'msj', 7000);
+    if (menu === 'pin') { tienda.cargada = 0; await cargarTienda(); }
+  } catch { tarjeta('La Pinturería', 'No se pudo guardar tu cumpleaños. Inténtalo otra vez.', 'msj', 6000); }
+}
 function irAlLogin(extra) { if (listo && !soloVer) { enviarEst(); guardarCopia(); } location.href = LOGIN_CT + '/?volver=' + encodeURIComponent(location.origin + '/' + mundoId + (extra || '')); }
 async function pagar(o) {
-  if (!cuenta) return irAlLogin('?tienda=' + tienda.nivelVista);
   if (o.tipo === 'nivel' && !$('#tMayor')?.checked) { aviso('Marca primero que eres mayor de edad o tienes permiso de quien paga.'); return; }
-  if (o.tipo !== 'nivel' && !confirm(`Vas a pagar ${pesos(o.tipo === 'mecenas' ? o.monto : o.cantidad * tienda.fondoPrecio)} con tarjeta, en la página de Stripe. ¿Eres mayor de edad o tienes permiso de quien paga?`)) return;
+  if (!cuenta) return irAlLogin('?tienda=' + tienda.nivelVista);
+  if (o.tipo !== 'nivel' && !confirm(`Vas a ${o.motivo === 'gratitud' ? 'dar las gracias con' : 'pagar'} ${pesos(o.tipo === 'mecenas' ? o.monto : o.cantidad * tienda.fondoPrecio)} con tarjeta, en la página de Stripe. ¿Eres mayor de edad o tienes permiso de quien paga?`)) return;
   if (listo && !soloVer) { enviarEst(); guardarCopia(); }
   try {
-    const r = await fetch('/api/tienda/pagar', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ses: cuenta.ses, k: miK, mundo: mundoId, volver: location.origin + '/' + mundoId, ...o }) }), d = await r.json();
+    const r = await fetch('/api/tienda/pagar', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ses: cuenta.ses, k: miK, mundo: mundoId, volver: location.origin + '/' + mundoId, animo: animoReciente(), ...o }) }), d = await r.json();
     if (d.url) { location.href = d.url; return; }
     const msj = { pronto: 'Los pagos se abren en unos días. Mientras, pruébatelo todo.', cuenta: 'Tu sesión venció: vuelve a entrar con Google.', tope: `Este mes ya diste mucho (${pesos(d.gastado || 0)}). Gracias de corazón; vuelve el mes que entra.`, ya: 'Ese nivel ya es de esa maquinita.', regalo: 'No encontré a quién regalárselo: tiene que estar jugando en este mundo.', stripe: 'La página de pago no contestó. Inténtalo otra vez.' }[d.error] || 'No se pudo abrir el pago.';
     tarjeta('La Pinturería', msj, 'msj', 9000);
@@ -3759,18 +3800,30 @@ async function confirmarCompra(sid) {
     tienda.mio = d.mio; miMe = d.mio.mecenas > 0 ? 1 : 0; son.logro();
     if (d.tipo === 'nivel' && !d.regalo) { tienda.nivelVista = d.nivel; tienda.prueba = null; tarjeta('🎨 ¡Listo! El nivel ' + d.nivel + ' es tuyo', 'Gracias. Deja tu maquinita como tú quieras: se abre La Pinturería.', 'msj', 12000); setTimeout(() => { if (listo && !menu) abrir('pin'); }, 1400); }
     else if (d.tipo === 'nivel') tarjeta('🎁 Regalo entregado', 'El nivel ' + d.nivel + ' ya es de esa maquinita. Qué bonito gesto.', 'msj', 10000);
+    else if (d.tipo === 'mecenas' && d.motivo === 'gratitud') { tienda.gratitud = Date.now(); tarjeta('🎂 Gracias a ti', 'Qué bonito gesto en tu cumpleaños. Que Mina te siga dando buenos ratos. Ya tienes tu ✦ junto al nombre.', 'msj', 12000); }
     else if (d.tipo === 'mecenas') tarjeta('✦ Gracias, mecenas', 'Con esto Mina sigue existiendo. Ya tienes tu ✦ junto al nombre.', 'msj', 10000);
     else tarjeta('🎁 Pagaste adelante', 'Las siguientes ' + d.cantidad + ' maquinitas nuevas llegan con su primera pintura. Hay para todos.', 'msj', 10000);
   } catch { tarjeta('La Pinturería', 'No pude confirmar el pago: no hay conexión. Vuelve a abrir esta misma liga más tarde y se confirma solo.', 'msj', 12000); }
 }
 // Al volver de pagar o de entrar con la cuenta: ?compra=<sesión de Stripe> y ?tienda=<nivel> (se leen antes de limpiar la liga).
-const compraPend = (location.search.match(/[?&]compra=(cs_[A-Za-z0-9_]{10,200})/) || [])[1] || '', tiendaPend = +(location.search.match(/[?&]tienda=(\d{1,2})/) || [])[1] || 0;
+const compraPend = (location.search.match(/[?&]compra=(cs_[A-Za-z0-9_]{10,200})/) || [])[1] || '', graciasPend = /[?&]gracias=cumple/.test(location.search) ? 1 : 0, tiendaPend = +(location.search.match(/[?&]tienda=(\d{1,2})/) || [])[1] || (graciasPend ? 1 : 0);
 let compraHecha = 0, tiendaAbierta = 0;
-if (compraPend || tiendaPend) history.replaceState(null, '', location.pathname);
+if (graciasPend) tienda.gracias = 1;
+if (compraPend || tiendaPend || graciasPend) history.replaceState(null, '', location.pathname);
 function pendientesTienda() {
   if (!listo || soloVer || !conectado) return;
   if (compraPend && !compraHecha) { compraHecha = 1; confirmarCompra(compraPend); }
-  if (tiendaPend && !tiendaAbierta && !menu) { tiendaAbierta = 1; tienda.nivelVista = tiendaPend; abrir('pin'); }
+  if (tiendaPend && !tiendaAbierta && !menu) { tiendaAbierta = 1; tienda.nivelVista = tiendaPend; abrir('pin'); if (graciasPend) setTimeout(() => $('.gracias')?.scrollIntoView({ behavior: 'smooth' }), 700); }
+}
+// El día de tu cumpleaños: la felicitación al entrar y, a las 3:33 de la tarde (hora de Torreón), la invitación a dar las gracias. Una vez cada una, al año.
+function diaDeCumple() {
+  if (!S || !listo || soloVer || !miPinta.cu || compraPend) return;
+  const t = horaTorreon(), y = String(t.y);
+  if (leer('mina_cumple_hola', '') !== y) { escribir('mina_cumple_hola', y); son.logro(); tarjeta('🎂 ¡Feliz cumpleaños, ' + miNombre + '!', 'Hoy tu maquinita trae gorrito de fiesta, y La Pinturería te baja 15 % todo el día. Que sea un gran día.', 'msj', 12000); }
+  if ((t.h > 15 || (t.h === 15 && t.min >= 33)) && leer('mina_cumple_gracias', '') !== y && !menu) {
+    escribir('mina_cumple_gracias', y);
+    tarjeta('🎂 Son las 3:33 en Torreón', 'Si Mina te ha dado buenos ratos, hoy es buen día para darle las gracias a quien lo hace. Lo que tú quieras, desde $33. Nada obligatorio.', 'msj', 20000, false, { t: 'Sí, quiero dar las gracias', f: () => { tienda.gracias = 1; tienda.mecenasMonto = 33; abrir('pin'); setTimeout(() => $('.gracias')?.scrollIntoView({ behavior: 'smooth' }), 700); } });
+  }
 }
 // Tres invitaciones en la vida de una maquinita (20 min, 3 h y 10 h de juego), solo en la superficie y con calma, y ninguna
 // si ya abrió la tienda. La camioneta en la superficie es la invitación permanente y callada.
@@ -4727,6 +4780,10 @@ const acciones = {
   tProbarBocina() { claxon(pintaVista().bocina | 0); return 'no'; },
   tEntrar() { irAlLogin('?tienda=' + tienda.nivelVista); return 'no'; },
   tPagar(v) { pagar({ tipo: 'nivel', nivel: +v, ...(tienda.regaloA >= 0 ? { paraI: tienda.regaloA } : {}) }); return 'no'; },
+  tGracias(v) { tienda.mecenasMonto = +v; pintarMenu(); const el = $('#tGra'); if (el) el.value = +v; return 'no'; },
+  tGraciasDar() { const m = Math.floor(+($('#tGra')?.value || 0)); if (!(m >= tienda.gratitudMin)) { aviso('Desde ' + pesos(tienda.gratitudMin) + '.'); return 'no'; } tienda.mecenasMonto = m; pagar({ tipo: 'mecenas', monto: m, motivo: 'gratitud' }); return 'no'; },
+  tCumple() { const d = +($('#tCumD')?.value || 0), m = +($('#tCumM')?.value || 0); if (!(d >= 1 && d <= 31 && m >= 1 && m <= 12) || d > [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][m - 1]) { aviso('Esa fecha no existe.'); return 'no'; } ponerCumple(String(m).padStart(2, '0') + '-' + String(d).padStart(2, '0')); return 'no'; },
+  tCumpleQuitar() { ponerCumple(''); return 'no'; },
   tMecenas() { const m = Math.floor(+($('#tMec')?.value || 0)); if (!(m >= tienda.mecenasMin)) { aviso('Desde ' + pesos(tienda.mecenasMin) + '.'); return 'no'; } tienda.mecenasMonto = m; pagar({ tipo: 'mecenas', monto: m }); return 'no'; },
   tFondo() { const n = Math.floor(+($('#tFondo')?.value || 0)); if (!(n >= 1 && n <= 200)) { aviso('Entre 1 y 200 maquinitas.'); return 'no'; } tienda.fondoN = n; pagar({ tipo: 'fondo', cantidad: n }); return 'no'; },
   tManifiesto() { pestana = 11; abrir('menu'); return 'no'; },
@@ -5329,7 +5386,7 @@ setInterval(() => {                       // lo poco que corre aunque el juego e
   if (topAbierta()) document.querySelectorAll('#caja .tt[data-vivo="1"]').forEach((el) => { el.dataset.seg = +el.dataset.seg + 1; el.textContent = '⏱ ' + tiempoLargo(+el.dataset.seg); });
   if (soloVer && (pido === 'espera' || pido === 'ausente')) pintarEspera();
   if (peleas.size) { for (const [i, p] of peleas) if (tiempo - p.h > 6) peleas.delete(i); pintarPleito(); if (soloVer) pintarVer(); }
-  pendientesTienda(); if (latido % 5 === 0) invitarPintureria();
+  pendientesTienda(); if (latido % 5 === 0) invitarPintureria(); if (latido % 7 === 0) diaDeCumple();
   if (!cuenta && S && listo && !soloVer && S.seg > 600 && !leer('mina_invitoG', 0)) { escribir('mina_invitoG', 1); tarjeta('💾 ¿Guardamos tu maquinita?', 'Con tu correo de Google la recuperas en cualquier equipo, con todos tus mundos. Cuando quieras: Menú → Mundo.', 'msj', 9000); }
   if (latido % 4 === 0) ocio(guardarCopia);
   if (!document.hidden && listo && Date.now() - tablaM.pedido > (topAbierta() ? 4000 : 60000) && (topAbierta() || (!soloVer && conectado && (!tablaM.t || S.tot >= tablaM.corte)))) pedirTop();

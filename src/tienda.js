@@ -77,3 +77,49 @@ export function motorConfort(m, global) {
   desc = Math.max(0, Math.min(DESC_MAX, Math.round(desc * 20) / 20));
   return { nivel: Math.min(10, nivel), desc, n, s: { horas: Math.round(s.seg / 360) / 10, dedicacion: +s.dedicacion.toFixed(2), expertiz: +s.expertiz.toFixed(2), velocidad: +s.velocidad.toFixed(2), vistas: s.vistas } };
 }
+
+// ── El momento (todo en hora de Torreón) ──────────────────────────────────────────────────────────────────────────────
+// El motor de confort decide el descuento de fondo de cada persona (vale siete días). Encima, el momento mueve el precio
+// durante el día: hora, madrugada, festivos de México, su cumpleaños, los días antes de la quincena, el ánimo con el que
+// está jugando. Igual que el motor, el momento SOLO BAJA. Nunca nada sube de la lista. Todo se calcula con la hora de
+// Torreón: así «las 3:33 de la tarde» son las mismas para todos, estén donde estén.
+export const ZONA = "America/Monterrey", AJUSTE_MAX = 0.25, GRATITUD_MIN = 33, GRATITUD_HORA = "15:33";
+const DIAS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+export function horaTorreon(ts = Date.now()) {
+  const p = {}; for (const x of new Intl.DateTimeFormat("en-US", { timeZone: ZONA, hour12: false, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", weekday: "short" }).formatToParts(new Date(ts))) p[x.type] = x.value;
+  return { y: +p.year, mes: +p.month, dia: +p.day, h: +p.hour % 24, min: +p.minute, dow: DIAS.indexOf(p.weekday), md: p.month + "-" + p.day };
+}
+export const FESTIVOS = { "01-01": "Año Nuevo", "01-06": "Día de Reyes", "02-02": "Día de la Candelaria", "02-14": "Día del Amor y la Amistad", "02-24": "Día de la Bandera", "03-08": "Día de la Mujer", "04-30": "Día del Niño", "05-01": "Día del Trabajo", "05-05": "Cinco de Mayo", "05-10": "Día de las Madres", "05-15": "Día del Maestro", "09-15": "Grito de Independencia y aniversario de Torreón", "09-16": "Día de la Independencia", "10-12": "Día de la Raza", "11-01": "Día de Todos los Santos", "11-02": "Día de Muertos", "12-12": "Día de la Virgen de Guadalupe", "12-24": "Nochebuena", "12-25": "Navidad", "12-28": "Día de los Inocentes", "12-31": "Fin de año" };
+const md2 = (m, d) => String(m).padStart(2, "0") + "-" + String(d).padStart(2, "0");
+const nDow = (y, mes, dow, n) => { const d = new Date(Date.UTC(y, mes - 1, 1)), p = (dow - d.getUTCDay() + 7) % 7; return 1 + p + 7 * (n - 1); };    // el n-ésimo <dow> del mes
+function pascua(y) { const a = y % 19, b = Math.floor(y / 100), c = y % 100, d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30, i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451), mes = Math.floor((h + l - 7 * m + 114) / 31), dia = ((h + l - 7 * m + 114) % 31) + 1; return Date.UTC(y, mes - 1, dia); }
+export function festivoDe(t) {
+  if (FESTIVOS[t.md]) return FESTIVOS[t.md];
+  if (t.mes === 2 && t.dia === nDow(t.y, 2, 1, 1)) return "Día de la Constitución";
+  if (t.mes === 3 && t.dia === nDow(t.y, 3, 1, 3)) return "Natalicio de Benito Juárez";
+  if (t.mes === 11 && t.dia === nDow(t.y, 11, 1, 3)) return "Día de la Revolución";
+  if (t.mes === 6 && t.dia === nDow(t.y, 6, 0, 3)) return "Día del Padre";
+  const hoy = Date.UTC(t.y, t.mes - 1, t.dia), p = pascua(t.y), dd = Math.round((hoy - p) / 86400000);
+  if (dd === -3) return "Jueves Santo"; if (dd === -2) return "Viernes Santo"; if (dd === 0) return "Domingo de Pascua";
+  return "";
+}
+export const cumpleOk = (md) => typeof md === "string" && /^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.test(md) && +md.slice(3) <= [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][+md.slice(0, 2) - 1];
+// ¿Es su cumpleaños, o anda cerca (tres días antes o después)? Para la gratitud y el gorrito.
+export function cumpleCerca(md, t) { if (!cumpleOk(md)) return 9; const y = t.y, a = Date.UTC(y, t.mes - 1, t.dia), c = Date.UTC(y, +md.slice(0, 2) - 1, +md.slice(3)); const d = Math.round((a - c) / 86400000); return Math.abs(d) <= 3 ? d : Math.abs(d - 365) <= 3 ? d - 365 : Math.abs(d + 365) <= 3 ? d + 365 : 9; }
+// El momento de esta persona ahora mismo. `animo`: 0 = tranquilo … 1 = a tope (lo mide el juego: cuánto está cavando,
+// chocando y peleando en los últimos minutos). Devuelve el ajuste (fracción que se resta), de qué se compone, y las señales.
+export function momento(ts, m, animo) {
+  const t = horaTorreon(ts), tienda = (m && m.tienda) || {}, seg = ((m && m.est) || {}).seg || 0, fest = festivoDe(t), cumple = cumpleOk(tienda.cumple) && tienda.cumple === t.md;
+  const partes = [];
+  if (cumple) partes.push(["🎂 tu cumpleaños", 0.15]); else if (fest) partes.push([fest, 0.1]);
+  if (t.h >= 19) partes.push(["noche tranquila", 0.05]); else if (t.h >= 6 && t.h < 11) partes.push(["precio de mañana", 0.03]);
+  if ((t.dia >= 12 && t.dia <= 14) || t.dia >= 27) partes.push(["antes de la quincena", 0.05]);
+  if (t.dow === 0 && !fest && !cumple) partes.push(["domingo", 0.03]);
+  const an = Math.max(0, Math.min(1, Number(animo) || 0)), animoN = an < 0.3 ? "tranquilo" : an < 0.7 ? "concentrado" : "a tope";
+  if (animoN === "tranquilo" && seg > 600) partes.push(["juegas tranquilo", 0.02]);
+  const ajuste = Math.min(AJUSTE_MAX, Math.round(partes.reduce((a, p) => a + p[1], 0) * 100) / 100);
+  return { ajuste, partes, madrugada: t.h < 6, fest, cumple, cerca: cumpleCerca(tienda.cumple, t), animo: animoN, hora: { h: t.h, min: t.min, md: t.md } };
+}
+// El precio exacto: lista × (1 − confort) × (1 − momento), redondeado a un número limpio. Nunca más que la lista, nunca menos de $1.
+export const precioBonito = (x) => Math.max(1, x < 100 ? Math.round(x) : x < 1000 ? Math.round(x / 5) * 5 : Math.round(x / 10) * 10);
+export function precioFinal(lista, desc, ajuste) { return Math.min(lista, precioBonito(lista * (1 - Math.max(0, Math.min(DESC_MAX, desc || 0))) * (1 - Math.max(0, Math.min(AJUSTE_MAX, ajuste || 0))))); }
