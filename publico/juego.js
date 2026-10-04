@@ -2705,10 +2705,11 @@ function dibMaq(q, px, py, t, modelo, dir, vuela, perfDir, nombre, estado, mundo
   if (carro === 1) { q.moveTo(x, y + h * 0.76); q.lineTo(x, y + h * 0.5); q.quadraticCurveTo(x, y + h * 0.08, px, y + h * 0.08); q.quadraticCurveTo(x + w, y + h * 0.08, x + w, y + h * 0.5); q.lineTo(x + w, y + h * 0.76); q.closePath(); }      // El Escarabajo: lomo redondo
   else if (carro === 2) q.roundRect(x, y + h * 0.24, w, h * 0.52, t * 0.04);      // La Locomotora: caja recta; la caldera y la chimenea van aparte
   else if (carro === 3) q.roundRect(x - t * 0.03, y + h * 0.14, w + t * 0.06, h * 0.62, h * 0.31);      // El Submarino: cápsula
+  else if (carro === 4) { q.moveTo(x - t * 0.02, y + h * 0.76); q.lineTo(x - t * 0.02, y + h * 0.42); q.lineTo(x + w * 0.14, y + h * 0.2); q.lineTo(x + w * 0.86, y + h * 0.2); q.lineTo(x + w + t * 0.02, y + h * 0.42); q.lineTo(x + w + t * 0.02, y + h * 0.76); q.closePath(); }      // El Tanque: casco de placas en ángulo
   else q.roundRect(x, y + h * 0.16, w, h * 0.6, t * 0.12);
   q.fill(); q.strokeStyle = mezcla(c2, -0.5); q.lineWidth = lw; q.stroke();
   if (P.c1) {                                        // pintura de La Pinturería: un brillo de laca sobre el lomo
-    q.save(); q.beginPath(); if (carro === 1) { q.moveTo(x, y + h * 0.76); q.lineTo(x, y + h * 0.5); q.quadraticCurveTo(x, y + h * 0.08, px, y + h * 0.08); q.quadraticCurveTo(x + w, y + h * 0.08, x + w, y + h * 0.5); q.lineTo(x + w, y + h * 0.76); q.closePath(); } else if (carro === 2) q.roundRect(x, y + h * 0.24, w, h * 0.52, t * 0.04); else if (carro === 3) q.roundRect(x - t * 0.03, y + h * 0.14, w + t * 0.06, h * 0.62, h * 0.31); else q.roundRect(x, y + h * 0.16, w, h * 0.6, t * 0.12); q.clip();
+    q.save(); q.beginPath(); if (carro === 1) { q.moveTo(x, y + h * 0.76); q.lineTo(x, y + h * 0.5); q.quadraticCurveTo(x, y + h * 0.08, px, y + h * 0.08); q.quadraticCurveTo(x + w, y + h * 0.08, x + w, y + h * 0.5); q.lineTo(x + w, y + h * 0.76); q.closePath(); } else if (carro === 2) q.roundRect(x, y + h * 0.24, w, h * 0.52, t * 0.04); else if (carro === 3) q.roundRect(x - t * 0.03, y + h * 0.14, w + t * 0.06, h * 0.62, h * 0.31); else if (carro === 4) { q.moveTo(x - t * 0.02, y + h * 0.76); q.lineTo(x - t * 0.02, y + h * 0.42); q.lineTo(x + w * 0.14, y + h * 0.2); q.lineTo(x + w * 0.86, y + h * 0.2); q.lineTo(x + w + t * 0.02, y + h * 0.42); q.lineTo(x + w + t * 0.02, y + h * 0.76); q.closePath(); } else q.roundRect(x, y + h * 0.16, w, h * 0.6, t * 0.12); q.clip();
     const br = q.createLinearGradient(x, y, x + w * 0.6, y + h * 0.7); br.addColorStop(0, 'rgba(255,255,255,.38)'); br.addColorStop(0.35, 'rgba(255,255,255,.1)'); br.addColorStop(0.5, 'rgba(255,255,255,0)'); q.fillStyle = br; q.fillRect(x, y, w, h);
     q.fillStyle = 'rgba(255,255,255,.28)'; q.beginPath(); q.roundRect(x + w * 0.1, y + h * (carro === 1 ? 0.14 : 0.2), w * 0.55, h * 0.07, h * 0.035); q.fill(); q.restore();
   }
@@ -2732,6 +2733,15 @@ function dibMaq(q, px, py, t, modelo, dir, vuela, perfDir, nombre, estado, mundo
     q.fillStyle = mezcla(c2, -0.3); q.beginPath(); q.moveTo(px - dir * w * 0.3, y + h * 0.16); q.lineTo(px - dir * w * 0.42, y + h * 0.02); q.lineTo(px - dir * w * 0.46, y + h * 0.18); q.closePath(); q.fill();   // aleta
     q.save(); q.translate(px - dir * w * 0.52, y + h * 0.45); q.fillStyle = '#c9ced3'; for (let k = 0; k < 3; k++) { q.rotate(2.094); q.beginPath(); q.ellipse(0, -h * 0.07 * (0.3 + 0.7 * Math.abs(Math.sin(reloj * 9 + k))), h * 0.03, h * 0.08, 0, 0, 7); q.fill(); } q.restore();   // la hélice
   }
+  if (carro === 4) {                                 // El Tanque: placas remachadas, torreta con cañón corto y antena con banderín
+    q.strokeStyle = mezcla(c2, -0.55); q.lineWidth = Math.max(1, t * 0.02); q.beginPath(); q.moveTo(x + w * 0.14, y + h * 0.2); q.lineTo(x + w * 0.14, y + h * 0.76); q.moveTo(x + w * 0.86, y + h * 0.2); q.lineTo(x + w * 0.86, y + h * 0.76); q.moveTo(x, y + h * 0.48); q.lineTo(x + w, y + h * 0.48); q.stroke();
+    q.fillStyle = mezcla(c2, -0.45); for (let k = 0; k < 6; k++) for (const yy of [0.3, 0.66]) { q.beginPath(); q.arc(x + w * (0.2 + k * 0.12), y + h * yy, t * 0.013, 0, 7); q.fill(); }        // remaches
+    const tx2 = px - dir * w * 0.12, ty2 = y + h * 0.2, tg = q.createLinearGradient(0, ty2 - h * 0.2, 0, ty2); tg.addColorStop(0, mezcla(c1, 0.3)); tg.addColorStop(1, mezcla(c2, -0.2));
+    q.fillStyle = tg; q.beginPath(); q.ellipse(tx2, ty2, w * 0.2, h * 0.17, 0, Math.PI, 0); q.fill(); q.strokeStyle = mezcla(c2, -0.5); q.stroke();        // la torreta
+    q.fillStyle = '#4a4543'; q.fillRect(dir > 0 ? tx2 : tx2 - w * 0.36, ty2 - h * 0.12, w * 0.36, h * 0.05); q.fillStyle = '#2b2b2b'; q.fillRect(dir > 0 ? tx2 + w * 0.32 : tx2 - w * 0.38, ty2 - h * 0.135, w * 0.06, h * 0.08);      // el cañón corto con su boca
+    q.strokeStyle = '#9aa3ab'; q.lineWidth = Math.max(1, t * 0.018); q.beginPath(); q.moveTo(px - dir * w * 0.36, y + h * 0.2); q.lineTo(px - dir * w * 0.4, y - h * 0.18); q.stroke();
+    q.fillStyle = P.c1 ? mezcla(c1, 0.1) : '#e0483a'; q.beginPath(); q.moveTo(px - dir * w * 0.4, y - h * 0.18); q.lineTo(px - dir * w * (0.4 + 0.14), y - h * 0.13 + Math.sin(reloj * 7) * h * 0.02); q.lineTo(px - dir * w * 0.4, y - h * 0.08); q.closePath(); q.fill();      // el banderín ondea
+  }
   q.fillStyle = mezcla(c2, -0.25); q.fillRect(x + w * 0.06, y + h * 0.6, w * 0.88, h * 0.05);
   if (modelo % 4 === 1) { q.fillStyle = '#ffffffcc'; q.fillRect(x + w * 0.06, y + h * 0.5, w * 0.88, h * 0.05); }
   else if (modelo % 4 === 2) { q.fillStyle = '#1b120e99'; for (let i = 0; i < 4; i++) q.fillRect(px - dir * w * (0.08 + i * 0.09) - t * 0.015, y + h * 0.26, t * 0.03, h * 0.28); }
@@ -2743,11 +2753,11 @@ function dibMaq(q, px, py, t, modelo, dir, vuela, perfDir, nombre, estado, mundo
   q.closePath(); q.fill(); q.strokeStyle = '#1b3a4a'; q.stroke();
   q.fillStyle = '#ffffffaa'; q.beginPath(); q.ellipse(cx - w * 0.07, cy - h * 0.1, w * 0.05, h * 0.05, -0.6, 0, 7); q.fill();
   q.fillStyle = '#24323a'; q.beginPath(); q.arc(cx + dir * w * 0.02, cy - h * 0.03, w * 0.055, 0, 7); q.fill();     // piloto
-  if (P.calca !== undefined && TC.CALCAS[P.calca]) {                                   // la calcomanía: troquelada en blanco, un poco ladeada, como las de verdad
+  if (P.calca !== undefined && TC.CALCAS_TODAS[P.calca]) {                                   // la calcomanía: troquelada en blanco, un poco ladeada, como las de verdad
     const sx = px - dir * w * 0.24, sy = y + h * 0.46, r = h * 0.19; q.save(); q.translate(sx, sy); q.rotate(-0.14 * dir);
     q.fillStyle = 'rgba(0,0,0,.28)'; q.beginPath(); q.roundRect(-r + t * 0.015, -r + t * 0.02, r * 2, r * 2, r * 0.45); q.fill();
     q.fillStyle = '#fff'; q.beginPath(); q.roundRect(-r, -r, r * 2, r * 2, r * 0.45); q.fill(); q.strokeStyle = '#d8d2c6'; q.lineWidth = Math.max(1, t * 0.015); q.stroke();
-    q.font = `${h * 0.27}px system-ui,"Apple Color Emoji","Segoe UI Emoji"`; q.textAlign = 'center'; q.textBaseline = 'middle'; q.fillStyle = '#000'; q.fillText(TC.CALCAS[P.calca], 0, h * 0.015); q.restore();
+    q.font = `${h * 0.27}px system-ui,"Apple Color Emoji","Segoe UI Emoji"`; q.textAlign = 'center'; q.textBaseline = 'middle'; q.fillStyle = '#000'; q.fillText(TC.CALCAS_TODAS[P.calca], 0, h * 0.015); q.restore();
   }
   // faro
   if (P.luz) {                                       // luz de La Pinturería: el faro echa un haz hacia adelante y brilla
@@ -2763,9 +2773,9 @@ function dibMaq(q, px, py, t, modelo, dir, vuela, perfDir, nombre, estado, mundo
     q.fillStyle = '#ffd23f'; for (const [a, b] of [[-0.12, -0.3], [0.1, -0.55], [-0.04, -0.78]]) { q.beginPath(); q.arc(a * gw * 2, b * gh, t * 0.025, 0, 7); q.fill(); }
     q.fillStyle = '#6ec3ff'; q.beginPath(); q.arc(0, -gh, t * 0.045, 0, 7); q.fill(); q.restore();
   }
-  if (P.mascota) dibMascota(q, P.mascota, px - dir * w * 0.98, y + (P.mascota === 2 ? h * 0.62 : -h * 0.05), t, dir, reloj + px * 0.013);
+  if (P.mascota) dibMascota(q, P.mascota, px - dir * w * 0.98, y + (P.mascota === 2 || P.mascota === 6 ? h * 0.62 : -h * 0.05), t, dir, reloj + px * 0.013);
   if (nombre) {
-    const placa = P.placa | 0, tx = estado ? nombre + ' · ' + estado : nombre, ty = y - t * (P.cu ? 0.46 : 0.16), tam = Math.max(10 * RES, t * 0.27);      // con gorrito de cumpleaños, el nombre sube
+    const placa = P.placa | 0, titulado = (P.titulo && TC.TITULOS[P.titulo] ? TC.TITULOS[P.titulo] + ' ' : '') + nombre, tx = estado ? titulado + ' · ' + estado : titulado, ty = y - t * (P.cu ? 0.46 : 0.16), tam = Math.max(10 * RES, t * 0.27);      // con gorrito de cumpleaños, el nombre sube
     q.font = `700 ${tam}px system-ui`; q.textAlign = 'center'; q.textBaseline = 'bottom';
     const an = q.measureText(tx).width;
     if (placa === 3) {                               // con marco: una placa de metal con remaches
@@ -2778,6 +2788,7 @@ function dibMaq(q, px, py, t, modelo, dir, vuela, perfDir, nombre, estado, mundo
       for (const [a, c] of [[-0.3, '#ff5a7a'], [0, '#6ec3ff'], [0.3, '#6fdc7a']]) { q.fillStyle = c; q.beginPath(); q.arc(cx2 + a * cw, cy2 - ch * 0.22, tam * 0.08, 0, 7); q.fill(); }
     }
     q.lineWidth = Math.max(2, t * 0.07); q.strokeStyle = '#000c'; q.strokeText(tx, px, ty);
+    if (placa === 4) { const neon = P.c1 || '#6ec3ff'; q.save(); q.shadowColor = neon; q.shadowBlur = tam * 0.9; q.fillStyle = neon; q.fillText(tx, px, ty); q.fillText(tx, px, ty); q.restore(); }      // de neón: el nombre brilla del color de la maquinita
     if (placa === 1) { const og = q.createLinearGradient(0, ty - tam, 0, ty); og.addColorStop(0, '#fff2b0'); og.addColorStop(0.45, '#ffd23f'); og.addColorStop(0.55, '#d99a1a'); og.addColorStop(1, '#ffe27a'); q.fillStyle = og; } else q.fillStyle = '#fff';
     q.fillText(tx, px, ty);
   }
@@ -2785,7 +2796,7 @@ function dibMaq(q, px, py, t, modelo, dir, vuela, perfDir, nombre, estado, mundo
 
 // Las mascotas de La Pinturería, dibujadas y vivas: un pájaro que aletea, un perro que corre, un dron que zumba, una mariposa y una luciérnaga.
 function dibMascota(q, k, mx, my, t, dir, r) {
-  q.save(); q.translate(mx, my + (k === 2 ? 0 : Math.sin(r * 3.1) * t * 0.07)); if (dir < 0) q.scale(-1, 1);
+  q.save(); q.translate(mx, my + (k === 2 || k === 6 ? 0 : Math.sin(r * 3.1) * t * 0.07)); if (dir < 0) q.scale(-1, 1);
   const u = t * 0.42, lw = Math.max(1, t * 0.02); q.lineWidth = lw; q.lineJoin = 'round';
   if (k === 1) {                                                        // pájaro naranja con panza clara
     const al = Math.sin(r * 16);
@@ -2817,6 +2828,24 @@ function dibMascota(q, k, mx, my, t, dir, r) {
     q.fillStyle = '#3a2a22'; q.beginPath(); q.ellipse(0, 0, u * 0.14, u * 0.08, 0, 0, 7); q.fill(); q.fillStyle = '#fff7b0'; q.beginPath(); q.ellipse(-u * 0.08, 0, u * 0.08, u * 0.06, 0, 0, 7); q.fill();
     q.globalAlpha = 0.5; q.fillStyle = '#ffffff'; q.beginPath(); q.ellipse(u * 0.02, -u * 0.1, u * 0.14, u * 0.05, -0.4 + Math.sin(r * 30) * 0.4, 0, 7); q.fill(); q.globalAlpha = 1;
     for (let k2 = 0; k2 < 3; k2++) { const f = (r * 0.7 + k2 * 0.33) % 1; q.globalAlpha = 0.8 * (1 - f); q.fillStyle = '#fff2a0'; q.beginPath(); q.arc(-u * (0.25 + f * 0.7), u * 0.1 + Math.sin(r * 5 + k2) * u * 0.15, u * 0.035, 0, 7); q.fill(); } q.globalAlpha = 1;
+  } else if (k === 6) {                                                 // gato gris que trota, con la cola en alto
+    const p = Math.sin(r * 12);
+    q.fillStyle = '#8f8f97'; q.beginPath(); q.roundRect(-u * 0.42, -u * 0.18, u * 0.74, u * 0.32, u * 0.16); q.fill(); q.strokeStyle = '#3f3f46'; q.stroke();
+    q.beginPath(); q.arc(u * 0.4, -u * 0.24, u * 0.2, 0, 7); q.fill(); q.stroke();                                                                        // cabeza
+    q.beginPath(); q.moveTo(u * 0.26, -u * 0.36); q.lineTo(u * 0.3, -u * 0.56); q.lineTo(u * 0.4, -u * 0.4); q.moveTo(u * 0.5, -u * 0.4); q.lineTo(u * 0.56, -u * 0.56); q.lineTo(u * 0.58, -u * 0.34); q.fill(); q.stroke();      // orejas
+    q.fillStyle = '#ffd9b0'; q.beginPath(); q.moveTo(u * 0.3, -u * 0.38); q.lineTo(u * 0.32, -u * 0.5); q.lineTo(u * 0.38, -u * 0.4); q.fill();
+    q.fillStyle = '#6fdc7a'; q.beginPath(); q.ellipse(u * 0.46, -u * 0.27, u * 0.045, u * 0.035, 0, 0, 7); q.fill(); q.fillStyle = '#1b120e'; q.fillRect(u * 0.455, -u * 0.3, u * 0.012, u * 0.06);       // ojo verde con pupila
+    q.fillStyle = '#ff9fb0'; q.beginPath(); q.arc(u * 0.6, -u * 0.2, u * 0.03, 0, 7); q.fill();
+    q.strokeStyle = '#3f3f46'; q.lineWidth = lw; q.beginPath(); for (const a of [-0.06, 0, 0.06]) { q.moveTo(u * 0.58, -u * 0.2 + a * u); q.lineTo(u * 0.74, -u * 0.22 + a * u * 2); } q.stroke();      // bigotes
+    q.lineWidth = lw * 2.2; q.lineCap = 'round'; for (const [bx, f] of [[-0.3, 1], [-0.12, -1], [0.12, 1], [0.3, -1]]) { q.beginPath(); q.moveTo(bx * u, u * 0.1); q.lineTo(bx * u + f * p * u * 0.1, u * 0.34); q.stroke(); }
+    q.beginPath(); q.moveTo(-u * 0.42, -u * 0.1); q.quadraticCurveTo(-u * 0.7, -u * 0.2, -u * 0.62, -u * 0.5 + p * u * 0.06); q.stroke();              // la cola en alto
+  } else if (k === 7) {                                                 // abeja: rayas, alas que zumban y aguijón
+    q.fillStyle = '#ffd23f'; q.beginPath(); q.ellipse(0, 0, u * 0.36, u * 0.22, 0, 0, 7); q.fill(); q.strokeStyle = '#3a2a22'; q.stroke();
+    q.save(); q.beginPath(); q.ellipse(0, 0, u * 0.36, u * 0.22, 0, 0, 7); q.clip(); q.fillStyle = '#2b2118'; for (const bx of [-0.2, 0, 0.2]) q.fillRect(bx * u - u * 0.05, -u * 0.3, u * 0.1, u * 0.6); q.restore();      // rayas
+    q.fillStyle = '#2b2118'; q.beginPath(); q.arc(u * 0.36, -u * 0.02, u * 0.13, 0, 7); q.fill(); q.beginPath(); q.moveTo(-u * 0.36, 0); q.lineTo(-u * 0.5, u * 0.03); q.lineTo(-u * 0.36, u * 0.06); q.fill();      // cabeza y aguijón
+    q.fillStyle = '#fff'; q.beginPath(); q.arc(u * 0.42, -u * 0.06, u * 0.045, 0, 7); q.fill(); q.fillStyle = '#1b120e'; q.beginPath(); q.arc(u * 0.44, -u * 0.06, u * 0.022, 0, 7); q.fill();
+    q.strokeStyle = '#3a2a22'; q.lineWidth = lw; q.beginPath(); q.moveTo(u * 0.4, -u * 0.14); q.lineTo(u * 0.48, -u * 0.3); q.moveTo(u * 0.3, -u * 0.14); q.lineTo(u * 0.3, -u * 0.32); q.stroke();      // antenas
+    const al = 0.3 + 0.7 * Math.abs(Math.sin(r * 60)); q.globalAlpha = 0.7; q.fillStyle = '#dff6ff'; for (const bx of [-0.08, 0.1]) { q.beginPath(); q.ellipse(bx * u, -u * 0.26 * al - u * 0.08, u * 0.16, u * 0.11 * al, -0.3, 0, 7); q.fill(); q.stroke(); } q.globalAlpha = 1;      // alas
   }
   q.restore();
 }
@@ -2831,6 +2860,8 @@ function dibujarEstelas(ox, oy, dt) {
     else if (e.tipo === 2) { g.fillStyle = e.col; g.beginPath(); g.roundRect(-r * 1.6, -r * 0.5, r * 3.2, r, r * 0.5); g.fill(); }       // cinta de arcoíris
     else if (e.tipo === 3) { g.rotate(e.rot); g.fillStyle = '#ffffff'; g.beginPath(); for (let a = 0; a < 5; a++) { const an = -1.571 + a * 1.2566, an2 = an + 0.628; g.lineTo(Math.cos(an) * r * 1.4, Math.sin(an) * r * 1.4); g.lineTo(Math.cos(an2) * r * 0.6, Math.sin(an2) * r * 0.6); } g.closePath(); g.fill(); g.strokeStyle = '#ffd23f'; g.lineWidth = Math.max(1, r * 0.2); g.stroke(); }       // estrella de cinco puntas
     else if (e.tipo === 4) { g.rotate(e.rot * 0.3); g.fillStyle = '#ff5e9a'; g.beginPath(); g.moveTo(0, r * 1.2); g.bezierCurveTo(-r * 1.9, -r * 0.3, -r * 0.9, -r * 1.6, 0, -r * 0.5); g.bezierCurveTo(r * 0.9, -r * 1.6, r * 1.9, -r * 0.3, 0, r * 1.2); g.fill(); g.fillStyle = 'rgba(255,255,255,.5)'; g.beginPath(); g.ellipse(-r * 0.6, -r * 0.6, r * 0.3, r * 0.18, -0.6, 0, 7); g.fill(); }       // corazón con brillo
+    else if (e.tipo === 6) { const fl = g.createRadialGradient(0, 0, 0, 0, 0, r * 1.6); fl.addColorStop(0, `rgba(255,245,170,${0.95 * k})`); fl.addColorStop(0.35, `rgba(255,150,40,${0.8 * k})`); fl.addColorStop(0.75, `rgba(220,50,20,${0.45 * k})`); fl.addColorStop(1, 'rgba(120,20,10,0)'); g.fillStyle = fl; g.beginPath(); g.ellipse(0, 0, r * 1.2, r * 1.7, 0, 0, 7); g.fill(); }       // fuego: llama que sube y se apaga
+    else if (e.tipo === 7) { g.rotate(e.rot); const pe = g.createLinearGradient(-r, 0, r, 0); pe.addColorStop(0, '#ffb7d5'); pe.addColorStop(1, '#ff6fa8'); g.fillStyle = pe; g.beginPath(); g.ellipse(0, 0, r * 1.3, r * 0.7, 0, 0, 7); g.fill(); g.fillStyle = 'rgba(255,255,255,.45)'; g.beginPath(); g.ellipse(-r * 0.4, -r * 0.2, r * 0.45, r * 0.2, 0, 0, 7); g.fill(); }       // pétalo que cae meciéndose
     else { g.strokeStyle = 'rgba(200,235,255,.9)'; g.lineWidth = Math.max(1, r * 0.18); g.beginPath(); g.arc(0, 0, r * 1.2, 0, 7); g.stroke(); g.fillStyle = 'rgba(200,235,255,.18)'; g.fill(); g.fillStyle = 'rgba(255,255,255,.85)'; g.beginPath(); g.ellipse(-r * 0.45, -r * 0.5, r * 0.32, r * 0.18, -0.7, 0, 7); g.fill(); }       // burbuja
     g.restore();
   }
@@ -3645,7 +3676,7 @@ function htmlPublico() {
   let h = soyCreador ? '<p class="nota">Mirar es libre: cualquiera con la liga para mirar entra sin pedir nada, y aquí solo se te avisa. Para <b>jugar</b> hay que pedirlo, y tú decides. Quien entra con la liga del mundo que tú mandas ya viene invitado. Quien ya jugó aquí conserva su permiso para siempre, hasta que tú se lo quites. «Quitar permiso» lo deja mirar y volver a pedirlo; «Sacar» lo saca al instante y no lo deja volver, ni a jugar ni a mirar.</p>'
     : '<p class="nota">Solo quien creó el mundo acepta solicitudes y saca jugadores.</p>';
   h += `<h4>🙋 Quieren jugar (${publico.sol.length})</h4>` + (publico.sol.length ? publico.sol.map((x, k) => fila('🙋', esc(x.n || 'Alguien'), 'Pidió entrar ' + hace(x.h), soyCreador ? `<button data-a="acepto" data-v="${x.sid}">${k === 0 ? '<kbd>Enter</kbd>' : ''}Aceptar</button><button class="s" data-a="rechazo" data-v="${x.sid}">Rechazar</button>` : '')).join('') : '<p class="nota">Nadie por ahora. Cuando alguien que está mirando pida jugar, te llega un aviso.</p>');
-  h += `<h4>⛏️ Jugando ahora (${jugando.length + 1})</h4>` + fila('⭐', esc(miNombre) + ' (tú)', 'Quien creó el mundo', '') + jugando.map((o) => fila('⛏️', `<span style="color:${colorTx(o.i)}">${esc(o.n)}</span>`, o.y !== undefined ? donde(o.y) : 'conectada', soyCreador ? `<button class="s" data-a="quitarP" data-v="${o.i}">Quitar permiso</button><button class="s mal" data-a="sacarJ" data-v="${o.i}">Sacar</button>` : '')).join('');
+  h += `<h4>⛏️ Jugando ahora (${jugando.length + 1})</h4>` + fila('⭐', esc(miNombre) + ' (tú)', 'Quien creó el mundo', '') + jugando.map((o) => fila('⛏️', `<span style="color:${colorTx(o.i)}">${esc(o.n)}</span>`, o.y !== undefined ? donde(o.y) : 'conectada', `<button class="s" data-a="regalar" data-v="${o.i}" title="Regalarle un nivel de La Pinturería">🎁</button>` + (soyCreador ? `<button class="s" data-a="quitarP" data-v="${o.i}">Quitar permiso</button><button class="s mal" data-a="sacarJ" data-v="${o.i}">Sacar</button>` : ''))).join('');
   h += `<h4>👁 Mirando (${publico.nm || mirones})</h4>` + (publico.mira.length ? publico.mira.map((x) => fila('👁', esc(x.n || 'Alguien'), x.n ? 'Tiene maquinita' : 'Sin maquinita', soyCreador ? `<button class="s mal" data-a="sacarM" data-v="${x.sid}">Sacar</button>` : '')).join('') : `<p class="nota">${mirones ? mirones + ' mirando.' : 'Nadie está mirando ahora.'}</p>`);
   // Quién trajo a quién: el árbol de invitaciones de este mundo (lo que hace que un mundo crezca).
   const todos = [{ i: miI, n: miNombre, de: miDe }, ...[...otros.values()]], conDe = todos.filter((o) => o.de >= 0), trajo = (i) => conDe.filter((o) => o.de === i).length;
@@ -3725,8 +3756,15 @@ $('#bFoto').addEventListener('click', (e) => { audio(); e.currentTarget.blur(); 
 // Mina se juega completo gratis; aquí solo se vende cómo se ve la maquinita (docs/ADN_Monetizacion_Mina). Los precios vienen
 // del servidor y son iguales para todos; probarse todo es gratis; subir de nivel cuesta la diferencia. Las listas de abajo son
 // copia de src/tienda.js: el servidor valida, esto solo dibuja.
-const TC = { COLORES: ['#ffd23f', '#ff6b5a', '#6ec3ff', '#6fdc7a', '#c05cff', '#ff9f40', '#f3e6d8', '#ff7ac8', '#ffffff', '#1b1b1b', '#e0483a', '#2f8a3a', '#2a6fa8', '#7426a8', '#b05e12', '#9a8774', '#00c2a8', '#f5e663', '#ff3d7f', '#3d5afe', '#8bc34a', '#795548', '#607d8b', '#c0a16b'], CALCAS: ['⭐', '❤️', '⚡', '🔥', '🌈', '🌙', '☀️', '🌵', '🌸', '🍀', '🍉', '🌶️', '🦅', '🐺', '🦂', '🐢', '🐝', '🦋', '🐉', '🦈', '⚓', '🎸', '🎵', '🎲', '⚽', '🏀', '🏁', '🚀', '💎', '👑', '💀', '🤖', '👾', '🎯', '🧭', '⛏️', '🔱', '✝️', '☮️', '♾️', '🇲🇽', '🏳️‍🌈', '🍕', '🌮', '🥑', '🐾', '🧿', '✨'], LUCES: ['#fff3b0', '#ff4d4d', '#4dff88', '#4da6ff', '#ff4df2', '#ffd23f', '#ffffff', '#9d4dff'], ESTELAS: ['Ninguna', 'Chispas doradas', 'Arcoíris', 'Estrellas', 'Corazones', 'Burbujas'], BOCINAS: ['Pip-pip', 'Mariachi', 'Tren', 'Barco', 'Risa', 'Campanitas'], PLACAS: ['Normal', 'Dorada', 'Con corona', 'Con marco'], CARROS: ['De fábrica', 'El Escarabajo', 'La Locomotora', 'El Submarino'], MASCOTAS: ['Ninguna', 'Pájaro', 'Perro', 'Dron', 'Mariposa', 'Luciérnaga'], MASC_EMOJI: ['', '🐦', '🐕', '🛸', '🦋', ''] };
-const NIVEL_CLAVE = { c1: 1, c2: 2, c3: 2, calca: 3, luz: 4, estela: 5, bocina: 6, placa: 6, carro: 7, mascota: 8 };
+const TC = { COLORES: ['#ffd23f', '#ff6b5a', '#6ec3ff', '#6fdc7a', '#c05cff', '#ff9f40', '#f3e6d8', '#ff7ac8', '#ffffff', '#1b1b1b', '#e0483a', '#2f8a3a', '#2a6fa8', '#7426a8', '#b05e12', '#9a8774', '#00c2a8', '#f5e663', '#ff3d7f', '#3d5afe', '#8bc34a', '#795548', '#607d8b', '#c0a16b'], CALCAS: ['', '⭐', '❤️', '⚡', '🔥', '🌈', '🌙', '☀️', '🌵', '🌸', '🍀', '🍉', '🌶️', '🦅', '🐺', '🦂', '🐢', '🐝', '🦋', '🐉', '🦈', '⚓', '🎸', '🎵', '🎲', '⚽', '🏀', '🏁', '🚀', '💎', '👑', '💀', '🤖', '👾', '🎯', '🧭', '⛏️', '🔱', '✝️', '☮️', '♾️', '🇲🇽', '🏳️‍🌈', '🍕', '🌮', '🥑', '🐾', '🧿', '✨'], LUCES: ['#fff3b0', '#ff4d4d', '#4dff88', '#4da6ff', '#ff4df2', '#ffd23f', '#ffffff', '#9d4dff'], ESTELAS: ['Ninguna', 'Chispas doradas', 'Arcoíris', 'Estrellas', 'Corazones', 'Burbujas', 'Fuego', 'Pétalos'], BOCINAS: ['Pip-pip', 'Mariachi', 'Tren', 'Barco', 'Risa', 'Campanitas', 'Cumbia', 'Corneta'], PLACAS: ['Normal', 'Dorada', 'Con corona', 'Con marco', 'Neón'], CARROS: ['De fábrica', 'El Escarabajo', 'La Locomotora', 'El Submarino', 'El Tanque'], MASCOTAS: ['Ninguna', 'Pájaro', 'Perro', 'Dron', 'Mariposa', 'Luciérnaga', 'Gato', 'Abeja'], MASC_EMOJI: ['', '🐦', '🐕', '🛸', '🦋', '', '🐱', '🐝'],
+  TITULOS: ['', 'Don', 'Doña', 'Capitán', 'Capitana', 'Ing.', 'Dr.', 'Dra.', 'Maestro', 'Maestra', 'Jefe', 'Jefa', 'Minero', 'Minera', 'Leyenda'],
+  CALCAS_TEMPORADA: [{ n: 'Día de Muertos', de: '10-15', a: '11-03', l: ['🎃', '💀', '🕯️', '🌼', '🪦'] }, { n: 'Navidad', de: '12-01', a: '01-06', l: ['🎄', '🎅', '⛄', '🎁', '🔔'] }, { n: 'Amor y amistad', de: '02-01', a: '02-15', l: ['💘', '🌹', '💝', '🧸'] }, { n: 'Fiestas patrias', de: '09-01', a: '09-30', l: ['🎉', '🪅', '🎺', '🌮'] }, { n: 'Primavera', de: '03-15', a: '04-30', l: ['🌷', '🐣', '🌈', '🐞'] }, { n: 'Verano', de: '07-01', a: '08-31', l: ['🏖️', '🍦', '☀️', '🌊'] }] };
+TC.CALCAS_TODAS = TC.CALCAS.concat(...TC.CALCAS_TEMPORADA.map((x) => x.l));
+const enFechas = (md, de, a) => (de <= a ? md >= de && md <= a : md >= de || md <= a);
+// Las calcomanías de temporada que se pueden poner hoy (hora de Torreón), con el índice que les toca en el catálogo completo.
+function temporadasDeHoy() { const md = horaTorreon().md; let k = TC.CALCAS.length; const r = []; for (const t of TC.CALCAS_TEMPORADA) { if (enFechas(md, t.de, t.a)) r.push({ n: t.n, a: t.a, desde: k, l: t.l }); k += t.l.length; } return r; }
+const NIVEL_CLAVE = { c1: 1, c2: 2, c3: 2, calca: 3, luz: 4, estela: 5, bocina: 6, placa: 6, titulo: 6, carro: 7, mascota: 8 };
+const GRATIS = 2;      // los colores (niveles 1 y 2) son de todos
 let miPinta = {}, miMe = 0, miDe = -1, edenPiedras = [], tiendaAnimT = 0, tBocina = 0, estelaN = 0;
 let tienda = { niveles: [], mio: { nivel: 0, mecenas: 0, pinta: {} }, fondo: 0, pagos: 0, cargada: 0, cargando: 0, nivelVista: 0, prueba: null, regaloA: -1, mecenasMonto: 99, fondoN: 3, mecenasMin: 99, gratitudMin: 33, gratitudHora: '15:33', fondoPrecio: 19, tope: 5000, error: '', momento: null, cumple: '', gratitud: 0, gracias: 0, referidoPremio: 333, usarSaldo: 1 };
 // El ánimo con el que estás jugando, para el momento del precio: cuánto cavaste en los últimos tres minutos y cuántos golpes
@@ -3741,7 +3779,7 @@ const cumpleTexto = (md) => md ? +md.slice(3) + ' de ' + MESES[+md.slice(0, 2) -
 function cumpleCerca(md) { if (!md) return 9; const t = horaTorreon(), hoy = Date.UTC(t.y, +t.md.slice(0, 2) - 1, +t.md.slice(3)), c = Date.UTC(t.y, +md.slice(0, 2) - 1, +md.slice(3)), d = Math.round((hoy - c) / 86400000); return Math.abs(d) <= 3 ? d : Math.abs(d - 365) <= 3 ? d - 365 : Math.abs(d + 365) <= 3 ? d + 365 : 9; }
 const pintaDe = (i) => (i === miI ? miPinta : (otros.get(i)?.p || null));
 const pintaVista = () => (menu === 'pin' && tienda.prueba ? tienda.prueba : miPinta);
-const nivelMio = () => tienda.mio.nivel | 0;
+const nivelMio = () => Math.max(GRATIS, tienda.mio.nivel | 0), nivelPagado = () => tienda.mio.nivel | 0;
 const pesos = (n) => '$' + Math.round(n).toLocaleString('es-MX');
 const precioBonito = (x) => Math.max(1, x < 100 ? Math.round(x) : x < 1000 ? Math.round(x / 5) * 5 : Math.round(x / 10) * 10);      // igual que en el servidor
 async function cargarTienda() {
@@ -3755,19 +3793,19 @@ async function cargarTienda() {
   if (menu === 'pin') pintarMenu();
 }
 // La carpeta en la que abre: la del nivel que ya es tuyo; si no tienes ninguno, la del rango que elegiste.
-function nivelPorRango() { if (nivelMio()) return nivelMio(); let n = 1; for (const x of tienda.niveles) if (x.precio <= (op.rango || 0)) n = x.n; return n; }
+// La carpeta en la que abre: tu color si todavía no te has pintado; si no, el primer nivel que no es tuyo.
+function nivelPorRango() { return !miPinta.c1 && !nivelPagado() ? 1 : Math.min(10, nivelMio() + 1); }
 function htmlTienda() {
   const L = tienda.niveles, mio = nivelMio();
   let h = cab('🎨 La Pinturería') + '<div class="cuerpo tienda">';
-  h += '<div class="promesa"><b>Mina se juega completo gratis.</b> Nada de aquí hace falta para bajar, ganar ni terminar. Esto es solo para que tu maquinita se vea como tú. Pruébate lo que quieras: probar no cuesta.</div>';
+  h += '<div class="promesa"><b>Mina se juega completo gratis, y pintar tu maquinita de tus colores también.</b> Nada de aquí hace falta para bajar, ganar ni terminar. Lo demás es solo para que se vea como tú. Pruébate lo que quieras: probar no cuesta.</div>';
   if (tienda.error) h += `<p class="nota">${tienda.error}</p>`;
   if (!tienda.cargada) return h + '<p class="nota">Abriendo la tienda…</p></div>';
   if (tienda.mio.saldo > 0) h += `<div class="promesa" style="border-color:#ffd23f88">💛 <b>Tienes ${pesos(tienda.mio.saldo)} de saldo</b> por tus referidos. Paga niveles con él, para ti o de regalo.${!cuenta ? ' Entra con tu cuenta para usarlo.' : ''} <a href="#" data-a="menu" data-v="inv">Ver mis referidos</a>.</div>`;
-  if (op.rango === undefined) h += `<h4>¿Qué rango te acomoda?</h4><p class="nota">Solo para abrir la tienda en tu carpeta. Lo cambias cuando quieras, y los precios son los mismos para todos.</p><div class="chips">${[[0, 'Solo mirar 👀'], [79, 'Hasta $79'], [599, 'Hasta $599'], [1999, 'Hasta $1,999'], [99999, 'El que haga falta']].map(([v, t]) => `<button class="s" data-a="tRango" data-v="${v}">${t}</button>`).join('')}</div>`;
   const nv = tienda.nivelVista || nivelPorRango(); tienda.nivelVista = nv; const N = L[nv - 1], tuyo = nv <= mio;
-  h += `<div class="escalera">${L.map((x) => `<button data-a="tNivel" data-v="${x.n}" class="${x.n === nv ? 'on' : ''}${x.n <= mio ? ' mio' : ''}" title="${esc(x.nombre)}"><b>${x.n}</b><small>${pesos(x.precio)}</small></button>`).join('')}</div>`;
+  h += `<div class="escalera">${L.map((x) => `<button data-a="tNivel" data-v="${x.n}" class="${x.n === nv ? 'on' : ''}${x.n <= mio ? ' mio' : ''}" title="${esc(x.nombre)}"><b>${x.n}</b><small>${x.precio ? pesos(x.precio) : 'Gratis'}</small></button>`).join('')}</div>`;
   h += `<div class="carpeta"><div><div class="vista"><canvas id="pintaMaq" width="420" height="340"></canvas><small>${esc(miNombre)}</small></div>${tuyo ? '<p class="nota">Lo que cambies aquí se guarda al momento y lo ven todos.</p>' : '<p class="nota">Lo que cambies aquí se ve, pero no se guarda hasta que el nivel sea tuyo.</p>'}</div><div>`;
-  h += `<h4>Nivel ${N.n} · ${esc(N.nombre)} · ${pesos(N.precio)}${tuyo ? ' · <span style="color:var(--ok)">tuyo</span>' : ''}</h4><p class="nota">${esc(N.que)}${N.n > 1 ? ' Incluye todo lo de los niveles anteriores.' : ''}</p>`;
+  h += `<h4>Nivel ${N.n} · ${esc(N.nombre)} · ${N.precio ? pesos(N.precio) : 'Gratis'}${tuyo ? ' · <span style="color:var(--ok)">' + (N.precio ? 'tuyo' : 'de todos') + '</span>' : ''}</h4><p class="nota">${esc(N.que)}${N.n > GRATIS + 1 ? ' Incluye todo lo de los niveles anteriores.' : ''}</p>`;
   h += editorNivel(nv) + (tuyo ? '' : htmlPago(nv)) + '</div></div>';
   const cerca = cumpleCerca(tienda.cumple), hoyCumple = cerca === 0, gracias = tienda.gracias || cerca !== 9;
   if (gracias) h += `<div class="aparte gracias"><h4>🎂 ${hoyCumple ? '¡Feliz cumpleaños!' : 'Gracias de cumpleaños'}</h4><p class="nota">${hoyCumple ? 'Hoy tu maquinita trae gorrito de fiesta. ' : ''}Si Mina te ha dado buenos ratos, estos días puedes darle las gracias a quien lo hace: lo que tú quieras, desde ${pesos(tienda.gratitudMin)}. No cambia nada en el juego y no hace ninguna falta. Es solo gratitud, y llega a quien hace Mina, en CapitalTorreon.${tienda.gratitud ? ' Ya diste las gracias. De corazón.' : ''}</p>
@@ -3775,18 +3813,17 @@ function htmlTienda() {
     <div class="fila"><div class="t"><label class="op"><span>O la cantidad que quieras (pesos)</span><input id="tGra" type="number" min="${tienda.gratitudMin}" step="1" value="${Math.max(tienda.gratitudMin, tienda.mecenasMonto)}" inputmode="numeric"></label></div><button class="s" data-a="tGraciasDar">🎂 Dar las gracias</button></div></div>`;
   h += `<div class="aparte"><h4>✦ Mecenas</h4><p class="nota">Lo que quieras dar, desde ${pesos(tienda.mecenasMin)}. No da nada más que un ✦ junto a tu nombre y nuestras gracias: es para quien quiere que Mina siga existiendo.${tienda.mio.mecenas ? ` Ya diste ${pesos(tienda.mio.mecenas)}. Gracias.` : ''}</p>
     <div class="fila"><div class="t"><label class="op"><span>Cantidad (pesos)</span><input id="tMec" type="number" min="${tienda.mecenasMin}" step="1" value="${tienda.mecenasMonto}" inputmode="numeric"></label></div><button class="s" data-a="tMecenas">✦ Dar</button></div>
-    <h4>🎁 Fondo común</h4><p class="nota">Paga la primera pintura (${pesos(tienda.fondoPrecio)}) de las siguientes maquinitas nuevas que lleguen a Mina. Quien llega la recibe con un «alguien pagó tu primera pintura: hay para todos».${tienda.fondo ? ` Ahora mismo hay <b>${tienda.fondo}</b> esperando.` : ''}</p>
-    <div class="fila"><div class="t"><label class="op"><span>Maquinitas</span><input id="tFondo" type="number" min="1" max="200" step="1" value="${tienda.fondoN}" inputmode="numeric"></label></div><button class="s" data-a="tFondo">🎁 Pagar adelante</button></div>
+    <h4>🎁 Regalar</h4><p class="nota">Cualquier nivel se puede regalar a quien esté jugando en este mundo: elige «¿Es un regalo?» en la carpeta del nivel, o el botón 🎁 junto a su nombre en el panel de la gente (tecla J). Si ya tiene un nivel, se cobra solo la diferencia.</p>
     <h4>🎂 Tu cumpleaños</h4><p class="nota">${tienda.cumple ? `Lo tenemos: <b>${cumpleTexto(tienda.cumple)}</b>. Ese día tu maquinita trae gorrito de fiesta y el precio de la tienda baja 15 %${cuenta ? ', y a las 3:33 de la tarde (hora de Torreón) te llega un correo para dar las gracias, si quieres' : ''}.` : `Día y mes, nada más. Ese día tu maquinita trae gorrito de fiesta, la tienda baja 15 %${cuenta ? ', y a las 3:33 de la tarde (hora de Torreón) te llega un correo cortito' : ''}. Lo quitas cuando quieras.`}</p>
     <div class="fila"><div class="t" style="display:flex;gap:6px;flex-wrap:wrap"><select id="tCumD">${Array.from({ length: 31 }, (_, i) => `<option value="${i + 1}" ${tienda.cumple && +tienda.cumple.slice(3) === i + 1 ? 'selected' : ''}>${i + 1}</option>`).join('')}</select><select id="tCumM">${MESES.map((m, i) => `<option value="${i + 1}" ${tienda.cumple && +tienda.cumple.slice(0, 2) === i + 1 ? 'selected' : ''}>${m}</option>`).join('')}</select></div><button class="s" data-a="tCumple">${tienda.cumple ? 'Cambiar' : 'Guardar'}</button>${tienda.cumple ? '<button class="s" data-a="tCumpleQuitar">Quitar</button>' : ''}</div>
-    <h4>Cómo se sostiene Mina</h4><p class="nota">Sin anuncios, sin cajas sorpresa, sin prisas inventadas, sin ventajas compradas. Mismo precio para todos; subir de nivel cuesta solo la diferencia; tope de ${pesos(tienda.tope)} por maquinita cada 30 días; devoluciones sin preguntas durante 15 días (contacto@ingenieriadigital.mx). Si un día esto deja de ser cierto, está mal y se quita. <a href="#" data-a="tManifiesto">Leer el manifiesto</a>.</p></div>`;
+    <h4>Cómo se sostiene Mina</h4><p class="nota">Los colores son gratis para todos. Lo demás se vende sin anuncios, sin cajas sorpresa, sin prisas inventadas, sin ventajas compradas. Mismo precio de lista para todos; subir de nivel cuesta solo la diferencia; tope de ${pesos(tienda.tope)} por maquinita cada 30 días; devoluciones sin preguntas durante 15 días (contacto@ingenieriadigital.mx). Si un día esto deja de ser cierto, está mal y se quita. <a href="#" data-a="tManifiesto">Leer el manifiesto</a>.</p></div>`;
   return h + '</div>';
 }
 function htmlPago(nv) {
   const L = tienda.niveles, mio = nivelMio(), precio = L[nv - 1].precio - (mio ? L[mio - 1].precio : 0), vivos = [...otros.values()].filter((o) => o.on);
   const o = tienda.oferta, M = tienda.momento, propio = tienda.regaloA < 0, desc = o && o.desc > 0 && propio ? o.desc : 0, ajuste = M && propio ? M.ajuste : 0;
   const tuPrecio = Math.min(precio, Math.max(1, precioBonito(precio * (1 - desc) * (1 - ajuste)))), menos = Math.round((1 - tuPrecio / precio) * 100);
-  let h = `<div class="pago"><p class="grande">${pesos(tuPrecio)} <small style="font-size:.5em;color:var(--su)">pesos${mio ? ' · solo la diferencia desde tu nivel ' + mio : ''}</small></p>`;
+  let h = `<div class="pago"><p class="grande">${pesos(tuPrecio)} <small style="font-size:.5em;color:var(--su)">pesos${mio > GRATIS ? ' · solo la diferencia desde tu nivel ' + mio : ''}</small></p>`;
   if (tuPrecio < precio) {
     const partes = (M && propio ? M.partes : []).map(([n, f]) => `${esc(n)} −${Math.round(f * 100)} %`);
     h += `<p class="nota"><s>${pesos(precio)} de lista</s> · <b style="display:inline;color:var(--ok)">${menos} % menos, tu precio</b>` +
@@ -3809,12 +3846,13 @@ function editorNivel(nv) {
   const sw = (k, lista, actual, nada) => `<div class="muestras">${lista.map((c) => `<button class="sw${actual === c ? ' on' : ''}" style="background:${c}" data-a="tPon" data-k="${k}" data-v="${c}" title="${c}"></button>`).join('')}<button class="s" data-a="tPon" data-k="${k}" data-v="">${nada}</button></div>`;
   const ops = (k, lista, actual) => `<div class="ops">${lista.map((n, i) => `<button class="${(actual | 0) === i ? 'on' : ''}" data-a="tPon" data-k="${k}" data-v="${i}">${n}</button>`).join('')}</div>`;
   switch (nv) {
-    case 1: return '<h4>Color del cuerpo</h4>' + sw('c1', TC.COLORES, P.c1, 'El de fábrica');
-    case 2: return '<h4>Color de la cabina</h4>' + sw('c2', TC.COLORES, P.c2, 'El de fábrica') + '<h4>Color de las orugas</h4>' + sw('c3', TC.COLORES, P.c3, 'El de fábrica');
-    case 3: return `<h4>Calcomanía</h4><div class="muestras calcas">${TC.CALCAS.map((e, i) => `<button class="${P.calca === i ? 'on' : ''}" data-a="tPon" data-k="calca" data-v="${i}">${e}</button>`).join('')}<button class="s" data-a="tPon" data-k="calca" data-v="">Ninguna</button></div>`;
+    case 1: return '<h4>Color del cuerpo · gratis</h4>' + sw('c1', TC.COLORES, P.c1, 'El de fábrica') + '<p class="nota">Se guarda al momento y lo ven todos. Sin cuenta, sin pagar, sin nada.</p>';
+    case 2: return '<h4>Color de la cabina · gratis</h4>' + sw('c2', TC.COLORES, P.c2, 'El de fábrica') + '<h4>Color de las orugas · gratis</h4>' + sw('c3', TC.COLORES, P.c3, 'El de fábrica');
+    case 3: { const temp = temporadasDeHoy(); return `<h4>Calcomanía</h4><div class="muestras calcas">${TC.CALCAS.map((e, i) => (i ? `<button class="${P.calca === i ? 'on' : ''}" data-a="tPon" data-k="calca" data-v="${i}">${e}</button>` : '')).join('')}<button class="s" data-a="tPon" data-k="calca" data-v="">Ninguna</button></div>` +
+      (temp.length ? temp.map((t) => `<h4>🗓️ De temporada · ${esc(t.n)}</h4><p class="nota">Solo hasta el ${+t.a.slice(3)} de ${MESES[+t.a.slice(0, 2) - 1]}; la que te pongas se queda de recuerdo.</p><div class="muestras calcas">${t.l.map((e, j) => `<button class="${P.calca === t.desde + j ? 'on' : ''}" data-a="tPon" data-k="calca" data-v="${t.desde + j}">${e}</button>`).join('')}</div>`).join('') : '<p class="nota">🗓️ Las calcomanías de temporada llegan solas en sus fechas: Día de Muertos, Navidad, amor y amistad, primavera, verano y fiestas patrias.</p>'); }
     case 4: return '<h4>Luz del faro y luz de piso</h4>' + sw('luz', TC.LUCES, P.luz, 'Sin luz') + '<p class="nota">Se nota de verdad bajo tierra, en lo oscuro.</p>';
     case 5: return '<h4>Estela al volar</h4>' + ops('estela', TC.ESTELAS, P.estela);
-    case 6: return '<h4>Claxon (tecla B)</h4>' + ops('bocina', TC.BOCINAS, P.bocina) + '<p><button class="s" data-a="tProbarBocina">🔊 Oír el claxon</button></p><h4>Placa con tu nombre</h4>' + ops('placa', TC.PLACAS, P.placa);
+    case 6: return '<h4>Claxon (tecla B)</h4>' + ops('bocina', TC.BOCINAS, P.bocina) + '<p><button class="s" data-a="tProbarBocina">🔊 Oír el claxon</button></p><h4>Placa con tu nombre</h4>' + ops('placa', TC.PLACAS, P.placa) + '<h4>Título antes del nombre</h4>' + ops('titulo', TC.TITULOS.map((x) => x || 'Ninguno'), P.titulo);
     case 7: return '<h4>Carrocería</h4>' + ops('carro', TC.CARROS, P.carro);
     case 8: return '<h4>Mascota</h4>' + ops('mascota', TC.MASCOTAS, P.mascota) + '<p class="nota">Te sigue a todos lados. No hace nada más que acompañarte.</p>';
     case 9: return '<p>Tu nombre queda grabado en una piedra del Jardín del Fondo, en cada mundo que termines con esta maquinita. Lo ve todo el que llegue al fondo, para siempre.</p>' + (nv <= nivelMio() ? '<p class="nota">Ya es tuyo: en el próximo mundo que termines, ahí estará tu piedra.</p>' : '');
@@ -3824,7 +3862,7 @@ function editorNivel(nv) {
 }
 // Cambiar algo: si el nivel es tuyo se guarda y lo ven todos; si no, solo se prueba en la vista.
 function ponerPinta(k, v) {
-  const num = ['calca', 'estela', 'bocina', 'placa', 'carro', 'mascota'].includes(k), val = v === '' ? undefined : num ? +v : v;
+  const num = ['calca', 'estela', 'bocina', 'placa', 'titulo', 'carro', 'mascota'].includes(k), val = v === '' ? undefined : num ? +v : v;
   if (NIVEL_CLAVE[k] <= nivelMio()) {
     const p = { ...(tienda.prueba || miPinta) }; if (val === undefined) delete p[k]; else p[k] = val;
     for (const c of Object.keys(p)) if (NIVEL_CLAVE[c] > nivelMio()) delete p[c];      // lo que se estaba probando y no es tuyo se queda fuera
@@ -3898,18 +3936,18 @@ function invitarPintureria() {
   const n = op.tiendaInv | 0;
   if (n >= 3 || (S.seg || 0) < [1200, 10800, 36000][n] || Date.now() - (op.tiendaInvT || 0) < 7 * 86400000) return;
   op.tiendaInv = n + 1; op.tiendaInvT = Date.now(); escribir('mina_op', op);
-  tarjeta('🎨 Tu maquinita se puede pintar', 'En La Pinturería (la camioneta rosa, a la izquierda de la Gasolinera) o en Menú → Mundo. Nada de eso hace falta para jugar: es solo para que se vea como tú.', 'msj', 12000);
+  tarjeta('🎨 Píntala de tus colores, gratis', 'En La Pinturería (la camioneta rosa, a la izquierda de la Gasolinera) o en Menú → Mundo: cuerpo, cabina y orugas del color que quieras, sin pagar nada. Lo demás es solo para que se vea más tú.', 'msj', 12000);
 }
 // La estela: una chispita por cuadro (de dos) detrás de quien vuela con estela.
 function estela(P, x, y, mueve) {
   if (!P || !P.estela || !mueve || !op.part || (++estelaN & 1) || huellas.length > 240) return;
   const tipo = P.estela, az = (a) => (Math.random() - 0.5) * a;
-  huellas.push({ x: x + az(0.5), y: y + 0.3 + az(0.3), vx: az(0.6), vy: tipo === 5 ? -0.9 - Math.random() * 0.6 : 0.3 + az(0.5), t0: 0, t: 0, rot: Math.random() * 6.3, giro: az(5), r: tipo === 2 ? 0.1 : 0.09 + Math.random() * 0.07, tipo, col: `hsl(${(reloj * 240) % 360},95%,62%)` });
-  const e = huellas[huellas.length - 1]; e.t0 = e.t = tipo === 5 ? 1.6 : 0.9 + Math.random() * 0.5;
+  huellas.push({ x: x + az(0.5), y: y + 0.3 + az(0.3), vx: az(tipo === 7 ? 1.4 : 0.6), vy: tipo === 5 ? -0.9 - Math.random() * 0.6 : tipo === 6 ? -1.4 - Math.random() * 0.8 : tipo === 7 ? 0.5 + Math.random() * 0.4 : 0.3 + az(0.5), t0: 0, t: 0, rot: Math.random() * 6.3, giro: az(tipo === 7 ? 8 : 5), r: tipo === 2 ? 0.1 : tipo === 6 ? 0.12 + Math.random() * 0.1 : 0.09 + Math.random() * 0.07, tipo, col: `hsl(${(reloj * 240) % 360},95%,62%)` });
+  const e = huellas[huellas.length - 1]; e.t0 = e.t = tipo === 5 ? 1.6 : tipo === 6 ? 0.55 + Math.random() * 0.3 : tipo === 7 ? 1.4 + Math.random() * 0.6 : 0.9 + Math.random() * 0.5;
 }
 // El claxon (tecla B): todos tienen el pip-pip; con el nivel 6 se elige la melodía. Lo oyen los de cerca.
-const CLAXON = [[[880, 0.08, 0], [880, 0.08, 0.14]], [[523, 0.12, 0], [659, 0.12, 0.12], [784, 0.12, 0.24], [1047, 0.3, 0.36]], [[220, 0.6, 0], [277, 0.6, 0], [330, 0.6, 0]], [[98, 1.1, 0], [123, 1.1, 0]], [[784, 0.09, 0], [659, 0.09, 0.1], [523, 0.09, 0.2], [440, 0.14, 0.3], [784, 0.09, 0.5], [659, 0.09, 0.6], [523, 0.09, 0.7], [440, 0.14, 0.8]], [[1319, 0.5, 0], [1568, 0.5, 0.15], [2093, 0.8, 0.3]]];
-function claxon(b, vol = 1, bus = 'avisos') { for (const [f, d, c] of CLAXON[b] || CLAXON[0]) { if (b === 5) campana(f, d, 0.08 * vol, bus, c); else tono(f, d, b === 2 || b === 3 ? 'sawtooth' : 'square', (b === 3 ? 0.12 : 0.07) * vol, 0, c, bus); } }
+const CLAXON = [[[880, 0.08, 0], [880, 0.08, 0.14]], [[523, 0.12, 0], [659, 0.12, 0.12], [784, 0.12, 0.24], [1047, 0.3, 0.36]], [[220, 0.6, 0], [277, 0.6, 0], [330, 0.6, 0]], [[98, 1.1, 0], [123, 1.1, 0]], [[784, 0.09, 0], [659, 0.09, 0.1], [523, 0.09, 0.2], [440, 0.14, 0.3], [784, 0.09, 0.5], [659, 0.09, 0.6], [523, 0.09, 0.7], [440, 0.14, 0.8]], [[1319, 0.5, 0], [1568, 0.5, 0.15], [2093, 0.8, 0.3]], [[523, 0.1, 0], [523, 0.1, 0.12], [659, 0.1, 0.24], [784, 0.1, 0.36], [659, 0.1, 0.48], [523, 0.1, 0.6], [784, 0.22, 0.72]], [[392, 0.14, 0], [523, 0.14, 0.14], [659, 0.14, 0.28], [784, 0.45, 0.42]]];
+function claxon(b, vol = 1, bus = 'avisos') { for (const [f, d, c] of CLAXON[b] || CLAXON[0]) { if (b === 5) campana(f, d, 0.08 * vol, bus, c); else tono(f, d, b === 2 || b === 3 || b === 7 ? 'sawtooth' : 'square', (b === 3 || b === 7 ? 0.12 : 0.07) * vol, 0, c, bus); } }
 function tocarClaxon() { const t = performance.now(); if (t - tBocina < 900 || !listo || soloVer) return; tBocina = t; const b = nivelMio() >= 6 ? (miPinta.bocina | 0) : 0; claxon(b); if (conectado) enviar({ t: 'bocina', b }); }
 
 /* ════════ Manifiesto ════════ RLR */
@@ -3922,7 +3960,7 @@ const MANIFIESTO = `<article class="manifiesto">
   <p>Ojalá sea un regalo para ti. Disfrútalo sin prisa, y si te gusta, compártelo con alguien que quieras: se disfruta más acompañado.</p>
   <p>Y si llegas al final, que te deje un buen mensaje y un buen sabor de boca.</p>
   <h3>Cómo se sostiene Mina</h3>
-  <p>Mina se juega completo gratis, para siempre. Lo único que se vende es cómo se ve tu maquinita, en La Pinturería: colores, calcomanías, luces, una estela, un claxon, una mascota, tu nombre en una piedra del Jardín. Nada de eso te hace bajar más rápido ni ganar más. Sin anuncios, sin cajas sorpresa, sin prisas inventadas. Mismo precio para todos, y subir de nivel cuesta solo la diferencia. Si un día esto deja de ser cierto, está mal y se quita.</p>
+  <p>Mina se juega completo gratis, para siempre, y pintar tu maquinita de tus colores también es gratis, para todos. Lo único que se vende es lo demás de La Pinturería: calcomanías, luces, una estela, un claxon y un título, una carrocería, una mascota, tu nombre en una piedra del Jardín. Nada de eso te hace bajar más rápido ni ganar más. Sin anuncios, sin cajas sorpresa, sin prisas inventadas. Mismo precio para todos, y subir de nivel cuesta solo la diferencia. Si un día esto deja de ser cierto, está mal y se quita.</p>
   <p class="firma">Con mucho cariño,<br><b>Ing. <a href="https://ricardolopezreyero.com" target="_blank" rel="noopener">Ricardo López Reyero</a></b><br><small>Torreón, Coahuila, México · 2 de octubre de 2026 · 8:12 p. m. · 21 °C</small></p>
 </article>`;
 
@@ -4864,7 +4902,7 @@ const acciones = {
   tCumple() { const d = +($('#tCumD')?.value || 0), m = +($('#tCumM')?.value || 0); if (!(d >= 1 && d <= 31 && m >= 1 && m <= 12) || d > [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][m - 1]) { aviso('Esa fecha no existe.'); return 'no'; } ponerCumple(String(m).padStart(2, '0') + '-' + String(d).padStart(2, '0')); return 'no'; },
   tCumpleQuitar() { ponerCumple(''); return 'no'; },
   tMecenas() { const m = Math.floor(+($('#tMec')?.value || 0)); if (!(m >= tienda.mecenasMin)) { aviso('Desde ' + pesos(tienda.mecenasMin) + '.'); return 'no'; } tienda.mecenasMonto = m; pagar({ tipo: 'mecenas', monto: m }); return 'no'; },
-  tFondo() { const n = Math.floor(+($('#tFondo')?.value || 0)); if (!(n >= 1 && n <= 200)) { aviso('Entre 1 y 200 maquinitas.'); return 'no'; } tienda.fondoN = n; pagar({ tipo: 'fondo', cantidad: n }); return 'no'; },
+  regalar(v) { const o = otros.get(+v); if (!o) return 'no'; tienda.regaloA = +v; tienda.nivelVista = Math.min(10, Math.max(GRATIS, o.nv | 0) + 1); tienda.prueba = null; abrir('pin'); return 'no'; },
   tManifiesto() { pestana = 11; abrir('menu'); return 'no'; },
   capMundo(v) { capturas.mundo = v; capturas.grande = null; },
   capVer(v) { capturas.grande = capturas.lista.find((c) => c.id === v) || null; },

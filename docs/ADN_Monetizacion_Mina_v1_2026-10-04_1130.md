@@ -138,6 +138,27 @@ El ADN de compartir decía «no se paga por invitar». Ricardo lo cambió a prop
 - **El mensaje de WhatsApp** lo dice de frente: «Si luego abres tu cuenta, a mí me dan $333 para pintar mi maquinita». Y al que llega, la bienvenida le explica lo mismo con un botón para abrir su cuenta.
 - **Cómo se paga con saldo:** en la carpeta del nivel, una casilla «Usar mi saldo» (marcada). Si el saldo alcanza, el nivel es tuyo al instante, sin tarjeta; si no, Stripe cobra solo el resto y el saldo se descuenta al confirmar el pago.
 
+## 6e. La auditoría del 4 de octubre: el 20 % gratis, y lo de pago más ancho
+
+Ricardo pidió auditar todo lo que decidimos monetizar, regalar el 20 % que de verdad causa fricción, y compensar ampliando y mejorando lo que sí se cobra. «Elimina fricción, pero no quites rentabilidad».
+
+**Lo que causaba fricción (y ahora es gratis):**
+- **Los colores (niveles 1 y 2 de 10 = el 20 %).** Pintar el cuerpo, la cabina y las orugas del color que quieras ya no cuesta nada, para todos, sin cuenta. Era la primera cosa que todo el mundo quería y la que más estorbaba: $19 pedía cuenta, tarjeta y Stripe por un color (y Stripe se comía casi un cuarto). Gratis, cada maquinita se pinta en el minuto uno y La Pinturería se vuelve un lugar donde ya estuviste, no una puerta cerrada.
+- **La pregunta «¿Qué rango te acomoda?»** al abrir la tienda: una decisión antes de ver nada. Fuera. La tienda abre en tu color si no te has pintado y, si no, en el primer nivel que no es tuyo.
+- **El Fondo común.** Pagaba la primera pintura de maquinitas nuevas; con los colores gratis ya no tiene qué pagar, y era un tercer tipo de compra que confundía. Se retira (no había fondo pendiente en vivo).
+
+**Lo que se amplía para no perder rentabilidad** (todo en los niveles que sí se cobran, sin tocar precios de lista):
+- **Nivel 3 · Calcomanías ($79, ahora la entrada):** 48 + **calcomanías de temporada** (Día de Muertos, Navidad, amor y amistad, fiestas patrias, primavera, verano) que solo se pueden poner en sus fechas y se quedan de recuerdo. Es la razón para volver a la tienda seis veces al año.
+- **Nivel 5 · Estela ($299):** dos más, Fuego y Pétalos (siete).
+- **Nivel 6 · Claxon, placa y título ($599):** dos melodías más (Cumbia, Corneta: ocho), la placa de **Neón** (el nombre brilla del color de la maquinita) y un **título antes del nombre** (Don, Doña, Capitán, Capitana, Ing., Dr., Dra., Maestro, Maestra, Jefe, Jefa, Minero, Minera, Leyenda).
+- **Nivel 7 · Carrocería ($999):** **El Tanque** (casco de placas remachadas, torreta con cañón corto y banderín que ondea): cuatro.
+- **Nivel 8 · Mascota ($1,999):** **Gato** (trota con la cola en alto) y **Abeja** (alas que zumban): siete.
+- **Regalar, a la vista:** botón 🎁 junto a cada persona en el panel de la gente (tecla J), y una sección «Regalar» en la tienda. El regalo es la venta que más mueve en México: «te regalo tus calcomanías».
+
+**El foco.** Lo que de verdad vamos a monetizar es del 3 al 10: lo que se ve en los demás (calcas, luces, estela, placa y título, carrocería, mascota) y lo que se queda (piedra, hecha a mano). Los colores gratis son la entrada a eso: una maquinita pintada es una maquinita que su dueño quiere seguir vistiendo.
+
+**Lo que no cambió:** precios de lista del 3 al 10, el motor de confort y el momento (solo bajan), el tope de cuidado, las devoluciones, los referidos ($333 de saldo), Mecenas y la gratitud de cumpleaños.
+
 ## 7. Lo que se mide (y lo que no)
 
 Se mide para cuidar, no para exprimir: cuántos abren la tienda, cuántos se prueban algo, cuántos compran, cuántos regalan, cuántas devoluciones, cuántas quejas. La meta no es «más conversión»: es que **nadie se sienta empujado** (cero quejas) y que quien compra lo haga contento (devoluciones casi en cero). Si un cambio sube la venta pero sube las quejas, se revierte.

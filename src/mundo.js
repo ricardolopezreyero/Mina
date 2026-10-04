@@ -8,7 +8,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { DurableObject } from "cloudflare:workers";
 import { verificarPase } from "./verificar.js";      // el pase del Login de CapitalTorreon (login.capitaltorreon.com)
-import { NIVELES, MECENAS_MIN, FONDO_PRECIO, TOPE_MES, precioDe, filtrarPinta, motorConfort, OFERTA_DIAS, EXPERIMENTOS, momento, precioFinal, cumpleOk, cumpleCerca, horaTorreon, GRATITUD_MIN, GRATITUD_HORA, REFERIDO_PREMIO } from "./tienda.js";      // La Pinturería: precios y pintura
+import { NIVELES, MECENAS_MIN, FONDO_PRECIO, TOPE_MES, precioDe, filtrarPinta, motorConfort, OFERTA_DIAS, EXPERIMENTOS, momento, precioFinal, cumpleOk, cumpleCerca, horaTorreon, GRATITUD_MIN, GRATITUD_HORA, REFERIDO_PREMIO, GRATIS, CALCAS, calcaHoy } from "./tienda.js";      // La Pinturería: precios y pintura
 // Un secreto de la bóveda (Secrets Store) llega como objeto con .get(); en local, como texto de .dev.vars. Sin él: "".
 async function secreto(v) { if (!v) return ""; if (typeof v === "string") return v; try { return (await v.get()) || ""; } catch { return ""; } }
 
@@ -255,7 +255,13 @@ export class Maquina extends DurableObject {
     return { ...this.vistaTienda(m), nuevo };
   }
   // La pintura: se guarda solo lo que el nivel comprado permite.
-  async ponerPinta(p) { const m = await this.ctx.storage.get("m"); if (!m) return null; const t = this.tiendaDe(m); m.pinta = filtrarPinta(p, t.nivel); await this.ctx.storage.put("m", m); return { p: this.pintaPublica(m), nv: t.nivel, me: t.mecenas > 0 ? 1 : 0 }; }
+  async ponerPinta(p) {
+    const m = await this.ctx.storage.get("m"); if (!m) return null; const t = this.tiendaDe(m), antes = m.pinta || {};
+    m.pinta = filtrarPinta(p, t.nivel);
+    // una calcomanía de temporada solo se pone en su temporada; la que ya traía se queda de recuerdo
+    if (m.pinta.calca >= CALCAS.length && m.pinta.calca !== antes.calca && !calcaHoy(m.pinta.calca, horaTorreon().md)) { if (antes.calca !== undefined) m.pinta.calca = antes.calca; else delete m.pinta.calca; }
+    await this.ctx.storage.put("m", m); return { p: this.pintaPublica(m), nv: t.nivel, me: t.mecenas > 0 ? 1 : 0 };
+  }
 
   // Lo que la cuenta enseña de ella: nombre, modelo, cuánto ha ganado, hasta dónde bajó y cuánto ha jugado.
   async resumen() {
@@ -485,13 +491,13 @@ async function tiendaApi(u, request, env) {
     const c = await env.CUENTA.get(env.CUENTA.idFromName("g:" + sub)).sesion(tk);
     if (!c || !llaveOk(d.k) || !esMia(c, d.k)) return json({ error: "cuenta" }, 401);
     let volver = u.origin + "/"; try { const x = new URL(String(d.volver || ""), u.origin); if (x.origin === u.origin) volver = x.origin + x.pathname; } catch {}
-    const tipo = d.tipo === "mecenas" ? "mecenas" : d.tipo === "fondo" ? "fondo" : "nivel";
+    const tipo = d.tipo === "mecenas" ? "mecenas" : "nivel";      // el Fondo común se retiró el 4 de octubre: los colores ya son gratis para todos
     let monto = 0, nombre = "", para = d.k, nivel = 0, cantidad = 1, desc = 0, ajuste = 0, momentoTx = "", motivo = "";
     if (tipo === "nivel") {
       nivel = entero(d.nivel, 1, 10, 0); if (!nivel) return json({ error: "datos" }, 400);
       // regalo: la maquinita número i de un mundo (su llave la da el mundo, nunca el navegador)
       if (Number.isInteger(d.paraI) && d.paraI >= 0 && /^[2-9A-HJ-NP-Z]{8}$/.test(String(d.mundo || ""))) { const k2 = await env.MUNDO.get(env.MUNDO.idFromName(d.mundo)).llaveDe(d.paraI); if (llaveOk(k2) && k2 !== d.k) para = k2; else return json({ error: "regalo" }, 400); }
-      const actual = (await maq(para).tienda()).nivel;
+      const actual = Math.max(GRATIS, (await maq(para).tienda()).nivel);
       if (nivel <= actual) return json({ error: "ya", actual }, 400);
       monto = precioDe(nivel) - precioDe(actual);
       // el precio exacto de esta persona: su descuento del motor de confort (solo para ella, nunca arriba de lista; los regalos van a lista)
@@ -507,9 +513,6 @@ async function tiendaApi(u, request, env) {
       if (d.motivo === "gratitud") { const o = await maq(d.k).oferta({ desc0: 0 }, false); if (o && cumpleCerca(o.cumple, horaTorreon()) !== 9) motivo = "gratitud"; }
       monto = entero(d.monto, motivo ? GRATITUD_MIN : MECENAS_MIN, 100000, 0); if (!monto) return json({ error: "datos" }, 400);
       nombre = motivo ? "Mina · 🎂 Gracias de cumpleaños · para quien hace Mina" : "Mina · ✦ Mecenas · gracias por sostener el juego";
-    } else {
-      cantidad = entero(d.cantidad, 1, 200, 0); if (!cantidad) return json({ error: "datos" }, 400);
-      monto = FONDO_PRECIO * cantidad; nombre = `Mina · Fondo común · la primera pintura de ${cantidad} ${cantidad === 1 ? "maquinita nueva" : "maquinitas nuevas"}`;
     }
     const mio = await maq(d.k).tienda();
     // El saldo de referidos paga niveles (propios o de regalo). Si alcanza, se entrega aquí mismo; si no, Stripe cobra el resto.

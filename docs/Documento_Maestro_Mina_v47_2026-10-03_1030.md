@@ -1387,6 +1387,18 @@ No se pudo ver el movimiento en vivo porque el navegador de pruebas está oculto
 
 **Probado** en local: garaje con la maquinita en uso y su ficha; crear «La Segunda» (modelo 5) → vuelve a entrar al mismo mundo con $20 y la vieja aparece en la lista del mundo; la cuenta guarda dos; volver a «El Jale» recupera sus $5,000, nivel 10 de pintura y saldo; pagar con una maquinita del garaje que no es la última usada pasa la verificación de cuenta, y con una ajena no.
 
+### 9.56 La auditoría de lo monetizable: colores gratis, lo de pago más ancho
+
+**Lo que pidió Ricardo.** Auditar todo lo que se monetiza, dejar gratis el 20 % que causa fricción, y ampliar y mejorar lo que sí se cobra para no perder rentabilidad.
+
+**Cómo quedó** (el razonamiento, en el ADN de monetización, sección 6e).
+- `GRATIS = 2` en `src/tienda.js`: niveles 1 y 2 con precio 0; `filtrarPinta` usa `max(2, nivel)`; `/pagar` compara contra `max(GRATIS, actual)`. Cliente: `nivelMio()` = `max(2, pagado)`, `nivelPagado()` para lo real; la escalera dice «Gratis»; la carpeta abre en tu color si no te has pintado.
+- Se quitó la pregunta de rango y el Fondo común (UI y tipo de pago; `tomarRegalo` queda inerte con fondo 0).
+- Catálogo ampliado en los dos lados (hay una prueba, `catalogo.mjs`, que compara el `TC` del cliente con `src/tienda.js`): `CALCAS` con el 0 vacío (ya no se perdía la ⭐) + `CALCAS_TEMPORADA` (seis temporadas, 26 calcas) y `CALCAS_TODAS`; `calcaHoy(i, md)` y `temporadasHoy(md)`; `ponerPinta` rechaza una calca de temporada fuera de fecha y conserva la anterior. `ESTELAS` + Fuego/Pétalos, `BOCINAS` + Cumbia/Corneta, `PLACAS` + Neón, `CARROS` + El Tanque, `MASCOTAS` + Gato/Abeja, `TITULOS` (15, nivel 6, campo `titulo`).
+- Dibujo nuevo en `dibMaq` (casco del tanque con placas, remaches, torreta, cañón y banderín; placa de neón con sombra del color de la maquinita; título antes del nombre), `dibMascota` (gato, abeja), `estela`/`dibujarEstelas` (fuego que sube y se apaga, pétalos que caen meciéndose), `CLAXON` (cumbia, corneta).
+- Regalar: acción `regalar(i)` desde el panel J (botón 🎁 por persona) que abre la carpeta del siguiente nivel de esa maquinita con «¿Es un regalo?» puesto; sección «🎁 Regalar» en la tienda.
+- Nota: el índice de las calcomanías se corrió uno (el 0 pasó a ser «ninguna»); no había compras del nivel 3 en vivo, así que nadie pierde su calca.
+
 ## 10. Revisión de código del 2 de octubre
 
 Se revisó todo el código buscando fallas y se corrigieron estas:
