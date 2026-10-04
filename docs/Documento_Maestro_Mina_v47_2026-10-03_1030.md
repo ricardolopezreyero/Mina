@@ -1288,6 +1288,19 @@ No se pudo ver el movimiento en vivo porque el navegador de pruebas está oculto
 
 **Probado.** En local: con cuatro conexiones (quien pega, quien recibe, un tercero y un observador) llegan `pleito`, `golpe`, `vida` y `pleitoFin` a quien corresponde, el segundo golpe no vuelve a anunciar, y en el navegador la barra de arriba muestra las dos vidas y el daño entra con tope. No se pudo probar con dos personas reales peleando.
 
+### 9.49 Capturas de pantalla guardadas en la cuenta, por mundo
+
+**Lo que pidió Ricardo.** Un botón para capturar lo que se está viendo (la gente descubre cosas y quiere guardarlas); que las capturas se guarden en Cloudflare, anexadas a la cuenta, en una carpeta por mundo; que se avise que quedó guardada con un botón para ir a verla; que funcione igual en computadora, celular y iPad, y que desde cualquier equipo se vean las de todos los demás.
+
+**Cómo quedó.**
+- **Botón 📸 Foto** arriba (tecla **F**; en el celular, el icono). Destello blanco y clic de cámara. Se captura el lienzo del juego (sin tableros), a 1,600 px de ancho como mucho, JPEG al 86 %, con pie de foto: «Mina · nombre del mundo · profundidad · fecha y hora».
+- **Con cuenta:** sube por `POST /api/capturas/subir` (cuerpo JPEG; cabeceras `x-sesion`, `x-mundo`, `x-metros`, `x-nombre`) a **R2** (`mina-capturas`, llave `cap/<cuenta>/<mundo>/<id>.jpg`) y la lista queda en la `Cuenta` (`c.capturas`, hasta 800: id, mundo, fecha, metros, peso, nombre del mundo). Tarjeta «📸 Captura guardada en tu cuenta» con el botón **«Ver mis capturas»**; si no se toca, se cierra sola.
+- **Sin cuenta:** se descarga al equipo, con una tarjeta que invita a entrar con Google.
+- **El historial:** Menú → **📸 Capturas**: carpetas por mundo (con su portada y cuántas hay), la galería de cada mundo, y cada captura en grande con Descargar y Borrar. Es la misma lista desde cualquier equipo porque vive en la cuenta. Las imágenes se sirven en `/capturas/<cuenta>/<mundo>/<id>.jpg` (liga impredecible, cacheable un año).
+- Las tarjetas ahora aceptan un botón (`tarjeta(…, boton)`).
+
+**Probado** en local: subir (240 KB, 1600 × 1200), listar, carpetas, galería, vista grande con pie, borrar; sin sesión responde 401; sin cuenta descarga.
+
 ## 10. Revisión de código del 2 de octubre
 
 Se revisó todo el código buscando fallas y se corrigieron estas:

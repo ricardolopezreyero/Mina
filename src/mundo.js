@@ -299,6 +299,10 @@ export class Cuenta extends DurableObject {
     await this.ctx.storage.put("c", c);
     return this.vista(c);
   }
+  // Las capturas de pantalla: la lista vive aquí (la imagen, en R2). Por cuenta, con su mundo, su profundidad y su fecha.
+  async agregarCaptura(t, cap) { const c = await this.sesion(t); if (!c) return null; c.capturas = (c.capturas || []).concat(cap).slice(-800); await this.ctx.storage.put("c", c); return { sub: c.sub, n: c.capturas.length }; }
+  async capturas(t) { const c = await this.sesion(t); return c ? { sub: c.sub, capturas: c.capturas || [], mundos: c.mundos || [] } : null; }
+  async quitarCaptura(t, id) { const c = await this.sesion(t); if (!c) return null; c.capturas = (c.capturas || []).filter((x) => x.id !== id); await this.ctx.storage.put("c", c); return { sub: c.sub }; }
   async salir(t) {
     const c = await this.sesion(t);
     if (!c) return false;
@@ -426,6 +430,36 @@ async function tiendaApi(u, request, env) {
     else if (tipo === "fondo") { e = await maq(md.k).entregar({ sid, tipo, monto, de: md.de }); if (e && e.nuevo) await tabla().sumarFondo(Math.max(1, cantidad)); }
     if (!e) return json({ error: "maquina" }, 404);
     return json({ ok: 1, tipo, nivel, regalo: para !== md.k ? 1 : 0, cantidad, monto, mio: await maq(md.k).tienda() });
+  }
+  return json({ error: "no" }, 404);
+}
+
+// RLR · las capturas de pantalla: se guardan en R2 por cuenta y por mundo; la lista, en la cuenta. Se ven desde cualquier equipo.
+async function capturasApi(u, request, env) {
+  const sesionDe = (ses) => { const punto = ses.lastIndexOf("."), sub = ses.slice(0, punto), tk = ses.slice(punto + 1); if (punto < 1 || !/^[0-9A-Za-z]{1,40}$/.test(sub) || !/^[0-9a-f]{48}$/.test(tk)) return null; return { sub, tk, c: env.CUENTA.get(env.CUENTA.idFromName("g:" + sub)) }; };
+  if (u.pathname === "/api/capturas/subir" && request.method === "POST") {
+    const s = sesionDe(request.headers.get("x-sesion") || ""); if (!s) return json({ error: "cuenta" }, 401);
+    const mundo = (request.headers.get("x-mundo") || "").toUpperCase(); if (!/^[2-9A-HJ-NP-Z]{8}$/.test(mundo)) return json({ error: "mundo" }, 400);
+    let nombre = ""; try { nombre = limpio(decodeURIComponent(request.headers.get("x-nombre") || ""), 24); } catch {}
+    const metros = entero(request.headers.get("x-metros"), -100000, 100000, 0);
+    const cuerpo = new Uint8Array(await request.arrayBuffer());
+    if (cuerpo.length < 400 || cuerpo.length > 1600000 || cuerpo[0] !== 0xff || cuerpo[1] !== 0xd8) return json({ error: "imagen" }, 400);      // solo JPEG, con tope de peso
+    const id = hex(crypto.getRandomValues(new Uint8Array(8)));
+    const r = await s.c.agregarCaptura(s.tk, { id, mundo, h: Date.now(), m: metros, kb: Math.round(cuerpo.length / 1024), n: nombre });
+    if (!r) return json({ error: "cuenta" }, 401);
+    await env.CAPTURAS.put(`cap/${s.sub}/${mundo}/${id}.jpg`, cuerpo, { httpMetadata: { contentType: "image/jpeg", cacheControl: "public, max-age=31536000, immutable" } });
+    return json({ ok: 1, id, url: `/capturas/${s.sub}/${mundo}/${id}.jpg`, total: r.n });
+  }
+  if (request.method !== "POST") return json({ error: "no" }, 404);
+  let d; try { d = await request.json(); } catch { return json({ error: "datos" }, 400); }
+  const s = sesionDe(String((d && d.ses) || "")); if (!s) return json({ error: "cuenta" }, 401);
+  if (u.pathname === "/api/capturas") { const r = await s.c.capturas(s.tk); return r ? json({ sub: r.sub, capturas: r.capturas, mundos: r.mundos.map((m) => ({ id: m.id, nombre: m.nombre })) }) : json({ error: "cuenta" }, 401); }
+  if (u.pathname === "/api/capturas/borrar") {
+    const id = String(d.id || ""), mundo = String(d.mundo || "").toUpperCase();
+    if (!/^[0-9a-f]{16}$/.test(id) || !/^[2-9A-HJ-NP-Z]{8}$/.test(mundo)) return json({ error: "datos" }, 400);
+    const r = await s.c.quitarCaptura(s.tk, id); if (!r) return json({ error: "cuenta" }, 401);
+    await env.CAPTURAS.delete(`cap/${s.sub}/${mundo}/${id}.jpg`);
+    return json({ ok: 1 });
   }
   return json({ error: "no" }, 404);
 }
@@ -1183,6 +1217,14 @@ export default {
     if (u.pathname.startsWith("/api/cuenta/")) return cuentaApi(u, request, env);
     // La Pinturería: catálogo, pagar y confirmar
     if (u.pathname === "/api/tienda" || u.pathname.startsWith("/api/tienda/")) return tiendaApi(u, request, env);
+    // Las capturas de pantalla: subir, listar, borrar; y la imagen misma
+    if (u.pathname === "/api/capturas" || u.pathname.startsWith("/api/capturas/")) return capturasApi(u, request, env);
+    const cap = u.pathname.match(/^\/capturas\/([0-9A-Za-z]{1,40})\/([2-9A-HJ-NP-Z]{8})\/([0-9a-f]{16})\.jpg$/);
+    if (cap && request.method === "GET") {
+      const o = await env.CAPTURAS.get(`cap/${cap[1]}/${cap[2]}/${cap[3]}.jpg`);
+      if (!o) return json({ error: "no" }, 404);
+      return new Response(o.body, { headers: { "content-type": "image/jpeg", "cache-control": "public, max-age=31536000, immutable" } });
+    }
 
     if (u.pathname.startsWith("/api/") || u.pathname.startsWith("/ws/") || u.pathname.startsWith("/og/")) return json({ error: "no" }, 404);
     return env.ASSETS.fetch(request);

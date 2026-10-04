@@ -799,6 +799,7 @@ const son = {
   piedra: () => { campana(1900, 0.12, 0.1, 'taladro'); ruido(0.05, 0.25, 'taladro', 3000, 'bandpass', 3); },
   // los demás
   entra: () => { cuerda(659, 0.3, 0.07, 'otros'); cuerda(880, 0.45, 0.07, 'otros', 0.12); },
+  foto: () => { ruido(0.05, 0.3, 'avisos', 3500, 'bandpass', 2); tono(2600, 0.05, 'square', 0.04, 0, 0.06, 'avisos'); },
   pleito: (v = 1) => { tono(110, 0.5, 'sawtooth', 0.12 * v, 55, 0, 'peligro'); campana(880, 0.6, 0.1 * v, 'avisos', 0.05); campana(1175, 0.8, 0.1 * v, 'avisos', 0.25); ruido(0.3, 0.12 * v, 'peligro', 3000, 'bandpass', 1.4, 0.1); },
   chat: () => { campana(1175, 0.16, 0.03, 'otros'); campana(1568, 0.24, 0.025, 'otros', 0.07); },
   senal: () => { campana(1568, 0.7, 0.07, 'otros'); campana(1568, 0.5, 0.025, 'otros', 0.28); },
@@ -940,10 +941,11 @@ function aviso(x) {
   while (c.children.length > 6) c.firstChild.remove();
   setTimeout(() => d.remove(), 9000);
 }
-function tarjeta(t, x, clase = '', ms = 4500, urgente = false) {
+function tarjeta(t, x, clase = '', ms = 4500, urgente = false, boton = null) {
   const d = document.createElement('div'); if (clase) d.className = clase;
   const h = document.createElement('h3'); h.textContent = t; d.appendChild(h);
   if (x) { const p = document.createElement('p'); p.textContent = x; d.appendChild(p); }
+  if (boton) { const b = document.createElement('button'); b.className = 's'; b.textContent = boton.t; b.onclick = (e) => { e.stopPropagation(); audio(); d.remove(); boton.f(); }; d.appendChild(b); }
   if (urgente) { const c = $('#tarjeta'); while (c.children.length >= 3) c.firstChild.remove(); colaTarjetas.unshift([d, ms]); } else colaTarjetas.push([d, ms]);
   sacarTarjeta();
 }
@@ -3507,6 +3509,61 @@ function htmlPublico() {
   return h;
 }
 
+/* ════════ Capturas ════════ RLR */
+// Un botón (📸, tecla F) guarda lo que estás viendo, con un pie de foto (mundo, profundidad, fecha). Con cuenta se queda en
+// Mina, en la carpeta de ese mundo, y se ve desde cualquier equipo; sin cuenta, se descarga.
+let fotoOcupada = false, capturas = { lista: [], mundos: {}, sub: '', cargada: 0, cargando: 0, mundo: '', grande: null };
+const metrosTx = (m) => (m > 0 ? m.toLocaleString('es-MX') + ' m' : m < 0 ? Math.abs(m).toLocaleString('es-MX') + ' m de altura' : 'superficie');
+const nombreFoto = () => { const f = new Date(), p2 = (n) => String(n).padStart(2, '0'); return `Mina_${(cfg.nombre || mundoId || 'captura').replace(/[^\wáéíóúñÁÉÍÓÚÑ]+/g, '_')}_${f.getFullYear()}-${p2(f.getMonth() + 1)}-${p2(f.getDate())}_${p2(f.getHours())}${p2(f.getMinutes())}.jpg`; };
+function lienzoCaptura() {
+  const k = Math.min(1, 1600 / lienzo.width), c = document.createElement('canvas'); c.width = Math.round(lienzo.width * k); c.height = Math.round(lienzo.height * k);
+  const q = c.getContext('2d'); q.drawImage(lienzo, 0, 0, c.width, c.height);
+  const f = new Date(), y = soloVer ? (otros.get(veo)?.y ?? 0) : yo.y, tx = 'Mina · ' + (cfg.nombre || 'Mundo ' + mundoId) + ' · ' + donde(y) + ' · ' + f.toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' }) + ' ' + f.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+  const tam = Math.max(12, Math.round(c.width / 70)); q.font = `700 ${tam}px system-ui`; q.textAlign = 'left'; q.textBaseline = 'bottom'; q.lineJoin = 'round'; q.lineWidth = tam * 0.3; q.strokeStyle = '#000b'; q.strokeText(tx, tam, c.height - tam * 0.8); q.fillStyle = '#fff'; q.fillText(tx, tam, c.height - tam * 0.8);
+  return c;
+}
+async function tomarFoto() {
+  if (!listo || fotoOcupada) return; fotoOcupada = true;
+  const fl = $('#flash'); fl.classList.remove('on'); void fl.offsetWidth; fl.classList.add('on'); son.foto();
+  try {
+    if (!corriendo) dibujar();                                                       // con un menú abierto se captura lo que hay detrás, fresco
+    const c = lienzoCaptura(), blob = await new Promise((ok) => c.toBlob(ok, 'image/jpeg', 0.86));
+    if (!cuenta || !mundoId) {                                                       // sin cuenta: se descarga, y se invita a guardarla en Mina
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nombreFoto(); a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+      tarjeta('📸 Captura descargada', 'Con tu cuenta, las capturas se quedan en Mina, por mundo, y las ves desde cualquier equipo.', 'msj', 9000, false, cuenta ? null : { t: 'Entrar con Google', f: () => irAlLogin('') });
+      return;
+    }
+    const r = await fetch('/api/capturas/subir', { method: 'POST', headers: { 'content-type': 'image/jpeg', 'x-sesion': cuenta.ses, 'x-mundo': mundoId, 'x-metros': String(Math.round(prof())), 'x-nombre': encodeURIComponent(cfg.nombre || '') }, body: blob }), d = await r.json();
+    if (!d.ok) throw d.error;
+    capturas.cargada = 0;
+    tarjeta('📸 Captura guardada en tu cuenta', (cfg.nombre || 'Mundo ' + mundoId) + ' · ' + donde(yo.y) + ' · la ves desde cualquier equipo.', 'msj', 9000, false, { t: 'Ver mis capturas', f: () => { capturas.mundo = mundoId; capturas.grande = null; pestana = 12; if (menu === 'menu') pintarMenu(); else abrir('menu'); } });
+  } catch (e) {
+    if (e === 'cuenta') { cuenta = null; try { localStorage.removeItem('mina_cuenta'); } catch {} }
+    tarjeta('📸 No se pudo guardar la captura', { cuenta: 'Tu sesión venció: vuelve a entrar con Google.', imagen: 'La imagen salió vacía o muy pesada. Inténtalo otra vez.', mundo: 'Todavía no hay mundo que guardar: en cuanto nazca, vuelve a intentarlo.' }[e] || 'Se fue la conexión. Inténtalo otra vez.', 'msj', 8000);
+  } finally { fotoOcupada = false; }
+}
+async function cargarCapturas() {
+  if (!cuenta) return; capturas.cargando = 1; capturas.error = 0;
+  try { const r = await fetch('/api/capturas', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ses: cuenta.ses }) }), d = await r.json(); if (!d.capturas) throw 0; capturas.lista = d.capturas.slice().reverse(); capturas.sub = d.sub; capturas.mundos = Object.fromEntries((d.mundos || []).map((m) => [m.id, m.nombre])); capturas.cargada = 1; }
+  catch { capturas.error = 1; }
+  capturas.cargando = 0; if (menu === 'menu' && pestana === 12) pintarMenu();
+}
+const urlCaptura = (c) => `/capturas/${capturas.sub}/${c.mundo}/${c.id}.jpg`;
+function htmlCapturas() {
+  if (!cuenta) return `<div class="fila"><div class="ic">📸</div><div class="t"><b>Tus capturas, por mundo, desde cualquier equipo</b><small>Pulsa 📸 (tecla F) y lo que estás viendo se guarda en tu cuenta, en la carpeta de ese mundo. Sin cuenta, la captura se descarga a tu equipo.</small></div><button data-a="capEntrar">Entrar con Google</button></div>`;
+  if (!capturas.cargada) { if (!capturas.cargando && !capturas.error) cargarCapturas(); return capturas.error ? '<p class="nota">No se pudieron cargar tus capturas. Revisa tu conexión.</p><p><button class="s" data-a="capRecargar">Intentar otra vez</button></p>' : '<p class="nota">Abriendo tus capturas…</p>'; }
+  const L = capturas.lista, nombreM = (id) => capturas.mundos[id] || (id === mundoId && cfg.nombre) || 'Mundo ' + id;
+  if (!L.length) return '<p class="nota">Todavía no hay capturas. Pulsa 📸 (tecla F) cuando veas algo que quieras guardar: queda aquí, en la carpeta de ese mundo, y la ves desde cualquier equipo.</p>';
+  if (capturas.grande) { const c = capturas.grande; return `<p><button class="s" data-a="capVolver">← Volver</button> <a class="boton s" href="${urlCaptura(c)}" download="${esc(nombreFoto())}" target="_blank" rel="noopener">Descargar</a> <button class="s mal" data-a="capBorrar" data-v="${c.id}" data-m="${c.mundo}">Borrar</button></p><img class="capGrande" src="${urlCaptura(c)}" alt=""><p class="nota">${esc(nombreM(c.mundo))} · ${metrosTx(c.m)} · ${new Date(c.h).toLocaleString('es-MX', { dateStyle: 'long', timeStyle: 'short' })}</p>`; }
+  if (!capturas.mundo || !L.some((c) => c.mundo === capturas.mundo)) {
+    const por = new Map(); for (const c of L) { if (!por.has(c.mundo)) por.set(c.mundo, []); por.get(c.mundo).push(c); }
+    return `<p class="nota">${L.length} ${L.length === 1 ? 'captura' : 'capturas'} en ${por.size} ${por.size === 1 ? 'mundo' : 'mundos'}. Se guardan en tu cuenta y se ven desde cualquier equipo.</p><div class="carpetas">` + [...por.entries()].map(([id, l]) => `<button class="carpeta" data-a="capMundo" data-v="${id}"><img src="${urlCaptura(l[0])}" alt="" loading="lazy"><b>${esc(nombreM(id))}</b><small>${l.length} ${l.length === 1 ? 'captura' : 'capturas'}${id === mundoId ? ' · este mundo' : ''}</small></button>`).join('') + '</div>';
+  }
+  const l = L.filter((c) => c.mundo === capturas.mundo);
+  return `<p><button class="s" data-a="capMundo" data-v="">← Todos los mundos</button> &nbsp;<b>${esc(nombreM(capturas.mundo))}</b> · ${l.length} ${l.length === 1 ? 'captura' : 'capturas'}</p><div class="galeria">` + l.map((c) => `<button class="cap" data-a="capVer" data-v="${c.id}"><img src="${urlCaptura(c)}" alt="" loading="lazy"><small>${metrosTx(c.m)} · ${new Date(c.h).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}</small></button>`).join('') + '</div>';
+}
+$('#bFoto').addEventListener('click', (e) => { audio(); e.currentTarget.blur(); tomarFoto(); });
+
 /* ════════ La Pinturería ════════ RLR */
 // Mina se juega completo gratis; aquí solo se vende cómo se ve la maquinita (docs/ADN_Monetizacion_Mina). Los precios vienen
 // del servidor y son iguales para todos; probarse todo es gratis; subir de nivel cuesta la diferencia. Las listas de abajo son
@@ -4577,6 +4634,12 @@ const acciones = {
   tMecenas() { const m = Math.floor(+($('#tMec')?.value || 0)); if (!(m >= tienda.mecenasMin)) { aviso('Desde ' + pesos(tienda.mecenasMin) + '.'); return 'no'; } tienda.mecenasMonto = m; pagar({ tipo: 'mecenas', monto: m }); return 'no'; },
   tFondo() { const n = Math.floor(+($('#tFondo')?.value || 0)); if (!(n >= 1 && n <= 200)) { aviso('Entre 1 y 200 maquinitas.'); return 'no'; } tienda.fondoN = n; pagar({ tipo: 'fondo', cantidad: n }); return 'no'; },
   tManifiesto() { pestana = 11; abrir('menu'); return 'no'; },
+  capMundo(v) { capturas.mundo = v; capturas.grande = null; },
+  capVer(v) { capturas.grande = capturas.lista.find((c) => c.id === v) || null; },
+  capVolver() { capturas.grande = null; },
+  capRecargar() { capturas.error = 0; cargarCapturas(); },
+  capEntrar() { irAlLogin(''); return 'no'; },
+  capBorrar(v, el) { if (!confirm('¿Borrar esta captura? No se puede recuperar.')) return 'no'; fetch('/api/capturas/borrar', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ses: cuenta.ses, id: v, mundo: el.dataset.m }) }).then(() => { capturas.lista = capturas.lista.filter((c) => c.id !== v); capturas.grande = null; if (menu === 'menu') pintarMenu(); }); return 'no'; },
   salirCuenta() { salirCuenta(); return 'no'; },
   quitarP(v) { enviar({ t: 'quitar', i: +v }); const o = otros.get(+v); if (o) aviso('Le quitaste el permiso a ' + o.n + ': puede mirar y volver a pedirlo'); },
   devolverP(v) { enviar({ t: 'devolver', i: +v }); const o = otros.get(+v); if (o) aviso(o.n + ' vuelve a tener permiso'); },
@@ -4630,7 +4693,7 @@ function sel(k, ops, quien = 'regla') {
   return `<select data-a="${quien}" data-k="${k}" ${soyCreador ? '' : 'disabled'}>${ops.map(([v, t]) => `<option value="${v}" ${cfg[k] == v ? 'selected' : ''}>${t}</option>`).join('')}</select>`;
 }
 function menuPrincipal() {
-  const P = ['Bodega', 'Colección', 'Mapa', '', 'Logros', 'Catálogo', 'Estadísticas', 'Opciones', 'Mundo', 'Ayuda', '🏆 Top 33', 'Manifiesto'];      // la 3 eran los contratos
+  const P = ['Bodega', 'Colección', 'Mapa', '', 'Logros', 'Catálogo', 'Estadísticas', 'Opciones', 'Mundo', 'Ayuda', '🏆 Top 33', 'Manifiesto', '📸 Capturas'];      // la 3 eran los contratos
   if (pestana === 3) pestana = 0;
   let h = cab('<span class="hamb"></span>' + esc(cfg.nombre || 'Mina')) + `<div class="pest">${P.map((p, i) => (p ? `<button data-a="pest" data-v="${i}" class="${i === pestana ? 'on' : ''}">${p}</button>` : '')).join('')}</div><div class="cuerpo">`;
   if (pestana === 0) {
@@ -4716,11 +4779,13 @@ function menuPrincipal() {
     h += htmlTop();
   } else if (pestana === 11) {
     h += MANIFIESTO;
+  } else if (pestana === 12) {
+    h += htmlCapturas();
   } else {
     h += (tactil ? '<p><b>Con el dedo:</b> ponlo donde sea y arrástralo. Hacia abajo perfora, a los lados camina, hacia arriba vuela; al soltar se detiene. Un toque frente a un edificio entra. <b>Dos dedos</b> acercan o alejan la vista y la recorren. Las caídas no quitan casco (se encienden en Opciones → Golpes de caída) y la maquinita frena sola antes del piso (Aterrizaje suave). <b>Dos empujones seguidos</b> hacia arriba y sube sola; dos hacia abajo y perfora sola hacia abajo (también con el botón <b>⬆ Subir sola</b>). Un toque en la pantalla la suelta.</p>' : '') +
       `<p><b>Moverte:</b> con las flechas. <b>↑</b> vuela. <b>↓</b> perfora hacia abajo. <b>← →</b> contra una pared, perfora de lado. Nunca se perfora hacia arriba.</p>
       <p><b>El ciclo:</b> baja, llena la bodega, sube, vende en La Báscula, carga combustible y mejora tu equipo en El Taller. En la superficie, párate frente a un edificio y pulsa ↓.</p>
-      <p><b>Las teclas son la inicial de lo que hacen:</b> <b>R</b> Reserva · <b>N</b> Nanobots · <b>D</b> Dinamita · <b>P</b> Plástico · <b>Q</b> Cuántico · <b>T</b> Transmisor · <b>C</b> Chat · <b>S</b> Señal · <b>A</b> Ayudar · <b>G</b> Grúa · <b>M</b> Mapa · <b>Esc</b> Menú.</p>
+      <p><b>Las teclas son la inicial de lo que hacen:</b> <b>R</b> Reserva · <b>N</b> Nanobots · <b>D</b> Dinamita · <b>P</b> Plástico · <b>Q</b> Cuántico · <b>T</b> Transmisor · <b>C</b> Chat · <b>S</b> Señal · <b>A</b> Ayudar · <b>G</b> Grúa · <b>F</b> Foto (captura) · <b>M</b> Mapa · <b>Esc</b> Menú.</p>
       <p><b>El mapa (M):</b> se abre de un lado, como el chat (y encima de él si está abierto). Solo enseña lo que ya descubrió el equipo; lo demás queda oscuro. Arriba dice quién está jugando y a qué profundidad, y un clic en un nombre lleva el mapa hasta esa maquinita; a la izquierda, una tira con el mundo entero y la marca de cada quien. La rueda del ratón recorre el mapa.</p>
       <p><b>Objetos:</b> R tanque de reserva · N nanobots · D dinamita · P explosivo plástico · Q teletransportador cuántico · T transmisor. En El Almacén se compran de a 1, 5, 10, 50 o 100.</p>
       <p><b>El Taller:</b> cada pieza tiene veintiséis mejoras, de $750 a $25 billones ($25 T). Siempre ves las que ya compraste y las diez que siguen.</p>
@@ -4809,6 +4874,7 @@ addEventListener('keydown', (e) => {
   if (k === 'a') pasarCombustible();                // Ayudar: 5 litros a la maquinita de junto
   if (k === 'g') grua();                            // Grúa
   if (k === 'b') tocarClaxon();                     // Bocina (claxon)
+  if (k === 'f') tomarFoto();                       // Foto: captura de lo que estás viendo
   if (k === 'i') abrir('inv');                      // Invitar
   if (k === 'j') abrir('pub');                      // Jugadores y público: solicitudes, quién mira, sacar
   if (k === 'v' && edenVivo && yo.y > EDEN0 - 6) verJardin();      // Ver el jardín entero

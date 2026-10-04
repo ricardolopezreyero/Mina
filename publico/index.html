@@ -260,6 +260,19 @@ body.libre.jugando #regla,body.libre.viendo #regla{display:block;visibility:visi
 @keyframes pop{from{transform:translateX(14px);opacity:0}}
 #ojo{display:none;background:#000c;border:1px solid var(--borde);border-radius:5px;padding:2px 8px;font-size:.8em;font-weight:700;white-space:nowrap;z-index:2}
 .foto{position:static;display:inline-block;width:min(420px,78vw);height:auto;border-radius:10px;border:2px solid var(--borde)}
+/* La captura: el destello, y el historial por mundo */
+#flash{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:9}
+#flash.on{animation:flash .4s ease-out}
+@keyframes flash{0%{opacity:.9}100%{opacity:0}}
+#tarjeta div button{margin-top:6px;font-size:.95em}
+.carpetas{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
+.carpetas .carpeta{display:flex;flex-direction:column;align-items:stretch;gap:4px;background:#0004;border:1px solid var(--borde);border-radius:12px;padding:8px;color:var(--tx);text-align:left}
+.carpetas .carpeta b{font-size:1em}
+.carpetas img,.galeria img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:8px;display:block;background:#000}
+.carpetas small,.galeria small{color:var(--su);font-weight:600}
+.galeria{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.galeria .cap{display:flex;flex-direction:column;gap:3px;background:transparent;border:1px solid var(--borde);border-radius:10px;padding:5px;color:var(--tx)}
+.capGrande{width:100%;height:auto;border-radius:10px;border:1px solid var(--borde);display:block;margin:8px 0}
 /* El pleito: las dos vidas a la vista, para los dos que pelean y para quien mira */
 #pleito{left:50%;top:calc(64px*var(--f));transform:translateX(-50%);display:none;align-items:center;gap:14px;background:#000c;border:1px solid #ff6b5a88;border-radius:14px;padding:8px 14px;z-index:3;box-shadow:0 6px 24px #000a;animation:pleitoEntra .35s}
 #pleito.on{display:flex}
@@ -352,7 +365,7 @@ a{color:var(--az)}
    Los tableros van a las orillas y el centro queda libre para la tierra. Botones de 44 px o más, sin letras de teclado,
    todo respeta las zonas seguras del teléfono. body.tactil quita las pistas de teclado en cualquier pantalla táctil. */
 body.tactil :is(#botones,#caja,#bGrua,#objetos,#chat header,#mapaLat header,#tabla,#verBarra,#verEspera) kbd,body.tactil .tecl,body.tactil #chatTeclas{display:none!important}
-body.movil #izq{left:calc(8px + env(safe-area-inset-left));top:calc(8px + env(safe-area-inset-top));width:min(38vw,160px)}
+body.movil #izq{left:calc(8px + env(safe-area-inset-left));top:calc(8px + env(safe-area-inset-top));width:min(30vw,140px)}
 body.movil #izq>div:not(.barra):not(#datos):not(#vel){display:none}
 body.movil .barra{height:22px;margin:0 0 4px;border-radius:8px;background:#000a;border-color:#ffffff22}
 body.movil .barra b{line-height:22px;font-size:.76em;padding-left:20px}
@@ -362,7 +375,7 @@ body.movil #datos{gap:6px;font-size:.95em;margin-top:2px}
 body.movil #datos span{padding:3px 8px;background:#000a;border-radius:8px}
 body.movil #vel{width:96px;padding:3px 6px 4px;margin-top:6px}
 body.movil #der{right:calc(8px + env(safe-area-inset-right));top:calc(8px + env(safe-area-inset-top))}
-body.movil #botones{gap:4px}
+body.movil #botones{gap:3px}
 body.movil #botones button{position:relative;width:48px;height:48px;padding:0;border-radius:13px;font-size:1.35em;line-height:1;display:flex;align-items:center;justify-content:center;background:#000a;border:1px solid #ffffff22}
 body.movil :is(#botones button,#objetos div,#bSube,#bGrua,#vjDatos,.pest button,#caja button,#chatEmo button){transition:transform .1s,background-color .15s,filter .15s}
 body.movil :is(#botones button,#objetos div,#bSube,#bGrua,#vjDatos,.pest button,#caja button,#chatEmo button):active{transform:scale(.94);filter:brightness(1.15)}
@@ -482,7 +495,7 @@ body.movil #verTeclado{display:none!important}
 </div>
 <div class="hud" id="metas"></div>
 <div class="hud" id="der">
-  <div id="botones"><button id="bSon" class="s" title="Apagar el sonido">🔊</button><button id="bMenos" class="s" title="Bajar el volumen">−</button><span id="bVol">70 %</span><button id="bMas" class="s" title="Subir el volumen">+</button><button id="bTipos" class="s" title="Elegir qué sonidos se oyen">♪ Sonidos</button><button id="bChat" class="s" title="Abrir y cerrar el chat de este mundo (tecla C)"><kbd>C</kbd>💬<span> Chat</span></button><button id="bInv" class="s" title="Invitar a tu gente (tecla I)"><kbd>I</kbd>👥<span> Invitar</span></button><button id="bMapa" class="s" title="Abrir y cerrar el mapa (tecla M)"><kbd>M</kbd>🗺️<span> Mapa</span></button><button id="bMenu" class="s" title="Abrir el menú (tecla Esc)"><kbd>Esc</kbd>☰<span> Menú</span></button></div>
+  <div id="botones"><button id="bSon" class="s" title="Apagar el sonido">🔊</button><button id="bMenos" class="s" title="Bajar el volumen">−</button><span id="bVol">70 %</span><button id="bMas" class="s" title="Subir el volumen">+</button><button id="bTipos" class="s" title="Elegir qué sonidos se oyen">♪ Sonidos</button><button id="bFoto" class="s" title="Guardar una captura de lo que estás viendo (tecla F)"><kbd>F</kbd>📸<span> Foto</span></button><button id="bChat" class="s" title="Abrir y cerrar el chat de este mundo (tecla C)"><kbd>C</kbd>💬<span> Chat</span></button><button id="bInv" class="s" title="Invitar a tu gente (tecla I)"><kbd>I</kbd>👥<span> Invitar</span></button><button id="bMapa" class="s" title="Abrir y cerrar el mapa (tecla M)"><kbd>M</kbd>🗺️<span> Mapa</span></button><button id="bMenu" class="s" title="Abrir el menú (tecla Esc)"><kbd>Esc</kbd>☰<span> Menú</span></button></div>
   <div id="panSon"></div><div id="tabla"></div><div id="tarjeta"></div>
 </div>
 <div class="hud" id="avisos"></div>
@@ -494,6 +507,7 @@ body.movil #verTeclado{display:none!important}
 <div class="hud" id="cuenta"></div>
 <div class="hud" id="regla"><small id="reglaArr">superficie</small><div id="reglaVia"><div id="reglaLug"></div><i id="reglaYo"></i><i id="reglaVer"><b id="reglaTx"></b></i></div><small id="reglaAb"></small></div>
 <div class="hud" id="aviso-red">📡 Sin señal · sigues jugando, se guarda al volver</div>
+<div id="flash"></div>
 <div id="palanca"><i></i></div>
 <aside id="chat"><header><b><kbd>C</kbd>💬 Chat</b><div id="chatQuien"></div><button class="s" id="chatX" title="Cerrar el chat"><kbd>Esc</kbd>✕</button></header>
   <div id="chatLista"><div id="chatMsgs"></div></div><button id="chatNuevos" type="button"></button>
