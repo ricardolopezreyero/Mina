@@ -1258,6 +1258,21 @@ No se pudo ver el movimiento en vivo porque el navegador de pruebas está oculto
 
 **Cómo quedó.** Existe `login.capitaltorreon.com` (repo `login-capitaltorreon`): Google solo autoriza ese origen. Mina ya no carga el botón de Google: el botón «Entrar con Google» manda a `login.capitaltorreon.com/?volver=<esta página>`; se vuelve con `#sesion=<pase>` (un JWT ES256 de 30 días) y el juego lo manda a `/api/cuenta/google` como `credential`. El mundo lo verifica solo con la llave pública del login (`src/verificar.js`), sin llamar a nadie; si no es un pase de la casa, sigue el camino viejo (tokeninfo). Probado de punta a punta en vivo con la cuenta de Ricardo: entra, vuelve a Mis mundos con «Guardado en tu cuenta».
 
+### 9.47 La Pinturería: monetización ética (ver `docs/ADN_Monetizacion_Mina_v1_2026-10-04_1130.md`)
+
+**Lo que pidió Ricardo.** Monetizar de forma ética, hermosa y que agregue valor: personalización de la maquinita con dinero real, unos diez escalones de precio, que la monetización se adapte a cada persona sin empujar, nada de anuncios, que quede en el ADN del juego. «Puedes jugar increíble por años sin pagar un peso».
+
+**El razonamiento** está completo en el documento del ADN: por qué no se hacen precios distintos por persona (mundo compartido, confianza, leer sin permiso) y cómo se logra lo mismo con una escalera pública de 10 niveles, el rango que la persona elige a la vista, probarse todo gratis, tres invitaciones en la vida de una maquinita, el Fondo común y pruebas solo de presentación, nunca de precio.
+
+**Cómo quedó.**
+- **La Pinturería** es una camioneta rosa en la superficie (x = 33, a la izquierda de la Gasolinera), con letrero como los demás edificios. Se entra como a cualquier edificio y también desde Menú → Mundo → «Pintar mi maquinita».
+- **La escalera:** 10 niveles ($19 → $9,999 MXN), cada uno incluye los de abajo; subir cuesta la diferencia. Única fuente: `src/tienda.js` (el juego la pide con `POST /api/tienda`). Aparte: ✦ Mecenas (desde $99, solo da el ✦), Fondo común ($19 por maquinita nueva) y regalar un nivel a alguien del mundo.
+- **La pintura** (`miPinta`, `o.p`): `c1 c2 c3` colores, `calca` (48 emojis), `luz` (faro y luz de piso), `estela` (5), `bocina` (6 melodías, tecla **B**; todos tienen el pip-pip), `placa` (dorada, corona, marco), `carro` (Escarabajo, Locomotora, Submarino), `mascota` (pájaro, perro, dron, mariposa, luciérnaga). Se dibuja en `dibMaq(…, pinta)`; la estela en `estela()`; el claxon en `claxon()`.
+- **El servidor manda:** la pintura vive en la `Maquina` (`m.pinta`) y la valida `filtrarPinta(p, nivel)`; lo comprado en `m.tienda = { nivel, mecenas, compras[] }`; el mundo la reparte en `publico()` y en el mensaje `pinta`. Probado: una maquinita sin nivel que manda colores recibe `{}` de vuelta.
+- **Pagos:** `POST /api/tienda/pagar` (requiere la sesión de la cuenta y que la maquinita sea la de esa cuenta) crea una sesión de Stripe Checkout con el precio del servidor; al volver con `?compra=<sesión>`, `POST /api/tienda/confirmar` le pregunta a Stripe y entrega una sola vez por sesión. Tope de cuidado $5,000 por maquinita cada 30 días. La llave `STRIPE_SECRET_KEY` se liga desde la bóveda (Secrets Store). Sin llave: la tienda deja probar todo y dice «los pagos se abren pronto». En local, `POST /api/tienda/prueba` (solo con `MINA_PRUEBA`) entrega niveles sin pagar para probar.
+- **Las piedras con nombre** (nivel 9): al terminar un mundo, los nombres de quienes tienen nivel 9 se guardan en `m.piedras` y se dibujan a la orilla izquierda del lago del Jardín.
+- **Invitaciones:** `invitarPintureria()`, tres en la vida de la maquinita (20 min, 3 h, 10 h de juego), solo en la superficie, nunca si ya abrió la tienda. El Manifiesto trae la sección «Cómo se sostiene Mina».
+
 ## 10. Revisión de código del 2 de octubre
 
 Se revisó todo el código buscando fallas y se corrigieron estas:

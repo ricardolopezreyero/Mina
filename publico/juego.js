@@ -284,6 +284,7 @@ const OBJ = [
 const CORTO = ['Reserva', 'Nanobots', 'Dinamita', 'Plástico', 'Cuántico', 'Transmisor'];
 
 const EDIF = [
+  { id: 'pin', x: 33, n: 'La Pinturería', h: 'Pinta y personaliza tu maquinita', col: '#ff7ac8', tinta: '#2a1a14' },
   { id: 'gas', x: 40, n: 'Gasolinera', h: 'Rellena tu combustible', col: '#e0483a', tinta: '#fff7e6' },
   { id: 'bas', x: 45, n: 'La Báscula', h: 'Vende tu mineral', col: '#ffd23f', tinta: '#2a1a14' },
   { id: 'tal', x: 50, n: 'El Taller', h: 'Mejora tu maquinita', col: '#6ec3ff', tinta: '#12222e' },
@@ -1073,9 +1074,11 @@ function armarEden() {
       for (let i = 0; i < 12; i++) { const x = 41.6 + i * 1.16; q.fillStyle = '#ffffff'; q.beginPath(); q.ellipse(x, 105.12, 0.3, 0.1, 0, 0, 7); q.fill(); q.fillStyle = FRUTA[i % 5]; bola(q, x, 105, 0.13); }
       q.fillStyle = '#8a5a36'; q.fillRect(41, 106.25, 14, 0.14); });
   }
+  // las piedras con nombre (La Pinturería, nivel 9): a la orilla izquierda del lago, grabadas para siempre
+  edenPiedras.slice(0, 12).forEach((nom, k) => { const x = 5 + (k % 6) * 3.6, y = 109.4 - Math.floor(k / 6) * 2.2; pon(x - 1.8, y - 1.3, x + 1.8, y + 0.8, (q) => { q.fillStyle = 'rgba(0,0,0,.12)'; q.beginPath(); q.ellipse(x, y + 0.55, 1.7, 0.25, 0, 0, 7); q.fill(); q.fillStyle = '#9a9590'; q.beginPath(); q.roundRect(x - 1.5, y - 0.9, 3, 1.45, 0.45); q.fill(); q.fillStyle = '#b8b3ad'; q.beginPath(); q.roundRect(x - 1.3, y - 0.8, 2.6, 0.5, 0.3); q.fill(); q.fillStyle = '#2a1a14'; q.font = '800 0.4px system-ui'; q.textAlign = 'center'; q.textBaseline = 'middle'; q.fillText(String(nom).slice(0, 12), x, y + 0.05); q.fillStyle = '#ffd23f'; q.font = '0.3px system-ui'; q.fillText('★', x, y - 0.52); }); });
   // las maquinitas de este mundo, descansando junto a la mesa, cada una con su nombre
   if (sinMineral !== remin) { const g = edenGente(), n = g.length, paso = Math.min(1.9, 17 / Math.max(1, n)), x0 = 48 - ((n - 1) * paso) / 2;
-    g.forEach((j, k) => { const x = x0 + k * paso, y = 107.6; pon(x - 2.2, y - 1.2, x + 2.2, y + 1.9, (q) => { const m = q.getTransform(); q.save(); q.setTransform(1, 0, 0, 1, 0, 0); dibMaq(q, x * m.a + m.e, y * m.d + m.f, 1.5 * m.a, j.m, k % 2 ? -1 : 1, false, 0, '', '', 0.4); q.restore(); q.font = `800 ${n > 6 ? 0.36 : 0.42}px system-ui,sans-serif`; q.textAlign = 'center'; q.textBaseline = 'top'; q.lineJoin = 'round'; q.strokeStyle = 'rgba(20,60,30,.85)'; q.lineWidth = 0.12; const yn = y + 0.72 + (n > 6 && k % 2 ? 0.5 : 0); q.strokeText(j.n, x, yn); q.fillStyle = '#fff'; q.fillText(j.n, x, yn); }); }); }
+    g.forEach((j, k) => { const x = x0 + k * paso, y = 107.6; pon(x - 2.2, y - 1.2, x + 2.2, y + 1.9, (q) => { const m = q.getTransform(); q.save(); q.setTransform(1, 0, 0, 1, 0, 0); dibMaq(q, x * m.a + m.e, y * m.d + m.f, 1.5 * m.a, j.m, k % 2 ? -1 : 1, false, 0, '', '', 0.4, pintaDe(j.i)); q.restore(); q.font = `800 ${n > 6 ? 0.36 : 0.42}px system-ui,sans-serif`; q.textAlign = 'center'; q.textBaseline = 'top'; q.lineJoin = 'round'; q.strokeStyle = 'rgba(20,60,30,.85)'; q.lineWidth = 0.12; const yn = y + 0.72 + (n > 6 && k % 2 ? 0.5 : 0); q.strokeText(j.n, x, yn); q.fillStyle = '#fff'; q.fillText(j.n, x, yn); }); }); }
   // trajineras en el lago
   for (let k = 0; k < 7; k++) { const x = 7 + k * 13.5 + R(-3, 3), y = R(112, 118), c = de(['#ff5a4d', '#ffb02e', '#3fb7a0', '#ff7ac8', '#6a8dff']), c2 = de(['#ffe14d', '#ffffff', '#ff9a1f']); if (Math.abs(x - 48.5) < 4 && y < 114) continue; pon(x - 2.2, y - 2, x + 2.2, y + 1.2, (q) => { q.fillStyle = 'rgba(20,70,110,.25)'; q.beginPath(); q.ellipse(x, y + 0.45, 1.9, 0.25, 0, 0, 7); q.fill(); q.fillStyle = c; q.beginPath(); q.moveTo(x - 1.8, y - 0.15); q.lineTo(x + 1.8, y - 0.15); q.lineTo(x + 1.45, y + 0.35); q.lineTo(x - 1.45, y + 0.35); q.fill(); q.strokeStyle = '#7a5230'; q.lineWidth = 0.08; for (const a of [-1, 1]) { q.beginPath(); q.moveTo(x + a, y - 0.15); q.lineTo(x + a, y - 1.1); q.stroke(); } q.strokeStyle = c2; q.lineWidth = 0.36; q.beginPath(); q.arc(x, y - 1.05, 1.02, Math.PI, Math.PI * 2); q.stroke(); q.fillStyle = c; for (let i = 0; i < 6; i++) bola(q, x + Math.cos(Math.PI + (i + 0.5) * 0.524) * 1.02, y - 1.05 + Math.sin(Math.PI + (i + 0.5) * 0.524) * 1.02, 0.12); }); }
   // peces que brincan
@@ -1085,7 +1088,7 @@ function armarEden() {
   return E;
 }
 function pintarEden(q, bx, by) {              // el pedazo de jardín que le toca a un bloque (ya recortado a sus celdas abiertas)
-  const firma = seed + '|' + (sinMineral === remin ? 'fin' : edenGente().map((j) => j.n + j.m).join(','));
+  const firma = seed + '|' + (sinMineral === remin ? 'fin' : edenGente().map((j) => j.n + j.m + JSON.stringify(pintaDe(j.i) || '')).join(',')) + '|' + edenPiedras.join(',');
   if (!edenE || firma !== edenFirma) { edenFirma = firma; edenE = armarEden(); }
   const x0 = bx * BL, y0 = by * BL - EDEN0, x1 = x0 + BL, y1 = y0 + BL;
   q.setTransform(T, 0, 0, T, -x0 * T, -y0 * T);
@@ -1214,14 +1217,14 @@ function pasoCeremonia() {
 function dibujarCeremonia(ox, oy) {
   const C = ceremonia, t = (performance.now() - C.t0) / 1000;
   for (const j of C.part) {
-    if (t < CER.union) { g.globalAlpha = 0.35 + 0.25 * Math.sin(t * 4); dibMaq(g, ox + j.a[0] * T, oy + j.a[1] * T, T * 1.5, j.m, j.k % 2 ? -1 : 1, false, 0, '', '', j.a[0]); g.globalAlpha = 1; }      // el retrato, esperándola
+    if (t < CER.union) { g.globalAlpha = 0.35 + 0.25 * Math.sin(t * 4); dibMaq(g, ox + j.a[0] * T, oy + j.a[1] * T, T * 1.5, j.m, j.k % 2 ? -1 : 1, false, 0, '', '', j.a[0], pintaDe(j.i)); g.globalAlpha = 1; }      // el retrato, esperándola
     const e = posCeremonia(j, t); if (!e) continue;
     const px = ox + e.p[0] * T, py = oy + e.p[1] * T;
     if (e.sube !== undefined || (t >= CER.union && t < CER.union + 0.8)) {            // luz al unirse y al subir
       const rr = T * (1.6 + (e.sube || 0) * 1.5), gl = g.createRadialGradient(px, py, 0, px, py, rr); gl.addColorStop(0, `rgba(255,244,205,${0.55 * e.alfa})`); gl.addColorStop(1, 'rgba(255,244,205,0)');
       g.globalCompositeOperation = 'lighter'; g.fillStyle = gl; g.fillRect(px - rr, py - rr, rr * 2, rr * 2); g.globalCompositeOperation = 'source-over';
     }
-    g.globalAlpha = e.alfa; dibMaq(g, px, py, T * e.esc, j.m, j.k % 2 ? -1 : 1, e.vuela, 0, op.nombres && e.alfa > 0.6 ? j.n : '', '', e.p[0]); g.globalAlpha = 1;
+    g.globalAlpha = e.alfa; dibMaq(g, px, py, T * e.esc, j.m, j.k % 2 ? -1 : 1, e.vuela, 0, op.nombres && e.alfa > 0.6 ? j.n : '', '', e.p[0], pintaDe(j.i)); g.globalAlpha = 1;
   }
 }
 // El torbellino: los minerales nacen de golpe por todos lados (el mundo entero baja a la vez), entran a un embudo sobre cada
@@ -2011,6 +2014,8 @@ function recibir(d) {
       bautizo = bautizo || (maqLocal && maqLocal.n ? { n: maqLocal.n, m: maqLocal.m | 0 } : nombreNuevo());
       return hola(bautizo);
     }
+    case 'pinta': { if (d.i === miI) { miPinta = d.p || {}; miMe = d.me | 0; } else { const o = otros.get(d.i); if (o) { o.p = d.p || {}; o.me = d.me | 0; } } edenE = null; if (menu === 'pin') pintarMenu(); return; }
+    case 'bocina': { const o = otros.get(d.i); if (!o || !o.on || o.x === undefined) return; const dist = Math.hypot(o.x - yo.x, o.y - yo.y); if (dist < 40) claxon(d.b | 0, Math.max(0.15, 1 - dist / 40), 'otros'); return; }
     case 'nom': {              // alguien rebautizó su maquinita o le cambió el modelo
       if (d.i === miI) {
         const viejo = miNombre; miNombre = d.n; miModelo = d.m; guardarMundo(); dugCambios++;
@@ -2028,7 +2033,7 @@ function recibir(d) {
     }
     case 'noexiste': quitarMundo(mundoId); if (deCasa) return location.replace('/'); return pantallaFinal('Este mundo no existe', 'Puede que lo hayan borrado o que la liga esté incompleta.');
     case 'mira': return conMapa(d, iniciarVer);
-    case 'fin': if (!S || d.r !== remin) return; if (!(S.fl.edenF && S.fl.edenF[mundoId + '|' + remin]) && !ceremonia) finDelMundo(d.i, d); else if (sinMineral !== remin) vaciarMinerales(); return;
+    case 'fin': if (d.piedras) edenPiedras = d.piedras; if (!S || d.r !== remin) return; if (!(S.fl.edenF && S.fl.edenF[mundoId + '|' + remin]) && !ceremonia) finDelMundo(d.i, d); else if (sinMineral !== remin) vaciarMinerales(); return;
     case 'chat': if (d.id && typeof d.x === 'string') agregarChat(d); return;
     case 'chatMas': return chatViejos(d.l);
     case 'chatNo': return aviso('Vas muy rápido: espera un momento para escribir otra vez.');
@@ -2128,7 +2133,9 @@ function iniciarMundo(d, local) {
   nuevaSemilla(); ponerTerreno(d);
   if (otraTierra) { pendientes = []; recientes.clear(); yo.perf = null; if (yo.y > INICIO_Y + 0.01) { yo.x = INICIO_X; yo.y = INICIO_Y; yo.vx = yo.vy = 0; } }
   otros.clear();
-  for (const j of d.jug) { if (j.i === miI) { miNombre = j.n; miModelo = j.m; } else otros.set(j.i, j); }
+  for (const j of d.jug) { if (j.i === miI) { miNombre = j.n; miModelo = j.m; miPinta = j.p || {}; miMe = j.me | 0; } else otros.set(j.i, j); }
+  if (d.piedras) edenPiedras = d.piedras;
+  if (d.regalo) setTimeout(() => tarjeta('🎁 Alguien pagó tu primera pintura', 'Hay para todos. Pásate a La Pinturería (la camioneta rosa, a la izquierda de la Gasolinera) y elige tu color.', 'msj', 14000), 2500);
   const primera = !S;
   if (primera) {
     S = sanear(d.est);
@@ -2472,7 +2479,16 @@ function casa(e) {
   q.fillStyle = '#3a2d28'; q.fillRect(24 * u, 16 * u, 1.6 * u, 30 * u); q.fillRect(52.4 * u, 16 * u, 1.6 * u, 30 * u);   // postes del letrero
   q.translate(10 * u, 0);
   q.fillStyle = '#00000033'; q.beginPath(); q.ellipse(29 * u, P - u * 0.6, 27 * u, 2 * u, 0, 0, 7); q.fill();
-  if (e.id === 'gas') {
+  if (e.id === 'pin') {                              // La Pinturería: una camioneta rosa con toldo de rayas, latas de colores y una brocha
+    q.fillStyle = '#ff7ac8'; q.beginPath(); q.roundRect(4 * u, (y0 - 30) * u, 50 * u, 24 * u, [6 * u, 10 * u, 2 * u, 2 * u]); q.fill(); q.strokeStyle = '#8a3a6a'; q.lineWidth = u * 0.6; q.stroke();
+    q.fillStyle = '#ffffff'; q.fillRect(4 * u, (y0 - 19) * u, 50 * u, 3 * u);                                                   // la raya blanca
+    caja(38, y0 - 27, 12, 9, '#9fe3ff'); caja(8, y0 - 27, 26, 9, '#fff7e6');                                                     // parabrisas y ventana de la tienda
+    ['#ffd23f', '#6ec3ff', '#6fdc7a', '#c05cff', '#ff9f40', '#ff6b5a', '#f3e6d8'].forEach((c, i) => { q.fillStyle = c; q.fillRect((9 + i * 3.5) * u, (y0 - 25) * u, 2.2 * u, 5 * u); q.fillStyle = '#2b2b2b'; q.fillRect((9 + i * 3.5) * u, (y0 - 25.6) * u, 2.2 * u, 0.7 * u); });   // las latas
+    for (let i = 0; i < 8; i++) { q.fillStyle = i % 2 ? '#ffffff' : '#ff6b5a'; q.beginPath(); q.moveTo((5 + i * 6.1) * u, (y0 - 33) * u); q.lineTo((11.1 + i * 6.1) * u, (y0 - 33) * u); q.lineTo((8 + i * 6.1) * u, (y0 - 29.5) * u); q.closePath(); q.fill(); }   // el toldo
+    for (const x of [12, 46]) { q.fillStyle = '#2b2b2b'; q.beginPath(); q.arc(x * u, (y0 - 4.5) * u, 4.5 * u, 0, 7); q.fill(); q.fillStyle = '#8d8a86'; q.beginPath(); q.arc(x * u, (y0 - 4.5) * u, 2 * u, 0, 7); q.fill(); }   // las llantas
+    q.fillStyle = '#5b3d17'; q.fillRect(27.6 * u, (y0 - 43) * u, 1.8 * u, 10 * u); q.fillStyle = '#ffd23f'; q.fillRect(25.5 * u, (y0 - 49) * u, 6 * u, 7 * u); q.fillStyle = '#ff7ac8'; q.fillRect(25.5 * u, (y0 - 49) * u, 6 * u, 2.6 * u);   // la brocha, con la punta rosa
+    letrero();
+  } else if (e.id === 'gas') {
     caja(31, y0 - 30, 20, 30, '#e9e2d3'); caja(31, y0 - 33, 20, 4, '#b8362b');                         // caseta
     caja(34, y0 - 24, 7, 8, '#7fd0ee'); q.fillStyle = '#ffffff88'; q.fillRect(34.6 * u, (y0 - 23.4) * u, 2 * u, 6.8 * u);
     caja(43, y0 - 16, 6, 16, '#3a2d28'); q.fillStyle = '#ffd23f'; q.fillRect(47.6 * u, (y0 - 8) * u, 0.9 * u, 0.9 * u);
@@ -2544,8 +2560,10 @@ function casa(e) {
 }
 
 /* ── La maquinita ── */
-function dibMaq(q, px, py, t, modelo, dir, vuela, perfDir, nombre, estado, mundoX = px / t) {
-  const [c1, c2] = MODELOS[modelo] || MODELOS[0], w = t * 0.74, h = t * 0.8, x = px - w / 2, y = py - h / 2, lw = Math.max(1, t * 0.03);
+const rgba = (hx, a) => { const n = parseInt(hx.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; };
+function dibMaq(q, px, py, t, modelo, dir, vuela, perfDir, nombre, estado, mundoX = px / t, pinta = null) {
+  const P = pinta || {}, M = MODELOS[modelo] || MODELOS[0], c1 = P.c1 || M[0], c2 = P.c2 || M[1], carro = P.carro | 0, w = t * 0.74, h = t * 0.8, x = px - w / 2, y = py - h / 2, lw = Math.max(1, t * 0.03);
+  if (P.luz) { const gl = q.createRadialGradient(px, y + h * 0.95, 0, px, y + h * 0.95, w * 0.95); gl.addColorStop(0, rgba(P.luz, 0.5)); gl.addColorStop(1, rgba(P.luz, 0)); q.fillStyle = gl; q.fillRect(px - w, y + h * 0.5, w * 2, h * 0.85); }      // luz de piso
   q.lineJoin = 'round';
   if (perfDir) {                                     // taladro girando
     const z = (reloj * 9) % 1, base = '#d7dbe0', raya = '#7f8791';
@@ -2567,14 +2585,22 @@ function dibMaq(q, px, py, t, modelo, dir, vuela, perfDir, nombre, estado, mundo
   }
   // orugas
   q.fillStyle = '#26221f'; q.beginPath(); q.roundRect(x - t * 0.03, y + h * 0.7, w + t * 0.06, h * 0.3, h * 0.15); q.fill();
-  q.fillStyle = '#6f6a66'; for (let i = 0; i < 3; i++) { q.beginPath(); q.arc(x + w * (0.17 + i * 0.33), y + h * 0.85, h * 0.085, 0, 7); q.fill(); }
+  q.fillStyle = P.c3 || '#6f6a66'; for (let i = 0; i < 3; i++) { q.beginPath(); q.arc(x + w * (0.17 + i * 0.33), y + h * 0.85, h * 0.085, 0, 7); q.fill(); }
   q.fillStyle = '#4a4543'; const paso = w / 5, corre = ((mundoX * t * 0.9) % paso + paso) % paso;
   for (let i = -1; i < 6; i++) { const tx = x + i * paso + corre; if (tx > x - t * 0.02 && tx < x + w) { q.fillRect(tx, y + h * 0.71, t * 0.03, h * 0.05); q.fillRect(x + w - (tx - x) - t * 0.03, y + h * 0.95, t * 0.03, h * 0.05); } }
   // escape
   q.fillStyle = '#4a4543'; q.fillRect(px - dir * w * 0.42 - t * 0.03, y + h * 0.08, t * 0.06, h * 0.2);
   // cuerpo
   const gr = q.createLinearGradient(0, y + h * 0.14, 0, y + h * 0.76); gr.addColorStop(0, mezcla(c1, 0.25)); gr.addColorStop(0.5, c1); gr.addColorStop(1, c2);
-  q.fillStyle = gr; q.beginPath(); q.roundRect(x, y + h * 0.16, w, h * 0.6, t * 0.12); q.fill(); q.strokeStyle = mezcla(c2, -0.5); q.lineWidth = lw; q.stroke();
+  q.fillStyle = gr; q.beginPath();
+  if (carro === 1) { q.moveTo(x, y + h * 0.76); q.lineTo(x, y + h * 0.5); q.quadraticCurveTo(x, y + h * 0.08, px, y + h * 0.08); q.quadraticCurveTo(x + w, y + h * 0.08, x + w, y + h * 0.5); q.lineTo(x + w, y + h * 0.76); q.closePath(); }      // El Escarabajo: lomo redondo
+  else if (carro === 2) q.roundRect(x, y + h * 0.24, w, h * 0.52, t * 0.04);      // La Locomotora: caja recta; la caldera y la chimenea van aparte
+  else if (carro === 3) q.roundRect(x - t * 0.03, y + h * 0.14, w + t * 0.06, h * 0.62, h * 0.31);      // El Submarino: cápsula
+  else q.roundRect(x, y + h * 0.16, w, h * 0.6, t * 0.12);
+  q.fill(); q.strokeStyle = mezcla(c2, -0.5); q.lineWidth = lw; q.stroke();
+  if (carro === 1) { q.fillStyle = mezcla(c2, -0.4); for (const [a, b] of [[-0.3, 0.3], [-0.12, 0.2], [0.08, 0.3], [0.28, 0.24]]) { q.beginPath(); q.arc(px + a * w, y + h * b, w * 0.045, 0, 7); q.fill(); } }
+  else if (carro === 2) { q.fillStyle = mezcla(c2, -0.3); q.fillRect(px + dir * w * 0.3 - t * 0.045, y + h * 0.02, t * 0.09, h * 0.24); q.fillStyle = c1; q.beginPath(); q.ellipse(px + dir * w * 0.3, y + h * 0.5, w * 0.17, h * 0.21, 0, 0, 7); q.fill(); q.strokeStyle = mezcla(c2, -0.5); q.stroke(); }
+  else if (carro === 3) { q.fillStyle = '#7f8791'; q.fillRect(px - dir * w * 0.25 - t * 0.02, y, t * 0.04, h * 0.18); q.fillRect(px - dir * w * 0.25 - (dir > 0 ? t * 0.02 : t * 0.07), y, t * 0.09, t * 0.04); q.fillStyle = '#9fe3ff'; q.beginPath(); q.arc(px - dir * w * 0.25, y + h * 0.42, w * 0.07, 0, 7); q.fill(); q.strokeStyle = mezcla(c2, -0.5); q.stroke(); }
   q.fillStyle = mezcla(c2, -0.25); q.fillRect(x + w * 0.06, y + h * 0.6, w * 0.88, h * 0.05);
   if (modelo % 4 === 1) { q.fillStyle = '#ffffffcc'; q.fillRect(x + w * 0.06, y + h * 0.5, w * 0.88, h * 0.05); }
   else if (modelo % 4 === 2) { q.fillStyle = '#1b120e99'; for (let i = 0; i < 4; i++) q.fillRect(px - dir * w * (0.08 + i * 0.09) - t * 0.015, y + h * 0.26, t * 0.03, h * 0.28); }
@@ -2586,12 +2612,19 @@ function dibMaq(q, px, py, t, modelo, dir, vuela, perfDir, nombre, estado, mundo
   q.closePath(); q.fill(); q.strokeStyle = '#1b3a4a'; q.stroke();
   q.fillStyle = '#ffffffaa'; q.beginPath(); q.ellipse(cx - w * 0.07, cy - h * 0.1, w * 0.05, h * 0.05, -0.6, 0, 7); q.fill();
   q.fillStyle = '#24323a'; q.beginPath(); q.arc(cx + dir * w * 0.02, cy - h * 0.03, w * 0.055, 0, 7); q.fill();     // piloto
+  if (P.calca !== undefined && TC.CALCAS[P.calca]) { q.font = `${h * 0.3}px system-ui`; q.textAlign = 'center'; q.textBaseline = 'middle'; q.fillText(TC.CALCAS[P.calca], px - dir * w * 0.24, y + h * 0.47); }      // la calcomanía
   // faro
-  q.fillStyle = q === g ? faroCol : '#fff3b0'; q.beginPath(); q.arc(px + dir * w * 0.44, y + h * 0.5, h * 0.06, 0, 7); q.fill(); if (q === g) faroCol = '#fff3b0';
+  q.fillStyle = P.luz || (q === g ? faroCol : '#fff3b0'); q.beginPath(); q.arc(px + dir * w * 0.44, y + h * 0.5, h * 0.06, 0, 7); q.fill(); if (q === g) faroCol = '#fff3b0';
+  if (P.mascota) {                                   // la mascota: va a un lado, flotando
+    const mx = px - dir * w * 0.95, my = y - h * 0.05 + Math.sin(reloj * 3.1 + px * 0.013) * t * 0.07;
+    if (P.mascota === 5) { const gl = q.createRadialGradient(mx, my, 0, mx, my, t * 0.24); gl.addColorStop(0, 'rgba(255,240,120,.9)'); gl.addColorStop(1, 'rgba(255,240,120,0)'); q.fillStyle = gl; q.fillRect(mx - t * 0.24, my - t * 0.24, t * 0.48, t * 0.48); q.fillStyle = '#fff7b0'; q.beginPath(); q.arc(mx, my, t * 0.05, 0, 7); q.fill(); }
+    else { q.font = `${t * 0.42}px system-ui`; q.textAlign = 'center'; q.textBaseline = 'middle'; q.save(); q.translate(mx, my); if (dir < 0) q.scale(-1, 1); q.fillText(TC.MASC_EMOJI[P.mascota] || '', 0, 0); q.restore(); }
+  }
   if (nombre) {
-    q.font = `700 ${Math.max(10 * RES, t * 0.27)}px system-ui`; q.textAlign = 'center'; q.textBaseline = 'bottom';
-    const tx = estado ? nombre + ' · ' + estado : nombre;
-    q.lineWidth = Math.max(2, t * 0.07); q.strokeStyle = '#000c'; q.strokeText(tx, px, y - t * 0.16); q.fillStyle = '#fff'; q.fillText(tx, px, y - t * 0.16);
+    const placa = P.placa | 0, tx = (placa === 2 ? '👑 ' : '') + (estado ? nombre + ' · ' + estado : nombre), ty = y - t * 0.16, tam = Math.max(10 * RES, t * 0.27);
+    q.font = `700 ${tam}px system-ui`; q.textAlign = 'center'; q.textBaseline = 'bottom';
+    if (placa === 3) { const an = q.measureText(tx).width + t * 0.3, al = tam * 1.35; q.fillStyle = '#000a'; q.beginPath(); q.roundRect(px - an / 2, ty - al, an, al, t * 0.08); q.fill(); q.strokeStyle = c1; q.lineWidth = Math.max(1, t * 0.03); q.stroke(); }
+    q.lineWidth = Math.max(2, t * 0.07); q.strokeStyle = '#000c'; q.strokeText(tx, px, ty); q.fillStyle = placa === 1 ? '#ffd23f' : '#fff'; q.fillText(tx, px, ty);
   }
 }
 
@@ -3024,7 +3057,8 @@ function dibujar() {
   // las demás maquinitas y la mía
   for (const o of otros.values()) {
     if (!o.on || o.x === undefined || (ceremonia && ceremonia.ids.has(o.i))) continue;
-    dibMaq(g, ox + o.x * T, oy + o.y * T, T, o.m, o.fl & 1 ? 1 : -1, o.fl & 2 ? 1 : o.fl & 96 ? 2 : 0, o.fl & 4 ? (o.fl & 16 ? 2 : o.fl & 1 ? 1 : -1) : 0, op.nombres ? o.n : '', o.fl & 8 ? 'en pausa' : '', o.x);
+    dibMaq(g, ox + o.x * T, oy + o.y * T, T, o.m, o.fl & 1 ? 1 : -1, o.fl & 2 ? 1 : o.fl & 96 ? 2 : 0, o.fl & 4 ? (o.fl & 16 ? 2 : o.fl & 1 ? 1 : -1) : 0, op.nombres ? (o.me ? '✦ ' : '') + o.n : '', o.fl & 8 ? 'en pausa' : '', o.x, o.p || null);
+    estela(o.p, o.x, o.y, (o.fl & 2) || (o.fl & 96));
   }
   const p = yo.perf, mx = ox + vis.x * T, my = oy + vis.y * T;
   if (p && p.tipo === 2) {                         // la piedra que estás perforando se queda a la vista y se va desmoronando
@@ -3042,7 +3076,8 @@ function dibujar() {
   const enPelea = tiempo - (yo.pelea || -9) < 0.7, bx = enPelea ? Math.sin(reloj * 70) * T * 0.035 : 0;       // en pelea la maquinita vibra y saca los rotorcitos
   faroCol = tiempo - tGas < 3 ? '#6fc3ff' : '#fff3b0';
   if (ceremonia) dibujarCeremonia(ox, oy);
-  if (!soloVer && !ceremonia) dibMaq(g, mx + bx, my, T, miModelo, yo.dir, yo.vuela ? 1 : yo.planea || enPelea || (yo.agua && yo.picada) ? 2 : 0, p ? (p.ty > Math.floor(p.oy) ? 2 : p.tx < Math.floor(p.ox) ? -1 : 1) : yo.ataca || 0, op.nombres ? miNombre : '', '', vis.x);
+  if (!soloVer && !ceremonia) dibMaq(g, mx + bx, my, T, miModelo, yo.dir, yo.vuela ? 1 : yo.planea || enPelea || (yo.agua && yo.picada) ? 2 : 0, p ? (p.ty > Math.floor(p.oy) ? 2 : p.tx < Math.floor(p.ox) ? -1 : 1) : yo.ataca || 0, op.nombres ? (miMe ? '✦ ' : '') + miNombre : '', '', vis.x, pintaVista());
+  if (!soloVer && !ceremonia) estela(pintaVista(), vis.x, vis.y, yo.vuela || yo.planea || Math.abs(yo.vx) + Math.abs(yo.vy) > 5);
   // el aire como resistencia: al caer rápido se forma un arco bajo la maquinita; muy rápido se pone al rojo y deja estela
   const dens = vis.y < 0 ? Math.max(0, 1 + (vis.y + HH) / 45000) : 0;
   if (yo.vy > 30 && dens > 0.02) {
@@ -3413,6 +3448,139 @@ function htmlPublico() {
   return h;
 }
 
+/* ════════ La Pinturería ════════ RLR */
+// Mina se juega completo gratis; aquí solo se vende cómo se ve la maquinita (docs/ADN_Monetizacion_Mina). Los precios vienen
+// del servidor y son iguales para todos; probarse todo es gratis; subir de nivel cuesta la diferencia. Las listas de abajo son
+// copia de src/tienda.js: el servidor valida, esto solo dibuja.
+const TC = { COLORES: ['#ffd23f', '#ff6b5a', '#6ec3ff', '#6fdc7a', '#c05cff', '#ff9f40', '#f3e6d8', '#ff7ac8', '#ffffff', '#1b1b1b', '#e0483a', '#2f8a3a', '#2a6fa8', '#7426a8', '#b05e12', '#9a8774', '#00c2a8', '#f5e663', '#ff3d7f', '#3d5afe', '#8bc34a', '#795548', '#607d8b', '#c0a16b'], CALCAS: ['⭐', '❤️', '⚡', '🔥', '🌈', '🌙', '☀️', '🌵', '🌸', '🍀', '🍉', '🌶️', '🦅', '🐺', '🦂', '🐢', '🐝', '🦋', '🐉', '🦈', '⚓', '🎸', '🎵', '🎲', '⚽', '🏀', '🏁', '🚀', '💎', '👑', '💀', '🤖', '👾', '🎯', '🧭', '⛏️', '🔱', '✝️', '☮️', '♾️', '🇲🇽', '🏳️‍🌈', '🍕', '🌮', '🥑', '🐾', '🧿', '✨'], LUCES: ['#fff3b0', '#ff4d4d', '#4dff88', '#4da6ff', '#ff4df2', '#ffd23f', '#ffffff', '#9d4dff'], ESTELAS: ['Ninguna', 'Chispas doradas', 'Arcoíris', 'Estrellas', 'Corazones', 'Burbujas'], BOCINAS: ['Pip-pip', 'Mariachi', 'Tren', 'Barco', 'Risa', 'Campanitas'], PLACAS: ['Normal', 'Dorada', 'Con corona', 'Con marco'], CARROS: ['De fábrica', 'El Escarabajo', 'La Locomotora', 'El Submarino'], MASCOTAS: ['Ninguna', 'Pájaro', 'Perro', 'Dron', 'Mariposa', 'Luciérnaga'], MASC_EMOJI: ['', '🐦', '🐕', '🛸', '🦋', ''] };
+const NIVEL_CLAVE = { c1: 1, c2: 2, c3: 2, calca: 3, luz: 4, estela: 5, bocina: 6, placa: 6, carro: 7, mascota: 8 };
+let miPinta = {}, miMe = 0, edenPiedras = [], tiendaAnimT = 0, tBocina = 0, estelaN = 0;
+let tienda = { niveles: [], mio: { nivel: 0, mecenas: 0, pinta: {} }, fondo: 0, pagos: 0, cargada: 0, cargando: 0, nivelVista: 0, prueba: null, regaloA: -1, mecenasMonto: 99, fondoN: 3, mecenasMin: 99, fondoPrecio: 19, tope: 5000, error: '' };
+const pintaDe = (i) => (i === miI ? miPinta : (otros.get(i)?.p || null));
+const pintaVista = () => (menu === 'pin' && tienda.prueba ? tienda.prueba : miPinta);
+const nivelMio = () => tienda.mio.nivel | 0;
+const pesos = (n) => '$' + Math.round(n).toLocaleString('es-MX');
+async function cargarTienda() {
+  tienda.cargando = 1;
+  try {
+    const r = await fetch('/api/tienda', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ k: miK }) }), d = await r.json();
+    if (!d.niveles) throw 0;
+    tienda = { ...tienda, ...d, cargada: 1, error: '' }; miPinta = d.mio.pinta || {}; miMe = d.mio.mecenas > 0 ? 1 : 0;
+  } catch { tienda.error = 'No se pudo abrir la tienda. Revisa tu conexión e inténtalo otra vez.'; }
+  tienda.cargando = 0;
+  if (menu === 'pin') pintarMenu();
+}
+// La carpeta en la que abre: la del nivel que ya es tuyo; si no tienes ninguno, la del rango que elegiste.
+function nivelPorRango() { if (nivelMio()) return nivelMio(); let n = 1; for (const x of tienda.niveles) if (x.precio <= (op.rango || 0)) n = x.n; return n; }
+function htmlTienda() {
+  const L = tienda.niveles, mio = nivelMio();
+  let h = cab('🎨 La Pinturería') + '<div class="cuerpo tienda">';
+  h += '<div class="promesa"><b>Mina se juega completo gratis.</b> Nada de aquí hace falta para bajar, ganar ni terminar. Esto es solo para que tu maquinita se vea como tú. Pruébate lo que quieras: probar no cuesta.</div>';
+  if (tienda.error) h += `<p class="nota">${tienda.error}</p>`;
+  if (!tienda.cargada) return h + '<p class="nota">Abriendo la tienda…</p></div>';
+  if (op.rango === undefined) h += `<h4>¿Qué rango te acomoda?</h4><p class="nota">Solo para abrir la tienda en tu carpeta. Lo cambias cuando quieras, y los precios son los mismos para todos.</p><div class="chips">${[[0, 'Solo mirar 👀'], [79, 'Hasta $79'], [599, 'Hasta $599'], [1999, 'Hasta $1,999'], [99999, 'El que haga falta']].map(([v, t]) => `<button class="s" data-a="tRango" data-v="${v}">${t}</button>`).join('')}</div>`;
+  const nv = tienda.nivelVista || nivelPorRango(); tienda.nivelVista = nv; const N = L[nv - 1], tuyo = nv <= mio;
+  h += `<div class="escalera">${L.map((x) => `<button data-a="tNivel" data-v="${x.n}" class="${x.n === nv ? 'on' : ''}${x.n <= mio ? ' mio' : ''}" title="${esc(x.nombre)}"><b>${x.n}</b><small>${pesos(x.precio)}</small></button>`).join('')}</div>`;
+  h += `<div class="carpeta"><div><div class="vista"><canvas id="pintaMaq" width="420" height="340"></canvas><small>${esc(miNombre)}</small></div>${tuyo ? '<p class="nota">Lo que cambies aquí se guarda al momento y lo ven todos.</p>' : '<p class="nota">Lo que cambies aquí se ve, pero no se guarda hasta que el nivel sea tuyo.</p>'}</div><div>`;
+  h += `<h4>Nivel ${N.n} · ${esc(N.nombre)} · ${pesos(N.precio)}${tuyo ? ' · <span style="color:var(--ok)">tuyo</span>' : ''}</h4><p class="nota">${esc(N.que)}${N.n > 1 ? ' Incluye todo lo de los niveles anteriores.' : ''}</p>`;
+  h += editorNivel(nv) + (tuyo ? '' : htmlPago(nv)) + '</div></div>';
+  h += `<div class="aparte"><h4>✦ Mecenas</h4><p class="nota">Lo que quieras dar, desde ${pesos(tienda.mecenasMin)}. No da nada más que un ✦ junto a tu nombre y nuestras gracias: es para quien quiere que Mina siga existiendo.${tienda.mio.mecenas ? ` Ya diste ${pesos(tienda.mio.mecenas)}. Gracias.` : ''}</p>
+    <div class="fila"><div class="t"><label class="op"><span>Cantidad (pesos)</span><input id="tMec" type="number" min="${tienda.mecenasMin}" step="1" value="${tienda.mecenasMonto}" inputmode="numeric"></label></div><button class="s" data-a="tMecenas">✦ Dar</button></div>
+    <h4>🎁 Fondo común</h4><p class="nota">Paga la primera pintura (${pesos(tienda.fondoPrecio)}) de las siguientes maquinitas nuevas que lleguen a Mina. Quien llega la recibe con un «alguien pagó tu primera pintura: hay para todos».${tienda.fondo ? ` Ahora mismo hay <b>${tienda.fondo}</b> esperando.` : ''}</p>
+    <div class="fila"><div class="t"><label class="op"><span>Maquinitas</span><input id="tFondo" type="number" min="1" max="200" step="1" value="${tienda.fondoN}" inputmode="numeric"></label></div><button class="s" data-a="tFondo">🎁 Pagar adelante</button></div>
+    <h4>Cómo se sostiene Mina</h4><p class="nota">Sin anuncios, sin cajas sorpresa, sin prisas inventadas, sin ventajas compradas. Mismo precio para todos; subir de nivel cuesta solo la diferencia; tope de ${pesos(tienda.tope)} por maquinita cada 30 días; devoluciones sin preguntas durante 15 días (contacto@ingenieriadigital.mx). Si un día esto deja de ser cierto, está mal y se quita. <a href="#" data-a="tManifiesto">Leer el manifiesto</a>.</p></div>`;
+  return h + '</div>';
+}
+function htmlPago(nv) {
+  const L = tienda.niveles, mio = nivelMio(), precio = L[nv - 1].precio - (mio ? L[mio - 1].precio : 0), vivos = [...otros.values()].filter((o) => o.on);
+  let h = `<div class="pago"><p class="grande">${pesos(precio)} <small style="font-size:.5em;color:var(--su)">pesos${mio ? ' · solo la diferencia desde tu nivel ' + mio : ''}</small></p>`;
+  if (!tienda.pagos) return h + '<p class="nota">Los pagos se abren en unos días. Mientras, pruébatelo todo.</p></div>';
+  if (vivos.length) h += `<label class="op"><span>¿Es un regalo?</span><select data-a="tPara">${[[-1, 'No, es para mí']].concat(vivos.map((o) => [o.i, 'Para ' + o.n])).map(([v, t]) => `<option value="${v}" ${v === tienda.regaloA ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select></label>${tienda.regaloA >= 0 ? '<p class="nota">Si quien lo recibe ya tiene un nivel, se cobra solo la diferencia.</p>' : ''}`;
+  if (!cuenta) h += '<p class="nota">Para comprar hay que entrar con tu cuenta: así lo comprado se queda contigo en cualquier equipo.</p><div class="fila"><div class="t"></div><button data-a="tEntrar">Entrar con Google</button></div>';
+  else h += `<label class="op"><span>Soy mayor de edad, o tengo permiso de quien paga</span><input type="checkbox" id="tMayor"></label><div class="fila"><div class="t"><small>Pago seguro con tarjeta, en la página de Stripe. El comprobante te llega por correo.</small></div><button data-a="tPagar" data-v="${nv}">Pagar ${pesos(precio)}</button></div>`;
+  return h + '</div>';
+}
+function editorNivel(nv) {
+  const P = pintaVista();
+  const sw = (k, lista, actual, nada) => `<div class="muestras">${lista.map((c) => `<button class="sw${actual === c ? ' on' : ''}" style="background:${c}" data-a="tPon" data-k="${k}" data-v="${c}" title="${c}"></button>`).join('')}<button class="s" data-a="tPon" data-k="${k}" data-v="">${nada}</button></div>`;
+  const ops = (k, lista, actual) => `<div class="ops">${lista.map((n, i) => `<button class="${(actual | 0) === i ? 'on' : ''}" data-a="tPon" data-k="${k}" data-v="${i}">${n}</button>`).join('')}</div>`;
+  switch (nv) {
+    case 1: return '<h4>Color del cuerpo</h4>' + sw('c1', TC.COLORES, P.c1, 'El de fábrica');
+    case 2: return '<h4>Color de la cabina</h4>' + sw('c2', TC.COLORES, P.c2, 'El de fábrica') + '<h4>Color de las orugas</h4>' + sw('c3', TC.COLORES, P.c3, 'El de fábrica');
+    case 3: return `<h4>Calcomanía</h4><div class="muestras calcas">${TC.CALCAS.map((e, i) => `<button class="${P.calca === i ? 'on' : ''}" data-a="tPon" data-k="calca" data-v="${i}">${e}</button>`).join('')}<button class="s" data-a="tPon" data-k="calca" data-v="">Ninguna</button></div>`;
+    case 4: return '<h4>Luz del faro y luz de piso</h4>' + sw('luz', TC.LUCES, P.luz, 'Sin luz') + '<p class="nota">Se nota de verdad bajo tierra, en lo oscuro.</p>';
+    case 5: return '<h4>Estela al volar</h4>' + ops('estela', TC.ESTELAS, P.estela);
+    case 6: return '<h4>Claxon (tecla B)</h4>' + ops('bocina', TC.BOCINAS, P.bocina) + '<p><button class="s" data-a="tProbarBocina">🔊 Oír el claxon</button></p><h4>Placa con tu nombre</h4>' + ops('placa', TC.PLACAS, P.placa);
+    case 7: return '<h4>Carrocería</h4>' + ops('carro', TC.CARROS, P.carro);
+    case 8: return '<h4>Mascota</h4>' + ops('mascota', TC.MASCOTAS, P.mascota) + '<p class="nota">Te sigue a todos lados. No hace nada más que acompañarte.</p>';
+    case 9: return '<p>Tu nombre queda grabado en una piedra del Jardín del Fondo, en cada mundo que termines con esta maquinita. Lo ve todo el que llegue al fondo, para siempre.</p>' + (nv <= nivelMio() ? '<p class="nota">Ya es tuyo: en el próximo mundo que termines, ahí estará tu piedra.</p>' : '');
+    case 10: return '<p>Una maquinita diseñada contigo, a mano: una conversación, bocetos, y se dibuja en el juego solo para ti. Única en el mundo. Dos o tres semanas.</p>' + (nv <= nivelMio() ? '<p class="nota"><b>Ya es tuya.</b> Escríbenos a <a href="mailto:contacto@ingenieriadigital.mx?subject=Mi%20maquinita%20hecha%20a%20mano">contacto@ingenieriadigital.mx</a> con el nombre de tu maquinita y empezamos.</p>' : '');
+  }
+  return '';
+}
+// Cambiar algo: si el nivel es tuyo se guarda y lo ven todos; si no, solo se prueba en la vista.
+function ponerPinta(k, v) {
+  const num = ['calca', 'estela', 'bocina', 'placa', 'carro', 'mascota'].includes(k), val = v === '' ? undefined : num ? +v : v;
+  if (NIVEL_CLAVE[k] <= nivelMio()) {
+    const p = { ...(tienda.prueba || miPinta) }; if (val === undefined) delete p[k]; else p[k] = val;
+    for (const c of Object.keys(p)) if (NIVEL_CLAVE[c] > nivelMio()) delete p[c];      // lo que se estaba probando y no es tuyo se queda fuera
+    miPinta = p; tienda.prueba = null; if (conectado) enviar({ t: 'pinta', p }); son.clic();
+  } else { const p = { ...(tienda.prueba || miPinta) }; if (val === undefined) delete p[k]; else p[k] = val; tienda.prueba = p; }
+}
+function irAlLogin(extra) { if (listo && !soloVer) { enviarEst(); guardarCopia(); } location.href = LOGIN_CT + '/?volver=' + encodeURIComponent(location.origin + '/' + mundoId + (extra || '')); }
+async function pagar(o) {
+  if (!cuenta) return irAlLogin('?tienda=' + tienda.nivelVista);
+  if (o.tipo === 'nivel' && !$('#tMayor')?.checked) { aviso('Marca primero que eres mayor de edad o tienes permiso de quien paga.'); return; }
+  if (o.tipo !== 'nivel' && !confirm(`Vas a pagar ${pesos(o.tipo === 'mecenas' ? o.monto : o.cantidad * tienda.fondoPrecio)} con tarjeta, en la página de Stripe. ¿Eres mayor de edad o tienes permiso de quien paga?`)) return;
+  if (listo && !soloVer) { enviarEst(); guardarCopia(); }
+  try {
+    const r = await fetch('/api/tienda/pagar', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ses: cuenta.ses, k: miK, mundo: mundoId, volver: location.origin + '/' + mundoId, ...o }) }), d = await r.json();
+    if (d.url) { location.href = d.url; return; }
+    const msj = { pronto: 'Los pagos se abren en unos días. Mientras, pruébatelo todo.', cuenta: 'Tu sesión venció: vuelve a entrar con Google.', tope: `Este mes ya diste mucho (${pesos(d.gastado || 0)}). Gracias de corazón; vuelve el mes que entra.`, ya: 'Ese nivel ya es de esa maquinita.', regalo: 'No encontré a quién regalárselo: tiene que estar jugando en este mundo.', stripe: 'La página de pago no contestó. Inténtalo otra vez.' }[d.error] || 'No se pudo abrir el pago.';
+    tarjeta('La Pinturería', msj, 'msj', 9000);
+    if (d.error === 'cuenta') { cuenta = null; try { localStorage.removeItem('mina_cuenta'); } catch {} pintarMenu(); }
+  } catch { tarjeta('La Pinturería', 'Se fue la conexión. Inténtalo otra vez.', 'msj', 6000); }
+}
+// Al volver de pagar: el mundo le pregunta a Stripe y, si se pagó, entrega. Una sola vez por sesión de pago.
+async function confirmarCompra(sid) {
+  try {
+    const r = await fetch('/api/tienda/confirmar', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ sid }) }), d = await r.json();
+    if (!d.ok) { tarjeta('La Pinturería', d.error === 'nopagado' ? 'El pago no se completó; no se cobró nada.' : 'No pude confirmar el pago. Si ya te cobraron, escríbenos a contacto@ingenieriadigital.mx y lo arreglamos en el momento.', 'msj', 14000); return; }
+    tienda.mio = d.mio; miMe = d.mio.mecenas > 0 ? 1 : 0; son.logro();
+    if (d.tipo === 'nivel' && !d.regalo) { tienda.nivelVista = d.nivel; tienda.prueba = null; tarjeta('🎨 ¡Listo! El nivel ' + d.nivel + ' es tuyo', 'Gracias. Deja tu maquinita como tú quieras: se abre La Pinturería.', 'msj', 12000); setTimeout(() => { if (listo && !menu) abrir('pin'); }, 1400); }
+    else if (d.tipo === 'nivel') tarjeta('🎁 Regalo entregado', 'El nivel ' + d.nivel + ' ya es de esa maquinita. Qué bonito gesto.', 'msj', 10000);
+    else if (d.tipo === 'mecenas') tarjeta('✦ Gracias, mecenas', 'Con esto Mina sigue existiendo. Ya tienes tu ✦ junto al nombre.', 'msj', 10000);
+    else tarjeta('🎁 Pagaste adelante', 'Las siguientes ' + d.cantidad + ' maquinitas nuevas llegan con su primera pintura. Hay para todos.', 'msj', 10000);
+  } catch { tarjeta('La Pinturería', 'No pude confirmar el pago: no hay conexión. Vuelve a abrir esta misma liga más tarde y se confirma solo.', 'msj', 12000); }
+}
+// Al volver de pagar o de entrar con la cuenta: ?compra=<sesión de Stripe> y ?tienda=<nivel> (se leen antes de limpiar la liga).
+const compraPend = (location.search.match(/[?&]compra=(cs_[A-Za-z0-9_]{10,200})/) || [])[1] || '', tiendaPend = +(location.search.match(/[?&]tienda=(\d{1,2})/) || [])[1] || 0;
+let compraHecha = 0, tiendaAbierta = 0;
+if (compraPend || tiendaPend) history.replaceState(null, '', location.pathname);
+function pendientesTienda() {
+  if (!listo || soloVer || !conectado) return;
+  if (compraPend && !compraHecha) { compraHecha = 1; confirmarCompra(compraPend); }
+  if (tiendaPend && !tiendaAbierta && !menu) { tiendaAbierta = 1; tienda.nivelVista = tiendaPend; abrir('pin'); }
+}
+// Tres invitaciones en la vida de una maquinita (20 min, 3 h y 10 h de juego), solo en la superficie y con calma, y ninguna
+// si ya abrió la tienda. La camioneta en la superficie es la invitación permanente y callada.
+function invitarPintureria() {
+  if (!S || !listo || soloVer || menu || op.tiendaVista || compraPend || tiendaPend || yo.y > 2 || !yo.suelo) return;
+  const n = op.tiendaInv | 0;
+  if (n >= 3 || (S.seg || 0) < [1200, 10800, 36000][n] || Date.now() - (op.tiendaInvT || 0) < 7 * 86400000) return;
+  op.tiendaInv = n + 1; op.tiendaInvT = Date.now(); escribir('mina_op', op);
+  tarjeta('🎨 Tu maquinita se puede pintar', 'En La Pinturería (la camioneta rosa, a la izquierda de la Gasolinera) o en Menú → Mundo. Nada de eso hace falta para jugar: es solo para que se vea como tú.', 'msj', 12000);
+}
+// La estela: una chispita por cuadro (de dos) detrás de quien vuela con estela.
+function estela(P, x, y, mueve) {
+  if (!P || !P.estela || !mueve || !op.part || (++estelaN & 1)) return;
+  chispas(x + (Math.random() - 0.5) * 0.4, y + 0.35, [0, '#ffd23f', `hsl(${(reloj * 240) % 360},95%,62%)`, '#ffffff', '#ff5e9a', '#9fe3ff'][P.estela], 1, 2);
+}
+// El claxon (tecla B): todos tienen el pip-pip; con el nivel 6 se elige la melodía. Lo oyen los de cerca.
+const CLAXON = [[[880, 0.08, 0], [880, 0.08, 0.14]], [[523, 0.12, 0], [659, 0.12, 0.12], [784, 0.12, 0.24], [1047, 0.3, 0.36]], [[220, 0.6, 0], [277, 0.6, 0], [330, 0.6, 0]], [[98, 1.1, 0], [123, 1.1, 0]], [[784, 0.09, 0], [659, 0.09, 0.1], [523, 0.09, 0.2], [440, 0.14, 0.3], [784, 0.09, 0.5], [659, 0.09, 0.6], [523, 0.09, 0.7], [440, 0.14, 0.8]], [[1319, 0.5, 0], [1568, 0.5, 0.15], [2093, 0.8, 0.3]]];
+function claxon(b, vol = 1, bus = 'avisos') { for (const [f, d, c] of CLAXON[b] || CLAXON[0]) { if (b === 5) campana(f, d, 0.08 * vol, bus, c); else tono(f, d, b === 2 || b === 3 ? 'sawtooth' : 'square', (b === 3 ? 0.12 : 0.07) * vol, 0, c, bus); } }
+function tocarClaxon() { const t = performance.now(); if (t - tBocina < 900 || !listo || soloVer) return; tBocina = t; const b = nivelMio() >= 6 ? (miPinta.bocina | 0) : 0; claxon(b); if (conectado) enviar({ t: 'bocina', b }); }
+
 /* ════════ Manifiesto ════════ RLR */
 // La carta de quien hizo el juego. Su nombre lleva a ricardolopezreyero.com, pero se ve igual que el resto del texto.
 const MANIFIESTO = `<article class="manifiesto">
@@ -3422,6 +3590,8 @@ const MANIFIESTO = `<article class="manifiesto">
   <p>Aquí no se excava solo: se baja con amigos, en el mismo mundo y al mismo tiempo. Cada lugar guarda algo, cada metro tiene su razón de ser, y hasta el fondo, debajo de todo, hay algo esperándote.</p>
   <p>Ojalá sea un regalo para ti. Disfrútalo sin prisa, y si te gusta, compártelo con alguien que quieras: se disfruta más acompañado.</p>
   <p>Y si llegas al final, que te deje un buen mensaje y un buen sabor de boca.</p>
+  <h3>Cómo se sostiene Mina</h3>
+  <p>Mina se juega completo gratis, para siempre. Lo único que se vende es cómo se ve tu maquinita, en La Pinturería: colores, calcomanías, luces, una estela, un claxon, una mascota, tu nombre en una piedra del Jardín. Nada de eso te hace bajar más rápido ni ganar más. Sin anuncios, sin cajas sorpresa, sin prisas inventadas. Mismo precio para todos, y subir de nivel cuesta solo la diferencia. Si un día esto deja de ser cierto, está mal y se quita.</p>
   <p class="firma">Con mucho cariño,<br><b>Ing. <a href="https://ricardolopezreyero.com" target="_blank" rel="noopener">Ricardo López Reyero</a></b><br><small>Torreón, Coahuila, México · 2 de octubre de 2026 · 8:12 p. m. · 21 °C</small></p>
 </article>`;
 
@@ -3754,10 +3924,10 @@ function pintarVel() {
 }
 function pintarTabla() {
   if (!S) return;
-  const l = [{ n: miNombre, m: miModelo, rec: S.rec, on: 1, yo: 1, y: donde(yo.y) }, ...[...otros.values()].map((o) => ({ ...o, y: o.on && o.y !== undefined ? donde(o.y) : null }))];
+  const l = [{ n: miNombre, m: miModelo, rec: S.rec, on: 1, yo: 1, me: miMe, y: donde(yo.y) }, ...[...otros.values()].map((o) => ({ ...o, y: o.on && o.y !== undefined ? donde(o.y) : null }))];
   l.sort((a, b) => (b.on || 0) - (a.on || 0) || (b.rec || 0) - (a.rec || 0));        // primero quienes están jugando
   const mas = l.length - 8; if (mas > 0) { const yoJ = l.findIndex((j) => j.yo); l.length = 8; if (yoJ >= 8) l[7] = { n: miNombre, m: miModelo, rec: S.rec, on: 1, yo: 1, y: donde(yo.y) }; }
-  poner($('#tabla'), (movil ? l.filter((j) => !j.yo && j.on).slice(0, 3) : l).map((j) => `<div class="${j.on ? '' : 'off'}"><i style="background:${MODELOS[j.m]?.[0] || '#888'}"></i><b>${esc(j.n)}${j.yo ? ' (tú)' : ''}</b><span>${j.on && j.y !== null ? j.y + ' · ' : ''}récord ${num(j.rec)} m</span></div>`).join('') + (mas > 0 && !movil ? `<div class="off"><b>y ${mas} más</b></div>` : '') +
+  poner($('#tabla'), (movil ? l.filter((j) => !j.yo && j.on).slice(0, 3) : l).map((j) => `<div class="${j.on ? '' : 'off'}"><i style="background:${MODELOS[j.m]?.[0] || '#888'}"></i><b>${j.me ? '✦ ' : ''}${esc(j.n)}${j.yo ? ' (tú)' : ''}</b><span>${j.on && j.y !== null ? j.y + ' · ' : ''}récord ${num(j.rec)} m</span></div>`).join('') + (mas > 0 && !movil ? `<div class="off"><b>y ${mas} más</b></div>` : '') +
 (soyCreador && publico.sol.length ? `<div class="mund pub" data-pub="1">🙋 ${publico.sol.length === 1 ? '1 quiere jugar' : publico.sol.length + ' quieren jugar'} · <kbd>J</kbd></div>` : '') + (mirones ? `<div class="mund pub" data-pub="1">👁 ${mirones === 1 ? '1 persona te mira' : mirones + ' personas te miran'}</div>` : ''));
 }
 
@@ -3854,7 +4024,7 @@ function fotoRecord() {
   }
   q.fillStyle = '#5c9e3a'; q.fillRect(0, piso, L, 14); q.fillStyle = '#7cc24e'; q.fillRect(0, piso, L, 6);
   q.fillStyle = '#00000059'; q.fillRect(0, piso + 14, L, L);
-  dibMaq(q, 300, piso - 150, 380, miModelo, 1, false, 0, '', '', 0.4);
+  dibMaq(q, 300, piso - 150, 380, miModelo, 1, false, 0, '', '', 0.4, miPinta);
   q.textBaseline = 'alphabetic'; q.lineJoin = 'round';
   const texto = (s, x, y, tam, col = '#fff', peso = 900, al = 'left') => { q.font = `${peso} ${tam}px system-ui`; q.textAlign = al; q.lineWidth = tam * 0.16; q.strokeStyle = '#000b'; q.strokeText(s, x, y); q.fillStyle = col; q.fillText(s, x, y); };
   texto('MINA', 60, 130, 110, '#ffd23f');
@@ -3899,7 +4069,7 @@ function fotoLiga(deMundo) {
     llamado = gente.length > 1 ? `Somos ${gente.length} maquinitas · entra y juega` : 'Entra a excavar conmigo';
   } else {
     texto(miNombre, 50, 176, 60); texto(RANGOS[S.rango][1] + ' · ' + mundo, 50, 222, 30, '#f3e6d8', 700);
-    dibMaq(q, 950, piso - 300 * 0.395, 300, miModelo, -1, false, 0, '', '', 0.4);
+    dibMaq(q, 950, piso - 300 * 0.395, 300, miModelo, -1, false, 0, '', '', 0.4, miPinta);
     cifras = [[miles(S.rec) + ' m', 'bajo tierra'], [fmt(S.tot), 'ganados'], S.alt >= 1000 ? [fmtAlto(S.alt), 'de altura'] : [S.log.length + '', S.log.length === 1 ? 'logro' : 'logros']];
     llamado = '¿Me alcanzas?';
   }
@@ -3952,11 +4122,11 @@ let mapaMenuT = 0, pestana = 0, pieza = 0, cuantos = 1, eleM = 0, ultVenta = 0, 
 function abrir(id) {
   if (!S || (soloVer && id !== 'top')) return;
   son.clic();
-  menu = id; detener(); $('#velo').classList.add('on'); $('#velo').classList.remove('inicio'); $('#caja').classList.toggle('alta', id === 'menu' || id === 'tal' || id === 'alm' || id === 'top' || id === 'pub');
+  menu = id; detener(); $('#velo').classList.add('on'); $('#velo').classList.remove('inicio'); $('#caja').classList.toggle('alta', id === 'menu' || id === 'tal' || id === 'alm' || id === 'top' || id === 'pub' || id === 'pin');
   if (id === 'gas' && S.fuel >= tanque() - 0.001) evento('comb');   // llegar con el tanque lleno también cuenta
   pintarMenu(); ultPos = ''; enviarPos();
 }
-function cerrar() { if (menu === 'inicio') return; menu = null; $('#velo').classList.remove('on'); document.activeElement?.blur?.(); arrancar(); ultPos = ''; enviarPos(); if (sucio) enviarEst(); }
+function cerrar() { if (menu === 'inicio') return; if (menu === 'pin') tienda.prueba = null; menu = null; $('#velo').classList.remove('on'); document.activeElement?.blur?.(); arrancar(); ultPos = ''; enviarPos(); if (sucio) enviarEst(); }
 const cab = (t, sinX) => `<header><h2>${t}</h2><span class="d">${S && !soloVer ? fmt(S.d) : ''}</span>${sinX ? '' : '<button class="s" data-a="cerrar">Cerrar' + (tactil ? '' : ' (Esc)') + '</button>'}</header>`;
 function pintarMenu() {
   const c = $('#caja'); let h = '';
@@ -4027,6 +4197,10 @@ function pintarMenu() {
       <a href="${esc(liga)}" target="_blank" rel="noopener" title="Abrir la liga"><canvas id="qrLienzo" class="qr" data-t="${esc(liga)}"></canvas></a>
       <p><button data-a="ligaMaq">Copiar la liga de mi maquinita</button></p>
       <p class="nota"><b>No lo compartas ni lo enseñes en pantalla:</b> quien lo abra maneja tu maquinita. Para invitar gente usa el botón Invitar.</p></div>`;
+  } else if (menu === 'pin') {
+    if (!op.tiendaVista) { op.tiendaVista = 1; escribir('mina_op', op); }
+    if (!tienda.cargada && !tienda.cargando) cargarTienda();
+    c.classList.add('alta'); h = htmlTienda();
   } else if (menu === 'pub') h = cab('👥 Tu mundo y su público') + '<div class="cuerpo">' + htmlPublico() + '</div>';
   else if (menu === 'top') h = cab('🏆 Top 33 mundial') + '<div class="cuerpo">' + htmlTop() + '</div>';
   else if (menu === 'menu') h = menuPrincipal();
@@ -4040,8 +4214,12 @@ function pintarMenu() {
     pintarMapa(mp); c.querySelector('.cuerpo').scrollTop = Math.max(0, mp.offsetTop + Math.max(0, yo.y) / (mp.height / mp.clientHeight) - 220);
     clearInterval(mapaMenuT); mapaMenuT = setInterval(() => { const m2 = $('#mapa'); if (!m2 || menu !== 'menu' || pestana !== 2) return clearInterval(mapaMenuT); pintarMapa(m2); }, 300);      // en vivo mientras esté abierto
   }
-  const cm = $('#miMaq'); if (cm) dibMaq(cm.getContext('2d'), 80, 86, 132, miModelo, 1, false, 0, '', '');
+  const cm = $('#miMaq'); if (cm) dibMaq(cm.getContext('2d'), 80, 86, 132, miModelo, 1, false, 0, '', '', 0.6, miPinta);
   const gb = $('#gBoton'); if (gb) botonGoogle(gb);
+  const pm = $('#pintaMaq'); if (pm) {                 // la maquinita, en vivo, con lo que se esté probando
+    const dib = () => { const q = pm.getContext('2d'); q.clearRect(0, 0, pm.width, pm.height); dibMaq(q, pm.width / 2, pm.height * 0.58, pm.width * 0.6, miModelo, 1, false, 0, miNombre, '', reloj * 0.4, pintaVista()); };
+    dib(); clearInterval(tiendaAnimT); tiendaAnimT = setInterval(() => { if (menu !== 'pin' || !pm.isConnected) return clearInterval(tiendaAnimT); reloj += 0.05; dib(); }, 50);
+  }
   if (topAbierta()) { animarTop(c); if (Date.now() - tablaM.pedido > 3500) pedirTop(); }
   const ql = $('#qrLienzo'); if (ql) pintarQR(ql, ql.dataset.t, 8);
   const fa = $('#fotoAqui'); if (fa) { const f = fotoRecord(); f.className = 'foto'; fa.appendChild(f); }
@@ -4329,6 +4507,16 @@ const acciones = {
   },
   mundos() { enviarEst(); guardarCopia(); location.href = '/?mundos'; },
   reiniciar() { pantallaReinicio(); return 'no'; },
+  tRango(v) { op.rango = +v; escribir('mina_op', op); tienda.nivelVista = nivelPorRango(); },
+  tNivel(v) { tienda.nivelVista = +v; },
+  tPon(v, el) { ponerPinta(el.dataset.k, v); },
+  tPara(v, el) { tienda.regaloA = +el.value; },
+  tProbarBocina() { claxon(pintaVista().bocina | 0); return 'no'; },
+  tEntrar() { irAlLogin('?tienda=' + tienda.nivelVista); return 'no'; },
+  tPagar(v) { pagar({ tipo: 'nivel', nivel: +v, ...(tienda.regaloA >= 0 ? { paraI: tienda.regaloA } : {}) }); return 'no'; },
+  tMecenas() { const m = Math.floor(+($('#tMec')?.value || 0)); if (!(m >= tienda.mecenasMin)) { aviso('Desde ' + pesos(tienda.mecenasMin) + '.'); return 'no'; } tienda.mecenasMonto = m; pagar({ tipo: 'mecenas', monto: m }); return 'no'; },
+  tFondo() { const n = Math.floor(+($('#tFondo')?.value || 0)); if (!(n >= 1 && n <= 200)) { aviso('Entre 1 y 200 maquinitas.'); return 'no'; } tienda.fondoN = n; pagar({ tipo: 'fondo', cantidad: n }); return 'no'; },
+  tManifiesto() { pestana = 11; abrir('menu'); return 'no'; },
   salirCuenta() { salirCuenta(); return 'no'; },
   quitarP(v) { enviar({ t: 'quitar', i: +v }); const o = otros.get(+v); if (o) aviso('Le quitaste el permiso a ' + o.n + ': puede mirar y volver a pedirlo'); },
   devolverP(v) { enviar({ t: 'devolver', i: +v }); const o = otros.get(+v); if (o) aviso(o.n + ' vuelve a tener permiso'); },
@@ -4460,6 +4648,7 @@ function menuPrincipal() {
       <details><summary class="nota">Ya tengo una maquinita en otro equipo y quiero usarla aquí</summary><p><input id="cod" placeholder="Pega aquí el código de tu maquinita" style="width:70%"> <button class="s" data-a="usarCodigo">Usar código</button></p></details>
       <p class="nota"><b>Tu maquinita es tuya.</b> Entra contigo a cualquier mundo con todo lo que trae, y no se pierde aunque un mundo se borre. Para seguir con ella en otra computadora o en el teléfono, entra allá con tu cuenta de Google, o abre su liga o su código QR. <b>No los compartas:</b> quien los abra maneja tu maquinita.</p>
       <div class="fila"><div class="t"><small>Código: <code>${esc(miK)}</code></small></div><button class="s" data-a="menu" data-v="qrmaq">Ver su código QR</button><button data-a="ligaMaq">Copiar su liga</button></div>
+      <div class="fila"><div class="ic">🎨</div><div class="t"><b>Pintar mi maquinita</b><small>La Pinturería: colores, calcomanías, luces, estela, claxon, mascota… Se juega completo gratis; esto es solo para que se vea como tú.</small></div><button data-a="menu" data-v="pin">Abrir</button></div>
       <div class="fila"><div class="t"><b>Guardar este mundo en un archivo</b><small>Semilla, reglas, todos los túneles y la colección. Desde «Mis mundos» puedes abrirlo cuando quieras como un mundo nuevo, idéntico.</small></div><button data-a="guardarArchivo">💾 Guardar archivo</button></div>
       <div class="fila"><div class="ic">🌅</div><div class="t"><b>${(S.fl.edenF && S.fl.edenF[mundoId + '|' + remin]) || edenVivo ? 'Este mundo ya se terminó' : 'Volver a arrancar'}</b><small>Un mundo nuevo desde arriba: con tus mejoras o desde cero.</small></div><button data-a="reiniciar">🔄 Volver a arrancar</button></div>
       <div class="fila"><div class="t"></div><button class="s" data-a="mundos">Mis mundos · crear o cargar otro</button><button class="mal" data-a="desechar">Desechar este mundo</button></div>`;
@@ -4559,6 +4748,7 @@ addEventListener('keydown', (e) => {
   if (k === 's') { enviar({ t: 'senal', x: yo.x, y: yo.y }); senales.push({ x: yo.x, y: yo.y, t: 10, n: miNombre }); son.senal(); }      // Señal
   if (k === 'a') pasarCombustible();                // Ayudar: 5 litros a la maquinita de junto
   if (k === 'g') grua();                            // Grúa
+  if (k === 'b') tocarClaxon();                     // Bocina (claxon)
   if (k === 'i') abrir('inv');                      // Invitar
   if (k === 'j') abrir('pub');                      // Jugadores y público: solicitudes, quién mira, sacar
   if (k === 'v' && edenVivo && yo.y > EDEN0 - 6) verJardin();      // Ver el jardín entero
@@ -4914,6 +5104,7 @@ setInterval(() => {                       // lo poco que corre aunque el juego e
   // en la tabla abierta, el reloj de quien está jugando corre cada segundo
   if (topAbierta()) document.querySelectorAll('#caja .tt[data-vivo="1"]').forEach((el) => { el.dataset.seg = +el.dataset.seg + 1; el.textContent = '⏱ ' + tiempoLargo(+el.dataset.seg); });
   if (soloVer && (pido === 'espera' || pido === 'ausente')) pintarEspera();
+  pendientesTienda(); if (latido % 5 === 0) invitarPintureria();
   if (!cuenta && S && listo && !soloVer && S.seg > 600 && !leer('mina_invitoG', 0)) { escribir('mina_invitoG', 1); tarjeta('💾 ¿Guardamos tu maquinita?', 'Con tu correo de Google la recuperas en cualquier equipo, con todos tus mundos. Cuando quieras: Menú → Mundo.', 'msj', 9000); }
   if (latido % 4 === 0) ocio(guardarCopia);
   if (!document.hidden && listo && Date.now() - tablaM.pedido > (topAbierta() ? 4000 : 60000) && (topAbierta() || (!soloVer && conectado && (!tablaM.t || S.tot >= tablaM.corte)))) pedirTop();

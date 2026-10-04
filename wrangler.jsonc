@@ -16,6 +16,8 @@
   },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Mundo"] }, { "tag": "v2", "new_sqlite_classes": ["Maquina"] }, { "tag": "v3", "new_sqlite_classes": ["Tabla"] }, { "tag": "v4", "new_sqlite_classes": ["Cuenta"] }],
   // El botón de Google: el identificador de la app en Google Cloud (sus orígenes autorizados deben incluir https://mina.capitaltorreon.com).
+  // La única llave de pago: STRIPE_SECRET_KEY vive UNA vez en la bóveda de la cuenta (Secrets Store «superleads») y aquí solo se liga.
+  "secrets_store_secrets": [{ "binding": "STRIPE_SECRET_KEY", "store_id": "308dac6355cb4d7a8bef6cc8ef7ee035", "secret_name": "STRIPE_SECRET_KEY" }],
   "vars": { "GOOGLE_CLIENT_ID": "977641517971-23ouv33lu4s8ejrm6m4mgvuqcvpa9ucf.apps.googleusercontent.com" },
   "routes": [{ "pattern": "mina.capitaltorreon.com", "custom_domain": true }],
   "workers_dev": false,

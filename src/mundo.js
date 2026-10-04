@@ -8,6 +8,9 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { DurableObject } from "cloudflare:workers";
 import { verificarPase } from "./verificar.js";      // el pase del Login de CapitalTorreon (login.capitaltorreon.com)
+import { NIVELES, MECENAS_MIN, FONDO_PRECIO, TOPE_MES, precioDe, filtrarPinta } from "./tienda.js";      // La Pinturería: precios y pintura
+// Un secreto de la bóveda (Secrets Store) llega como objeto con .get(); en local, como texto de .dev.vars. Sin él: "".
+async function secreto(v) { if (!v) return ""; if (typeof v === "string") return v; try { return (await v.get()) || ""; } catch { return ""; } }
 
 const _RLR = "Ricardo López Reyero";
 const _k = "EYE", _rev = 181218; // RLR · sello de autoría
@@ -154,6 +157,10 @@ export class Tabla extends DurableObject {
     };
   }
   async alarm() { if (this.sucio && this.top) { this.sucio = false; await this.ctx.storage.put("top", this.top); } }
+  // El Fondo común: pinturas ya pagadas que esperan a maquinitas nuevas (hay para todos).
+  async fondo() { return (await this.ctx.storage.get("fondo")) || 0; }
+  async sumarFondo(n) { const f = ((await this.ctx.storage.get("fondo")) || 0) + n; await this.ctx.storage.put("fondo", f); return f; }
+  async tomarRegalo() { const f = (await this.ctx.storage.get("fondo")) || 0; if (f <= 0) return 0; await this.ctx.storage.put("fondo", f - 1); return 1; }
 }
 
 // RLR · la maquinita
@@ -161,10 +168,13 @@ export class Tabla extends DurableObject {
 // trae y sobrevive aunque un mundo se borre. Solo puede estar en un mundo a la vez.
 export class Maquina extends DurableObject {
   async entrar({ mundo, k, n, mo, est }) {
-    let m = await this.ctx.storage.get("m");
+    let m = await this.ctx.storage.get("m"), regalo = 0;
     if (!m) {
       if (!n) return null;                                   // todavía no existe: hay que bautizarla
       m = { n, mo: mo || 0, est: est || null, v: (est && est.v) || 0, alta: Date.now() };
+      // Si alguien pagó adelante (Fondo común), la maquinita nueva nace con su primera pintura.
+      try { regalo = await this.env.TABLA.get(this.env.TABLA.idFromName("mundial")).tomarRegalo(); } catch {}
+      if (regalo) m.tienda = { nivel: 1, mecenas: 0, compras: [{ sid: "fondo-" + Date.now(), tipo: "nivel", n: 1, monto: 0, de: "fondo", h: Date.now() }] };
     } else if (m.mundo && m.mundo !== mundo) {
       // Estaba en otro mundo: aquel la suelta y entrega lo último que supo de ella.
       try {
@@ -174,8 +184,30 @@ export class Maquina extends DurableObject {
     }
     m.mundo = mundo; m.vista = Date.now();
     await this.ctx.storage.put("m", m);
-    return { n: m.n, mo: m.mo, est: m.est };
+    const t = this.tiendaDe(m);
+    return { n: m.n, mo: m.mo, est: m.est, p: filtrarPinta(m.pinta, t.nivel), nv: t.nivel, me: t.mecenas > 0 ? 1 : 0, regalo };
   }
+
+  // ── La Pinturería: lo comprado y la pintura son de la maquinita (y la maquinita, de su cuenta).
+  tiendaDe(m) { return m.tienda || (m.tienda = { nivel: 0, mecenas: 0, compras: [] }); }
+  gastado30(t) { const h = Date.now() - 30 * 86400000; return t.compras.filter((c) => c.h > h).reduce((a, c) => a + (c.monto || 0), 0); }
+  vistaTienda(m) { const t = this.tiendaDe(m); return { nivel: t.nivel, mecenas: t.mecenas, compras: t.compras.length, gastado30: this.gastado30(t), pinta: filtrarPinta(m.pinta, t.nivel) }; }
+  async tienda() { const m = await this.ctx.storage.get("m"); return m ? this.vistaTienda(m) : { nivel: 0, mecenas: 0, compras: 0, gastado30: 0, pinta: {} }; }
+  // Entregar una compra: una sola vez por sesión de pago; el nivel solo sube.
+  async entregar({ sid, tipo, nivel, monto, de }) {
+    const m = await this.ctx.storage.get("m"); if (!m) return null;
+    const t = this.tiendaDe(m); let nuevo = 0;
+    if (!t.compras.some((c) => c.sid === sid)) {
+      nuevo = 1;
+      t.compras = t.compras.concat({ sid, tipo, n: nivel || 0, monto: monto || 0, de: de || "", h: Date.now() }).slice(-200);
+      if (tipo === "nivel") t.nivel = Math.max(t.nivel, nivel || 0);
+      if (tipo === "mecenas") t.mecenas = (t.mecenas || 0) + (monto || 0);
+      await this.ctx.storage.put("m", m);
+    }
+    return { ...this.vistaTienda(m), nuevo };
+  }
+  // La pintura: se guarda solo lo que el nivel comprado permite.
+  async ponerPinta(p) { const m = await this.ctx.storage.get("m"); if (!m) return null; const t = this.tiendaDe(m); m.pinta = filtrarPinta(p, t.nivel); await this.ctx.storage.put("m", m); return { p: m.pinta, nv: t.nivel, me: t.mecenas > 0 ? 1 : 0 }; }
 
   // Lo que la cuenta enseña de ella: nombre, modelo, cuánto ha ganado, hasta dónde bajó y cuánto ha jugado.
   async resumen() {
@@ -319,6 +351,82 @@ async function cuentaApi(u, request, env) {
   if (u.pathname === "/api/cuenta/sync") { const r = await c.sync(t, d); return r ? json(r) : json({ error: "sesion" }, 401); }
   if (u.pathname === "/api/cuenta/maquina") { const r = await c.maquina(t, d.k); if (!r) return json({ error: "sesion" }, 401); r.maq = await resumen(r.k); return json(r); }
   if (u.pathname === "/api/cuenta/salir") { await c.salir(t); return json({ ok: 1 }); }
+  return json({ error: "no" }, 404);
+}
+
+// RLR · La Pinturería (ver docs/ADN_Monetizacion_Mina): se juega completo gratis; aquí solo se vende cómo se ve la maquinita.
+// Precios iguales para todos y en un solo lugar (src/tienda.js). Subir de nivel cuesta la diferencia. Tope de cuidado por
+// maquinita cada 30 días. Para comprar hay que entrar con la cuenta, y la maquinita debe ser la de esa cuenta.
+async function tiendaApi(u, request, env) {
+  if (request.method !== "POST") return json({ error: "no" }, 404);
+  let d; try { d = await request.json(); } catch { return json({ error: "datos" }, 400); }
+  if (!d || typeof d !== "object") return json({ error: "datos" }, 400);
+  const llaveOk = (k) => typeof k === "string" && /^[0-9a-zA-Z]{16,64}$/.test(k);
+  const maq = (k) => env.MAQUINA.get(env.MAQUINA.idFromName(k));
+  const tabla = () => env.TABLA.get(env.TABLA.idFromName("mundial"));
+  const stripe = await secreto(env.STRIPE_SECRET_KEY);
+  if (u.pathname === "/api/tienda") {
+    const mio = llaveOk(d.k) ? await maq(d.k).tienda() : { nivel: 0, mecenas: 0, compras: 0, gastado30: 0, pinta: {} };
+    let fondo = 0; try { fondo = await tabla().fondo(); } catch {}
+    return json({ niveles: NIVELES, mecenasMin: MECENAS_MIN, fondoPrecio: FONDO_PRECIO, tope: TOPE_MES, fondo, pagos: stripe ? 1 : 0, mio });
+  }
+  // Solo en la computadora de pruebas (MINA_PRUEBA en .dev.vars, nunca publicado): entregar un nivel sin pagar, para probar la tienda.
+  if (u.pathname === "/api/tienda/prueba") {
+    if (env.MINA_PRUEBA !== "1" || !["::1", "127.0.0.1"].includes(request.headers.get("CF-Connecting-IP")) || !llaveOk(d.k)) return json({ error: "no" }, 404);
+    const e = await maq(d.k).entregar({ sid: "prueba-" + Date.now(), tipo: d.tipo === "mecenas" ? "mecenas" : "nivel", nivel: entero(d.nivel, 0, 10, 0), monto: entero(d.monto, 0, 1e6, 0), de: "prueba" });
+    return e ? json({ ok: 1, mio: e }) : json({ error: "maquina" }, 404);
+  }
+  if (u.pathname === "/api/tienda/pagar") {
+    if (!stripe) return json({ error: "pronto" }, 503);
+    const ses = String(d.ses || ""), punto = ses.lastIndexOf("."), sub = ses.slice(0, punto), tk = ses.slice(punto + 1);
+    if (punto < 1 || !/^[0-9A-Za-z]{1,40}$/.test(sub) || !/^[0-9a-f]{48}$/.test(tk)) return json({ error: "cuenta" }, 401);
+    const c = await env.CUENTA.get(env.CUENTA.idFromName("g:" + sub)).sesion(tk);
+    if (!c || !llaveOk(d.k) || c.k !== d.k) return json({ error: "cuenta" }, 401);
+    let volver = u.origin + "/"; try { const x = new URL(String(d.volver || ""), u.origin); if (x.origin === u.origin) volver = x.origin + x.pathname; } catch {}
+    const tipo = d.tipo === "mecenas" ? "mecenas" : d.tipo === "fondo" ? "fondo" : "nivel";
+    let monto = 0, nombre = "", para = d.k, nivel = 0, cantidad = 1;
+    if (tipo === "nivel") {
+      nivel = entero(d.nivel, 1, 10, 0); if (!nivel) return json({ error: "datos" }, 400);
+      // regalo: la maquinita número i de un mundo (su llave la da el mundo, nunca el navegador)
+      if (Number.isInteger(d.paraI) && d.paraI >= 0 && /^[2-9A-HJ-NP-Z]{8}$/.test(String(d.mundo || ""))) { const k2 = await env.MUNDO.get(env.MUNDO.idFromName(d.mundo)).llaveDe(d.paraI); if (llaveOk(k2) && k2 !== d.k) para = k2; else return json({ error: "regalo" }, 400); }
+      const actual = (await maq(para).tienda()).nivel;
+      if (nivel <= actual) return json({ error: "ya", actual }, 400);
+      monto = precioDe(nivel) - precioDe(actual);
+      nombre = `Mina · La Pinturería · nivel ${nivel} «${NIVELES[nivel - 1].nombre}»` + (para !== d.k ? " · regalo" : "") + (actual ? ` (solo la diferencia desde el nivel ${actual})` : "");
+    } else if (tipo === "mecenas") {
+      monto = entero(d.monto, MECENAS_MIN, 100000, 0); if (!monto) return json({ error: "datos" }, 400);
+      nombre = "Mina · ✦ Mecenas · gracias por sostener el juego";
+    } else {
+      cantidad = entero(d.cantidad, 1, 200, 0); if (!cantidad) return json({ error: "datos" }, 400);
+      monto = FONDO_PRECIO * cantidad; nombre = `Mina · Fondo común · la primera pintura de ${cantidad} ${cantidad === 1 ? "maquinita nueva" : "maquinitas nuevas"}`;
+    }
+    const mio = await maq(d.k).tienda();
+    if ((mio.gastado30 || 0) + monto > TOPE_MES) return json({ error: "tope", gastado: mio.gastado30 }, 400);      // el tope de cuidado
+    const f = new URLSearchParams();
+    f.set("mode", "payment"); f.set("success_url", volver + "?compra={CHECKOUT_SESSION_ID}"); f.set("cancel_url", volver + "?tienda=" + (nivel || 1));
+    f.set("line_items[0][quantity]", "1"); f.set("line_items[0][price_data][currency]", "mxn"); f.set("line_items[0][price_data][unit_amount]", String(monto * 100)); f.set("line_items[0][price_data][product_data][name]", nombre);
+    f.set("metadata[k]", d.k); f.set("metadata[para]", para); f.set("metadata[tipo]", tipo); f.set("metadata[nivel]", String(nivel)); f.set("metadata[cantidad]", String(cantidad)); f.set("metadata[monto]", String(monto)); f.set("metadata[de]", sub);
+    f.set("locale", "es-419"); if (c.email) f.set("customer_email", c.email);
+    let r, sesion; try { r = await fetch("https://api.stripe.com/v1/checkout/sessions", { method: "POST", headers: { authorization: "Bearer " + stripe, "content-type": "application/x-www-form-urlencoded" }, body: f }); sesion = await r.json(); } catch { return json({ error: "stripe" }, 502); }
+    if (!r.ok || !sesion.url) return json({ error: "stripe" }, 502);
+    return json({ url: sesion.url, monto });
+  }
+  // Al volver de pagar: se le pregunta a Stripe si de verdad se pagó, y entonces se entrega (una sola vez por sesión).
+  if (u.pathname === "/api/tienda/confirmar") {
+    if (!stripe) return json({ error: "pronto" }, 503);
+    const sid = String(d.sid || ""); if (!/^cs_[A-Za-z0-9_]{10,200}$/.test(sid)) return json({ error: "datos" }, 400);
+    let r, sesion; try { r = await fetch("https://api.stripe.com/v1/checkout/sessions/" + sid, { headers: { authorization: "Bearer " + stripe } }); sesion = await r.json(); } catch { return json({ error: "stripe" }, 502); }
+    if (!r.ok || sesion.payment_status !== "paid" || !sesion.metadata) return json({ error: "nopagado" }, 402);
+    const md = sesion.metadata, tipo = md.tipo, monto = entero(md.monto, 0, 1e6, 0), nivel = entero(md.nivel, 0, 10, 0), cantidad = entero(md.cantidad, 0, 200, 0);
+    if (!llaveOk(md.k)) return json({ error: "datos" }, 400);
+    const para = llaveOk(md.para) ? md.para : md.k;
+    let e = null;
+    if (tipo === "nivel") e = await maq(para).entregar({ sid, tipo, nivel, monto, de: md.de });
+    else if (tipo === "mecenas") e = await maq(md.k).entregar({ sid, tipo, monto, de: md.de });
+    else if (tipo === "fondo") { e = await maq(md.k).entregar({ sid, tipo, monto, de: md.de }); if (e && e.nuevo) await tabla().sumarFondo(Math.max(1, cantidad)); }
+    if (!e) return json({ error: "maquina" }, 404);
+    return json({ ok: 1, tipo, nivel, regalo: para !== md.k ? 1 : 0, cantidad, monto, mio: await maq(md.k).tienda() });
+  }
   return json({ error: "no" }, 404);
 }
 
@@ -543,8 +651,10 @@ export class Mundo extends DurableObject {
 
   publico(i, on) {
     const j = this.jug[i];
-    return { i, n: j.n, m: j.m, rec: j.rec || 0, tot: j.tot || 0, on: on ? 1 : 0 };
+    return { i, n: j.n, m: j.m, rec: j.rec || 0, tot: j.tot || 0, on: on ? 1 : 0, p: j.p || {}, me: j.me || 0 };
   }
+  // Para regalar: la llave de la maquinita número i (nunca sale al navegador; la usa la tienda del lado del servidor).
+  async llaveDe(i) { await this.cargar(); const j = this.jug[i]; return j ? j.k : ""; }
 
   difundir(msg, menos) {
     const s = crudo(msg) ? msg : JSON.stringify(msg);
@@ -763,6 +873,17 @@ export class Mundo extends DurableObject {
       case "chatAntes":
         this.chatMas(ws, d);
         return;
+      case "pinta": {            // la pintura de la maquinita: la valida su propio objeto contra el nivel comprado
+        let r = null; try { r = await this.maquina(yo.k).ponerPinta(d.p); } catch { return; }
+        if (!r) return; yo.p = r.p; yo.nv = r.nv; yo.me = r.me; this.sucio.jug.add(i);
+        this.difundir({ t: "pinta", i, p: r.p, me: r.me });
+        break;
+      }
+      case "bocina": {           // el claxon: lo oyen los demás, a lo mucho uno por segundo
+        const ahora = Date.now(); if (ahora - (yo.bocT || 0) < 900) return; yo.bocT = ahora;
+        this.difundir({ t: "bocina", i, b: entero(d.b, 0, 5, 0) }, ws);
+        break;
+      }
       case "acepto": case "rechazo": case "sacar": case "perdonar": case "quitar": case "devolver":
         if (i !== this.creador()) return;
         await this.ordenDueno(d, i);
@@ -771,9 +892,10 @@ export class Mundo extends DurableObject {
         if (!m.fin || m.fin.r !== m.remin) {
           const n = Math.max(1, this.jug.filter(Boolean).length), total = Number.isFinite(d.total) && d.total >= 0 ? Math.min(d.total, 1e16) : 0;
           m.fin = { h: Date.now(), i, r: m.remin, n, total, parte: Math.floor(total / n) };
+          m.piedras = this.jug.filter((j) => j && (j.nv || 0) >= 9).map((j) => j.n).slice(0, 40);      // las piedras con nombre del Jardín (nivel 9 de La Pinturería)
         }
         m.sinMineral = m.remin; this.sucio.meta = true;      // queda de pura tierra hasta remineralizar
-        this.difundir({ ...m.fin, t: "fin" });               // a todos, también a quien perforó el Corazón: así todos arrancan con el mismo reparto
+        this.difundir({ ...m.fin, t: "fin", piedras: m.piedras || [] });               // a todos, también a quien perforó el Corazón: así todos arrancan con el mismo reparto
         break;
       }
         break;
@@ -875,7 +997,7 @@ export class Mundo extends DurableObject {
       await this.ctx.storage.put({ ["j:" + i]: this.jug[i], meta: m });
     }
     const yo = this.jug[i];
-    yo.n = r.n; yo.m = r.mo; yo.est = r.est;
+    yo.n = r.n; yo.m = r.mo; yo.est = r.est; yo.p = r.p || {}; yo.nv = r.nv || 0; yo.me = r.me || 0;
     if (!yo.pid) { yo.pid = await huella(k); this.sucio.jug.add(i); }
     // La ficha para mirar este mundo: nace una vez y se apunta en el directorio de la tabla.
     if (!m.ver) m.ver = fichaNueva();
@@ -901,7 +1023,7 @@ export class Mundo extends DurableObject {
       t: "mundo", i, seed: m.seed, remin: m.remin, cfg: m.cfg, creador: i === this.creador() ? 1 : 0,
       est: this.jug[i].est, cuenta: m.reminAt ? Math.max(0, Math.ceil((m.reminAt - Date.now()) / 1000)) : 0,
       jug: this.jug.map((j, x) => (j ? this.publico(x, on.has(x)) : null)).filter(Boolean),
-      dug: btoa(b), col: m.col || [], chat: this.chatUltimos(60), fin: m.fin || null, sinMineral: m.sinMineral ?? -1, mapa: this.mapaDe(m), pid: yo.pid, ver: m.cfg.mirar === 0 ? "" : m.ver, obs: this.ctx.getWebSockets("mira").length,
+      dug: btoa(b), col: m.col || [], chat: this.chatUltimos(60), fin: m.fin || null, sinMineral: m.sinMineral ?? -1, mapa: this.mapaDe(m), pid: yo.pid, ver: m.cfg.mirar === 0 ? "" : m.ver, obs: this.ctx.getWebSockets("mira").length, regalo: r.regalo ? 1 : 0, piedras: m.piedras || [],
     });
     for (const [x, s] of this.pos) if (x !== i && on.has(x)) manda(ws, s);
     this.avisarTabla(i, true, true);
@@ -1047,6 +1169,8 @@ export default {
 
     // La cuenta (entrar con Google, ponerse al corriente, salir). Jugar nunca la pide.
     if (u.pathname.startsWith("/api/cuenta/")) return cuentaApi(u, request, env);
+    // La Pinturería: catálogo, pagar y confirmar
+    if (u.pathname === "/api/tienda" || u.pathname.startsWith("/api/tienda/")) return tiendaApi(u, request, env);
 
     if (u.pathname.startsWith("/api/") || u.pathname.startsWith("/ws/") || u.pathname.startsWith("/og/")) return json({ error: "no" }, 404);
     return env.ASSETS.fetch(request);

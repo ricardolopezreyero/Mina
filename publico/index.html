@@ -421,6 +421,37 @@ body.movil #verTeclado{display:none!important}
   body.movil #tarjeta{left:auto;right:10px;width:min(46vw,340px);top:calc(60px + env(safe-area-inset-top))}
   body.movil #pista,body.movil #pista.dis{bottom:calc(76px + env(safe-area-inset-bottom));max-width:50vw}
 }
+
+/* ════ La Pinturería ════ RLR */
+.tienda .promesa{background:#ffd23f14;border:1px solid #ffd23f33;border-radius:10px;padding:8px 12px;color:var(--su);font-size:.9em;margin-bottom:10px}
+.tienda .promesa b{color:var(--tx)}
+.tienda .chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 12px}
+.tienda .chips button{padding:.45em .9em}
+.tienda .escalera{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px}
+.tienda .escalera button{display:flex;flex-direction:column;align-items:center;gap:1px;padding:.4em .7em;background:transparent;color:var(--su);border:1px solid var(--borde);font-weight:600;line-height:1.15;min-width:64px}
+.tienda .escalera button b{color:var(--tx);font-size:1.05em}.tienda .escalera button small{font-size:.74em}
+.tienda .escalera button.on{background:var(--ac);color:#1b120e}.tienda .escalera button.on b,.tienda .escalera button.on small{color:#1b120e}
+.tienda .escalera button.mio{border-color:var(--ok)}.tienda .escalera button.mio b::after{content:" ✓";color:var(--ok)}.tienda .escalera button.on.mio b::after{color:#1b120e}
+.tienda .carpeta{display:grid;grid-template-columns:220px 1fr;gap:16px;align-items:start}
+@media (max-width:640px){.tienda .carpeta{grid-template-columns:1fr}}
+.tienda .vista{background:linear-gradient(#4a7fb5,#f0a868 60%,#a9744f 61%,#7a5230);border:1px solid var(--borde);border-radius:12px;padding:8px;text-align:center}
+.tienda .vista canvas{position:static;width:100%;height:auto;display:block;border-radius:8px}
+.tienda .vista small{display:block;color:#fff;text-shadow:0 1px 2px #000;margin-top:4px;font-weight:700}
+.tienda h4{margin:6px 0 4px}
+.tienda .muestras{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 10px}
+.tienda .sw{width:34px;height:34px;border-radius:50%;border:2px solid #0008;padding:0;box-shadow:0 1px 3px #0006}
+.tienda .sw.on{outline:3px solid #fff;outline-offset:2px}
+.tienda .calcas button{background:#0006;border:1px solid var(--borde);border-radius:8px;width:40px;height:40px;padding:0;font-size:1.3em;line-height:1}
+.tienda .calcas button.on{background:var(--ac)}
+.tienda .ops{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 10px}
+.tienda .ops button{background:#0006;color:var(--tx);border:1px solid var(--borde);padding:.45em .8em}
+.tienda .ops button.on{background:var(--ac);color:#1b120e;border-color:var(--ac)}
+.tienda .pago{margin-top:14px;padding:12px;border:1px solid var(--borde);border-radius:12px;background:#0004}
+.tienda .pago .grande{margin:0 0 4px}
+.tienda .pago label.op{border:0;padding:4px 0}
+.tienda .aparte{margin-top:18px;padding-top:12px;border-top:1px solid #ffffff1c}
+.tienda input[type=number]{width:7em}
+.tienda .nota a{color:#9fd4ff}
 </style>
 </head>
 <body>
