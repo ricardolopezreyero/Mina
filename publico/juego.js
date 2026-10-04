@@ -799,6 +799,7 @@ const son = {
   piedra: () => { campana(1900, 0.12, 0.1, 'taladro'); ruido(0.05, 0.25, 'taladro', 3000, 'bandpass', 3); },
   // los demás
   entra: () => { cuerda(659, 0.3, 0.07, 'otros'); cuerda(880, 0.45, 0.07, 'otros', 0.12); },
+  pleito: (v = 1) => { tono(110, 0.5, 'sawtooth', 0.12 * v, 55, 0, 'peligro'); campana(880, 0.6, 0.1 * v, 'avisos', 0.05); campana(1175, 0.8, 0.1 * v, 'avisos', 0.25); ruido(0.3, 0.12 * v, 'peligro', 3000, 'bandpass', 1.4, 0.1); },
   chat: () => { campana(1175, 0.16, 0.03, 'otros'); campana(1568, 0.24, 0.025, 'otros', 0.07); },
   senal: () => { campana(1568, 0.7, 0.07, 'otros'); campana(1568, 0.5, 0.025, 'otros', 0.28); },
 };
@@ -1576,7 +1577,8 @@ function morir(causa) {
     son.boom(); temblar(12); chispas(yo.x, yo.y, '#ffb347', 40, 10); onda(yo.x, yo.y, 4, '#ffd9a0', 0.6); recordar();
     S.vida = vidaMax(); yo.renace = true; S.st.perdidos = (S.st.perdidos || 0) + 1;
     tarjeta('⚔️ ' + rival + ' te ganó el pleito', 'Vuelves a la superficie con tu carga y tu dinero completos. El Elevador te regresa a donde estabas.', '', 10000, true);
-    enviar({ t: 'golpe', a: rivalI, q: 1, v: 1 });        // que quien ganó lo celebre
+    enviar({ t: 'golpe', a: rivalI, q: 1, v: 1 });        // que quien ganó lo celebre (y el mundo se entera de quién ganó)
+    peleas.delete(miI); peleas.delete(rivalI); pintarPleito();
     difundir('perdió un pleito contra ' + rival); sucio = true; enviarEst(); return;
   }
   const tenia = vidaMax(), dondeFue = donde(yo.y); recordar();
@@ -1749,8 +1751,9 @@ function fisica(dt) {
       if (Math.random() < dt * 45) chispas(cx, cy, k === 3 ? '#ffffff' : '#ffd76a', 1, 7);          // chispas todo el tiempo que dura el contacto
       if (tiempo - tAtaque > 0.4) {
         tAtaque = tiempo; const q = Math.round(pot() * [1, 1.5, 1.5, 0.5][k]);
-        enviar({ t: 'golpe', a: o.i, q, k });
-        chispas(cx, cy, '#fff3b0', 16, 8); chispas(cx, cy, '#ff9a3a', 8, 5); onda(cx, cy, k === 3 ? 1.6 : 0.9, '#fff3b0', 0.3); temblar(k === 3 ? 6 : 3);
+        enviar({ t: 'golpe', a: o.i, q, k, x: Math.round(yo.x), y: Math.round(yo.y) }); enviarVida();
+        rival = o.n; rivalI = o.i; if (!enPleito(miI)) { peleas.set(miI, { con: o.i, h: tiempo }); peleas.set(o.i, { con: miI, h: tiempo }); } else { peleas.get(miI).h = tiempo; (peleas.get(o.i) || {}).h = tiempo; }
+        chispas(cx, cy, '#fff3b0', 16, 8); chispas(cx, cy, '#ff9a3a', 8, 5); chispas(cx, cy, '#d7dbe0', 6, 9); onda(cx, cy, k === 3 ? 1.6 : 0.9, '#fff3b0', 0.3); temblar(k === 3 ? 6 : 3); golpeFx = Math.max(golpeFx, 0.15);
         flota(o.x, o.y - 1.25, '−' + Math.max(1, Math.round(q * 0.25)) + ['', ' · ¡por la espalda!', ' · ¡desde arriba!', ' · ¡choque de taladros!'][k], k === 3 ? '#ffffff' : '#ffd76a');
         if (k === 3) { son.choque(); yo.vx = -s * 6; yo.vy = -3; } else son.piedra();
       }
@@ -1816,6 +1819,53 @@ function aterrizar(v) {
   if (h >= 46 && !yo.renace && cfg.caida) S.fl.caida = 1;
 }
 let ultNo = 0, tMuerde = 0, tAvisoPiedra = -9, tChoque = -9, tAtaque = -9, rival = '', rivalI = -1;
+/* ════════ El pleito ════════ RLR */
+// Taladro contra casco, bajo tierra. Los dos ven las dos vidas; todo el mundo se entera de que empezó y de quién ganó;
+// quien mira puede irse a verlo. Perder no cuesta nada: vuelves arriba con todo.
+const peleas = new Map();          // i → { con, h }: quién pelea con quién y desde cuándo (lo sabe todo el mundo)
+let tVida = -9;
+const enPleito = (i) => { const p = peleas.get(i); return p && tiempo - p.h < 6; };
+function enviarVida(ya) { if (!S || !conectado) return; if (!ya && tiempo - tVida < 0.15) return; tVida = tiempo; enviar({ t: 'vida', v: Math.max(0, Math.ceil(S.vida)), mx: vidaMax() }); }
+function empezarPleito(d) {
+  const mio = d.a === miI || d.b === miI, otro = d.a === miI ? d.b : d.a;
+  peleas.set(d.a, { con: d.b, h: tiempo }); peleas.set(d.b, { con: d.a, h: tiempo });
+  if (mio && !soloVer) { rival = nombreDe(otro); rivalI = otro; yo.pelea = tiempo; son.pleito(); temblar(5); flota(yo.x, yo.y - 1.6, '⚔️ ¡Pleito!', '#ff6b5a'); enviarVida(true); pintarPleito(); return; }
+  // los demás: aviso para irse a ver
+  son.pleito(0.5);
+  const na = nombreDe(d.a), nb = nombreDe(d.b), dnd = donde(d.y);
+  notaChat('⚔️ Pleito: ' + na + ' contra ' + nb + ', a ' + dnd);
+  tarjeta('⚔️ ¡Pleito! ' + na + ' contra ' + nb, 'A ' + dnd + '. ' + (soloVer ? 'Toca «Ver el pleito» en la barra de arriba para irte a verlo.' : 'Pulsa M: en el mapa se ven con ⚔️.'), 'msj', 9000, true);
+  if (soloVer) pintarVer();
+}
+function terminarPleito(d) {
+  peleas.delete(d.g); peleas.delete(d.p);
+  if (d.g === miI || d.p === miI) { pintarPleito(); if (soloVer) pintarVer(); return; }      // los dos ya tienen su tarjeta
+  notaChat('🏆 ' + nombreDe(d.g) + ' le ganó el pleito a ' + nombreDe(d.p));
+  tarjeta('🏆 ' + nombreDe(d.g) + ' ganó el pleito', nombreDe(d.p) + ' vuelve a la superficie con todo lo suyo.', 'msj', 8000);
+  if (soloVer) pintarVer();
+}
+// La barra de arriba: mi vida y la de mi rival (o, si estoy mirando, las de los dos que pelean)
+function pintarPleito() {
+  const el = $('#pleito');
+  let a = null, b = null;
+  if (!soloVer && S && rivalI >= 0 && enPleito(miI)) { a = { n: miNombre, v: S.vida, mx: vidaMax() }; const o = otros.get(rivalI); b = { n: rival, v: o && o.vida !== undefined ? o.vida : null, mx: o && o.mx || 1 }; }
+  else if (soloVer && veo >= 0 && enPleito(veo)) { const o = otros.get(veo), p = peleas.get(veo), r = otros.get(p.con); a = { n: o?.n || '', v: o?.vida ?? null, mx: o?.mx || 1 }; b = { n: r?.n || '', v: r?.vida ?? null, mx: r?.mx || 1 }; }
+  if (!a) { el.classList.remove('on'); return; }
+  el.classList.add('on');
+  for (const [lado, d] of [['.yo', a], ['.el', b]]) {
+    const L = el.querySelector(lado), bar = L.querySelector('.barra'), f = d.v === null ? 1 : Math.max(0, Math.min(1, d.v / Math.max(1, d.mx)));
+    L.querySelector('b').textContent = d.n; bar.firstChild.style.width = f * 100 + '%'; bar.lastChild.textContent = d.v === null ? '…' : Math.ceil(d.v) + ' / ' + d.mx;
+    bar.classList.toggle('poca', f < 0.5 && f >= 0.25); bar.classList.toggle('casi', f < 0.25);
+    if (L._f !== undefined && f < L._f) { bar.classList.remove('golpe'); void bar.offsetWidth; bar.classList.add('golpe'); } L._f = f;
+  }
+}
+// La vida sobre la maquinita, durante el pleito (la ven todos)
+function barraVida(px, py, v, mx, col) {
+  const an = T * 1.5, al = Math.max(4, T * 0.11), x = px - an / 2, y = py - T * 0.95, f = v === null ? 1 : Math.max(0, Math.min(1, v / Math.max(1, mx)));
+  g.fillStyle = '#000b'; g.beginPath(); g.roundRect(x - 2, y - 2, an + 4, al + 4, 3); g.fill();
+  g.fillStyle = '#2a0b08'; g.fillRect(x, y, an, al);
+  g.fillStyle = f < 0.25 ? '#ff6b5a' : f < 0.5 ? '#ffd23f' : col || '#6fdc7a'; g.fillRect(x, y, an * f, al);
+}
 // La piedra: cinco durezas según la zona. Cada una pide un taladro mínimo (nivel de la pieza) y tiene su color.
 const PIEDRA = [[4, 'gris', ['#77726d', '#56524e', '#9a948e', '#3b3836']], [7, 'azulada', ['#5f8196', '#456275', '#8fb0c4', '#26383f']], [9, 'morada', ['#7d6796', '#5d4a74', '#a995c2', '#33263f']], [12, 'índigo', ['#4d5aa3', '#39437d', '#7f8cd6', '#1d2247']], [15, 'negra', ['#3d3438', '#2a2226', '#6b565c', '#120c0e']]];
 const durezaDe = (m) => (m < 1000 ? 0 : m < 2000 ? 1 : m < 4000 ? 2 : m < 8000 ? 3 : 4);
@@ -2060,6 +2110,9 @@ function recibir(d) {
       son.entra(); ultPos = ''; enviarPos(); return pintarTabla();   // que el recién llegado me vea aunque yo esté quieto
     case 'sale': { const o = otros.get(d.i); if (o) { o.on = 0; o.x = undefined; o.b = []; aviso(o.n + (d.sacada ? ' fue sacada del mundo' : ' salió')); notaChat(o.n + (d.sacada ? ' fue sacada del mundo' : ' salió')); pintarChatQuien(); } return pintarTabla(); }
     case 'j': { const o = otros.get(d.i); if (o) { o.rec = d.rec; o.tot = d.tot; } return pintarTabla(); }
+    case 'pleito': return empezarPleito(d);
+    case 'pleitoFin': return terminarPleito(d);
+    case 'vida': { const o = otros.get(d.i); if (o) { o.vida = d.v; o.mx = d.mx; o.vidaH = tiempo; } pintarPleito(); return; }
     case 'col': if (d.k >= 0 && d.k < NCOL) { hallados[d.k] = 1; dugCambios++; mapa.fill(255); bloques.clear(); pintarHud(true); if (menu === 'menu') pintarMenu(); } return;
     case 'golpe': {            // otra maquinita me alcanzó con su taladro: pega según su taladro y la clase de golpe; lo que aguanto es mi casco
       if (!S) return;
@@ -2067,15 +2120,18 @@ function recibir(d) {
         S.st.pleitos = (S.st.pleitos || 0) + 1; sucio = true; son.rango(); temblar(6);
         for (const c of ['#ffd23f', '#6ec3ff', '#ff6b5a', '#6fdc7a']) chispas(yo.x, yo.y - 0.3, c, 14, 9);
         onda(yo.x, yo.y, 3, '#ffd23f', 0.7); flota(yo.x, yo.y - 1.4, '🏆 ¡Ganaste!', '#ffd23f');
+        peleas.delete(miI); peleas.delete(d.i); pintarPleito();
         return tarjeta('🏆 Le ganaste el pleito a ' + nombreDe(d.i), 'Se fue a la superficie. Llevas ' + S.st.pleitos + (S.st.pleitos === 1 ? ' pleito ganado.' : ' pleitos ganados.'), '', 8000, true);
       }
       if (cfg.pleitos === 0 || yo.y <= 0.5 || yo.renace) return;
       const o = otros.get(d.i), k = d.k | 0, dir = o && o.x !== undefined ? Math.sign(yo.x - o.x || 1) : 1;
       rival = nombreDe(d.i); rivalI = d.i; yo.pelea = tiempo;
+      if (!enPleito(miI)) { peleas.set(miI, { con: d.i, h: tiempo }); peleas.set(d.i, { con: miI, h: tiempo }); } else { peleas.get(miI).h = tiempo; (peleas.get(d.i) || {}).h = tiempo; }
       yo.vx += dir * (k === 3 ? 7 : 4); if (k !== 2) yo.vy -= 2;
-      chispas(yo.x - dir * 0.4, yo.y, '#ffd76a', 14, 8); chispas(yo.x - dir * 0.4, yo.y, '#ffffff', 6, 5);
+      chispas(yo.x - dir * 0.4, yo.y, '#ffd76a', 14, 8); chispas(yo.x - dir * 0.4, yo.y, '#ffffff', 6, 5); chispas(yo.x - dir * 0.4, yo.y, '#d7dbe0', 8, 10);
       if (k === 3) { son.choque(); onda(yo.x - dir * 0.5, yo.y, 1.6, '#ffffff', 0.3); }
-      return danar(Math.max(1, Math.min(900, d.q | 0) * 0.25), 'pleito');
+      // Cada golpe quita entre el 5 % y el 16 % del casco de quien lo recibe: ni un solo golpe decide, ni el pleito se eterniza
+      { const mx = vidaMax(), q = Math.max(Math.ceil(mx * 0.05), Math.min(Math.ceil(mx * 0.16), Math.round(Math.min(900, d.q | 0) * 0.25))); danar(q, 'pleito'); enviarVida(true); pintarPleito(); return; }
     }
     case 'aviso': notaChat(nombreDe(d.i) + ' ' + d.x); return aviso(nombreDe(d.i) + ' ' + d.x);
     case 'senal': senales.push({ x: d.x, y: d.y, t: 10, n: nombreDe(d.i) }); son.senal(); return aviso(nombreDe(d.i) + ' marcó un punto');
@@ -3058,6 +3114,7 @@ function dibujar() {
   for (const o of otros.values()) {
     if (!o.on || o.x === undefined || (ceremonia && ceremonia.ids.has(o.i))) continue;
     dibMaq(g, ox + o.x * T, oy + o.y * T, T, o.m, o.fl & 1 ? 1 : -1, o.fl & 2 ? 1 : o.fl & 96 ? 2 : 0, o.fl & 4 ? (o.fl & 16 ? 2 : o.fl & 1 ? 1 : -1) : 0, op.nombres ? (o.me ? '✦ ' : '') + o.n : '', o.fl & 8 ? 'en pausa' : '', o.x, o.p || null);
+    if (enPleito(o.i)) barraVida(ox + o.x * T, oy + o.y * T, o.vida ?? null, o.mx || 1, colorTx(o.i));
     estela(o.p, o.x, o.y, (o.fl & 2) || (o.fl & 96));
   }
   const p = yo.perf, mx = ox + vis.x * T, my = oy + vis.y * T;
@@ -3078,6 +3135,7 @@ function dibujar() {
   if (ceremonia) dibujarCeremonia(ox, oy);
   if (!soloVer && !ceremonia) dibMaq(g, mx + bx, my, T, miModelo, yo.dir, yo.vuela ? 1 : yo.planea || enPelea || (yo.agua && yo.picada) ? 2 : 0, p ? (p.ty > Math.floor(p.oy) ? 2 : p.tx < Math.floor(p.ox) ? -1 : 1) : yo.ataca || 0, op.nombres ? (miMe ? '✦ ' : '') + miNombre : '', '', vis.x, pintaVista());
   if (!soloVer && !ceremonia) estela(pintaVista(), vis.x, vis.y, yo.vuela || yo.planea || Math.abs(yo.vx) + Math.abs(yo.vy) > 5);
+  if (!soloVer && !ceremonia && enPleito(miI)) barraVida(mx + bx, my, S.vida, vidaMax(), '#ffd23f');
   // el aire como resistencia: al caer rápido se forma un arco bajo la maquinita; muy rápido se pone al rojo y deja estela
   const dens = vis.y < 0 ? Math.max(0, 1 + (vis.y + HH) / 45000) : 0;
   if (yo.vy > 30 && dens > 0.02) {
@@ -3283,7 +3341,8 @@ function pintarVer() {
   const o = otros.get(veo), vivos = [...otros.values()].filter((x) => x.on).length;
   poner($('#verDatos'), o ? `<b>${o.on ? '<span class="vivo">● EN VIVO</span>' : '○ No está jugando ahora'} · ${esc(o.n)}</b><small>${o.on && o.y !== undefined ? donde(o.y) + ' · ' : ''}${dineroLargo(o.tot || 0)} ganados · ${esc(cfg.nombre || 'un mundo de Mina')}${mirones > 1 ? ' · 👁 ' + mirones + ' mirando' : ''}</small>` : '<b>Este mundo está vacío</b>');
   const l = [...otros.values()].filter((x) => x.on).sort((a, b) => a.i - b.i);
-  poner($('#verQuien'), l.length ? l.map((x) => `<button class="s${x.i === veo ? ' on' : ''}" data-veo="${x.i}" style="--c:${colorTx(x.i)}"><i></i>${esc(x.n)}</button>`).join('') : '<small>Nadie está jugando ahora mismo</small>');
+  const pl = [...peleas.entries()].find(([i, p]) => tiempo - p.h < 6 && otros.get(i)?.on);
+  poner($('#verQuien'), (pl && !enPleito(veo) ? `<button id="verPelea" data-veo="${pl[0]}">⚔️ Ver el pleito: ${esc(nombreDe(pl[0]))} contra ${esc(nombreDe(pl[1].con))}</button>` : '') + (l.length ? l.map((x) => `<button class="s${x.i === veo ? ' on' : ''}" data-veo="${x.i}" style="--c:${colorTx(x.i)}"><i></i>${esc(x.n)}</button>`).join('') : '<small>Nadie está jugando ahora mismo</small>'));
   const P = { '': '<kbd>J</kbd>🙋 Pedir jugar aquí', enviando: '🙋 Mandando…', espera: '⏳ Solicitud enviada', ausente: '⏳ Solicitud enviada', aceptado: '🎉 ¡Aceptado!', no: '<kbd>J</kbd>🙋 Pedir otra vez' };
   poner($('#verPedir'), P[pido] ?? P['']); $('#verPedir').disabled = pido === 'espera' || pido === 'ausente' || pido === 'enviando' || pido === 'aceptado';
   pintarEspera();
@@ -4282,7 +4341,7 @@ function dibujarMapa(q, cw, ch, y0, filas, conIconos) {
     const x = (((j.p[0] % W) + W) % W) / W * cw, yy = (j.p[1] - y0) * k, y = Math.max(7, Math.min(ch - 7, yy)), r = j.yo ? 6 : 5;
     q.fillStyle = j.yo ? '#ffd23f' : colorTx(j.i); q.strokeStyle = '#000'; q.lineWidth = 2;
     if (yy < 0 || yy > ch) { q.beginPath(); const s = yy < 0 ? -1 : 1; q.moveTo(x, y + s * r); q.lineTo(x - r, y - s * r * 0.6); q.lineTo(x + r, y - s * r * 0.6); q.closePath(); q.fill(); q.stroke(); }      // fuera de la ventana: una flechita en la orilla
-    else { q.beginPath(); q.arc(x, y, r, 0, 7); q.fill(); q.stroke(); if (j.yo) { q.strokeStyle = 'rgba(255,210,63,' + (0.5 + 0.5 * Math.sin(performance.now() / 260)) + ')'; q.lineWidth = 2; q.beginPath(); q.arc(x, y, r + 4, 0, 7); q.stroke(); } }
+    else { q.beginPath(); q.arc(x, y, r, 0, 7); q.fill(); q.stroke(); if (enPleito(j.i)) { q.strokeStyle = 'rgba(255,107,90,' + (0.5 + 0.5 * Math.sin(performance.now() / 160)) + ')'; q.lineWidth = 3; q.beginPath(); q.arc(x, y, r + 5, 0, 7); q.stroke(); q.font = `${Math.max(12, r * 2.4)}px system-ui,"Apple Color Emoji","Segoe UI Emoji"`; q.textAlign = 'center'; q.textBaseline = 'middle'; q.fillText('⚔️', x, y - r - 11); } if (j.yo) { q.strokeStyle = 'rgba(255,210,63,' + (0.5 + 0.5 * Math.sin(performance.now() / 260)) + ')'; q.lineWidth = 2; q.beginPath(); q.arc(x, y, r + 4, 0, 7); q.stroke(); } }
   }
 }
 // El mapa del menú: el mundo completo de arriba abajo, con la profundidad y los lugares a la derecha (fuera del mapa).
@@ -5107,6 +5166,7 @@ setInterval(() => {                       // lo poco que corre aunque el juego e
   // en la tabla abierta, el reloj de quien está jugando corre cada segundo
   if (topAbierta()) document.querySelectorAll('#caja .tt[data-vivo="1"]').forEach((el) => { el.dataset.seg = +el.dataset.seg + 1; el.textContent = '⏱ ' + tiempoLargo(+el.dataset.seg); });
   if (soloVer && (pido === 'espera' || pido === 'ausente')) pintarEspera();
+  if (peleas.size) { for (const [i, p] of peleas) if (tiempo - p.h > 6) peleas.delete(i); pintarPleito(); if (soloVer) pintarVer(); }
   pendientesTienda(); if (latido % 5 === 0) invitarPintureria();
   if (!cuenta && S && listo && !soloVer && S.seg > 600 && !leer('mina_invitoG', 0)) { escribir('mina_invitoG', 1); tarjeta('💾 ¿Guardamos tu maquinita?', 'Con tu correo de Google la recuperas en cualquier equipo, con todos tus mundos. Cuando quieras: Menú → Mundo.', 'msj', 9000); }
   if (latido % 4 === 0) ocio(guardarCopia);

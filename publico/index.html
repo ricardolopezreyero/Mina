@@ -260,6 +260,23 @@ body.libre.jugando #regla,body.libre.viendo #regla{display:block;visibility:visi
 @keyframes pop{from{transform:translateX(14px);opacity:0}}
 #ojo{display:none;background:#000c;border:1px solid var(--borde);border-radius:5px;padding:2px 8px;font-size:.8em;font-weight:700;white-space:nowrap;z-index:2}
 .foto{position:static;display:inline-block;width:min(420px,78vw);height:auto;border-radius:10px;border:2px solid var(--borde)}
+/* El pleito: las dos vidas a la vista, para los dos que pelean y para quien mira */
+#pleito{left:50%;top:calc(64px*var(--f));transform:translateX(-50%);display:none;align-items:center;gap:14px;background:#000c;border:1px solid #ff6b5a88;border-radius:14px;padding:8px 14px;z-index:3;box-shadow:0 6px 24px #000a;animation:pleitoEntra .35s}
+#pleito.on{display:flex}
+#pleito .lado{width:min(230px,34vw)}
+#pleito .lado b{display:block;font-size:.95em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px}
+#pleito .lado.el{text-align:right}
+#pleito .barra{margin:0;height:16px;border-radius:5px;background:#2a0b08;border-color:#000}
+#pleito .barra i{background:#6fdc7a;transition:width .18s}
+#pleito .barra.poca i{background:#ffd23f}#pleito .barra.casi i{background:#ff6b5a;animation:parp .4s infinite}
+#pleito .barra span{position:absolute;inset:0;text-align:center;font-size:.72em;line-height:16px;font-weight:800}
+#pleito .barra.golpe{animation:golpe .3s}
+#pleito .vs{font-size:1.9em;animation:vsLate 1s infinite}
+@keyframes pleitoEntra{from{transform:translateX(-50%) translateY(-14px);opacity:0}}
+@keyframes vsLate{50%{transform:scale(1.25)}}
+body.movil #pleito{top:calc(100px + env(safe-area-inset-top));gap:8px;padding:6px 10px;max-width:calc(100vw - 16px)}
+body.movil #pleito .lado{width:38vw}
+#verPelea{background:#ff6b5a;color:#1b120e}
 #pista{left:50%;bottom:16%;white-space:nowrap;transform:translateX(-50%);background:#000a;border-radius:6px;padding:4px 12px;font-weight:700;display:none}
 #pista.dis{bottom:calc(50px*var(--f));font-weight:500;font-size:.8em;background:#0005;padding:2px 10px;color:var(--su)}
 #aviso-red{left:50%;top:8px;transform:translateX(-50%);background:#000b;border:1px solid var(--borde);border-radius:99px;padding:3px 12px;font-size:.78em;font-weight:700;color:var(--su);display:none;white-space:nowrap}
@@ -472,6 +489,7 @@ body.movil #verTeclado{display:none!important}
 <div class="hud" id="viaje"><div id="vjDatos"></div><button id="bGrua" class="s" title="La grúa te deja en la Gasolinera. Cobra por lo lejos que estás y por lo que pesas."></button><button id="bSube" class="s" title="La maquinita se queda subiendo sola; otro toque la suelta"></button><div id="contratos"></div></div>
 <div class="hud" id="objetos"></div>
 <div class="hud" id="ojo"></div>
+<div class="hud" id="pleito"><div class="lado yo"><b></b><div class="barra"><i></i><span></span></div></div><div class="vs">⚔️</div><div class="lado el"><b></b><div class="barra"><i></i><span></span></div></div></div>
 <div class="hud" id="pista"></div>
 <div class="hud" id="cuenta"></div>
 <div class="hud" id="regla"><small id="reglaArr">superficie</small><div id="reglaVia"><div id="reglaLug"></div><i id="reglaYo"></i><i id="reglaVer"><b id="reglaTx"></b></i></div><small id="reglaAb"></small></div>

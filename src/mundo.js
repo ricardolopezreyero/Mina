@@ -844,8 +844,20 @@ export class Mundo extends DurableObject {
       }
       case "golpe": {            // un pleito: se le avisa a la maquinita alcanzada; ella calcula su daño
         if (m.cfg.pleitos === 0) return;
-        const otro = this.socketDe(entero(d.a, 0, MAX_MAQUINITAS, -1));
-        if (otro && otro !== ws) manda(otro, { t: "golpe", i, q: entero(d.q, 1, 1000, 20), k: entero(d.k, 0, 3, 0), v: d.v ? 1 : 0 });
+        const a = entero(d.a, 0, MAX_MAQUINITAS, -1), otro = this.socketDe(a);
+        if (!otro || otro === ws || !this.jug[a]) return;
+        manda(otro, { t: "golpe", i, q: entero(d.q, 1, 1000, 20), k: entero(d.k, 0, 3, 0), v: d.v ? 1 : 0 });
+        // El pleito como tal: al primer golpe entre dos, todo el mundo (también quien mira) se entera; al ganar, también.
+        this.peleas = this.peleas || new Map();
+        const llave = Math.min(i, a) + "|" + Math.max(i, a), ahora = Date.now(), p = this.peleas.get(llave);
+        if (d.v) { this.peleas.delete(llave); this.difundir({ t: "pleitoFin", g: a, p: i }); return; }
+        if (!p || ahora - p.h > 6000) { const xy = this.xy.get(i) || this.xy.get(a) || [48, 0], x = entero(d.x, 0, W, xy[0]), y = entero(d.y, -100000, H, xy[1]); this.difundir({ t: "pleito", a: i, b: a, x: Math.round(x), y: Math.round(y) }); }
+        this.peleas.set(llave, { h: ahora });
+        return;
+      }
+      case "vida": {             // en un pleito, cada quien dice cuánta vida le queda: lo ven los dos y quien mira
+        const ahora = Date.now(); if (ahora - (yo.vidaT || 0) < 120) return; yo.vidaT = ahora;
+        this.difundir({ t: "vida", i, v: entero(d.v, 0, 1e6, 0), mx: entero(d.mx, 1, 1e6, 1) }, ws);
         return;
       }
       case "nombre": {           // rebautizar la maquinita o cambiarle el modelo

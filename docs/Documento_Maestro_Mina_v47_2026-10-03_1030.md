@@ -1273,6 +1273,21 @@ No se pudo ver el movimiento en vivo porque el navegador de pruebas está oculto
 - **Las piedras con nombre** (nivel 9): al terminar un mundo, los nombres de quienes tienen nivel 9 se guardan en `m.piedras` y se dibujan a la orilla izquierda del lago del Jardín.
 - **Invitaciones:** `invitarPintureria()`, tres en la vida de la maquinita (20 min, 3 h, 10 h de juego), solo en la superficie, nunca si ya abrió la tienda. El Manifiesto trae la sección «Cómo se sostiene Mina».
 
+### 9.48 El pleito, delicioso: las dos vidas a la vista y todo el salón se entera
+
+**Lo que pidió Ricardo.** Que la batalla entre mineros sea lo más deliciosa y bonita posible, con todos los efectos cuidados; que de verdad se vayan a pelear y se peleen cómodamente; que se vea de los dos lados cuánta vida les queda; y que, si hay gente en el salón o mirando, salga un aviso de que empezó un pleito para irse a verlo.
+
+**Cómo quedó.**
+- **El pleito existe como tal en el mundo.** Al primer golpe entre dos, el servidor manda `pleito { a, b, x, y }` a todos (también a quien mira); al perder uno, `pleitoFin { g, p }`. Cada maquinita en pleito manda `vida { v, mx }` (a lo mucho cada 120 ms) y el mundo la reparte.
+- **Las dos vidas a la vista, para los dos:** la barra `#pleito` arriba al centro, con los dos nombres, las dos vidas con números, el ⚔️ latiendo en medio; la barra que recibe el golpe tiembla y cambia de color (verde, amarillo, rojo parpadeante). Entra con animación y se va a los 6 s sin golpes.
+- **Sobre las maquinitas** se dibuja la vida de cada quien mientras dura el pleito: la ven los dos, los que pasan y quien mira.
+- **Golpes más justos y más tensos:** cada golpe quita entre el 5 % y el 16 % del casco de quien lo recibe (el taladro sigue contando, pero ni un golpe decide ni el pleito se eterniza: 6 a 20 golpes, de 2 a 8 s). Más chispas y esquirlas de metal en los dos lados; a quien pega también le vibra un poco la pantalla.
+- **Arranque con campana:** «⚔️ ¡Pleito!» flota sobre la maquinita, suena una campana grave y la pantalla tiembla.
+- **El salón se entera:** a todos les llega una tarjeta «⚔️ ¡Pleito! X contra Y, a 1,200 m» y una nota en el chat. Los jugadores lo encuentran en el mapa (M): los que pelean llevan un aro rojo latiendo y un ⚔️. Quien mira recibe en su barra un botón rojo «⚔️ Ver el pleito: X contra Y» que lo lleva con uno de los dos, y ve la barra de las dos vidas. Al terminar, tarjeta y nota: «🏆 X ganó el pleito»; el que perdió «vuelve a la superficie con todo lo suyo».
+- Perder sigue sin costar nada.
+
+**Probado.** En local: con cuatro conexiones (quien pega, quien recibe, un tercero y un observador) llegan `pleito`, `golpe`, `vida` y `pleitoFin` a quien corresponde, el segundo golpe no vuelve a anunciar, y en el navegador la barra de arriba muestra las dos vidas y el daño entra con tope. No se pudo probar con dos personas reales peleando.
+
 ## 10. Revisión de código del 2 de octubre
 
 Se revisó todo el código buscando fallas y se corrigieron estas:
