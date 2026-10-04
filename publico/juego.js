@@ -4461,7 +4461,7 @@ function menuPrincipal() {
       <p class="nota"><b>Tu maquinita es tuya.</b> Entra contigo a cualquier mundo con todo lo que trae, y no se pierde aunque un mundo se borre. Para seguir con ella en otra computadora o en el teléfono, entra allá con tu cuenta de Google, o abre su liga o su código QR. <b>No los compartas:</b> quien los abra maneja tu maquinita.</p>
       <div class="fila"><div class="t"><small>Código: <code>${esc(miK)}</code></small></div><button class="s" data-a="menu" data-v="qrmaq">Ver su código QR</button><button data-a="ligaMaq">Copiar su liga</button></div>
       <div class="fila"><div class="t"><b>Guardar este mundo en un archivo</b><small>Semilla, reglas, todos los túneles y la colección. Desde «Mis mundos» puedes abrirlo cuando quieras como un mundo nuevo, idéntico.</small></div><button data-a="guardarArchivo">💾 Guardar archivo</button></div>
-      ${S.fl.edenF && S.fl.edenF[mundoId + '|' + remin] ? `<div class="fila"><div class="ic">🌅</div><div class="t"><b>Este mundo ya se terminó</b><small>Arranca uno nuevo desde arriba: con tus mejoras o desde cero.</small></div><button data-a="reiniciar">🔄 Volver a arrancar</button></div>` : ''}
+      <div class="fila"><div class="ic">🌅</div><div class="t"><b>${(S.fl.edenF && S.fl.edenF[mundoId + '|' + remin]) || edenVivo ? 'Este mundo ya se terminó' : 'Volver a arrancar'}</b><small>Un mundo nuevo desde arriba: con tus mejoras o desde cero.</small></div><button data-a="reiniciar">🔄 Volver a arrancar</button></div>
       <div class="fila"><div class="t"></div><button class="s" data-a="mundos">Mis mundos · crear o cargar otro</button><button class="mal" data-a="desechar">Desechar este mundo</button></div>`;
   } else if (pestana === 10) {
     h += htmlTop();
