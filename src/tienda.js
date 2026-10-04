@@ -123,3 +123,8 @@ export function momento(ts, m, animo) {
 // El precio exacto: lista × (1 − confort) × (1 − momento), redondeado a un número limpio. Nunca más que la lista, nunca menos de $1.
 export const precioBonito = (x) => Math.max(1, x < 100 ? Math.round(x) : x < 1000 ? Math.round(x / 5) * 5 : Math.round(x / 10) * 10);
 export function precioFinal(lista, desc, ajuste) { return Math.min(lista, precioBonito(lista * (1 - Math.max(0, Math.min(DESC_MAX, desc || 0))) * (1 - Math.max(0, Math.min(AJUSTE_MAX, ajuste || 0))))); }
+
+// ── Referidos ─────────────────────────────────────────────────────────────────────────────────────────────────────────
+// Decisión de Ricardo (4 de octubre): por cada persona nueva que entre con tu liga y abra su cuenta, $333 de saldo en
+// La Pinturería. Sin límite. El saldo solo compra niveles (para ti o de regalo); nunca es dinero de vuelta ni Mecenas ni Fondo.
+export const REFERIDO_PREMIO = 333;

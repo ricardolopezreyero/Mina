@@ -1358,6 +1358,18 @@ No se pudo ver el movimiento en vivo porque el navegador de pruebas está oculto
 
 **Probado** en local: cita propuesta y píldora «hoy a las 8 pm · 1 va · voy ✓», mensaje de WhatsApp con la cita y la liga con `?de=2`, llegada de una maquinita con `de` (atribución guardada, tarjeta 💛, contador `traidos`), panel «Quién trajo a quién», vista previa con `?de=0` («Ricardo te invita a Mundo de Ricardo · 2 excavando ahora» y la cita en la descripción).
 
+### 9.54 Referidos: $333 de saldo por cada persona que abra su cuenta con tu liga
+
+**Lo que pidió Ricardo.** Premio digital de alto valor por cada referido: $333 de la tienda por cada persona nueva que entre con tu liga y haga login, sin límite, con un panel que diga cuántos usaron tu liga y cuánta gente metiste a Mina. «En producto y que quede perfecto».
+
+**Cómo quedó.**
+- La maquinita que nace con `?de=` guarda `m.padrino` (la llave de quien invitó); el mundo le anota a quien invitó `ref.llegaron`, y la vista previa con `?de=` le anota `ref.clics`.
+- Al abrir cuenta nueva (`/api/cuenta/google` con `r.nueva`): `padrinoDe()` → `marcarPadrinoPagado()` → `acreditarReferido()` en la maquinita del padrino (`m.saldo += 333`, `ref.cuentas`, `ref.ganado`, `ref.lista`, sin repetir la misma cuenta) → aviso en vivo por el mundo donde esté (`Mundo.avisarMaquina` → mensaje `ref`).
+- `vistaTienda` devuelve `saldo`, `padrino` y `ref`; `/api/tienda/pagar` con `saldo:1`: si el saldo alcanza, `usarSaldo` + `entregar` al instante (sin Stripe, con `sid` propio); si no, Stripe cobra el resto con `metadata.saldo` y `/confirmar` descuenta lo reservado. El tope de cuidado solo mira el dinero real. Gancho local: `/api/tienda/prueba {exp:"referido"}`.
+- Cliente: panel «💛 Tus referidos» arriba del menú Invitar (cuatro cajas: abrieron tu liga, entraron, abrieron cuenta, tu saldo; ganado y gastado; lista plegable), cinta de saldo en la tienda, casilla «Usar mi saldo» y botón «Pagar con mi saldo» cuando alcanza, mensaje de WhatsApp con la línea del premio, bienvenida del invitado con botón «Abrir mi cuenta», tarjeta en vivo «abrió su cuenta: +$333», fila de Menú → Mundo.
+
+**Probado** en local, de punta a punta: una maquinita nueva entra con `?de=`, abre cuenta (pase de prueba) → quien invitó recibe las dos tarjetas (entró con tu liga / abrió su cuenta +$333), el panel marca 1 entró · 1 cuenta · $333; con once referidos ($3,663) el nivel 10 ($3,490) se paga completo con saldo, sin tarjeta, y quedan $173.
+
 ## 10. Revisión de código del 2 de octubre
 
 Se revisó todo el código buscando fallas y se corrigieron estas:

@@ -27,7 +27,7 @@ Liga del mundo con vista previa propia (imagen, nombre, hitos) en WhatsApp e iMe
 
 ## 4. Lo que no se hace
 
-- No se paga por invitar (ni dinero del juego por liga mandada): el premio es social, y ya existe el +$500 para todos cuando llega alguien nuevo.
+- ~~No se paga por invitar~~ **Cambio de Ricardo esa misma tarde:** sí se premia, con $333 de saldo de La Pinturería por cada persona nueva que abra su cuenta (ver el ADN de monetización, 6d). Lo que sigue sin existir: dinero del juego por liga mandada y dinero de vuelta.
 - No se piden contactos, ni se manda nada por nosotros: el mensaje lo manda la persona desde su WhatsApp.
 - No hay cuenta regresiva inventada ni «solo hoy». La cita es real porque la puso alguien del mundo.
 - No se interrumpe bajo tierra: las invitaciones aparecen en la superficie y con calma.

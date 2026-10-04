@@ -124,6 +124,20 @@ Ricardo pidió que el motor leyera más: la hora del día, si es de madrugada, s
 
 **La gratitud de cumpleaños.** La persona da su cumpleaños (día y mes, nada más) en La Pinturería; se puede quitar cuando quiera. Ese día: gorrito, −15 %, una felicitación al entrar y, a las 3:33 de la tarde (hora de Torreón), una tarjeta en el juego y, si entró con su cuenta, un correo cortito desde hola@capitaltorreon.com: «si Mina te ha dado buenos ratos, hoy es buen día para darle las gracias a quien lo hace». Desde $33, nada obligatorio, no cambia nada en el juego, y llega a quien hace Mina en CapitalTorreon. Uno al año. El correo sale por un cron a las 21:33 UTC (Coahuila no cambia de horario). Por celular, por ahora, es la tarjeta dentro del juego; una notificación de verdad al teléfono es infraestructura nueva (Web Push) y queda como decisión.
 
+## 6d. Referidos: $333 de saldo por cada persona que traigas (decisión de Ricardo, 4 de octubre, tarde)
+
+El ADN de compartir decía «no se paga por invitar». Ricardo lo cambió a propósito: quiere pago inmediato con recompensa para que los chavos de secundaria, prepa y universidad muevan Mina con ganas. Queda así:
+
+- **Qué se da:** por cada persona nueva que entre con tu liga **y abra su cuenta**, **$333 de saldo en La Pinturería**. Sin límite: diez personas, $3,330; mil, $333,000. El saldo es digital: compra niveles para tu maquinita o de regalo para quien tú quieras.
+- **Qué no es:** no es dinero de vuelta, no se transfiere, no compra Mecenas ni Fondo ni gratitud (eso es de corazón y con dinero real), y no cuenta para el tope de cuidado (que sigue siendo solo para dinero real).
+- **Cuándo se acredita:** al instante, cuando la persona referida abre su cuenta (Google, por login.capitaltorreon.com). Si quien invitó está jugando, le llega la tarjeta en vivo: «💛 Lupita abrió su cuenta: +$333».
+- **Candados:** solo cuentas nuevas (una cuenta de Google se acredita una sola vez en la vida); la maquinita referida tuvo que nacer con la liga de alguien (`?de=`); nadie se refiere a sí mismo (misma maquinita o misma cuenta); el premio se marca como pagado en la maquinita referida para que no se repita.
+- **Por qué está bien aunque sea «gratis» para nosotros:** el saldo solo compra pintura; el costo real es cero y lo que se «pierde» son ventas que de todos modos no existirían. Lo que se gana es gente.
+- **Riesgo asumido:** alguien puede abrir varias cuentas de Google para acreditarse solo. Como el saldo solo compra cosmética, el daño es que se pinte su maquinita gratis. Si se vuelve plaga, se sube la vara (minutos jugados de la cuenta nueva) sin tocar la promesa.
+- **El panel (Invitar):** cuántos abrieron tu liga, cuántos entraron a Mina, cuántos abrieron cuenta, tu saldo, lo ganado y lo gastado, y la lista de quiénes (nombre de maquinita y fecha). También en Menú → Mundo.
+- **El mensaje de WhatsApp** lo dice de frente: «Si luego abres tu cuenta, a mí me dan $333 para pintar mi maquinita». Y al que llega, la bienvenida le explica lo mismo con un botón para abrir su cuenta.
+- **Cómo se paga con saldo:** en la carpeta del nivel, una casilla «Usar mi saldo» (marcada). Si el saldo alcanza, el nivel es tuyo al instante, sin tarjeta; si no, Stripe cobra solo el resto y el saldo se descuenta al confirmar el pago.
+
 ## 7. Lo que se mide (y lo que no)
 
 Se mide para cuidar, no para exprimir: cuántos abren la tienda, cuántos se prueban algo, cuántos compran, cuántos regalan, cuántas devoluciones, cuántas quejas. La meta no es «más conversión»: es que **nadie se sienta empujado** (cero quejas) y que quien compra lo haga contento (devoluciones casi en cero). Si un cambio sube la venta pero sube las quejas, se revierte.
