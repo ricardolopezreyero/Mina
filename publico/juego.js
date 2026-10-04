@@ -918,11 +918,12 @@ function pintarBocina() {
   b.title = op.mudo ? 'Encender el sonido' : 'Apagar el sonido';
   $('#bVol').textContent = Math.round(op.vol * 100) + ' %';
   const p = $('#panSon');
-  if (p.style.display === 'block') poner(p, TIPOS.map(([id, n]) => `<label><input type="checkbox" data-t="${id}" ${op.son[id] ? 'checked' : ''}> ${n}</label>`).join(''));
+  if (p.style.display === 'block') poner(p, (movil ? `<div class="vol"><button class="s" data-v="mudo">${op.mudo ? '🔇 Encender' : '🔊 Apagar'}</button><button class="s" data-v="-">−</button><b>${Math.round(op.vol * 100)} %</b><button class="s" data-v="+">+</button></div>` : '') + TIPOS.map(([id, n]) => `<label><input type="checkbox" data-t="${id}" ${op.son[id] ? 'checked' : ''}> ${n}</label>`).join(''));
 }
 function sonidoUI() {
   const cambia = (f) => { audio(); f(); escribir('mina_op', op); volumenes(); son.clic(); };
-  $('#bSon').onclick = (e) => { e.currentTarget.blur(); cambia(() => { op.mudo = op.mudo ? 0 : 1; }); };
+  $('#bSon').onclick = (e) => { e.currentTarget.blur(); if (movil) { const p = $('#panSon'); p.style.display = p.style.display === 'block' ? 'none' : 'block'; p._h = ''; pintarBocina(); } else cambia(() => { op.mudo = op.mudo ? 0 : 1; }); };
+  $('#panSon').onclick = (e) => { const v = e.target.dataset.v; if (!v) return; cambia(() => { if (v === 'mudo') op.mudo = op.mudo ? 0 : 1; else { op.vol = Math.max(0, Math.min(1, Math.round((op.vol + (v === '+' ? 0.1 : -0.1)) * 10) / 10)); op.mudo = 0; } }); $('#panSon')._h = ''; pintarBocina(); };
   $('#bMenos').onclick = (e) => { e.currentTarget.blur(); cambia(() => { op.vol = Math.max(0, Math.round((op.vol - 0.1) * 10) / 10); op.mudo = 0; }); };
   $('#bMas').onclick = (e) => { e.currentTarget.blur(); cambia(() => { op.vol = Math.min(1, Math.round((op.vol + 0.1) * 10) / 10); op.mudo = 0; }); };
   $('#bTipos').onclick = (e) => { e.currentTarget.blur(); const p = $('#panSon'); p.style.display = p.style.display === 'block' ? 'none' : 'block'; p._h = ''; pintarBocina(); };
@@ -1627,6 +1628,16 @@ function fisica(dt) {
     yo.vy -= (Gf + sube) * dt; yo.vuela = true;
   }
   yo.vy += Gf * dt;
+  // Aterrizaje suave: en pantalla táctil (o si se pide en Opciones), cuando viene cayendo sin tocar nada y el piso está cerca,
+  // los rotorcitos frenan solos para llegar sin golpe. Gasta como volar; con sobrepeso frenan lo que pueden.
+  yo.frena = false;
+  if (!arr && !aba && !yo.suelo && !agua && yo.vy > 2 && cfg.caida && !yo.renace && aterrizajeSuave()) {
+    const freno = 26 * (1 - peso / pesoMax) * k;
+    if (freno > 0.5) {
+      const piso = pisoAbajo(16), vOk = Math.sqrt(2 * G * 1.5);
+      if (piso < 16 && (yo.vy * yo.vy - vOk * vOk) / (2 * freno) > piso - 0.35) { yo.vy -= (Gf + freno) * dt; yo.vuela = true; yo.frena = true; }
+    }
+  }
   // Sin tocar nada, la maquinita planea: saca sus rotorcitos y el aire la frena. Con ↓ los guarda y cae en picada, tres veces más rápido.
   const picada = aba && !arr && !yo.suelo;          // también bajo el agua: ahí los rotorcitos empujan hacia abajo
   if (picada) yo.vy += G * 2 * dt;
@@ -1761,6 +1772,12 @@ function gastar(l) {
   if (!S || S.fuel <= 0) return;
   S.fuel -= l;
   if (S.fuel <= 0) { S.fuel = 0; if (cfg.comb) morir('combustible'); else tarjeta('Entraste en reserva', 'Avanzas despacio y no perforas hasta cargar combustible.'); }
+}
+const aterrizajeSuave = () => op.suave === 1 || (op.suave !== 0 && tactil);
+function pisoAbajo(n) {                       // celdas libres bajo las ruedas, hasta n
+  const x0 = Math.floor(yo.x - HW + 0.02), x1 = Math.floor(yo.x + HW - 0.02), pie = yo.y + HH, y0 = Math.floor(pie);
+  for (let y = y0; y < y0 + n; y++) for (let x = x0; x <= x1; x++) if (solida(x, y)) return Math.max(0, y - pie);
+  return n;
 }
 function aterrizar(v) {
   if (yo.agua) return;                         // el agua amortigua: bajo el agua no hay golpe de caída
@@ -2118,14 +2135,14 @@ function iniciarMundo(d, local) {
   document.body.classList.add('jugando');
   surtirContratos(); pintarHud(true); pintarTabla(); if (!local) ponerChat(d.chat); arrancar();
   { const f = new Date(), hoy = f.getDate() + '/' + (f.getMonth() + 1); if (primera && hoy === '11/7') tarjeta('⛏️ ¡Feliz Día del Minero!', 'Hoy, 11 de julio, México celebra a su gente de mina. Buen turno.', 'msj', 10000); if (primera && hoy === '4/12') tarjeta('🕯️ Día de Santa Bárbara', 'Hoy, 4 de diciembre, las minas festejan a su patrona.', 'msj', 10000); }
-  if (primera && !d.est) tarjeta('⛏️ Tu maquinita se llama ' + miNombre, (tactil ? 'Arrastra el dedo para moverte.' : 'Usa las flechas para moverte.') + ' Primero: carga combustible en la Gasolinera (' + (tactil ? 'un toque' : '↓') + ' para entrar). El nombre se cambia en Menú → Mundo.', 'msj', 11000);
+  if (primera && !d.est) tarjeta('⛏️ Tu maquinita se llama ' + miNombre, (tactil ? 'Pon el dedo donde sea y arrástralo: abajo perfora, a los lados camina, arriba vuela. Con dos dedos acercas la vista.' : 'Usa las flechas para moverte.') + ' Primero: carga combustible en la Gasolinera (' + (tactil ? 'un toque' : '↓') + ' para entrar). El nombre se cambia en Menú → Mundo.', 'msj', 11000);
   if (primera) { const n = leer('mina_nota', ''); if (n) { try { localStorage.removeItem('mina_nota'); } catch {} aviso(n); } }
 }
 
 /* ════════ Dibujo ════════ RLR */
 // Todo se dibuja en píxeles reales de la pantalla: T es cuántos píxeles mide una celda.
 const lienzo = $('#c'), g = lienzo.getContext('2d', { alpha: false });
-let DPR = 1, RES = 1, T = 40, cols = 32, filas = 20, camX = 0, camY = -12, reloj = 0;
+let DPR = 1, RES = 1, T = 40, cols = 32, filas = 20, camX = 0, camY = -12, reloj = 0, lupa = Math.max(0.6, Math.min(2.2, +op.lupa || 1));
 let panX = 0, panY = 0, vistaLibre = false;       // vista libre con la rueda o el trackpad
 const vis = { x: INICIO_X, y: INICIO_Y };         // dónde se dibuja mi maquinita (entre dos pasos de física)
 const tiles = new Map(), casas = new Map();
@@ -2204,7 +2221,9 @@ function medir() {
   const w = Math.max(1, Math.round(innerWidth * RES)), h = Math.max(1, Math.round(innerHeight * RES));
   if (lienzo.width !== w) lienzo.width = w;
   if (lienzo.height !== h) lienzo.height = h;
-  T = Math.max(Math.round(12 * RES), Math.round(w / [26, 32, 40][op.zoom]));
+  // En el celular manda el lado corto de la pantalla: caben 9, 12 o 16 celdas a lo ancho (y la pinza acerca o aleja desde ahí).
+  // En una computadora, 26, 32 o 40 a lo ancho.
+  T = movil ? Math.max(Math.round(10 * RES), Math.round(Math.min(w, h) / [9, 12, 16][op.zoom] * lupa)) : Math.max(Math.round(12 * RES), Math.round(w / [26, 32, 40][op.zoom]));
   cols = w / T; filas = h / T;                    // lo que de verdad cabe, aunque la ventana sea angosta
   tiles.clear(); casas.clear(); sprites.clear(); bloques.clear(); bloquesLibres.length = 0;
   bloquesTope = (Math.ceil(cols / BL) + 1) * (Math.ceil(filas / BL) + 1) + 6;        // lo que cabe en pantalla y unos pocos más
@@ -3252,7 +3271,7 @@ function nodoChat(m, ant) {
 }
 const chatAbajo = () => { const L = $('#chatLista'); return L.scrollHeight - L.scrollTop - L.clientHeight < 70; };
 const chatAlFondo = () => { const L = $('#chatLista'); L.scrollTop = L.scrollHeight; chat.nuevos = 0; $('#chatNuevos').style.display = 'none'; };
-function pintarChatBoton() { poner($('#bChat'), '<kbd>C</kbd>💬 Chat' + (chat.sinLeer ? `<i>${chat.sinLeer > 99 ? '99+' : chat.sinLeer}</i>` : '')); const v = $('#verChat'); if (v) poner(v, '<kbd>C</kbd>💬' + (chat.sinLeer ? `<i>${chat.sinLeer}</i>` : '')); }
+function pintarChatBoton() { poner($('#bChat'), '<kbd>C</kbd>💬<span> Chat</span>' + (chat.sinLeer ? `<i>${chat.sinLeer > 99 ? '99+' : chat.sinLeer}</i>` : '')); const v = $('#verChat'); if (v) poner(v, '<kbd>C</kbd>💬' + (chat.sinLeer ? `<i>${chat.sinLeer}</i>` : '')); }
 // Un mensaje (o una nota chica: quién entró, quién descubrió qué) se agrega al final.
 function agregarChat(m) {
   const ant = chat.l[chat.l.length - 1], abajo = chatAbajo(), mio = !m.nota && !soloVer && m.i === miI;
@@ -3589,7 +3608,7 @@ function cadaTanto() {
   let e = null;
   if (yo.suelo && yo.y < 0) e = EDIF.find((b) => yo.x > b.x + 0.2 && yo.x < b.x + 2.8) || null;
   pistaDe = e;
-  pista(crucero ? 'Subiendo sola · barra espaciadora o ↓ para soltar' : yo.planea && yo.y < -40 ? '↓ caer en picada · ↑ frenar' : yo.picada ? 'En picada · suelta ↓ para planear' : teclas.arr && yo.vuela && !yo.suelo ? 'Doble ↑ o barra espaciadora: seguir subiendo sin sostener la tecla' : vistaLibre ? 'Vista libre · ' + donde(camY + filas / 2) + ' · pulsa una flecha para volver a tu maquinita' : e ? '↓  Entrar a ' + e.n + ' · ' + e.h.toLowerCase() : '', !e);      // solo la invitación a entrar a un edificio va destacada
+  pista(yo.frena ? 'Aterrizaje suave: frenando sola' : crucero ? (tactil ? 'Subiendo sola · ↓ o el botón para soltar' : 'Subiendo sola · barra espaciadora o ↓ para soltar') : yo.planea && yo.y < -40 ? '↓ caer en picada · ↑ frenar' : yo.picada ? 'En picada · suelta ↓ para planear' : teclas.arr && yo.vuela && !yo.suelo && !tactil ? 'Doble ↑ o barra espaciadora: seguir subiendo sin sostener la tecla' : vistaLibre ? 'Vista libre · ' + donde(camY + filas / 2) + (tactil ? ' · un dedo vuelve a tu maquinita' : ' · pulsa una flecha para volver a tu maquinita') : e ? (tactil ? 'Toca para entrar a ' : '↓  Entrar a ') + e.n + ' · ' + e.h.toLowerCase() : '', !e);      // solo la invitación a entrar a un edificio va destacada
   // los lugares: al entrar por primera vez se celebra y queda apuntado en El Elevador
   const lg = yo.y >= 165 ? lugarDe(Math.floor(yo.x), Math.floor(yo.y), true) : -1;
   if (lg >= 0 && !S.lug[lg]) {
@@ -3650,7 +3669,7 @@ function metas() {             // arriba al centro: solo dónde estás y, si lo 
 function pintarHud(forzar) {
   if (!S) return;
   const f = S.fuel / tanque(), v = S.vida / vidaMax();
-  const k = [Math.round(S.fuel * 10), S.vida, prof(), altura() > 40, S.d, nCarga(), S.eq.join(''), S.obj.join(','), S.rec].join('|');
+  const k = [Math.round(S.fuel * 10), S.vida, prof(), altura() > 40, S.d, nCarga(), S.eq.join(''), S.obj.join(','), S.rec, crucero ? 1 : 0, viajeAbierto ? 1 : 0, yo.perf ? 1 : 0, yo.agua ? 1 : 0].join('|');
   if (k === hudAnt && !forzar) return; hudAnt = k;
   const bc = $('#bComb'), bv = $('#bCasco');
   bc.firstChild.style.width = f * 100 + '%'; bc.lastChild.textContent = S.fuel.toFixed(1) + ' / ' + tanque() + ' L'; bc.classList.toggle('bajo', f < 0.25);
@@ -3669,17 +3688,26 @@ function costoSubir() {
   return 17 / 60 * ((yo.y + HH) / v * 1.15 + v / empuje * 0.5 + 1);
 }
 // El viaje, abajo a la izquierda: cuánto llevas, en cuánto se vende, si te alcanza para subir, y la grúa.
+let viajeAbierto = false, viajeT = 0;
 function pintarViaje() {
   const n = nCarga(), bd = bodega(), abajo = yo.y > 2.5, lejos = abajo || yo.y < -20;
-  let h = `<div class="l"><span>Llevas</span><b>${n} de ${bd}${n >= bd ? ' · llena' : ''}</b></div><div class="bar${n >= bd ? ' llena' : ''}"><i style="width:${Math.round(n / bd * 100)}%"></i></div><div class="l"><span>Se vende en</span><b>${fmt(venta().total)}</b></div>` + (n ? `<div class="bod">${S.carga.map((c, i) => [c, i]).filter((a) => a[0]).reverse().map(([c, i]) => `<span title="${MIN[i].n} · ${fmt(MIN[i].v)} la pieza"><i style="background:${MIN[i].col}"></i>${MIN[i].n} ${c}</span>`).join('')}</div>` : '');
-  if (abajo) { const c = costoSubir(), mal = c > S.fuel; h += `<div class="l${mal ? ' mal' : ''}"><span>Subir gasta</span><b>${c === Infinity ? 'vas muy pesado' : '≈ ' + Math.ceil(c) + ' L · ' + (mal ? 'no te alcanza' : 'traes ' + Math.floor(S.fuel))}</b></div>`; }
+  let h;
+  if (movil && !viajeAbierto) {                 // en el celular, una píldora: qué llevas, en cuánto se vende y si alcanza para subir
+    const c = abajo ? costoSubir() : 0, mal = c > S.fuel;
+    h = `<div class="pill"><span>📦 ${n}/${bd}</span><b>${fmt(venta().total)}</b>${abajo ? `<span class="${mal ? 'mal' : ''}">⛽ ${c === Infinity ? 'muy pesado' : '≈ ' + Math.ceil(c) + ' L'}</span>` : ''}</div>`;
+  } else h = `<div class="l"><span>Llevas</span><b>${n} de ${bd}${n >= bd ? ' · llena' : ''}</b></div><div class="bar${n >= bd ? ' llena' : ''}"><i style="width:${Math.round(n / bd * 100)}%"></i></div><div class="l"><span>Se vende en</span><b>${fmt(venta().total)}</b></div>` + (n ? `<div class="bod">${S.carga.map((c, i) => [c, i]).filter((a) => a[0]).reverse().map(([c, i]) => `<span title="${MIN[i].n} · ${fmt(MIN[i].v)} la pieza"><i style="background:${MIN[i].col}"></i>${MIN[i].n} ${c}</span>`).join('')}</div>` : '');
+  if (abajo && h.indexOf('class="pill"') < 0) { const c = costoSubir(), mal = c > S.fuel; h += `<div class="l${mal ? ' mal' : ''}"><span>Subir gasta</span><b>${c === Infinity ? 'vas muy pesado' : '≈ ' + Math.ceil(c) + ' L · ' + (mal ? 'no te alcanza' : 'traes ' + Math.floor(S.fuel))}</b></div>`; }
   const sig = RANGOS.find((r) => r[0] > S.rec);
-  h += `<div class="l rec col" title="Ver la colección del mundo"><span>Colección</span><b>${nHallados()} de ${NCOL}</b></div>`;
-  h += `<div class="l rec" title="${sig ? 'Sigue: ' + sig[1] + ' a los ' + sig[0].toLocaleString('es-MX') + ' m' : 'Llegaste al último rango'}"><span>Récord</span><b>${S.rec.toLocaleString('es-MX')} m · ${RANGOS[S.rango][1]}</b></div>`;
+  if (h.indexOf('class="pill"') < 0) h += `<div class="l rec col" title="Ver la colección del mundo"><span>Colección</span><b>${nHallados()} de ${NCOL}</b></div>`;
+  if (h.indexOf('class="pill"') < 0) h += `<div class="l rec" title="${sig ? 'Sigue: ' + sig[1] + ' a los ' + sig[0].toLocaleString('es-MX') + ' m' : 'Llegaste al último rango'}"><span>Récord</span><b>${S.rec.toLocaleString('es-MX')} m · ${RANGOS[S.rango][1]}</b></div>`;
   poner($('#vjDatos'), h);
   const b = $('#bGrua'), c = lejos ? costoGrua() : 0;
   poner(b, lejos ? `<span>🚁 Grúa · <b>${fmt(c)}</b>${S.d < c ? ' · no alcanza' : ''}</span><kbd>G</kbd>` : '');      // en un solo renglón, para que quepan los números
   b.style.display = lejos ? 'flex' : 'none'; b.classList.toggle('no', S.d < c);
+  // «Subir sola», solo en el celular: con el dedo no hay doble ↑ ni barra espaciadora
+  const bs = $('#bSube'), ver = movil && !soloVer && !yo.perf && !yo.agua && (yo.y > 6 || crucero);
+  bs.style.display = ver ? 'block' : 'none';
+  if (ver) { poner(bs, crucero ? '⏹ Dejar de subir' : '⬆ Subir sola'); bs.classList.toggle('on', crucero); }
 }
 // El velocímetro, a la izquierda: aparece al volar o caer. La escala se aprieta al crecer para que quepa de 0 a 100,000 km/h.
 function pintarVel() {
@@ -3696,7 +3724,7 @@ function pintarTabla() {
   const l = [{ n: miNombre, m: miModelo, rec: S.rec, on: 1, yo: 1, y: donde(yo.y) }, ...[...otros.values()].map((o) => ({ ...o, y: o.on && o.y !== undefined ? donde(o.y) : null }))];
   l.sort((a, b) => (b.on || 0) - (a.on || 0) || (b.rec || 0) - (a.rec || 0));        // primero quienes están jugando
   const mas = l.length - 8; if (mas > 0) { const yoJ = l.findIndex((j) => j.yo); l.length = 8; if (yoJ >= 8) l[7] = { n: miNombre, m: miModelo, rec: S.rec, on: 1, yo: 1, y: donde(yo.y) }; }
-  poner($('#tabla'), l.map((j) => `<div class="${j.on ? '' : 'off'}"><i style="background:${MODELOS[j.m]?.[0] || '#888'}"></i><b>${esc(j.n)}${j.yo ? ' (tú)' : ''}</b><span>${j.on && j.y !== null ? j.y + ' · ' : ''}récord ${num(j.rec)} m</span></div>`).join('') + (mas > 0 ? `<div class="off"><b>y ${mas} más</b></div>` : '') +
+  poner($('#tabla'), (movil ? l.filter((j) => !j.yo && j.on).slice(0, 3) : l).map((j) => `<div class="${j.on ? '' : 'off'}"><i style="background:${MODELOS[j.m]?.[0] || '#888'}"></i><b>${esc(j.n)}${j.yo ? ' (tú)' : ''}</b><span>${j.on && j.y !== null ? j.y + ' · ' : ''}récord ${num(j.rec)} m</span></div>`).join('') + (mas > 0 && !movil ? `<div class="off"><b>y ${mas} más</b></div>` : '') +
 (soyCreador && publico.sol.length ? `<div class="mund pub" data-pub="1">🙋 ${publico.sol.length === 1 ? '1 quiere jugar' : publico.sol.length + ' quieren jugar'} · <kbd>J</kbd></div>` : '') + (mirones ? `<div class="mund pub" data-pub="1">👁 ${mirones === 1 ? '1 persona te mira' : mirones + ' personas te miran'}</div>` : ''));
 }
 
@@ -3896,7 +3924,7 @@ function abrir(id) {
   pintarMenu(); ultPos = ''; enviarPos();
 }
 function cerrar() { if (menu === 'inicio') return; menu = null; $('#velo').classList.remove('on'); document.activeElement?.blur?.(); arrancar(); ultPos = ''; enviarPos(); if (sucio) enviarEst(); }
-const cab = (t, sinX) => `<header><h2>${t}</h2><span class="d">${S && !soloVer ? fmt(S.d) : ''}</span>${sinX ? '' : '<button class="s" data-a="cerrar">Cerrar (Esc)</button>'}</header>`;
+const cab = (t, sinX) => `<header><h2>${t}</h2><span class="d">${S && !soloVer ? fmt(S.d) : ''}</span>${sinX ? '' : '<button class="s" data-a="cerrar">Cerrar' + (tactil ? '' : ' (Esc)') + '</button>'}</header>`;
 function pintarMenu() {
   const c = $('#caja'); let h = '';
   if (menu === 'gas') {
@@ -4209,7 +4237,7 @@ const acciones = {
   },
   compartir() { navigator.share?.({ title: 'Mina', text: 'Entra a excavar a mi mundo', url: location.origin + '/' + mundoId }).catch(() => {}); return 'no'; },
   tirar(v) { if (S.carga[+v] > 0) S.carga[+v]--; },
-  op(v, el) { const k = el.dataset.k; op[k] = el.type === 'checkbox' ? (el.checked ? 1 : 0) : +el.value; escribir('mina_op', op); aplicarOp(); return 'no'; },
+  op(v, el) { const k = el.dataset.k; op[k] = el.type === 'checkbox' ? (el.checked ? 1 : 0) : +el.value; if (k === 'zoom') { lupa = 1; op.lupa = 1; } escribir('mina_op', op); aplicarOp(); return 'no'; },
   texto(v) { op.texto = Math.max(0.85, Math.min(1.5, op.texto + +v)); escribir('mina_op', op); aplicarOp(); },
   ligaMaq(v, el) {
     const liga = location.origin + '/' + mundoId + '#maquinita=' + miK;
@@ -4304,7 +4332,12 @@ $('#tabla').addEventListener('click', (e) => { if (e.target.closest('[data-pub]'
 $('#verChat').addEventListener('click', () => { audio(); if (chat.abierto) cerrarChat(); else abrirChat(); });
 $('#verTop').addEventListener('click', () => { audio(); abrir('top'); });
 $('#bGrua').addEventListener('click', (e) => { audio(); e.currentTarget.blur(); if (listo && !menu && !pausa) grua(); });
-$('#vjDatos').addEventListener('click', (e) => { audio(); if (listo && !menu) { pestana = e.target.closest('.col') ? 1 : 0; abrir('menu'); } });
+$('#vjDatos').addEventListener('click', (e) => {
+  audio(); if (!listo || menu) return;
+  if (movil && !viajeAbierto) { viajeAbierto = true; pintarHud(true); clearTimeout(viajeT); viajeT = setTimeout(() => { viajeAbierto = false; pintarHud(true); }, 6000); return; }      // primer toque: se despliega; el segundo abre la bodega
+  pestana = e.target.closest('.col') ? 1 : 0; abrir('menu');
+});
+$('#bSube').addEventListener('click', (e) => { audio(); e.currentTarget.blur(); if (!listo || menu) return; if (crucero) crucero = false; else subirSola(); pintarHud(true); });
 
 $('#bInv').addEventListener('click', (e) => { audio(); e.currentTarget.blur(); if (listo && !menu) abrir('inv'); });
 $('#bMenu').addEventListener('click', (e) => { audio(); e.currentTarget.blur(); if (listo && !menu) abrir('menu'); });
@@ -4351,6 +4384,7 @@ function menuPrincipal() {
       chk('contraste', 'Alto contraste') + chk('dalton', 'Marcas para daltónicos (cada mineral con su símbolo)') + chk('temblor', 'Temblor de pantalla') +
       `<label class="op"><span>Partículas</span><select data-a="op" data-k="part">${[[2, 'Todas'], [1, 'Pocas'], [0, 'Ninguna']].map(([v, t]) => `<option value="${v}" ${op.part == v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
       <label class="op"><span>Acercamiento</span><select data-a="op" data-k="zoom">${[[0, 'Cerca'], [1, 'Normal'], [2, 'Lejos']].map(([v, t]) => `<option value="${v}" ${op.zoom == v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>` +
+      `<label class="op"><span>Aterrizaje suave (frena sola antes del piso)</span><select data-a="op" data-k="suave">${[[2, tactil ? 'Automático: sí, con el dedo' : 'Automático: no, con teclado'], [1, 'Siempre'], [0, 'Nunca']].map(([v, t]) => `<option value="${v}" ${(op.suave ?? 2) == v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>` +
       chk('nombres', 'Mostrar los nombres de las maquinitas') +
       `<label class="op"><span>Cuadros por segundo</span><select data-a="op" data-k="fps">${[[0, 'Lo máximo de tu pantalla'], [60, '60'], [30, '30 (ahorra batería)']].map(([v, t]) => `<option value="${v}" ${op.fps == v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
       <p class="nota">Tu pantalla refresca a <b>${rit.hz} Hz</b> y el juego está mostrando <b>${Math.round(Math.min(rit.fps, rit.hz))} cuadros por segundo</b>, con nitidez al ${Math.round(NITIDEZ[rit.niv] * 100)} %. Señal con el mundo: ${red.rtt ? Math.round(red.rtt) + ' ms' : 'midiendo…'}. El juego se ajusta solo: si tu equipo no alcanza el refresco de su pantalla, baja la nitidez antes que la fluidez.</p>
@@ -4396,7 +4430,8 @@ function menuPrincipal() {
   } else if (pestana === 11) {
     h += MANIFIESTO;
   } else {
-    h += `<p><b>Moverte:</b> con las flechas. <b>↑</b> vuela. <b>↓</b> perfora hacia abajo. <b>← →</b> contra una pared, perfora de lado. Nunca se perfora hacia arriba.</p>
+    h += (tactil ? '<p><b>Con el dedo:</b> ponlo donde sea y arrástralo. Hacia abajo perfora, a los lados camina, hacia arriba vuela; al soltar se detiene. Un toque frente a un edificio entra. <b>Dos dedos</b> acercan o alejan la vista y la recorren. Al caer, la maquinita frena sola antes del piso (Aterrizaje suave, en Opciones). <b>⬆ Subir sola</b> la deja subiendo sin sostener el dedo.</p>' : '') +
+      `<p><b>Moverte:</b> con las flechas. <b>↑</b> vuela. <b>↓</b> perfora hacia abajo. <b>← →</b> contra una pared, perfora de lado. Nunca se perfora hacia arriba.</p>
       <p><b>El ciclo:</b> baja, llena la bodega, sube, vende en La Báscula, carga combustible y mejora tu equipo en El Taller. En la superficie, párate frente a un edificio y pulsa ↓.</p>
       <p><b>Las teclas son la inicial de lo que hacen:</b> <b>R</b> Reserva · <b>N</b> Nanobots · <b>D</b> Dinamita · <b>P</b> Plástico · <b>Q</b> Cuántico · <b>T</b> Transmisor · <b>C</b> Chat · <b>S</b> Señal · <b>A</b> Ayudar · <b>G</b> Grúa · <b>M</b> Mapa · <b>Esc</b> Menú.</p>
       <p><b>El mapa (M):</b> se abre de un lado, como el chat (y encima de él si está abierto). Solo enseña lo que ya descubrió el equipo; lo demás queda oscuro. Arriba dice quién está jugando y a qué profundidad, y un clic en un nombre lleva el mapa hasta esa maquinita; a la izquierda, una tira con el mundo entero y la marca de cada quien. La rueda del ratón recorre el mapa.</p>
@@ -4432,7 +4467,8 @@ function menuPrincipal() {
   return h + '</div>';
 }
 function aplicarOp() {
-  document.documentElement.style.setProperty('--f', op.texto * (Math.min(innerWidth, innerHeight) < 520 ? 0.8 : 1));      // en un teléfono todo el tablero va más chico
+  medirMovil();
+  document.documentElement.style.setProperty('--f', op.texto * (!movil && Math.min(innerWidth, innerHeight) < 520 ? 0.8 : 1));      // en una ventana chica de computadora el tablero va más chico; el celular tiene su propio tablero
   document.body.classList.toggle('contraste', !!op.contraste);
   medir();
 }
@@ -4503,29 +4539,57 @@ addEventListener('blur', () => { for (const k in teclas) teclas[k] = false; });
 /* ════════ Dedo ════════ RLR */
 // En pantallas táctiles la palanca aparece donde se pone el dedo: arrastrar mueve, soltar detiene.
 // Un toque corto frente a un edificio entra en él. Los objetos, la grúa y el menú se tocan en su lugar de siempre.
-let tactil = matchMedia('(pointer: coarse)').matches;
-const pal = $('#palanca'), dedo = { id: -1, x: 0, y: 0, t: 0, mov: false };
+let tactil = matchMedia('(pointer: coarse)').matches, movil = false;
+// Celular: pantalla táctil y lado corto de hasta 820 px (teléfonos y tabletas chicas). Las tabletas grandes usan el tablero de computadora, con el dedo.
+function medirMovil() { movil = tactil && Math.min(innerWidth, innerHeight) <= 820; document.body.classList.toggle('movil', movil); document.body.classList.toggle('tactil', tactil); }
+const pal = $('#palanca'), dedo = { id: -1, x: 0, y: 0, t: 0, mov: false, eje: '' }, dedos = new Map();
+let pinza = null, lupaT = 0;
 addEventListener('pointerdown', () => nacer(), true);
+function soltarPalanca() { dedo.id = -1; dedo.eje = ''; pal.style.display = 'none'; teclas.izq = teclas.der = teclas.arr = teclas.aba = false; }
 lienzo.addEventListener('pointerdown', (e) => {
   if (e.pointerType !== 'touch') return;
-  tactil = true; audio();
-  if (!listo || menu || soloVer || dedo.id !== -1) return;
-  if (pausa) { pausa = false; pista(''); arrancar(); }
-  dedo.id = e.pointerId; dedo.x = e.clientX; dedo.y = e.clientY; dedo.t = performance.now(); dedo.mov = false; vistaLibre = false;
+  if (!tactil) { tactil = true; aplicarOp(); } audio();
+  if (!listo || menu) return;
+  dedos.set(e.pointerId, { x: e.clientX, y: e.clientY });
   try { lienzo.setPointerCapture(e.pointerId); } catch {}
+  if (dedos.size === 2) {                                   // dos dedos: se suelta la palanca; la pinza acerca o aleja, y arrastrando se recorre la vista
+    soltarPalanca();
+    const [p1, p2] = [...dedos.values()];
+    pinza = { d0: Math.max(20, Math.hypot(p1.x - p2.x, p1.y - p2.y)), lupa0: lupa, mx: (p1.x + p2.x) / 2, my: (p1.y + p2.y) / 2 };
+    return;
+  }
+  if (dedos.size > 2 || soloVer) return;
+  if (pausa) { pausa = false; pista(''); arrancar(); }
+  dedo.id = e.pointerId; dedo.x = e.clientX; dedo.y = e.clientY; dedo.t = performance.now(); dedo.mov = false; dedo.eje = ''; vistaLibre = false;
   pal.style.left = e.clientX + 'px'; pal.style.top = e.clientY + 'px'; pal.firstChild.style.transform = ''; pal.style.display = 'block';
 });
 lienzo.addEventListener('pointermove', (e) => {
+  const f = dedos.get(e.pointerId); if (f) { f.x = e.clientX; f.y = e.clientY; }
+  if (pinza && dedos.size >= 2) {
+    const [p1, p2] = [...dedos.values()], d = Math.hypot(p1.x - p2.x, p1.y - p2.y), mx = (p1.x + p2.x) / 2, my = (p1.y + p2.y) / 2;
+    const nl = Math.max(0.6, Math.min(2.2, pinza.lupa0 * d / pinza.d0));
+    if (movil && Math.abs(nl - lupa) > 0.015 && performance.now() - lupaT > 70) { lupa = nl; lupaT = performance.now(); medir(); }
+    panX = Math.max(-W, Math.min(W, panX - (mx - pinza.mx) * RES / T)); panY = Math.max(-H, Math.min(H, panY - (my - pinza.my) * RES / T)); pinza.mx = mx; pinza.my = my; vistaLibre = true;
+    return;
+  }
   if (e.pointerId !== dedo.id) return;
-  const dx = e.clientX - dedo.x, dy = e.clientY - dedo.y, r = Math.hypot(dx, dy), k = r > 40 ? 40 / r : 1, zona = 14;
+  // La palanca: una zona muerta amplia y un solo eje a la vez, el que más se empuja. Para cambiar de eje hay que empujar
+  // claramente hacia el otro (así, caminar de lado nunca despega sin querer). Volando sí se puede ir en diagonal.
+  const dx = e.clientX - dedo.x, dy = e.clientY - dedo.y, ax = Math.abs(dx), ay = Math.abs(dy), r = Math.hypot(dx, dy), tope = movil ? 52 : 40, k = r > tope ? tope / r : 1, zona = movil ? 20 : 14;
   pal.firstChild.style.transform = `translate(${dx * k}px,${dy * k}px)`;
   if (r > zona) dedo.mov = true;
-  teclas.izq = dx < -zona && -dx > Math.abs(dy) * 0.45; teclas.der = dx > zona && dx > Math.abs(dy) * 0.45;
-  teclas.arr = dy < -zona && -dy > Math.abs(dx) * 0.45; teclas.aba = dy > zona && dy > Math.abs(dx) * 1.1;
+  if (r <= zona) dedo.eje = '';
+  else if (!dedo.eje) dedo.eje = ax >= ay ? 'x' : 'y';
+  else if (dedo.eje === 'x' && ay > ax * 1.35) dedo.eje = 'y';
+  else if (dedo.eje === 'y' && ax > ay * 1.35) dedo.eje = 'x';
+  const x = dedo.eje === 'x', y = dedo.eje === 'y', vuelo = y && dy < 0 && ax > ay * 0.5;
+  teclas.izq = (x || vuelo) && dx < 0; teclas.der = (x || vuelo) && dx > 0; teclas.arr = y && dy < 0; teclas.aba = y && dy > 0;
 });
 const soltarDedo = (e) => {
+  dedos.delete(e.pointerId);
+  if (pinza && dedos.size < 2) { pinza = null; op.lupa = +lupa.toFixed(2); escribir('mina_op', op); }
   if (e.pointerId !== dedo.id) return;
-  dedo.id = -1; pal.style.display = 'none'; teclas.izq = teclas.der = teclas.arr = teclas.aba = false;
+  soltarPalanca();
   if (!dedo.mov && performance.now() - dedo.t < 320 && listo && !menu && pistaDe && pistaDe.id && yo.suelo && yo.y < 0) abrir(pistaDe.id);
 };
 lienzo.addEventListener('pointerup', soltarDedo); lienzo.addEventListener('pointercancel', soltarDedo);
@@ -4781,7 +4845,7 @@ function entrar(id) {
   conectar();
 }
 
-addEventListener('resize', medir);
+addEventListener('resize', aplicarOp);
 document.addEventListener('visibilitychange', () => { if (!document.hidden && document.title !== 'Mina · excava con tus amigos' && !location.search.includes('foto')) document.title = 'Mina · excava con tus amigos'; if (document.hidden) { for (const k in teclas) teclas[k] = false; if (sucio) enviarEst(); guardarCopia(); } });
 addEventListener('pagehide', () => { enviarEst(); guardarCopia(); });
 setInterval(componer, 220);               // la música sigue aunque haya un menú abierto

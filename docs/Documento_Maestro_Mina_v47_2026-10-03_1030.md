@@ -1,4 +1,4 @@
-# DOCUMENTO MAESTRO · «Mina» · v46
+# DOCUMENTO MAESTRO · «Mina» · v47
 
 **Ver en vivo: https://mina.capitaltorreon.com**
 
@@ -1177,6 +1177,37 @@ El README abre con un resumen del manifiesto.
 - cada cuadro tarda en promedio 1.5 ms con 1,500 piezas en pantalla.
 
 No se pudo ver el movimiento en vivo porque el navegador de pruebas está oculto y no dibuja cuadros solo.
+
+### 9.41 El celular, pensado desde el dedo
+
+**Lo que dijo Ricardo (3 de octubre).** En computadora todo funciona perfecto, pero en celular no le gustó nada: todo chiquito, sin zoom con uno o dos dedos, controles muy sensibles (lo mató tres veces rápido porque vuela, cae y se estrella), tableros encimados. Pidió repensar el juego para celular desde el origen, en el mismo archivo: dimensiones, controles y acomodo. «Busca mejorar la usabilidad».
+
+**Qué es «celular».** Pantalla táctil con lado corto de hasta 820 px (teléfonos y tabletas chicas): `body.movil`. Las tabletas grandes usan el tablero de computadora, con el dedo. Toda pantalla táctil lleva `body.tactil`: desaparecen las letras de teclado y las pistas de teclas en botones, menús, chat y mapa. Se decide en `medirMovil()` (al abrir, al cambiar de tamaño y al primer toque).
+
+**Dimensiones.** En el celular manda el lado corto de la pantalla: caben 9, 12 o 16 celdas a lo ancho según Acercamiento (antes se dividía el ancho entre 26, 32 o 40: en un teléfono salían celdas de 12 px). En un iPhone normal la celda mide unos 31 px y se ven 12 columnas por 26 filas: se ve lo que hay abajo al bajar.
+
+**La pinza.** Dos dedos acercan o alejan la vista de forma continua (de 0.6× a 2.2× sobre el acercamiento elegido), y arrastrando con los dos se recorre el mundo (vista libre, con la regla de profundidad). Al soltar queda guardado (`op.lupa`); cambiar el Acercamiento en Opciones lo regresa a 1×. Con dos dedos la palanca se suelta sola.
+
+**La palanca, menos sensible.** Sigue apareciendo donde se pone el dedo, pero más grande (136 px, recorrido de 52 px) y con zona muerta de 20 px (antes 14). Y la regla nueva: **un solo eje a la vez, el que más se empuja.** Para cambiar de eje hay que empujar claramente hacia el otro (1.35 veces más). Así, caminar de lado ya no despega sin querer, que era lo que lo mataba. Volando (eje vertical hacia arriba) sí se puede ir en diagonal. Hacia abajo solo perfora, sin lados.
+
+**Aterrizaje suave.** Cuando la maquinita viene cayendo sin tocar nada y el piso está cerca, los rotorcitos frenan solos para llegar sin golpe (`pisoAbajo`, hasta 16 celdas; frena cuando la distancia de frenado alcanza al piso, apuntando a una velocidad de llegada sin daño). Gasta combustible como volar; con sobrepeso frena lo que puede, igual que la hélice. Opción nueva en Opciones: «Aterrizaje suave»: Automático (sí con el dedo, no con teclado), Siempre, Nunca. Probado: caída de 14 celdas, 0 de daño con la ayuda y 6 sin ella.
+
+**«⬆ Subir sola».** Botón abajo a la izquierda, solo en el celular, cuando está bajo tierra: la maquinita se queda subiendo sin sostener el dedo (lo que en teclado es doble ↑ o barra). Otro toque, o empujar hacia abajo, la suelta.
+
+**El tablero del celular.** Las orillas para los tableros y el centro libre para la tierra; botones de 44 px o más; todo respeta las zonas seguras del teléfono (`env(safe-area-inset-*)`).
+- Arriba a la izquierda: dos barras con icono (⛽ combustible, 🛡️ casco) y debajo la profundidad y el dinero. El velocímetro, más chico, abajo de eso.
+- Arriba a la derecha: cuatro botones redondeados solo con icono: 🔊 💬 🗺️ ☰. El de sonido abre un panel con apagar, volumen y tipos de sonido. Invitar vive en el menú (Mundo) y en el panel de Invitar.
+- Debajo de los botones solo se enlistan las otras maquinitas conectadas (hasta 3); la tuya ya está a la izquierda.
+- Abajo a la izquierda: «⬆ Subir sola», la grúa y una píldora con el viaje: 📦 cuántas piezas, en cuánto se vende y, bajo tierra, si el combustible alcanza para subir. Un toque la despliega seis segundos; otro abre la bodega.
+- Abajo a la derecha: los objetos en columna, solo los que traes, de 56 px, con la dinamita cerca del pulgar. Quien empieza no ve ninguno.
+- Las tarjetas de aviso van arriba, a lo ancho; los avisos chicos, al centro abajo; las metas del tutorial, abajo a la izquierda.
+- Acostado: los objetos en fila, las metas y tarjetas a la derecha.
+- Los menús ocupan toda la pantalla, con botones de 40 px por lo menos y filas que parten renglón.
+- Las pistas hablan de toques: «Toca para entrar a la Gasolinera», «un dedo vuelve a tu maquinita».
+
+**Lo que no cambió.** En computadora todo sigue igual (`movil` falso): mismo tablero, mismos tamaños, mismas teclas. El aterrizaje suave está apagado ahí salvo que se pida.
+
+**Probado.** En el navegador de pruebas emulando un iPhone (375 × 812, puntero grueso): tablero sin encimados ni desbordes, botones de 44 px, 12 columnas; palanca con toques simulados (zona muerta, derecha, diagonal que no despega, arriba, diagonal volando, abajo); pinza de 31 a 69 px por celda y vista libre; aterrizaje suave con y sin ayuda; «Subir sola» aparece bajo tierra y enciende el crucero; menú a pantalla completa con la opción nueva. Lo que no se pudo probar: un teléfono real en la mano (la sensación de la palanca, el peso del dedo sobre la maquinita, Safari con su barra). El trabajador de servicio sube a `mina-24` para que los teléfonos tomen la versión nueva.
 
 ## 10. Revisión de código del 2 de octubre
 

@@ -35,7 +35,7 @@ html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;backgrou
   font:calc(14px*var(--f))/1.35 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-user-select:none;user-select:none}
 body.contraste{--caja:#000;--borde:#fff;--tx:#fff;--su:#fff;--ac:#ffe600}
 canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
-#c{touch-action:none}
+#c{touch-action:none;-webkit-touch-callout:none}
 /* La palanca aparece donde se pone el dedo: arrastrar mueve la maquinita, soltar la detiene. */
 #palanca{position:fixed;z-index:4;width:112px;height:112px;margin:-56px 0 0 -56px;border-radius:50%;border:2px solid #fff5;background:#0003;pointer-events:none;display:none}
 #palanca i{position:absolute;left:50%;top:50%;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;background:#ffd23fcc;border:2px solid #2a1a14}
@@ -77,6 +77,7 @@ body.jugando .hud{visibility:visible}
 #bVol{background:#0007;border-radius:5px;padding:.2em .45em;font-size:.8em;min-width:3.6em;text-align:center}
 #panSon{display:none;background:#120b08f2;border:1px solid var(--borde);border-radius:8px;padding:6px 10px;margin-top:6px;width:calc(250px*var(--f));text-align:left;font-size:.86em}
 #panSon label{display:flex;gap:8px;align-items:center;padding:3px 0;cursor:pointer}
+#panSon .vol{display:flex;gap:6px;align-items:center;margin:2px 0 6px}#panSon .vol b{min-width:3.4em;text-align:center}
 #tabla,#tarjeta{width:calc(250px*var(--f))}
 .qr{position:static;display:inline-block;width:min(300px,70vw);height:auto;image-rendering:pixelated;border-radius:8px;border:6px solid #fff}
 #tabla{background:#0007;border-radius:6px;padding:4px 7px;margin-top:6px;font-size:.8em;text-align:left}
@@ -321,6 +322,71 @@ input[type=range]{width:100%;padding:0;accent-color:var(--ac)}
 @media (max-width:640px){.dos{grid-template-columns:1fr}.dos>div+div{border-left:0;padding-left:0}}
 a{color:var(--az)}
 @media (max-width:760px){#metas{top:auto;bottom:calc(150px*var(--f));width:60vw}#avisos{display:none}}
+
+/* ════ El celular: el mismo juego, pensado desde el dedo (body.movil) ════ RLR
+   Los tableros van a las orillas y el centro queda libre para la tierra. Botones de 44 px o más, sin letras de teclado,
+   todo respeta las zonas seguras del teléfono. body.tactil quita las pistas de teclado en cualquier pantalla táctil. */
+body.tactil :is(#botones,#caja,#bGrua,#objetos,#chat header,#mapaLat header,#tabla,#verBarra,#verEspera) kbd,body.tactil .tecl,body.tactil #chatTeclas{display:none!important}
+body.movil #izq{left:calc(8px + env(safe-area-inset-left));top:calc(8px + env(safe-area-inset-top));width:min(40vw,170px)}
+body.movil #izq>div:not(.barra):not(#datos):not(#vel){display:none}
+body.movil .barra{height:24px;margin:0 0 5px;border-radius:8px;background:#000a;border-color:#ffffff22}
+body.movil .barra b{line-height:24px;font-size:.78em;padding-left:20px}
+body.movil .barra::after{content:"⛽";position:absolute;left:6px;top:0;line-height:24px;font-size:.72em}
+body.movil #bCasco::after{content:"🛡️"}
+body.movil #datos{gap:6px;font-size:.95em}
+body.movil #datos span{padding:3px 8px;background:#000a;border-radius:8px}
+body.movil #vel{width:96px;padding:3px 6px 4px;margin-top:6px}
+body.movil #der{right:calc(8px + env(safe-area-inset-right));top:calc(8px + env(safe-area-inset-top))}
+body.movil #botones{gap:6px}
+body.movil #botones button{position:relative;width:44px;height:44px;padding:0;border-radius:12px;font-size:1.3em;line-height:1;display:flex;align-items:center;justify-content:center;background:#000a;border:1px solid #ffffff22}
+body.movil #botones :is(span,#bMenos,#bVol,#bMas,#bTipos,#bInv){display:none}
+body.movil #bChat i{position:absolute;top:-5px;right:-5px;margin:0;font-size:.6em;padding:1px 5px}
+body.movil #panSon{width:min(270px,calc(100vw - 20px))}
+body.movil #tabla{width:auto;max-width:min(58vw,250px);font-size:.74em;margin-top:5px}
+body.movil #tabla:empty{display:none}
+body.movil #tarjeta{position:fixed;left:10px;right:10px;top:calc(112px + env(safe-area-inset-top));width:auto;margin:0;font-size:.88em;text-align:left}
+body.movil #metas{left:10px;right:auto;width:min(62vw,300px);top:auto;bottom:calc(156px + env(safe-area-inset-bottom));transform:none;font-size:.76em}
+body.movil #avisos{display:block;left:50%;right:auto;top:auto;bottom:calc(206px + env(safe-area-inset-bottom));width:min(82vw,360px);transform:translateX(-50%);text-align:center;font-size:.82em}
+body.movil #chatVivo{left:10px;right:10px;width:auto;bottom:auto;top:calc(168px + env(safe-area-inset-top))}
+body.movil #pista,body.movil #pista.dis{bottom:calc(78px + env(safe-area-inset-bottom));max-width:calc(100vw - 24px);white-space:normal;text-align:center}
+body.movil #regla{left:8px;top:calc(116px + env(safe-area-inset-top));bottom:calc(216px + env(safe-area-inset-bottom));width:100px;font-size:.8em}
+/* abajo a la izquierda: «Subir sola», la grúa y una píldora con el viaje (un toque la despliega, otro abre la bodega) */
+body.movil #viaje{left:calc(8px + env(safe-area-inset-left));bottom:calc(8px + env(safe-area-inset-bottom));width:auto;max-width:calc(100vw - 88px);font-size:.9em;display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+body.movil #vjDatos{padding:7px 11px;border-radius:12px;background:#000c;order:3;max-width:100%}
+body.movil #vjDatos:not(:has(.pill)){min-width:min(250px,calc(100vw - 88px))}
+body.movil #vjDatos .pill{display:flex;gap:10px;align-items:center;white-space:nowrap;font-weight:700}
+body.movil #vjDatos .pill b{color:var(--ac)}
+body.movil #vjDatos .pill .mal{color:var(--mal)}
+body.movil #bGrua{margin:0;width:auto;order:2;border-radius:12px;padding:.55em .85em}
+#bSube{display:none}
+body.movil #bSube{order:1;background:#000c;border:1px solid var(--az);color:var(--tx);border-radius:12px;padding:.6em .95em;font-weight:700;text-shadow:none;margin:0}
+body.movil #bSube.on{background:var(--az);color:#1b120e}
+/* los objetos: una columna a la derecha, solo los que traes, del tamaño del pulgar; la dinamita queda abajo, cerca */
+body.movil #objetos{right:calc(8px + env(safe-area-inset-right));bottom:calc(8px + env(safe-area-inset-bottom));flex-direction:column-reverse;gap:6px}
+body.movil #objetos div{width:56px;height:56px;min-width:0;padding:0;border-radius:14px;background:#000c;border-color:#ffffff33;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:.82em;line-height:1.05}
+body.movil #objetos .n0{display:none}
+body.movil #objetos i{font-size:1.6em;line-height:1.1}
+body.movil #palanca{width:136px;height:136px;margin:-68px 0 0 -68px;border-width:3px;background:#0004}
+body.movil #palanca i{width:58px;height:58px;margin:-29px 0 0 -29px}
+/* los menús ocupan toda la pantalla */
+body.movil #velo{padding:0}
+body.movil .caja{width:100%;height:100%;max-height:none;border-radius:0;border:0;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+body.movil .caja header{padding:10px 12px}
+body.movil .pest{gap:5px;padding:8px 10px 0}
+body.movil .pest button{padding:.5em .75em}
+body.movil .cuerpo{padding:12px}
+body.movil #caja button{padding:.55em .9em;min-height:40px}
+body.movil .fila{flex-wrap:wrap}
+body.movil #verEspera{bottom:calc(84px + env(safe-area-inset-bottom))}
+body.movil #verTeclado{display:none!important}
+/* acostado: los objetos en fila abajo a la derecha, y el tablero de abajo más angosto */
+@media (orientation:landscape){
+  body.movil #objetos{flex-direction:row-reverse;flex-wrap:wrap-reverse;justify-content:flex-start;max-width:52vw}
+  body.movil #viaje{max-width:44vw}
+  body.movil #metas{bottom:calc(60px + env(safe-area-inset-bottom));left:auto;right:calc(8px + env(safe-area-inset-right));width:min(40vw,300px)}
+  body.movil #tarjeta{left:auto;right:10px;width:min(46vw,340px);top:calc(60px + env(safe-area-inset-top))}
+  body.movil #pista,body.movil #pista.dis{bottom:calc(76px + env(safe-area-inset-bottom));max-width:50vw}
+}
 </style>
 </head>
 <body>
@@ -334,11 +400,11 @@ a{color:var(--az)}
 </div>
 <div class="hud" id="metas"></div>
 <div class="hud" id="der">
-  <div id="botones"><button id="bSon" class="s" title="Apagar el sonido">🔊</button><button id="bMenos" class="s" title="Bajar el volumen">−</button><span id="bVol">70 %</span><button id="bMas" class="s" title="Subir el volumen">+</button><button id="bTipos" class="s" title="Elegir qué sonidos se oyen">♪ Sonidos</button><button id="bChat" class="s" title="Abrir y cerrar el chat de este mundo (tecla C)"><kbd>C</kbd>💬 Chat</button><button id="bInv" class="s" title="Invitar a tu gente (tecla I)"><kbd>I</kbd>👥 Invitar</button><button id="bMapa" class="s" title="Abrir y cerrar el mapa (tecla M)"><kbd>M</kbd>🗺️ Mapa</button><button id="bMenu" class="s" title="Abrir el menú (tecla Esc)"><kbd>Esc</kbd>☰ Menú</button></div>
+  <div id="botones"><button id="bSon" class="s" title="Apagar el sonido">🔊</button><button id="bMenos" class="s" title="Bajar el volumen">−</button><span id="bVol">70 %</span><button id="bMas" class="s" title="Subir el volumen">+</button><button id="bTipos" class="s" title="Elegir qué sonidos se oyen">♪ Sonidos</button><button id="bChat" class="s" title="Abrir y cerrar el chat de este mundo (tecla C)"><kbd>C</kbd>💬<span> Chat</span></button><button id="bInv" class="s" title="Invitar a tu gente (tecla I)"><kbd>I</kbd>👥<span> Invitar</span></button><button id="bMapa" class="s" title="Abrir y cerrar el mapa (tecla M)"><kbd>M</kbd>🗺️<span> Mapa</span></button><button id="bMenu" class="s" title="Abrir el menú (tecla Esc)"><kbd>Esc</kbd>☰<span> Menú</span></button></div>
   <div id="panSon"></div><div id="tabla"></div><div id="tarjeta"></div>
 </div>
 <div class="hud" id="avisos"></div>
-<div class="hud" id="viaje"><div id="vjDatos"></div><button id="bGrua" class="s" title="La grúa te deja en la Gasolinera. Cobra por lo lejos que estás y por lo que pesas."></button><div id="contratos"></div></div>
+<div class="hud" id="viaje"><div id="vjDatos"></div><button id="bGrua" class="s" title="La grúa te deja en la Gasolinera. Cobra por lo lejos que estás y por lo que pesas."></button><button id="bSube" class="s" title="La maquinita se queda subiendo sola; otro toque la suelta"></button><div id="contratos"></div></div>
 <div class="hud" id="objetos"></div>
 <div class="hud" id="ojo"></div>
 <div class="hud" id="pista"></div>
