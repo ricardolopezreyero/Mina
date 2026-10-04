@@ -4715,21 +4715,16 @@ function deCuenta(d, enviado) {
     if (cuenta.k && miK && cuenta.k !== miK && listo && !soloVer && !avisoOtraMaq) { avisoOtraMaq = true; tarjeta('Tu cuenta cambió de maquinita', 'La próxima vez que abras Mina entras con la de tu cuenta.', 'msj', 7000); }
   }
 }
-// El botón oficial de Google, cargado solo cuando se va a usar.
-async function botonGoogle(caja) {
-  caja.innerHTML = '<small>Abriendo Google…</small>';
-  try {
-    if (!gsi) gsi = (async () => {
-      const id = (await (await fetch('/api/cuenta/cliente')).json()).id;
-      await new Promise((ok, mal) => { const sc = document.createElement('script'); sc.src = 'https://accounts.google.com/gsi/client'; sc.async = true; sc.onload = ok; sc.onerror = mal; document.head.appendChild(sc); });
-      google.accounts.id.initialize({ client_id: id, callback: alEntrarGoogle, auto_select: false, cancel_on_tap_outside: true, context: 'signin', ux_mode: 'popup', itp_support: true });
-    })();
-    await gsi;
-    if (!caja.isConnected) return;
-    caja.textContent = '';
-    google.accounts.id.renderButton(caja, { type: 'standard', theme: 'filled_blue', size: 'large', text: 'signin_with', shape: 'pill', locale: 'es', logo_alignment: 'left' });
-  } catch { gsi = null; if (caja.isConnected) caja.innerHTML = '<small>No se pudo abrir Google. Revisa tu conexión e inténtalo otra vez.</small>'; }
+// Entrar: todo CapitalTorreon entra por login.capitaltorreon.com (un solo login para todos los servicios). Se va allá con la
+// liga de regreso y se vuelve a esta misma página con #sesion=<pase>; el pase se manda al mundo, que lo verifica solo.
+const LOGIN_CT = 'https://login.capitaltorreon.com';
+function botonGoogle(caja) {
+  caja.innerHTML = '<button class="gEntrar"><svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.3l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.7 6c4.5-4.2 6.9-10.3 6.9-17.7z"/><path fill="#FBBC05" d="M10.5 28.6c-.5-1.5-.8-3-.8-4.6s.3-3.1.8-4.6l-7.9-6.1C.9 16.6 0 20.2 0 24s.9 7.4 2.6 10.7l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.3 0 11.7-2.1 15.6-5.7l-7.7-6c-2.1 1.4-4.8 2.3-7.9 2.3-6.3 0-11.6-4.1-13.5-9.9l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/></svg>Entrar con Google</button>';
+  caja.firstChild.onclick = () => { if (listo && !soloVer) { enviarEst(); guardarCopia(); } location.href = LOGIN_CT + '/?volver=' + encodeURIComponent(location.origin + location.pathname + (location.search.includes('mundos') ? '?mundos' : '')); };
 }
+// Al volver del login: el pase viene después del # y nunca viaja al servidor en la dirección.
+const paseLogin = (location.hash.match(/sesion=([\w-]+\.[\w-]+\.[\w-]+)/) || [])[1] || '';
+if (paseLogin) { history.replaceState(null, '', location.pathname + location.search); setTimeout(() => alEntrarGoogle({ credential: paseLogin }), listo ? 0 : 1500); }
 async function alEntrarGoogle(resp) {
   const k = miK || (maqLocal && maqLocal.k) || '';
   aviso('Entrando con Google…');

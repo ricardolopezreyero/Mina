@@ -7,6 +7,7 @@
 // Un mundo solo se borra si quien lo creó pide borrarlo.
 // ─────────────────────────────────────────────────────────────────────────────
 import { DurableObject } from "cloudflare:workers";
+import { verificarPase } from "./verificar.js";      // el pase del Login de CapitalTorreon (login.capitaltorreon.com)
 
 const _RLR = "Ricardo López Reyero";
 const _k = "EYE", _rev = 181218; // RLR · sello de autoría
@@ -285,6 +286,8 @@ async function verificarGoogle(cred, ids, env, request) {
     return /^[0-9a-z]{1,40}$/i.test(sub || "") ? { sub, email: limpio(email, 120) || sub + "@prueba.mx", nombre: "Prueba " + sub, foto: "" } : null;
   }
   if (cred.length < 100 || cred.length > 4096) return null;
+  // El pase de la casa (login.capitaltorreon.com): se verifica aquí mismo con su llave pública.
+  if (cred.split(".").length === 3 && cred.startsWith("eyJ")) { try { const c = JSON.parse(atob(cred.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))); if (c.iss === "https://login.capitaltorreon.com") { const q = await verificarPase(cred); return q && /^\d{1,40}$/.test(q.sub || "") ? { sub: q.sub, email: limpio(q.email, 120), nombre: limpio(q.name, 60), foto: /^https:\/\/[a-z0-9.-]+\.googleusercontent\.com\/[^\s"'<>]*$/.test(q.picture || "") ? String(q.picture).slice(0, 400) : "" } : null; } } catch {} }
   let p;
   try { const r = await fetch("https://oauth2.googleapis.com/tokeninfo?id_token=" + encodeURIComponent(cred)); if (!r.ok) return null; p = await r.json(); } catch { return null; }
   if (!p || !ids.includes(p.aud) || !["accounts.google.com", "https://accounts.google.com"].includes(p.iss)) return null;
