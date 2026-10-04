@@ -4216,6 +4216,7 @@ function pintarMenu() {
   }
   const cm = $('#miMaq'); if (cm) dibMaq(cm.getContext('2d'), 80, 86, 132, miModelo, 1, false, 0, '', '', 0.6, miPinta);
   const gb = $('#gBoton'); if (gb) botonGoogle(gb);
+  const lc = $('#caja [data-login-ct]'); if (lc && window.LoginCT) LoginCT.montar(lc);
   const pm = $('#pintaMaq'); if (pm) {                 // la maquinita, en vivo, con lo que se esté probando
     const dib = () => { const q = pm.getContext('2d'); q.clearRect(0, 0, pm.width, pm.height); dibMaq(q, pm.width / 2, pm.height * 0.58, pm.width * 0.6, miModelo, 1, false, 0, miNombre, '', reloj * 0.4, pintaVista()); };
     dib(); clearInterval(tiendaAnimT); tiendaAnimT = setInterval(() => { if (menu !== 'pin' || !pm.isConnected) return clearInterval(tiendaAnimT); reloj += 0.05; dib(); }, 50);
@@ -4914,7 +4915,9 @@ function botonGoogle(caja) {
 }
 // Al volver del login: el pase viene después del # y nunca viaja al servidor en la dirección.
 const paseLogin = (location.hash.match(/sesion=([\w-]+\.[\w-]+\.[\w-]+)/) || [])[1] || '';
-if (paseLogin) { history.replaceState(null, '', location.pathname + location.search); setTimeout(() => alEntrarGoogle({ credential: paseLogin }), listo ? 0 : 1500); }
+if (paseLogin) { try { localStorage.setItem('ct_sesion', paseLogin); } catch {} history.replaceState(null, '', location.pathname + location.search); setTimeout(() => alEntrarGoogle({ credential: paseLogin }), listo ? 0 : 1500); }
+// Si la casa ya reconoce a esta persona (entró en otro servicio), Mina entra sola con ese mismo pase.
+addEventListener('load', () => { if (!window.LoginCT) return; const yaCasa = () => { const p = LoginCT.pase(); if (!cuenta && p && !paseLogin) setTimeout(() => alEntrarGoogle({ credential: p }), listo ? 0 : 1500); }; yaCasa(); LoginCT.al(yaCasa); });
 async function alEntrarGoogle(resp) {
   const k = miK || (maqLocal && maqLocal.k) || '';
   aviso('Entrando con Google…');
@@ -4967,13 +4970,13 @@ async function salirCuenta() {
   if (listo && !soloVer) { enviarEst(); guardarCopia(); }
   await subirCuenta();
   try { await fetch('/api/cuenta/salir', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ses: cuenta && cuenta.ses }) }); } catch {}
-  try { window.google?.accounts.id.disableAutoSelect(); } catch {}
   try { for (const k of Object.keys(localStorage)) if (k.startsWith('mina_') && k !== 'mina_op') localStorage.removeItem(k); } catch {}
+  if (window.LoginCT) return LoginCT.salir();      // sale también de la casa, para que no vuelva a entrar sola
   location.href = '/';
 }
 // La tarjeta de la cuenta: en Menú → Mundo y en «Mis mundos».
 function htmlCuenta() {
-  if (cuenta) return `<div class="fila cuentaG"><div class="ic">${cuenta.foto ? `<img src="${esc(cuenta.foto)}" alt="" referrerpolicy="no-referrer">` : '✅'}</div><div class="t"><b>Guardado en tu cuenta</b><small>${esc(cuenta.email || '')} · tu maquinita y tus mundos quedan a salvo y se recuperan en cualquier equipo</small></div><button class="s" data-a="salirCuenta" id="bSalirCuenta">Cerrar sesión</button></div>`;
+  if (cuenta) return `<div class="fila cuentaG"><div class="ic">${cuenta.foto ? `<img src="${esc(cuenta.foto)}" alt="" referrerpolicy="no-referrer">` : '✅'}</div><div class="t"><b>Guardado en tu cuenta</b><small>${esc(cuenta.email || '')} · tu maquinita y tus mundos quedan a salvo y se recuperan en cualquier equipo. Toca tu foto para ir a los demás juegos y proyectos, o salir.</small></div><div data-login-ct></div></div>`;
   return `<div class="fila cuentaG"><div class="ic">💾</div><div class="t"><b>Guarda tu maquinita y tus mundos</b><small>Con tu correo de Google: los recuperas en cualquier equipo y retomas donde te quedaste. Jugar sigue sin pedir nada.</small></div><div class="gBoton" id="gBoton"></div></div>`;
 }
 // La copia de este equipo: el mundo (semilla, túneles, colección) y la maquinita. Con ella el juego abre al instante,
@@ -5041,7 +5044,7 @@ function pantallaMundos() {
   $('#caja').querySelectorAll('[data-ir]').forEach((b) => (b.onclick = () => (location.href = '/' + b.dataset.ir)));
   $('#caja').querySelectorAll('[data-des]').forEach((b) => (b.onclick = () => { const m = mundos.find((x) => x.id === b.dataset.des); desechar(m.id, m.creador, m.k || (maqLocal && maqLocal.k)); }));
   if ($('#gBoton')) botonGoogle($('#gBoton'));
-  if ($('#bSalirCuenta')) $('#bSalirCuenta').onclick = salirCuenta;
+  const lc = $('#caja [data-login-ct]'); if (lc && window.LoginCT) LoginCT.montar(lc);
 }
 // Crear un mundo: de cero, o a partir de un archivo que alguien guardó. Siempre nace un mundo nuevo con su propia liga; nada se reemplaza.
 function pantallaCrear() {
