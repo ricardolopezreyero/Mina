@@ -3217,12 +3217,13 @@ function pintarTecladoVer() {
   $('#verTeclado').querySelectorAll('[data-b]').forEach((el) => el.classList.toggle('on', !!(tk & (1 << +el.dataset.b))));
 }
 // Un clic en una maquinita (en el mundo o en la lista de arriba) y la vista se va con ella.
-lienzo.addEventListener('click', (e) => {
+lienzo.addEventListener('click', (e) => { if (e.pointerType !== 'touch') elegirVisto(e.clientX, e.clientY); });      // con el dedo llega desde la palanca (un toque corto)
+function elegirVisto(cx, cy) {
   if (!soloVer || !listo) return;
-  const wx = camX + (e.clientX * RES) / T, wy = camY + (e.clientY * RES) / T;
+  const wx = camX + (cx * RES) / T, wy = camY + (cy * RES) / T;
   let mejor = null, dm = 2.2; for (const o of otros.values()) { if (!o.on || o.x === undefined) continue; const dd = Math.hypot(o.x - wx, o.y - wy); if (dd < dm) { dm = dd; mejor = o; } }
   if (mejor) { veo = mejor.i; tkVisto = -1; pintarVer(); }
-});
+}
 // La barra de quien mira: a quién ve, cuánto lleva, cuántos más miran, y cómo cambiar de maquinita o ponerse a jugar.
 function pintarVer() {
   const o = otros.get(veo), vivos = [...otros.values()].filter((x) => x.on).length;
@@ -4590,7 +4591,8 @@ lienzo.addEventListener('pointerdown', (e) => {
     pinza = { d0: Math.max(20, Math.hypot(p1.x - p2.x, p1.y - p2.y)), lupa0: lupa, mx: (p1.x + p2.x) / 2, my: (p1.y + p2.y) / 2 };
     return;
   }
-  if (dedos.size > 2 || soloVer) return;
+  if (dedos.size > 2) return;
+  if (soloVer) { dedo.id = e.pointerId; dedo.x = e.clientX; dedo.y = e.clientY; dedo.t = performance.now(); dedo.mov = false; return; }
   if (pausa) { pausa = false; pista(''); arrancar(); }
   if (crucero || amarreAba) { crucero = false; amarreAba = false; dedo.fin.arr = dedo.fin.aba = -1e9; }      // un toque suelta lo amarrado
   dedo.id = e.pointerId; dedo.x = e.clientX; dedo.y = e.clientY; dedo.t = performance.now(); dedo.mov = false; dedo.eje = ''; vistaLibre = false;
@@ -4623,10 +4625,13 @@ const soltarDedo = (e) => {
   dedos.delete(e.pointerId);
   if (pinza && dedos.size < 2) { pinza = null; op.lupa = +lupa.toFixed(2); escribir('mina_op', op); }
   if (e.pointerId !== dedo.id) return;
+  if (soloVer) { const corto = !dedo.mov && performance.now() - dedo.t < 320 && Math.hypot(e.clientX - dedo.x, e.clientY - dedo.y) < 12; dedo.id = -1; if (corto) elegirVisto(e.clientX, e.clientY); return; }
   soltarPalanca();
   if (!dedo.mov && performance.now() - dedo.t < 320 && listo && !menu && pistaDe && pistaDe.id && yo.suelo && yo.y < 0) abrir(pistaDe.id);
 };
 lienzo.addEventListener('pointerup', soltarDedo); lienzo.addEventListener('pointercancel', soltarDedo);
+for (const ev of ['touchstart', 'touchmove', 'touchend']) lienzo.addEventListener(ev, (e) => { if (e.cancelable) e.preventDefault(); }, { passive: false });      // sin lupa de iOS ni selección
+lienzo.addEventListener('contextmenu', (e) => e.preventDefault());
 
 /* ════════ La aplicación ════════ RLR */
 // El trabajador de servicio guarda el juego en el equipo: instalado o no, abre aunque no haya internet.

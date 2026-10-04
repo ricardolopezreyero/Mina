@@ -35,7 +35,8 @@ html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;backgrou
   font:calc(14px*var(--f))/1.35 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-user-select:none;user-select:none}
 body.contraste{--caja:#000;--borde:#fff;--tx:#fff;--su:#fff;--ac:#ffe600}
 canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
-#c{touch-action:none;-webkit-touch-callout:none}
+#c{touch-action:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+body{-webkit-touch-callout:none}
 /* La palanca aparece donde se pone el dedo: arrastrar mueve la maquinita, soltar la detiene. */
 #palanca{position:fixed;z-index:4;width:112px;height:112px;margin:-56px 0 0 -56px;border-radius:50%;border:2px solid #fff5;background:#0003;pointer-events:none;visibility:hidden;opacity:0;transition:opacity .12s,visibility 0s .12s}
 #palanca.on{visibility:visible;opacity:1;transition:opacity .12s}
