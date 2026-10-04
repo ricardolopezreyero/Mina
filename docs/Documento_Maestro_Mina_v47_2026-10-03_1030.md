@@ -1228,6 +1228,14 @@ No se pudo ver el movimiento en vivo porque el navegador de pruebas está oculto
 
 **Probado** emulando un iPhone: todas las pantallas de arriba, en capturas. Sigue sin probarse en un teléfono real.
 
+### 9.43 Con el dedo, las caídas no quitan casco
+
+**Lo que dijo Ricardo (4 de octubre, con dos videos).** Mejoró mucho, pero el casco al inicio no aguanta nada y los controles siguen sensibles. Que los controles se queden como están, pero que en celular los golpes hacia abajo no quiten casco; o que la opción venga apagada y se pueda encender. En los videos se estrella a 4 m, a 28 m, al bajar de 151 m: con 10 de casco, una caída de 40 celdas quita 7.
+
+**Cómo quedó.** `golpesDeCaida()`: con el dedo las caídas **no quitan casco** (solo se siente un temblor y un golpe sordo si fue de 5 celdas o más); con teclado siguen como siempre. Opción nueva en Opciones → «Golpes de caída»: Automático (no con el dedo, sí con teclado), Siempre, Nunca. El aterrizaje suave sigue encendido con el dedo (frena antes del piso, se ve y gasta combustible), pero ya no es lo que te salva. Los controles no se tocaron. La tarjeta de bienvenida y la Ayuda lo dicen.
+
+**Probado** (física avanzada a mano, caída de 40 celdas): Automático con el dedo 0 de daño; Siempre 7; Nunca 0; con aterrizaje suave 0.
+
 ## 10. Revisión de código del 2 de octubre
 
 Se revisó todo el código buscando fallas y se corrigieron estas:

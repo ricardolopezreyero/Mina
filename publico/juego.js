@@ -1774,6 +1774,9 @@ function gastar(l) {
   if (S.fuel <= 0) { S.fuel = 0; if (cfg.comb) morir('combustible'); else tarjeta('Entraste en reserva', 'Avanzas despacio y no perforas hasta cargar combustible.'); }
 }
 const aterrizajeSuave = () => op.suave === 1 || (op.suave !== 0 && tactil);
+// Con el dedo, las caídas no quitan casco (Ricardo, 4-oct: con 10 de casco cada golpe lo dejaba en 3 y no había forma de jugar).
+// Se puede encender en Opciones → Golpes de caída. Con teclado siguen como siempre.
+const golpesDeCaida = () => op.golpes === 1 || (op.golpes !== 0 && !tactil);
 function pisoAbajo(n) {                       // celdas libres bajo las ruedas, hasta n
   const x0 = Math.floor(yo.x - HW + 0.02), x1 = Math.floor(yo.x + HW - 0.02), pie = yo.y + HH, y0 = Math.floor(pie);
   for (let y = y0; y < y0 + n; y++) for (let x = x0; x <= x1; x++) if (solida(x, y)) return Math.max(0, y - pie);
@@ -1784,6 +1787,7 @@ function aterrizar(v) {
   const h = v * v / (2 * G);
   if (h < 2) return;
   const d = h < 3 ? 3 : h < 5 ? 4 : h < 9 ? 5 : h < 17 ? 6 : h < 46 ? 7 : 8;
+  if (!golpesDeCaida()) { if (h >= 5) { temblar(Math.min(6, h / 6)); ruido(0.12, 0.08, 'peligro', 220, 'lowpass', 0.7); } return; }      // aterriza sin daño: solo se siente el golpe
   son.golpe();
   danar(d * MULT[cfg.caida], 'una caída');
   if (h >= 46 && !yo.renace && cfg.caida) S.fl.caida = 1;
@@ -2135,7 +2139,7 @@ function iniciarMundo(d, local) {
   document.body.classList.add('jugando');
   surtirContratos(); pintarHud(true); pintarTabla(); if (!local) ponerChat(d.chat); arrancar();
   { const f = new Date(), hoy = f.getDate() + '/' + (f.getMonth() + 1); if (primera && hoy === '11/7') tarjeta('⛏️ ¡Feliz Día del Minero!', 'Hoy, 11 de julio, México celebra a su gente de mina. Buen turno.', 'msj', 10000); if (primera && hoy === '4/12') tarjeta('🕯️ Día de Santa Bárbara', 'Hoy, 4 de diciembre, las minas festejan a su patrona.', 'msj', 10000); }
-  if (primera && !d.est) tarjeta('⛏️ Tu maquinita se llama ' + miNombre, (tactil ? 'Pon el dedo donde sea y arrástralo: abajo perfora, a los lados camina, arriba vuela. Con dos dedos acercas la vista.' : 'Usa las flechas para moverte.') + ' Primero: carga combustible en la Gasolinera (' + (tactil ? 'un toque' : '↓') + ' para entrar). El nombre se cambia en Menú → Mundo.', 'msj', 11000);
+  if (primera && !d.est) tarjeta('⛏️ Tu maquinita se llama ' + miNombre, (tactil ? 'Pon el dedo donde sea y arrástralo: abajo perfora, a los lados camina, arriba vuela. Las caídas no te lastiman. Con dos dedos acercas la vista.' : 'Usa las flechas para moverte.') + ' Primero: carga combustible en la Gasolinera (' + (tactil ? 'un toque' : '↓') + ' para entrar). El nombre se cambia en Menú → Mundo.', 'msj', 11000);
   if (primera) { const n = leer('mina_nota', ''); if (n) { try { localStorage.removeItem('mina_nota'); } catch {} aviso(n); } }
 }
 
@@ -4395,6 +4399,7 @@ function menuPrincipal() {
       `<label class="op"><span>Partículas</span><select data-a="op" data-k="part">${[[2, 'Todas'], [1, 'Pocas'], [0, 'Ninguna']].map(([v, t]) => `<option value="${v}" ${op.part == v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
       <label class="op"><span>Acercamiento</span><select data-a="op" data-k="zoom">${[[0, 'Cerca'], [1, 'Normal'], [2, 'Lejos']].map(([v, t]) => `<option value="${v}" ${op.zoom == v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>` +
       `<label class="op" title="Al caer sin tocar nada, los rotorcitos frenan solos antes del piso"><span>Aterrizaje suave${movil ? '' : ' (frena sola antes del piso)'}</span><select data-a="op" data-k="suave">${[[2, tactil ? 'Automático: sí, con el dedo' : 'Automático: no, con teclado'], [1, 'Siempre'], [0, 'Nunca']].map(([v, t]) => `<option value="${v}" ${(op.suave ?? 2) == v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>` +
+      `<label class="op" title="Si las caídas quitan casco. Con el dedo vienen apagadas para poder jugar a gusto"><span>Golpes de caída${movil ? '' : ' (quitan casco)'}</span><select data-a="op" data-k="golpes">${[[2, tactil ? 'Automático: no, con el dedo' : 'Automático: sí, con teclado'], [1, 'Siempre'], [0, 'Nunca']].map(([v, t]) => `<option value="${v}" ${(op.golpes ?? 2) == v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>` +
       chk('nombres', 'Mostrar los nombres de las maquinitas') +
       `<label class="op"><span>Cuadros por segundo</span><select data-a="op" data-k="fps">${[[0, 'Lo máximo de tu pantalla'], [60, '60'], [30, '30 (ahorra batería)']].map(([v, t]) => `<option value="${v}" ${op.fps == v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
       <p class="nota">Tu pantalla refresca a <b>${rit.hz} Hz</b> y el juego está mostrando <b>${Math.round(Math.min(rit.fps, rit.hz))} cuadros por segundo</b>, con nitidez al ${Math.round(NITIDEZ[rit.niv] * 100)} %. Señal con el mundo: ${red.rtt ? Math.round(red.rtt) + ' ms' : 'midiendo…'}. El juego se ajusta solo: si tu equipo no alcanza el refresco de su pantalla, baja la nitidez antes que la fluidez.</p>
@@ -4440,7 +4445,7 @@ function menuPrincipal() {
   } else if (pestana === 11) {
     h += MANIFIESTO;
   } else {
-    h += (tactil ? '<p><b>Con el dedo:</b> ponlo donde sea y arrástralo. Hacia abajo perfora, a los lados camina, hacia arriba vuela; al soltar se detiene. Un toque frente a un edificio entra. <b>Dos dedos</b> acercan o alejan la vista y la recorren. Al caer, la maquinita frena sola antes del piso (Aterrizaje suave, en Opciones). <b>⬆ Subir sola</b> la deja subiendo sin sostener el dedo.</p>' : '') +
+    h += (tactil ? '<p><b>Con el dedo:</b> ponlo donde sea y arrástralo. Hacia abajo perfora, a los lados camina, hacia arriba vuela; al soltar se detiene. Un toque frente a un edificio entra. <b>Dos dedos</b> acercan o alejan la vista y la recorren. Las caídas no quitan casco (se encienden en Opciones → Golpes de caída) y la maquinita frena sola antes del piso (Aterrizaje suave). <b>⬆ Subir sola</b> la deja subiendo sin sostener el dedo.</p>' : '') +
       `<p><b>Moverte:</b> con las flechas. <b>↑</b> vuela. <b>↓</b> perfora hacia abajo. <b>← →</b> contra una pared, perfora de lado. Nunca se perfora hacia arriba.</p>
       <p><b>El ciclo:</b> baja, llena la bodega, sube, vende en La Báscula, carga combustible y mejora tu equipo en El Taller. En la superficie, párate frente a un edificio y pulsa ↓.</p>
       <p><b>Las teclas son la inicial de lo que hacen:</b> <b>R</b> Reserva · <b>N</b> Nanobots · <b>D</b> Dinamita · <b>P</b> Plástico · <b>Q</b> Cuántico · <b>T</b> Transmisor · <b>C</b> Chat · <b>S</b> Señal · <b>A</b> Ayudar · <b>G</b> Grúa · <b>M</b> Mapa · <b>Esc</b> Menú.</p>
