@@ -461,7 +461,7 @@ function sanear(e) {
   s.st = { ...b.st, ...(s.st && typeof s.st === 'object' ? s.st : {}) };
   s.st.rec = lista(s.st.rec, MIN.length, 1e9); s.st.vend = lista(s.st.vend, MIN.length, 1e9); s.st.hall = lista(s.st.hall, HALL.length, 1e9);
   s.lug = lista(s.lug, LUGARES.length, 1); s.ult = s.ult && Number.isFinite(s.ult.x) && Number.isFinite(s.ult.y) && typeof s.ult.mu === 'string' ? { x: s.ult.x, y: s.ult.y, mu: s.ult.mu, r: s.ult.r | 0 } : null;
-  for (const k of ['viajes', 'cavadas', 'muertes', 'expl', 'remin', 'comb', 'mejorViaje', 'gruas', 'amigos', 'col']) s.st[k] = num(s.st[k], 0);
+  for (const k of ['viajes', 'cavadas', 'muertes', 'expl', 'remin', 'comb', 'mejorViaje', 'gruas', 'amigos', 'traidos', 'col']) s.st[k] = num(s.st[k], 0);
   s.log = Array.isArray(s.log) ? s.log.filter((x) => typeof x === 'string') : [];
   s.fl = s.fl && typeof s.fl === 'object' ? s.fl : {}; s.vj = s.vj && typeof s.vj === 'object' ? s.vj : { dano: 0 };
   const c = s.con && typeof s.con === 'object' ? s.con : {};
@@ -1307,7 +1307,9 @@ function pantallaReinicio() {
     <p class="nota">Quedó de pura tierra; los tesoros, los huesos y la colección siguen ahí, y con la Remineralizadora vuelve a tener mineral. O arranca uno nuevo, desde arriba:</p>
     <div class="fila"><div class="ic">🚀</div><div class="t"><b>Mundo nuevo con mis mejoras</b><small>Semilla nueva. Tu maquinita entra como está: ${fmt(S.d)}, su equipo y sus objetos.</small></div><button id="bConMejoras">Arrancar</button></div>
     <div class="fila"><div class="ic">🌱</div><div class="t"><b>Mundo nuevo desde cero</b><small>Semilla nueva y maquinita de fábrica: $20, equipo básico, sin objetos. Se quedan tus logros y tu tiempo jugado.</small></div><button class="s" id="bDesdeCero">Arrancar</button></div>
-    <div class="fila"><div class="ic">🏡</div><div class="t"><b>Seguir en este mundo</b><small>Tal como está, en la superficie.</small></div><button class="s" id="bSeguir">Seguir</button></div></div>`);
+    <div class="fila"><div class="ic">🏡</div><div class="t"><b>Seguir en este mundo</b><small>Tal como está, en la superficie.</small></div><button class="s" id="bSeguir">Seguir</button></div>
+    <div class="fila"><div class="ic">👥</div><div class="t"><b>Trae a alguien</b><small>Un mundo se disfruta más acompañado. Manda la liga: quien entra ya está jugando.</small></div><button class="s" id="bTrae">${tactil ? '📤 Compartir' : '📲 WhatsApp'}</button></div></div>`);
+  $('#bTrae').onclick = () => compartirInvitacion();
   $('#bConMejoras').onclick = () => nuevoMundoTras(false);
   $('#bDesdeCero').onclick = () => { if (confirm('¿Empezar desde cero? Tu maquinita vuelve a $20 y equipo de fábrica; pierdes dinero, mejoras y objetos. Los logros y el tiempo jugado se quedan.')) nuevoMundoTras(true); };
   $('#bSeguir').onclick = () => { cerrar(); };
@@ -1483,6 +1485,8 @@ const LOGROS = [
   { id: 'jardin', n: 'Hay para todos', d: 'Descubran completo el Jardín del Fondo: quiten toda la roca de los últimos 240 m.', ok: () => S.fl.edenF && Object.keys(S.fl.edenF).length > 0 },
   { id: 'intacto', n: 'Sin rasguños', d: 'Llega a 500 m sin recibir daño en el viaje.', ok: () => S.fl.intacto },
   { id: 'anfitrion', n: 'Anfitrión', d: 'Tres maquinitas nuevas llegan a un mundo donde estás.', ok: () => (S.st.amigos || 0) >= 3 },
+  { id: 'padrino', n: 'Padrino', d: 'Diez personas entran a Mina con tu liga.', ok: () => (S.st.traidos || 0) >= 10 },
+  { id: 'pueblo', n: 'Fundaste un pueblo', d: 'Treinta y tres personas entran a Mina con tu liga.', ok: () => (S.st.traidos || 0) >= 33 },
   { id: 'pase', n: 'Buen compañero', d: 'Pásale combustible a otra maquinita.', ok: () => S.fl.pase },
   { id: 'vecino', n: 'Buen vecino', d: 'Regálale dinero a otro jugador.', ok: () => S.fl.regalo },
   { id: 'nubes', n: 'Sobre las nubes', d: 'Vuela a 3,000 m de altura.', ok: () => S.alt >= 3000 },
@@ -1498,7 +1502,8 @@ function revisarLogros() {
     if (S.log.includes(l.id) || !l.ok()) continue;
     S.log.push(l.id); sucio = true;
     const nombre = l.sec ? l.sec.split(':')[0] : l.n;
-    tarjeta('🏅 Logro: ' + nombre, l.sec ? l.sec.split(': ')[1] : l.d);
+    if (['r500', 'fondo', 'diezkm', 'anfitrion', 'padrino', 'pueblo'].includes(l.id)) tarjetaCompartir('🏅 Logro: ' + nombre, (l.sec ? l.sec.split(': ')[1] : l.d) + ' Presúmelo.', `🏅 «${nombre}» en Mina: ${l.d.replace(/\.$/, '')}.${S.rec ? ' Voy a ' + num(S.rec) + ' m bajo tierra.' : ''}\nEntra a mi mundo y alcánzame: gratis, sin registro.\n${ligaInvitacion()}`, 14000, true);
+    else tarjeta('🏅 Logro: ' + nombre, l.sec ? l.sec.split(': ')[1] : l.d);
     son.logro(); difundir('ganó el logro «' + nombre + '»');
   }
 }
@@ -1932,7 +1937,7 @@ function llegar(p) {
     S.d += v; S.tot += v; S.st.hall[t - 40]++;
     flota(x, p.ty - 0.15, '+ ' + fmt(v) + ' · ' + h.n, '#ffd23f');
     recientes.set(p.idx, [t, Date.now(), v]);
-    tarjeta('🏺 ¡' + h.n + '!', 'Hallazgo: ' + fmt(v) + ' al instante.'); son.logro(); chispas(x, y, '#ffd23f', 24, 7);
+    if (h.q >= 5e4) tarjetaCompartir('🏺 ¡' + h.n + '!', 'Hallazgo: ' + fmt(v) + ' al instante. Cuéntalo.', `🏺 Encontré ${h.n} a ${num(Math.round(p.ty))} m bajo tierra en Mina.\nEntra a mi mundo y baja conmigo: cada quien con su maquinita, gratis y sin registro.\n${ligaInvitacion()}`, 14000, true); else tarjeta('🏺 ¡' + h.n + '!', 'Hallazgo: ' + fmt(v) + ' al instante.'); son.logro(); chispas(x, y, '#ffd23f', 24, 7);
     if (t === 46) { onda(x, y, 7, '#ff8a5a', 1.2); temblar(12); son.espacio(); }
     difundir('encontró ' + h.n); evento('hall');
   } else if (t === 3 && cfg.lava) {
@@ -1987,7 +1992,7 @@ const bufPos = new Uint8Array(10), datoPos = new DataView(bufPos.buffer); let ul
 // Qué teclas está apretando (o apretó hace un instante): ← → ↑ ↓, barra, y las letras de acción. Viajan en 16 bits.
 const TECLAS_VER = ['izq', 'der', 'arr', 'aba', ' ', 'r', 'n', 'd', 'p', 'q', 't', 'c', 's', 'a', 'g', 'm'];
 const apretadas = new Map();
-addEventListener('keydown', (e) => { if (e.target.tagName !== 'INPUT') apretadas.set(e.key.length === 1 ? e.key.toLowerCase() : e.key, performance.now()); }, true);
+addEventListener('keydown', (e) => { if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') apretadas.set(e.key.length === 1 ? e.key.toLowerCase() : e.key, performance.now()); }, true);
 addEventListener('keyup', (e) => { const k = e.key.length === 1 ? e.key.toLowerCase() : e.key, t = apretadas.get(k); if (t) apretadas.set(k, -t); }, true);
 function mascaraTeclas() {
   const ahora = performance.now(); let b = 0;
@@ -2003,7 +2008,37 @@ function enviarPos() {
   bufPos[0] = 1; datoPos.setUint16(1, x, true); datoPos.setInt32(3, y, true); bufPos[7] = f; datoPos.setUint16(8, tk, true);
   ws.send(bufPos);
 }
-function hola(extra) { enviar({ t: 'hola', k: miK, ...(extra || {}), ...(duenos[mundoId] ? { d: duenos[mundoId] } : {}) }); }
+const dePend = +(location.search.match(/[?&]de=(\d{1,2})/) || [])[1]; const vengoDe = Number.isFinite(dePend) ? dePend : -1;      // ?de=3: llegué con la liga de la maquinita 3
+function hola(extra) { enviar({ t: 'hola', k: miK, ...(extra || {}), ...(vengoDe >= 0 ? { de: vengoDe } : {}), ...(duenos[mundoId] ? { d: duenos[mundoId] } : {}) }); }
+/* ════════ Compartir: el ADN de invitar ════════ RLR */
+// La liga del mundo lleva quién la manda (?de=): quien llega ve quién lo invitó, y quien invitó se entera de que llegó.
+let cita = null, tCompartirCard = 0;
+const ligaInvitacion = () => location.origin + '/' + mundoId + (miI >= 0 ? '?de=' + miI : '');
+const horaCitaTx = (h) => { const t = new Date(h), T = horaTorreon(), p = {}; for (const x of new Intl.DateTimeFormat('en-US', { timeZone: 'America/Monterrey', hour12: false, month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).formatToParts(t)) p[x.type] = x.value; const H = +p.hour % 24, M = +p.minute, hoy = p.month + '-' + p.day === T.md; const man = (() => { const d = new Date(Date.UTC(T.y, T.mes - 1, T.dia + 1)); return String(d.getUTCMonth() + 1).padStart(2, '0') + '-' + String(d.getUTCDate()).padStart(2, '0') === p.month + '-' + p.day; })(); const hl = t.getHours(), ml = t.getMinutes(), local = hl !== H || ml !== M ? ` (${hl % 12 || 12}${ml ? ':' + String(ml).padStart(2, '0') : ''} ${hl < 12 ? 'am' : 'pm'} en tu reloj)` : ''; return (hoy ? 'hoy' : man ? 'mañana' : 'el ' + +p.day + ' de ' + MESES[+p.month - 1]) + ' a las ' + (H % 12 || 12) + (M ? ':' + String(M).padStart(2, '0') : '') + (H < 12 ? ' am' : ' pm') + ' hora de Torreón' + local; };
+function mensajeInvitacion() {
+  const n = [...otros.values()].length + 1, nombre = cfg.nombre ? '«' + cfg.nombre + '»' : 'mi mundo de Mina';
+  const donde = S && S.rec >= 50 ? `Voy a ${num(S.rec)} m bajo tierra en ${nombre}` : `Acabo de abrir ${nombre}`;
+  return `🚜 Ven a excavar conmigo en Mina.\n${donde}${n > 1 ? ' y ya somos ' + n : ''}. Entras y ya estás jugando: gratis, sin registro, en el cel o en la compu, cada quien con su maquinita en el mismo mundo.` + (cita ? `\n🕘 Nos vemos ${horaCitaTx(cita.h)}.` : '') + `\n${ligaInvitacion()}`;
+}
+const textoInv = () => ($('#msjInv') && $('#msjInv').value.trim()) || mensajeInvitacion();
+function porWhatsApp(texto) { window.open('https://wa.me/?text=' + encodeURIComponent(texto), '_blank', 'noopener'); }
+// Compartir por donde la persona prefiera: en el teléfono, la hoja del sistema (WhatsApp, Mensajes, lo que tenga); si no, WhatsApp web.
+function compartirInvitacion(texto) {
+  const t = texto || mensajeInvitacion(); subirFotos(true);
+  if (navigator.share && tactil) navigator.share({ text: t }).catch(() => {}); else porWhatsApp(t);
+}
+// Una tarjeta con botón para compartir: a lo más una cada 20 minutos, salvo los hitos (que se piden).
+function tarjetaCompartir(titulo, texto, mensaje, ms = 14000, siempre = false) {
+  if (!siempre && Date.now() - tCompartirCard < 20 * 60000) return; tCompartirCard = Date.now();
+  tarjeta(titulo, texto, 'msj', ms, false, { t: tactil ? '📤 Compartir' : '📲 Mandar por WhatsApp', f: () => compartirInvitacion(mensaje) });
+}
+// Si llevas cinco minutos jugando y en este mundo nunca ha entrado nadie más: una sola vez, en la superficie, con calma.
+function invitarGente() {
+  if (!S || !listo || soloVer || menu || otros.size || yo.y > 2 || !yo.suelo || Date.now() - tInicioMundo < 300000) return;
+  S.fl.inv = S.fl.inv || {}; if (S.fl.inv[mundoId]) return; S.fl.inv[mundoId] = 1; sucio = true;
+  tarjetaCompartir('👥 Aquí cabe más gente', 'Este mundo es tuyo solo. Manda la liga a alguien: entra sin registro, con su propia maquinita, y cada maquinita nueva le da $500 a todos. El mundo se queda tal cual cuando se van: vuelven cuando quieran.', null, 16000, true);
+}
+let tInicioMundo = Date.now();
 function conectar() {
   ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + (soloVer ? '/ws/ver/' + verFicha : '/ws/' + mundoId));
   ws.binaryType = 'arraybuffer';
@@ -2106,12 +2141,15 @@ function recibir(d) {
     case 'no': return noFueMia(d.c);
     case 'entra':
       otros.set(d.j.i, { ...otros.get(d.j.i), ...d.j });
-      if (d.nuevo) { S.d += 500; S.tot += 500; S.st.amigos = (S.st.amigos || 0) + 1; sucio = true; tarjeta('🎉 Llegó ' + d.j.n, 'Maquinita nueva en el mundo: +$500 para cada quien.'); pintarHud(true); }
+      if (d.nuevo) { S.d += 500; S.tot += 500; S.st.amigos = (S.st.amigos || 0) + 1; sucio = true; }
+      if (d.primera && d.j.de === miI) { S.st.traidos = (S.st.traidos || 0) + 1; sucio = true; son.logro(); tarjeta('💛 ' + d.j.n + ' entró con tu liga', `Ya trajiste a ${S.st.traidos} ${S.st.traidos === 1 ? 'persona' : 'personas'} a excavar.` + (d.nuevo ? ' +$500 para cada quien.' : ''), 'msj', 9000); pintarHud(true); }
+      else if (d.nuevo) { tarjeta('🎉 Llegó ' + d.j.n, 'Maquinita nueva en el mundo: +$500 para cada quien.' + (d.j.de >= 0 ? ' La trajo ' + nombreDe(d.j.de) + '.' : '')); pintarHud(true); }
       else aviso(d.j.n + ' entró al mundo');
-      notaChat(d.j.n + (d.nuevo ? ' llegó al mundo por primera vez' : ' entró')); pintarChatQuien(); if (d.nuevo) { edenE = null; bloques.clear(); }
+      notaChat(d.j.n + (d.nuevo ? ' llegó al mundo por primera vez' + (d.j.de >= 0 ? ' (la trajo ' + nombreDe(d.j.de) + ')' : '') : ' entró')); pintarChatQuien(); if (d.nuevo) { edenE = null; bloques.clear(); }
       son.entra(); ultPos = ''; enviarPos(); return pintarTabla();   // que el recién llegado me vea aunque yo esté quieto
     case 'sale': { const o = otros.get(d.i); if (o) { o.on = 0; o.x = undefined; o.b = []; aviso(o.n + (d.sacada ? ' fue sacada del mundo' : ' salió')); notaChat(o.n + (d.sacada ? ' fue sacada del mundo' : ' salió')); pintarChatQuien(); } return pintarTabla(); }
     case 'j': { const o = otros.get(d.i); if (o) { o.rec = d.rec; o.tot = d.tot; } return pintarTabla(); }
+    case 'cita': { const antes = cita; cita = d.cita; if (cita && (!antes || antes.h !== cita.h)) { notaChat(nombreDe(cita.i) + ' propuso juntarse ' + horaCitaTx(cita.h)); if (cita.i !== miI) tarjeta('🕘 Nos vemos ' + horaCitaTx(cita.h), nombreDe(cita.i) + ' propone la hora. Arriba a la derecha dices si vas.', 'msj', 10000); } else if (!cita && antes) notaChat('se quitó la cita'); pintarTabla(); if (menu === 'inv') pintarMenu(); return; }
     case 'pleito': return empezarPleito(d);
     case 'pleitoFin': return terminarPleito(d);
     case 'vida': { const o = otros.get(d.i); if (o) { o.vida = d.v; o.mx = d.mx; o.vidaH = tiempo; } pintarPleito(); return; }
@@ -2191,7 +2229,7 @@ function iniciarMundo(d, local) {
   nuevaSemilla(); ponerTerreno(d);
   if (otraTierra) { pendientes = []; recientes.clear(); yo.perf = null; if (yo.y > INICIO_Y + 0.01) { yo.x = INICIO_X; yo.y = INICIO_Y; yo.vx = yo.vy = 0; } }
   otros.clear();
-  for (const j of d.jug) { if (j.i === miI) { miNombre = j.n; miModelo = j.m; miPinta = j.p || {}; miMe = j.me | 0; } else otros.set(j.i, j); }
+  for (const j of d.jug) { if (j.i === miI) { miNombre = j.n; miModelo = j.m; miPinta = j.p || {}; miMe = j.me | 0; miDe = j.de >= 0 ? j.de : -1; } else otros.set(j.i, j); }
   if (d.piedras) edenPiedras = d.piedras;
   if (d.regalo) setTimeout(() => tarjeta('🎁 Alguien pagó tu primera pintura', 'Hay para todos. Pásate a La Pinturería (la camioneta rosa, a la izquierda de la Gasolinera) y elige tu color.', 'msj', 14000), 2500);
   const primera = !S;
@@ -2224,6 +2262,8 @@ function iniciarMundo(d, local) {
   document.body.classList.add('jugando');
   surtirContratos(); pintarHud(true); pintarTabla(); if (!local) ponerChat(d.chat); arrancar();
   { const f = new Date(), hoy = f.getDate() + '/' + (f.getMonth() + 1); if (primera && hoy === '11/7') tarjeta('⛏️ ¡Feliz Día del Minero!', 'Hoy, 11 de julio, México celebra a su gente de mina. Buen turno.', 'msj', 10000); if (primera && hoy === '4/12') tarjeta('🕯️ Día de Santa Bárbara', 'Hoy, 4 de diciembre, las minas festejan a su patrona.', 'msj', 10000); }
+  if (primera) { tInicioMundo = Date.now(); cita = d.cita || null; }
+  if (primera && vengoDe >= 0 && vengoDe !== miI && otros.get(vengoDe)) { const q = otros.get(vengoDe); setTimeout(() => tarjeta('🚜 ' + q.n + ' te invitó a este mundo', (q.on ? 'Está jugando ahora mismo' + (q.y !== undefined ? ', a ' + num(Math.max(0, Math.round(q.y))) + ' m' : '') : 'Ahora no está, pero el mundo sigue tal cual') + '. Cada quien baja con su maquinita; se ven en el mapa (M) y se hablan por el chat (C).', 'msj', 14000), 1200); }
   if (primera && !d.est) tarjeta('⛏️ Tu maquinita se llama ' + miNombre, (tactil ? 'Pon el dedo donde sea y arrástralo: abajo perfora, a los lados camina, arriba vuela. Dos empujones seguidos hacia arriba o hacia abajo y sigue sola. Las caídas no te lastiman. Con dos dedos acercas la vista.' : 'Usa las flechas para moverte.') + ' Primero: carga combustible en la Gasolinera (' + (tactil ? 'un toque' : '↓') + ' para entrar). El nombre se cambia en Menú → Mundo.', 'msj', 11000);
   if (primera) { const n = leer('mina_nota', ''); if (n) { try { localStorage.removeItem('mina_nota'); } catch {} aviso(n); } }
 }
@@ -3596,6 +3636,13 @@ function htmlPublico() {
   h += `<h4>🙋 Quieren jugar (${publico.sol.length})</h4>` + (publico.sol.length ? publico.sol.map((x, k) => fila('🙋', esc(x.n || 'Alguien'), 'Pidió entrar ' + hace(x.h), soyCreador ? `<button data-a="acepto" data-v="${x.sid}">${k === 0 ? '<kbd>Enter</kbd>' : ''}Aceptar</button><button class="s" data-a="rechazo" data-v="${x.sid}">Rechazar</button>` : '')).join('') : '<p class="nota">Nadie por ahora. Cuando alguien que está mirando pida jugar, te llega un aviso.</p>');
   h += `<h4>⛏️ Jugando ahora (${jugando.length + 1})</h4>` + fila('⭐', esc(miNombre) + ' (tú)', 'Quien creó el mundo', '') + jugando.map((o) => fila('⛏️', `<span style="color:${colorTx(o.i)}">${esc(o.n)}</span>`, o.y !== undefined ? donde(o.y) : 'conectada', soyCreador ? `<button class="s" data-a="quitarP" data-v="${o.i}">Quitar permiso</button><button class="s mal" data-a="sacarJ" data-v="${o.i}">Sacar</button>` : '')).join('');
   h += `<h4>👁 Mirando (${publico.nm || mirones})</h4>` + (publico.mira.length ? publico.mira.map((x) => fila('👁', esc(x.n || 'Alguien'), x.n ? 'Tiene maquinita' : 'Sin maquinita', soyCreador ? `<button class="s mal" data-a="sacarM" data-v="${x.sid}">Sacar</button>` : '')).join('') : `<p class="nota">${mirones ? mirones + ' mirando.' : 'Nadie está mirando ahora.'}</p>`);
+  // Quién trajo a quién: el árbol de invitaciones de este mundo (lo que hace que un mundo crezca).
+  const todos = [{ i: miI, n: miNombre, de: miDe }, ...[...otros.values()]], conDe = todos.filter((o) => o.de >= 0), trajo = (i) => conDe.filter((o) => o.de === i).length;
+  if (conDe.length) {
+    const nom2 = (i) => (i === miI ? esc(miNombre) + ' (tú)' : `<span style="color:${colorTx(i)}">${esc(nombreDe(i))}</span>`);
+    const ranking = [...new Set(conDe.map((o) => o.de))].map((i) => [i, trajo(i)]).sort((a, b) => b[1] - a[1]);
+    h += `<h4>💛 Quién trajo a quién (${conDe.length})</h4>` + ranking.map(([i, n]) => fila('💛', nom2(i), 'trajo a ' + conDe.filter((o) => o.de === i).map((o) => nombreDe(o.i)).join(', '), `<small>${n}</small>`)).join('');
+  }
   // Los permisos duran para siempre: quien ya jugó aquí entra cuando quiera hasta que se lo quiten. Una lista larga se pliega.
   const rev = new Set(publico.rev || []), nom = (o) => `<span style="color:${colorTx(o.i)}">${esc(o.n)}</span>`;
   if (soyCreador) {
@@ -3669,14 +3716,14 @@ $('#bFoto').addEventListener('click', (e) => { audio(); e.currentTarget.blur(); 
 // copia de src/tienda.js: el servidor valida, esto solo dibuja.
 const TC = { COLORES: ['#ffd23f', '#ff6b5a', '#6ec3ff', '#6fdc7a', '#c05cff', '#ff9f40', '#f3e6d8', '#ff7ac8', '#ffffff', '#1b1b1b', '#e0483a', '#2f8a3a', '#2a6fa8', '#7426a8', '#b05e12', '#9a8774', '#00c2a8', '#f5e663', '#ff3d7f', '#3d5afe', '#8bc34a', '#795548', '#607d8b', '#c0a16b'], CALCAS: ['⭐', '❤️', '⚡', '🔥', '🌈', '🌙', '☀️', '🌵', '🌸', '🍀', '🍉', '🌶️', '🦅', '🐺', '🦂', '🐢', '🐝', '🦋', '🐉', '🦈', '⚓', '🎸', '🎵', '🎲', '⚽', '🏀', '🏁', '🚀', '💎', '👑', '💀', '🤖', '👾', '🎯', '🧭', '⛏️', '🔱', '✝️', '☮️', '♾️', '🇲🇽', '🏳️‍🌈', '🍕', '🌮', '🥑', '🐾', '🧿', '✨'], LUCES: ['#fff3b0', '#ff4d4d', '#4dff88', '#4da6ff', '#ff4df2', '#ffd23f', '#ffffff', '#9d4dff'], ESTELAS: ['Ninguna', 'Chispas doradas', 'Arcoíris', 'Estrellas', 'Corazones', 'Burbujas'], BOCINAS: ['Pip-pip', 'Mariachi', 'Tren', 'Barco', 'Risa', 'Campanitas'], PLACAS: ['Normal', 'Dorada', 'Con corona', 'Con marco'], CARROS: ['De fábrica', 'El Escarabajo', 'La Locomotora', 'El Submarino'], MASCOTAS: ['Ninguna', 'Pájaro', 'Perro', 'Dron', 'Mariposa', 'Luciérnaga'], MASC_EMOJI: ['', '🐦', '🐕', '🛸', '🦋', ''] };
 const NIVEL_CLAVE = { c1: 1, c2: 2, c3: 2, calca: 3, luz: 4, estela: 5, bocina: 6, placa: 6, carro: 7, mascota: 8 };
-let miPinta = {}, miMe = 0, edenPiedras = [], tiendaAnimT = 0, tBocina = 0, estelaN = 0;
+let miPinta = {}, miMe = 0, miDe = -1, edenPiedras = [], tiendaAnimT = 0, tBocina = 0, estelaN = 0;
 let tienda = { niveles: [], mio: { nivel: 0, mecenas: 0, pinta: {} }, fondo: 0, pagos: 0, cargada: 0, cargando: 0, nivelVista: 0, prueba: null, regaloA: -1, mecenasMonto: 99, fondoN: 3, mecenasMin: 99, gratitudMin: 33, gratitudHora: '15:33', fondoPrecio: 19, tope: 5000, error: '', momento: null, cumple: '', gratitud: 0, gracias: 0 };
 // El ánimo con el que estás jugando, para el momento del precio: cuánto cavaste en los últimos tres minutos y cuántos golpes
 // fuertes (explosiones, pleitos) en los últimos diez. 0 = tranquilo … 1 = a tope. Solo sirve para bajar el precio y para el tono.
 const ritmo = [], ritmoFuerte = [];
 function animoReciente() { const a = Date.now(); while (ritmo.length && a - ritmo[0] > 180000) ritmo.shift(); while (ritmoFuerte.length && a - ritmoFuerte[0] > 600000) ritmoFuerte.shift(); return Math.min(1, ritmo.length / 150 + ritmoFuerte.length * 0.25); }
 // La hora de Torreón, en el navegador: para la tarjeta de las 3:33 y para decir «hoy» igual que el servidor.
-function horaTorreon() { const p = {}; for (const x of new Intl.DateTimeFormat('en-US', { timeZone: 'America/Monterrey', hour12: false, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).formatToParts(new Date())) p[x.type] = x.value; return { y: +p.year, h: +p.hour % 24, min: +p.minute, md: p.month + '-' + p.day }; }
+function horaTorreon() { const p = {}; for (const x of new Intl.DateTimeFormat('en-US', { timeZone: 'America/Monterrey', hour12: false, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).formatToParts(new Date())) p[x.type] = x.value; return { y: +p.year, mes: +p.month, dia: +p.day, h: +p.hour % 24, min: +p.minute, md: p.month + '-' + p.day }; }
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 const cumpleTexto = (md) => md ? +md.slice(3) + ' de ' + MESES[+md.slice(0, 2) - 1] : '';
 // Cuántos días faltan (−) o pasaron (+) de su cumpleaños, si anda a tres días; 9 si no.
@@ -4193,7 +4240,7 @@ function pintarTabla() {
   l.sort((a, b) => (b.on || 0) - (a.on || 0) || (b.rec || 0) - (a.rec || 0));        // primero quienes están jugando
   const mas = l.length - 8; if (mas > 0) { const yoJ = l.findIndex((j) => j.yo); l.length = 8; if (yoJ >= 8) l[7] = { n: miNombre, m: miModelo, rec: S.rec, on: 1, yo: 1, y: donde(yo.y) }; }
   poner($('#tabla'), (movil ? l.filter((j) => !j.yo && j.on).slice(0, 3) : l).map((j) => `<div class="${j.on ? '' : 'off'}"><i style="background:${MODELOS[j.m]?.[0] || '#888'}"></i><b>${j.me ? '✦ ' : ''}${esc(j.n)}${j.yo ? ' (tú)' : ''}</b><span>${j.on && j.y !== null ? j.y + ' · ' : ''}récord ${num(j.rec)} m</span></div>`).join('') + (mas > 0 && !movil ? `<div class="off"><b>y ${mas} más</b></div>` : '') +
-(soyCreador && publico.sol.length ? `<div class="mund pub" data-pub="1">🙋 ${publico.sol.length === 1 ? '1 quiere jugar' : publico.sol.length + ' quieren jugar'} · <kbd>J</kbd></div>` : '') + (mirones ? `<div class="mund pub" data-pub="1">👁 ${mirones === 1 ? '1 persona te mira' : mirones + ' personas te miran'}</div>` : ''));
+(soyCreador && publico.sol.length ? `<div class="mund pub" data-pub="1">🙋 ${publico.sol.length === 1 ? '1 quiere jugar' : publico.sol.length + ' quieren jugar'} · <kbd>J</kbd></div>` : '') + (mirones ? `<div class="mund pub" data-pub="1">👁 ${mirones === 1 ? '1 persona te mira' : mirones + ' personas te miran'}</div>` : '') + (cita ? `<div class="mund cita" data-cita="1">🕘 ${horaCitaTx(cita.h).replace(' hora de Torreón', '').replace(/ \(.*\)$/, '')} · ${(cita.voy || []).length === 1 ? '1 va' : (cita.voy || []).length + ' van'} · ${(cita.voy || []).includes(miI) ? 'voy ✓' : '¿vas?'}</div>` : ''));
 }
 
 /* ════════ Código QR ════════ RLR */
@@ -4445,11 +4492,16 @@ function pintarMenu() {
       <button data-a="remin" ${!puedo || S.d < c || cuentaFin ? 'disabled' : ''}>${puedo ? 'Remineralizar el tablero' : 'Solo quien creó el mundo puede hacerlo'}</button></div>`;
   } else if (menu === 'inv') {
     const liga = location.origin + '/' + mundoId;
-    h = cab('👥 Invita a tu gente') + `<div class="cuerpo" style="text-align:center"><p>Quien abra esta liga entra a <b>${esc(cfg.nombre || 'este mundo')}</b> con su propia maquinita. Juegan hasta 40 a la vez; mirando, sin límite.</p>
-      <a href="${liga}" target="_blank" rel="noopener" title="Abrir la liga"><canvas id="qrLienzo" class="qr" data-t="${liga}"></canvas></a>
+    const T = horaTorreon(), aLas = (dias, H) => Date.UTC(T.y, T.mes - 1, T.dia + dias, H + 6), chipsCita = [[aLas(0, 20), 'Hoy 8 pm'], [aLas(0, 21), 'Hoy 9 pm'], [aLas(1, 20), 'Mañana 8 pm'], [aLas(1, 21), 'Mañana 9 pm']].filter(([h]) => h > Date.now());
+    h = cab('👥 Invita a tu gente') + `<div class="cuerpo" style="text-align:center"><p>Quien abra tu liga entra a <b>${esc(cfg.nombre || 'este mundo')}</b> con su propia maquinita, sin registro, y ve que lo invitaste tú. Cada maquinita nueva da $500 a todos.</p>
+      <textarea id="msjInv" rows="4" style="width:100%;box-sizing:border-box;font:inherit;background:#0006;color:#fff;border:1px solid var(--borde);border-radius:10px;padding:8px">${esc(mensajeInvitacion())}</textarea>
+      <p><button data-a="wa" style="background:#25d366;color:#07301c">📲 Mandar por WhatsApp</button> ${navigator.share ? '<button data-a="compartir">📤 Compartir…</button>' : ''} <button class="s" data-a="invitar">Copiar la liga</button></p>
+      <h4>🕘 ¿A qué hora nos juntamos?</h4>${cita ? `<p>Nos vemos <b>${horaCitaTx(cita.h)}</b> · ${(cita.voy || []).length === 1 ? 'va 1' : 'van ' + (cita.voy || []).length}${(cita.voy || []).includes(miI) ? ' (tú vas)' : ''}. Va en el mensaje y en la vista previa de la liga.</p><p><button class="s" data-a="voy" data-v="${(cita.voy || []).includes(miI) ? 0 : 1}">${(cita.voy || []).includes(miI) ? 'Ya no voy' : 'Voy'}</button> <button class="s" data-a="citaQuitar">Quitar la cita</button></p>` : '<p class="nota">Para ponerse de acuerdo: la hora se ve arriba a la derecha, va en el mensaje y en la vista previa de la liga, y cada quien dice si va. Todo en hora de Torreón.</p>'}
+      <div class="chips" style="justify-content:center">${chipsCita.map(([h, t]) => `<button class="s" data-a="cita" data-v="${h}">${t}</button>`).join('')}<input id="citaOtra" type="datetime-local" style="font:inherit;background:#0006;color:#fff;border:1px solid var(--borde);border-radius:8px;padding:4px 6px"><button class="s" data-a="citaOtra">Otra hora</button></div>
+      <h4>Código QR</h4><a href="${liga}" target="_blank" rel="noopener" title="Abrir la liga"><canvas id="qrLienzo" class="qr" data-t="${ligaInvitacion()}"></canvas></a>
       <p><code>${liga}</code></p>
-      <p><button data-a="invitar">Copiar la liga del mundo</button> <button class="s" data-a="presumir">Copiar mi liga (presume tu maquinita)</button> ${navigator.share ? '<button class="s" data-a="compartir">Compartir…</button>' : ''} <button class="s" data-a="menu" data-v="foto">📸 Foto para presumir</button></p>
-      <p class="nota">Con el teléfono: apunta la cámara al código y se abre el mundo. Quien entra ya está jugando: no hay registro ni nada que llenar.</p>
+      <p><button class="s" data-a="presumir">Copiar mi liga (presume tu maquinita)</button> <button class="s" data-a="menu" data-v="foto">📸 Foto para presumir</button></p>
+      <p class="nota">Con el teléfono: apunta la cámara al código y se abre el mundo. Quien entra ya está jugando: no hay registro ni nada que llenar. El mundo se queda tal cual cuando se van; con la misma liga vuelven cuando quieran.</p>
       <p class="nota" style="margin-top:14px">Así se ve la liga del mundo cuando la mandas por WhatsApp. Se actualiza sola con cada récord.</p><div id="ligaAqui" data-m="1"></div>
 </div>`;
   } else if (menu === 'foto') {
@@ -4713,7 +4765,12 @@ const acciones = {
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = f.name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
     return 'no';
   },
-  compartir() { navigator.share?.({ title: 'Mina', text: 'Entra a excavar a mi mundo', url: location.origin + '/' + mundoId }).catch(() => {}); return 'no'; },
+  compartir() { subirFotos(true); navigator.share?.({ text: textoInv() }).catch(() => {}); return 'no'; },
+  wa() { subirFotos(true); porWhatsApp(textoInv()); return 'no'; },
+  cita(v) { if (!conectado) return 'no'; enviar({ t: 'cita', h: +v }); son.clic(); return 'no'; },
+  citaOtra() { const el = $('#citaOtra'); if (!el || !el.value) { aviso('Elige fecha y hora (hora de Torreón).'); return 'no'; } const [f, hm] = el.value.split('T'), [y, m, d] = f.split('-').map(Number), [H, M] = hm.split(':').map(Number); const h = Date.UTC(y, m - 1, d, H + 6, M || 0); if (h < Date.now()) { aviso('Esa hora ya pasó.'); return 'no'; } if (conectado) enviar({ t: 'cita', h }); return 'no'; },
+  citaQuitar() { if (conectado) enviar({ t: 'cita', h: 0 }); return 'no'; },
+  voy(v) { if (conectado && cita) enviar({ t: 'voy', si: +v }); return 'no'; },
   tirar(v) { if (S.carga[+v] > 0) S.carga[+v]--; },
   op(v, el) { const k = el.dataset.k, antes = op[k]; op[k] = el.type === 'checkbox' ? (el.checked ? 1 : 0) : +el.value; if (k === 'zoom') { if (movil) animarLupa(lupa * [9, 12, 16][op.zoom] / [9, 12, 16][antes]); else lupa = 1; op.lupa = 1; } escribir('mina_op', op); aplicarOp(); return 'no'; },
   texto(v) { op.texto = Math.max(0.85, Math.min(1.5, op.texto + +v)); escribir('mina_op', op); aplicarOp(); },
@@ -4751,7 +4808,7 @@ const acciones = {
   },
   invitar(v, el) {
     subirFotos(true);
-    const liga = location.origin + '/' + mundoId;
+    const liga = ligaInvitacion();
     const hecho = () => { el.textContent = '¡Liga copiada!'; }, aMano = () => window.prompt('Copia la liga de tu mundo:', liga);
     if (navigator.clipboard?.writeText) navigator.clipboard.writeText(liga).then(hecho, aMano); else aMano();
     return 'no';
@@ -4828,7 +4885,7 @@ $('#reglaVia').addEventListener('click', (e) => {          // un clic en la regl
 });
 $('#verQuien').addEventListener('click', (e) => { const b = e.target.closest('[data-veo]'); if (b) { audio(); veo = +b.dataset.veo; tkVisto = -1; pintarVer(); } });
 $('#verPedir').addEventListener('click', () => { audio(); pedirJugar(); });
-$('#tabla').addEventListener('click', (e) => { if (e.target.closest('[data-pub]') && listo && !menu && !soloVer) { audio(); abrir('pub'); } });
+$('#tabla').addEventListener('click', (e) => { if (e.target.closest('[data-pub]') && listo && !menu && !soloVer) { audio(); abrir('pub'); } if (e.target.closest('[data-cita]') && listo && !soloVer && cita && conectado) { audio(); const voy = (cita.voy || []).includes(miI); enviar({ t: 'voy', si: voy ? 0 : 1 }); aviso(voy ? 'Ya no vas a la cita' : 'Vas a la cita: ' + horaCitaTx(cita.h)); } });
 $('#verChat').addEventListener('click', () => { audio(); if (chat.abierto) cerrarChat(); else abrirChat(); });
 $('#verTop').addEventListener('click', () => { audio(); abrir('top'); });
 $('#bGrua').addEventListener('click', (e) => { audio(); e.currentTarget.blur(); if (listo && !menu && !pausa) grua(); });
@@ -4997,7 +5054,7 @@ const TECLAS_MENU = { pub: '<kbd>Enter</kbd> acepta la primera solicitud', gas: 
 const MAPA = { ArrowLeft: 'izq', ArrowRight: 'der', ArrowUp: 'arr', ArrowDown: 'aba' };
 addEventListener('keydown', (e) => {
   if (cine) { e.preventDefault(); return cerrarCine(); }      // cualquier tecla regresa del jardín entero al juego
-  if (e.target.tagName === 'INPUT' || e.metaKey || e.ctrlKey) return;
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.metaKey || e.ctrlKey) return;
   audio(); nacer();
   if ((e.key === 'c' || e.key === 'C') && listo && !menu && !e.repeat) { e.preventDefault(); return chat.abierto ? cerrarChat() : abrirChat(true); }      // C abre y cierra el chat, con el cursor listo para escribir
   if (e.key === 'Enter' && listo && !menu) { e.preventDefault(); return abrirChat(true); }
@@ -5386,7 +5443,7 @@ setInterval(() => {                       // lo poco que corre aunque el juego e
   if (topAbierta()) document.querySelectorAll('#caja .tt[data-vivo="1"]').forEach((el) => { el.dataset.seg = +el.dataset.seg + 1; el.textContent = '⏱ ' + tiempoLargo(+el.dataset.seg); });
   if (soloVer && (pido === 'espera' || pido === 'ausente')) pintarEspera();
   if (peleas.size) { for (const [i, p] of peleas) if (tiempo - p.h > 6) peleas.delete(i); pintarPleito(); if (soloVer) pintarVer(); }
-  pendientesTienda(); if (latido % 5 === 0) invitarPintureria(); if (latido % 7 === 0) diaDeCumple();
+  pendientesTienda(); if (latido % 5 === 0) invitarPintureria(); if (latido % 7 === 0) diaDeCumple(); if (latido % 11 === 0) invitarGente();
   if (!cuenta && S && listo && !soloVer && S.seg > 600 && !leer('mina_invitoG', 0)) { escribir('mina_invitoG', 1); tarjeta('💾 ¿Guardamos tu maquinita?', 'Con tu correo de Google la recuperas en cualquier equipo, con todos tus mundos. Cuando quieras: Menú → Mundo.', 'msj', 9000); }
   if (latido % 4 === 0) ocio(guardarCopia);
   if (!document.hidden && listo && Date.now() - tablaM.pedido > (topAbierta() ? 4000 : 60000) && (topAbierta() || (!soloVer && conectado && (!tablaM.t || S.tot >= tablaM.corte)))) pedirTop();

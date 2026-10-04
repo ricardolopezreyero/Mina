@@ -1345,6 +1345,19 @@ No se pudo ver el movimiento en vivo porque el navegador de pruebas está oculto
 
 **Probado** en local: el momento en tres instantes (cumpleaños de noche tranquilo = 22 %; madrugada del 12 de diciembre a tope = Guadalupe 10 % + quincena 5 %, con aviso de madrugada; Navidad por la mañana = 13 %), festivos movibles de 2026 (Revolución 16 de noviembre, Viernes Santo 3 de abril, Día del Padre 21 de junio), el cumpleaños guardado hoy (gorrito en la maquinita, sección de gratitud, precio de lista $6,000 → $3,490 con 30 % del motor + 15 % cumpleaños + 2 % tranquilo), y la ruta del cron (local sin llave). **No probado:** el envío real del correo (sale a las 3:33 pm de Torreón solo a quien tenga cumpleaños registrado con cuenta) y el cobro real.
 
+### 9.53 Compartir en el ADN: quién invita, WhatsApp primero, la cita del mundo y los momentos
+
+**Lo que pidió Ricardo.** Que compartir esté en el ADN del juego y que la gente común quiera pasarle la liga al que sigue; solidificar cómo se comparte, cómo se invita a entrar al mapa, y cómo se ponen de acuerdo para volver.
+
+**Cómo quedó** (el razonamiento completo está en `docs/ADN_Compartir_Mina_v1_2026-10-04_1540.md`).
+- `?de=<i>` en la liga: el servidor apunta `j.de` al registrar una maquinita nueva; `publico()` lo incluye; `entra` lleva `primera`. Quien invita recibe «💛 … entró con tu liga» (`S.st.traidos`), el chat anota «la trajo …», y el panel J muestra «Quién trajo a quién». Logros `padrino` (10) y `pueblo` (33).
+- Vista previa: `ficha()` devuelve `on` (conectados) y `cita`; con `?de=` el título dice quién invita y cuántos excavan ahora; la descripción abre con la cita.
+- Invitar: mensaje editable (`#msjInv`, `mensajeInvitacion()`), botón WhatsApp (`wa.me/?text=`), `Compartir…` con la hoja del sistema, copiar liga (con `de`), QR con `de`.
+- Cita: mensajes `cita {h}` (cualquiera; una cada 20 s; de −1 h a +30 días) y `voy {si}`; `m.cita = {h, i, voy[]}`; `citaViva()` la olvida a las tres horas; viaja en el mensaje `mundo` y en `cita`. Píldora en `#tabla` (clic = voy / ya no voy). Todo en hora de Torreón (`horaCitaTx`, fichas construidas con `Date.UTC(..., H + 6)`).
+- Momentos: `tarjetaCompartir()` (una cada 20 min salvo hitos), `invitarGente()` (solo en el mundo, 5 min, superficie, una vez por mundo), hallazgos con `q ≥ 50,000`, logros de hito, pantalla de reinicio.
+
+**Probado** en local: cita propuesta y píldora «hoy a las 8 pm · 1 va · voy ✓», mensaje de WhatsApp con la cita y la liga con `?de=2`, llegada de una maquinita con `de` (atribución guardada, tarjeta 💛, contador `traidos`), panel «Quién trajo a quién», vista previa con `?de=0` («Ricardo te invita a Mundo de Ricardo · 2 excavando ahora» y la cita en la descripción).
+
 ## 10. Revisión de código del 2 de octubre
 
 Se revisó todo el código buscando fallas y se corrigieron estas:

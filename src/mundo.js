@@ -734,9 +734,9 @@ export class Mundo extends DurableObject {
     if (!m) return null;
     const p = Number.isInteger(j) && this.jug[j] ? this.jug[j] : null;
     let rec = 0; for (const x of this.jug) if (x && (x.rec || 0) > rec) rec = x.rec;
-    const cita = this.citaViva(m), de = Number.isInteger(j) && j >= 0 && j !== (p ? -1 : -1) ? null : null;
+    const cita = this.citaViva(m);
     return { n: m.cfg.nombre || "", j: this.jug.filter(Boolean).length, on: this.conectados().size, og: m.og || 0, rec, col: (m.col || []).length, cita: cita ? { h: cita.h, voy: (cita.voy || []).length } : null,
-      p: p ? { n: p.n, rec: p.rec || 0, tot: p.tot || 0, og: p.og || 0 } : null, de };
+      p: p ? { n: p.n, rec: p.rec || 0, tot: p.tot || 0, og: p.og || 0 } : null };
   }
 
   // La imagen de la liga (JPEG que dibujó el juego): la del mundo, o la de una maquinita.
@@ -1114,8 +1114,9 @@ export class Mundo extends DurableObject {
       return;
     }
     i = this.jug.findIndex((j) => j && j.k === k);            // se vuelve a buscar: mientras se esperaba pudo entrar alguien más
-    let estrena = false;
+    let estrena = false, primera = false;
     if (i < 0) {
+      primera = true;
       estrena = this.jug.length > 0 && this.jug.length < 10;   // maquinita nueva en un mundo que ya tiene gente: todos ganan
       if (m.cfg.puerta && this.jug.length && !(m.ok || []).includes(k)) return fin({ t: "cerrado", ver: m.cfg.mirar !== 0 ? m.ver || "" : "" });      // con la puerta cerrada se entra a mirar, y desde ahí se pide permiso
       if (this.jug.length >= MAX_MAQUINITAS) return fin({ t: "lleno" });
@@ -1157,7 +1158,7 @@ export class Mundo extends DurableObject {
     for (const [x, s] of this.pos) if (x !== i && on.has(x)) manda(ws, s);
     this.avisarTabla(i, true, true);
     if (i === this.creador()) { this.avisarDueno(); this.avisarPidiendo(); }      // llegó quien decide: se le muestran las solicitudes y a quien espera se le avisa
-    this.difundir({ t: "entra", j: this.publico(i, true), nuevo: estrena ? 1 : 0 }, ws);
+    this.difundir({ t: "entra", j: this.publico(i, true), nuevo: estrena ? 1 : 0, primera: primera ? 1 : 0 }, ws);      // primera: nunca había entrado (aunque ya no haya bono)
     await this.programar();
   }
 
