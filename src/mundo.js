@@ -725,6 +725,8 @@ export class Mundo extends DurableObject {
     } finally { this.guardandoMapa = false; }
   }
 
+  // La cita, si sigue vigente (hasta tres horas después de la hora); si ya pasó, se olvida.
+  citaViva(m) { if (m.cita && m.cita.h > Date.now() - 3 * 3600000) return m.cita; if (m.cita) { m.cita = null; this.sucio.meta = true; } return null; }
   // Para la vista previa de la liga: cómo se llama el mundo y cuántas maquinitas tiene.
   // Con «j» (el número de una maquinita) devuelve también su ficha: la liga de un jugador presume lo suyo.
   async ficha(j) {
@@ -732,8 +734,9 @@ export class Mundo extends DurableObject {
     if (!m) return null;
     const p = Number.isInteger(j) && this.jug[j] ? this.jug[j] : null;
     let rec = 0; for (const x of this.jug) if (x && (x.rec || 0) > rec) rec = x.rec;
-    return { n: m.cfg.nombre || "", j: this.jug.filter(Boolean).length, og: m.og || 0, rec, col: (m.col || []).length,
-      p: p ? { n: p.n, rec: p.rec || 0, tot: p.tot || 0, og: p.og || 0 } : null };
+    const cita = this.citaViva(m), de = Number.isInteger(j) && j >= 0 && j !== (p ? -1 : -1) ? null : null;
+    return { n: m.cfg.nombre || "", j: this.jug.filter(Boolean).length, on: this.conectados().size, og: m.og || 0, rec, col: (m.col || []).length, cita: cita ? { h: cita.h, voy: (cita.voy || []).length } : null,
+      p: p ? { n: p.n, rec: p.rec || 0, tot: p.tot || 0, og: p.og || 0 } : null, de };
   }
 
   // La imagen de la liga (JPEG que dibujó el juego): la del mundo, o la de una maquinita.
@@ -747,7 +750,7 @@ export class Mundo extends DurableObject {
 
   publico(i, on) {
     const j = this.jug[i];
-    return { i, n: j.n, m: j.m, rec: j.rec || 0, tot: j.tot || 0, on: on ? 1 : 0, p: j.p || {}, me: j.me || 0 };
+    return { i, n: j.n, m: j.m, rec: j.rec || 0, tot: j.tot || 0, on: on ? 1 : 0, p: j.p || {}, me: j.me || 0, ...(j.de >= 0 ? { de: j.de } : {}), alta: j.alta || 0 };
   }
   // Para regalar: la llave de la maquinita número i (nunca sale al navegador; la usa la tienda del lado del servidor).
   async llaveDe(i) { await this.cargar(); const j = this.jug[i]; return j ? j.k : ""; }
@@ -956,6 +959,23 @@ export class Mundo extends DurableObject {
         this.difundir({ t: "vida", i, v: entero(d.v, 0, 1e6, 0), mx: entero(d.mx, 1, 1e6, 1) }, ws);
         return;
       }
+      case "cita": {             // «nos vemos a las…»: cualquiera propone (o quita) la hora; quien la propone ya va
+        const h = entero(d.h, 0, 4102444800000, 0), ahora = Date.now();
+        if (h && (h < ahora - 3600000 || h > ahora + 30 * DIA)) return;
+        if (h && (yo.citaT || 0) > ahora - 20000) return;        // una propuesta cada 20 s por maquinita
+        yo.citaT = ahora;
+        m.cita = h ? { h, i, voy: [i] } : null;
+        this.sucio.meta = true;
+        this.difundir({ t: "cita", cita: m.cita });
+        break;
+      }
+      case "voy": {              // confirmar (o desconfirmar) que uno va a la cita
+        if (!m.cita) return;
+        const voy = new Set(m.cita.voy || []); if (d.si) voy.add(i); else voy.delete(i);
+        m.cita.voy = [...voy]; this.sucio.meta = true;
+        this.difundir({ t: "cita", cita: m.cita });
+        break;
+      }
       case "nombre": {           // rebautizar la maquinita o cambiarle el modelo
         const n = limpio(d.n, 14), mo = entero(d.m, 0, 7, yo.m);
         if (n.length < 2 || (n === yo.n && mo === yo.m)) return;
@@ -1100,7 +1120,8 @@ export class Mundo extends DurableObject {
       if (m.cfg.puerta && this.jug.length && !(m.ok || []).includes(k)) return fin({ t: "cerrado", ver: m.cfg.mirar !== 0 ? m.ver || "" : "" });      // con la puerta cerrada se entra a mirar, y desde ahí se pide permiso
       if (this.jug.length >= MAX_MAQUINITAS) return fin({ t: "lleno" });
       i = this.jug.length;
-      this.jug[i] = { k, n: r.n, m: r.mo, est: r.est, rec: 0, tot: 0, alta: Date.now() };
+      const de = entero(d.de, 0, MAX_MAQUINITAS - 1, -1);          // llegó con la liga de alguien: queda apuntado quién la trajo
+      this.jug[i] = { k, n: r.n, m: r.mo, est: r.est, rec: 0, tot: 0, alta: Date.now(), ...(de >= 0 && de < i && this.jug[de] ? { de } : {}) };
       m.n = this.jug.length;
       await this.ctx.storage.put({ ["j:" + i]: this.jug[i], meta: m });
     }
@@ -1131,7 +1152,7 @@ export class Mundo extends DurableObject {
       t: "mundo", i, seed: m.seed, remin: m.remin, cfg: m.cfg, creador: i === this.creador() ? 1 : 0,
       est: this.jug[i].est, cuenta: m.reminAt ? Math.max(0, Math.ceil((m.reminAt - Date.now()) / 1000)) : 0,
       jug: this.jug.map((j, x) => (j ? this.publico(x, on.has(x)) : null)).filter(Boolean),
-      dug: btoa(b), col: m.col || [], chat: this.chatUltimos(60), fin: m.fin || null, sinMineral: m.sinMineral ?? -1, mapa: this.mapaDe(m), pid: yo.pid, ver: m.cfg.mirar === 0 ? "" : m.ver, obs: this.ctx.getWebSockets("mira").length, regalo: r.regalo ? 1 : 0, piedras: m.piedras || [],
+      dug: btoa(b), col: m.col || [], chat: this.chatUltimos(60), fin: m.fin || null, sinMineral: m.sinMineral ?? -1, mapa: this.mapaDe(m), pid: yo.pid, ver: m.cfg.mirar === 0 ? "" : m.ver, obs: this.ctx.getWebSockets("mira").length, regalo: r.regalo ? 1 : 0, piedras: m.piedras || [], cita: this.citaViva(m),
     });
     for (const [x, s] of this.pos) if (x !== i && on.has(x)) manda(ws, s);
     this.avisarTabla(i, true, true);
@@ -1252,24 +1273,28 @@ export default {
     const liga = u.pathname.match(/^\/(?:m\/)?([2-9A-HJ-NP-Z]{8})\/?$/i);      // mina.capitaltorreon.com/QSAHAZ3F (y la de antes, con /m/)
     if (liga && request.method === "GET") {
       const pagina = await env.ASSETS.fetch(new Request(new URL("/", request.url), request));
-      const id = liga[1].toUpperCase(), j = /^\d{1,2}$/.test(u.searchParams.get("j") || "") ? Number(u.searchParams.get("j")) : -1;
-      let info = null;
-      try { info = await env.MUNDO.get(env.MUNDO.idFromName(id)).ficha(j); } catch {}
+      const id = liga[1].toUpperCase(), num = (q) => (/^\d{1,2}$/.test(u.searchParams.get(q) || "") ? Number(u.searchParams.get(q)) : -1), j = num("j"), de = num("de");
+      let info = null, quien = null;
+      try { info = await env.MUNDO.get(env.MUNDO.idFromName(id)).ficha(j >= 0 ? j : de); } catch {}
       if (!info) return pagina;
+      if (j < 0 && de >= 0 && info.p) { quien = info.p; info.p = null; }      // ?de=3: la liga del mundo, pero se dice quién invita
       const miles = (n) => Math.round(n).toLocaleString("es-MX"), p = info.p;
       const dinero = (n) => (n >= 1e9 ? (n / 1e9).toFixed(1) + " mil M" : n >= 1e6 ? (n / 1e6).toFixed(1) + " M" : miles(n));
-      const mundo = info.n || "Un mundo de Mina";
-      const titulo = p ? (p.rec ? p.n + " · " + miles(p.rec) + " m bajo tierra en Mina" : p.n + " te invita a excavar en Mina") : mundo + " · entra a excavar conmigo en Mina";
+      const mundo = info.n || "Un mundo de Mina", ahora = info.on ? (info.on === 1 ? "1 excavando ahora" : info.on + " excavando ahora") : "";
+      const horaCita = (h) => { const t = horaTorreon(h), hoy = horaTorreon(); const hh = t.h % 12 || 12, mm = t.min ? ":" + String(t.min).padStart(2, "0") : "", ap = t.h < 12 ? " am" : " pm"; return (t.md === hoy.md ? "hoy" : t.dia + "/" + t.mes) + " a las " + hh + mm + ap + " (hora de Torreón)"; };
+      const titulo = p ? (p.rec ? p.n + " · " + miles(p.rec) + " m bajo tierra en Mina" : p.n + " te invita a excavar en Mina")
+        : quien ? quien.n + " te invita a " + mundo + (ahora ? " · " + ahora : "") : mundo + (ahora ? " · " + ahora : " · entra a excavar conmigo en Mina");
       const hitos = [info.j > 1 ? info.j + " maquinitas" : "", info.rec ? "ya vamos en " + miles(info.rec) + " m" : "", info.col ? info.col + " de 99 objetos de la colección" : ""].filter(Boolean).join(" · ");
+      const cita = info.cita ? "Nos vemos " + horaCita(info.cita.h) + (info.cita.voy > 1 ? ", ya van " + info.cita.voy : "") + ". " : "";
       const texto = p ? (p.tot ? "Lleva $" + dinero(p.tot) + " ganados en " + mundo : "Acaba de abrir " + mundo) + ". Entra y alcánzala: gratis, sin registro, en el mismo mundo."
-        : (hitos ? hitos[0].toUpperCase() + hitos.slice(1) + ". " : "") + "Entras y ya estás jugando: un mundo compartido en tiempo real, gratis y sin registro.";
+        : cita + (hitos ? hitos[0].toUpperCase() + hitos.slice(1) + ". " : "") + "Entras y ya estás jugando: un mundo compartido en tiempo real, gratis y sin registro.";
       const base = u.origin + "/og/m/" + id, imagen = p && p.og ? base + "/" + j + ".jpg?v=" + p.og : info.og ? base + ".jpg?v=" + info.og : u.origin + "/mina.jpg";
       const pon = (v) => ({ element(e) { e.setAttribute("content", v); } });
       return new HTMLRewriter()
         .on('meta[property="og:title"]', pon(titulo))
         .on('meta[property="og:description"]', pon(texto))
         .on('meta[property="og:image"]', pon(imagen))
-        .on('meta[property="og:url"]', pon(u.origin + "/" + id + (p ? "?j=" + j : "")))
+        .on('meta[property="og:url"]', pon(u.origin + "/" + id + (p ? "?j=" + j : de >= 0 ? "?de=" + de : "")))
         .transform(pagina);
     }
 

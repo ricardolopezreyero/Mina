@@ -5195,7 +5195,7 @@ function botonGoogle(caja) {
 const paseLogin = (location.hash.match(/sesion=([\w-]+\.[\w-]+\.[\w-]+)/) || [])[1] || '';
 if (paseLogin) { try { localStorage.setItem('ct_sesion', paseLogin); } catch {} history.replaceState(null, '', location.pathname + location.search); setTimeout(() => alEntrarGoogle({ credential: paseLogin }), listo ? 0 : 1500); }
 // Si la casa ya reconoce a esta persona (entró en otro servicio), Mina entra sola con ese mismo pase.
-addEventListener('load', () => { if (!window.LoginCT) return; const yaCasa = () => { const p = LoginCT.pase(); if (!cuenta && p && !paseLogin) setTimeout(() => alEntrarGoogle({ credential: p }), listo ? 0 : 1500); }; yaCasa(); LoginCT.al(yaCasa); });
+addEventListener('load', () => { if (!window.LoginCT) return; LoginCT.alPrefs(() => { op = { vol: 0.7, temblor: 1, part: 2, texto: 1, contraste: 0, dalton: 0, nombres: 1, zoom: 1, fps: 0, mudo: 0, ...leer('mina_op', {}) }; aplicarOp(); volumenes(); pintarBocina(); if (menu === 'menu') pintarMenu(); aviso('Tus preferencias llegaron de tu cuenta'); }); const yaCasa = () => { const p = LoginCT.pase(); if (!cuenta && p && !paseLogin) setTimeout(() => alEntrarGoogle({ credential: p }), listo ? 0 : 1500); }; yaCasa(); LoginCT.al(yaCasa); });
 async function alEntrarGoogle(resp) {
   const k = miK || (maqLocal && maqLocal.k) || '';
   aviso('Entrando con Google…');
