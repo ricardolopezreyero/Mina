@@ -3701,11 +3701,13 @@ function htmlTienda() {
 }
 function htmlPago(nv) {
   const L = tienda.niveles, mio = nivelMio(), precio = L[nv - 1].precio - (mio ? L[mio - 1].precio : 0), vivos = [...otros.values()].filter((o) => o.on);
-  let h = `<div class="pago"><p class="grande">${pesos(precio)} <small style="font-size:.5em;color:var(--su)">pesos${mio ? ' · solo la diferencia desde tu nivel ' + mio : ''}</small></p>`;
+  const o = tienda.oferta, desc = o && o.desc > 0 && tienda.regaloA < 0 ? o.desc : 0, tuPrecio = desc ? Math.max(1, Math.round(precio * (1 - desc))) : precio;
+  let h = `<div class="pago"><p class="grande">${pesos(tuPrecio)} <small style="font-size:.5em;color:var(--su)">pesos${mio ? ' · solo la diferencia desde tu nivel ' + mio : ''}</small></p>` +
+    (desc ? `<p class="nota"><s>${pesos(precio)} de lista</s> · <b style="display:inline;color:var(--ok)">${Math.round(desc * 100)} % menos, tu precio</b> · vale hasta el ${new Date(o.hasta).toLocaleDateString('es-MX', { day: 'numeric', month: 'long' })}. Mina ajusta descuentos según cómo juega cada quien; nunca cobra más que el precio de lista.</p>` : '');
   if (!tienda.pagos) return h + '<p class="nota">Los pagos se abren en unos días. Mientras, pruébatelo todo.</p></div>';
   if (vivos.length) h += `<label class="op"><span>¿Es un regalo?</span><select data-a="tPara">${[[-1, 'No, es para mí']].concat(vivos.map((o) => [o.i, 'Para ' + o.n])).map(([v, t]) => `<option value="${v}" ${v === tienda.regaloA ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select></label>${tienda.regaloA >= 0 ? '<p class="nota">Si quien lo recibe ya tiene un nivel, se cobra solo la diferencia.</p>' : ''}`;
   if (!cuenta) h += '<p class="nota">Para comprar hay que entrar con tu cuenta: así lo comprado se queda contigo en cualquier equipo.</p><div class="fila"><div class="t"></div><button data-a="tEntrar">Entrar con Google</button></div>';
-  else h += `<label class="op"><span>Soy mayor de edad, o tengo permiso de quien paga</span><input type="checkbox" id="tMayor"></label><div class="fila"><div class="t"><small>Pago seguro con tarjeta, en la página de Stripe. El comprobante te llega por correo.</small></div><button data-a="tPagar" data-v="${nv}">Pagar ${pesos(precio)}</button></div>`;
+  else h += `<label class="op"><span>Soy mayor de edad, o tengo permiso de quien paga</span><input type="checkbox" id="tMayor"></label><div class="fila"><div class="t"><small>Pago seguro con tarjeta, en la página de Stripe. El comprobante te llega por correo.</small></div><button data-a="tPagar" data-v="${nv}">Pagar ${pesos(tuPrecio)}</button></div>`;
   return h + '</div>';
 }
 function editorNivel(nv) {

@@ -43,3 +43,37 @@ export function filtrarPinta(p, nivel) {
   if (q.calca === 48) delete q.calca;
   return q;
 }
+
+// ── El motor de confort (precio exacto por persona, siempre hacia abajo) ─────────────────────────────────────────────
+// Lee cómo juega cada quien (tiempo, velocidad, pericia, cuántas veces abrió la tienda, qué pasó en sus experimentos) y
+// decide qué nivel sugerirle y qué descuento darle. Seis experimentos: tres para tantear y tres para afinar; después se
+// queda en su punto cómodo y se mueve despacio con lo que la economía de toda la gente va enseñando (desc0 global).
+// La única regla fija: NUNCA se cobra más que el precio de lista. El motor solo baja.
+export const DESC_MAX = 0.6, OFERTA_DIAS = 7, EXPERIMENTOS = 6;
+export function senales(m) {
+  const e = m.est || {}, t = m.tienda || {}, seg = Math.max(0, e.seg || 0);
+  return {
+    seg,
+    dedicacion: Math.min(1, seg / 36000),                                   // 10 h de juego = 1
+    expertiz: Math.min(1, (e.rec || 0) / 10000),                            // llegar al fondo = 1
+    velocidad: seg > 600 ? Math.min(1, (e.tot || 0) / seg / 20000) : 0,     // dinero del juego por segundo jugado
+    dias: Math.max(0, (Date.now() - (m.alta || Date.now())) / 86400000),
+    vistas: t.vistas || 0,
+    compras: (t.compras || []).filter((c) => c.monto > 0).length,
+    nivel: t.nivel || 0,
+  };
+}
+export function motorConfort(m, global) {
+  const s = senales(m), t = m.tienda || {}, exp = (t.exp || []).filter((x) => x.r !== "abierto"), g = global || { desc0: 0 };
+  const base = Math.max(1, Math.min(10, Math.round(1 + s.dedicacion * 3 + s.expertiz * 3 + s.velocidad * 2)));
+  const nivel = Math.max(s.nivel + 1, Math.min(base, s.nivel + 3));          // lo que le queda: de uno a tres niveles arriba del suyo
+  const n = exp.length, compradas = exp.filter((x) => x.r === "comprado"), ult = compradas[compradas.length - 1];
+  let desc;
+  if (n >= EXPERIMENTOS) desc = t.confort !== undefined ? t.confort : ult ? ult.desc : DESC_MAX;
+  else if (ult) desc = Math.max(0, ult.desc - 0.1);                          // ya compró con un descuento: se tantea un poco menos
+  else if (n < 3) desc = [0, 0.2, 0.4][n] + (g.desc0 || 0);                  // tanteo: lista, −20 %, −40 % (más lo que diga la economía general)
+  else desc = [0.5, 0.6, 0.6][n - 3];                                        // no ha comprado: se afina hacia abajo
+  if (s.seg < 1200 && !ult) desc = 0;                                         // a quien apenas empieza no se le experimenta
+  desc = Math.max(0, Math.min(DESC_MAX, Math.round(desc * 20) / 20));
+  return { nivel: Math.min(10, nivel), desc, n, s: { horas: Math.round(s.seg / 360) / 10, dedicacion: +s.dedicacion.toFixed(2), expertiz: +s.expertiz.toFixed(2), velocidad: +s.velocidad.toFixed(2), vistas: s.vistas } };
+}

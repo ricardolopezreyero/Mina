@@ -8,7 +8,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { DurableObject } from "cloudflare:workers";
 import { verificarPase } from "./verificar.js";      // el pase del Login de CapitalTorreon (login.capitaltorreon.com)
-import { NIVELES, MECENAS_MIN, FONDO_PRECIO, TOPE_MES, precioDe, filtrarPinta } from "./tienda.js";      // La Pinturería: precios y pintura
+import { NIVELES, MECENAS_MIN, FONDO_PRECIO, TOPE_MES, precioDe, filtrarPinta, motorConfort, OFERTA_DIAS, EXPERIMENTOS } from "./tienda.js";      // La Pinturería: precios y pintura
 // Un secreto de la bóveda (Secrets Store) llega como objeto con .get(); en local, como texto de .dev.vars. Sin él: "".
 async function secreto(v) { if (!v) return ""; if (typeof v === "string") return v; try { return (await v.get()) || ""; } catch { return ""; } }
 
@@ -160,6 +160,10 @@ export class Tabla extends DurableObject {
   // El Fondo común: pinturas ya pagadas que esperan a maquinitas nuevas (hay para todos).
   async fondo() { return (await this.ctx.storage.get("fondo")) || 0; }
   async sumarFondo(n) { const f = ((await this.ctx.storage.get("fondo")) || 0) + n; await this.ctx.storage.put("fondo", f); return f; }
+  // La economía que vamos percibiendo: con qué descuento compra la gente. De ahí sale el descuento con el que arrancan
+  // los experimentos de cada quien (desc0): si todos compran solo con rebaja, se arranca más abajo; si compran a lista, en cero.
+  async economia() { const e = (await this.ctx.storage.get("eco")) || { n: 0, suma: 0 }; return { desc0: e.n >= 10 ? Math.max(0, Math.min(0.3, Math.round((e.suma / e.n - 0.1) * 20) / 20)) : 0, n: e.n }; }
+  async anotarCompra(desc) { const e = (await this.ctx.storage.get("eco")) || { n: 0, suma: 0 }; e.n++; e.suma += desc; await this.ctx.storage.put("eco", e); }
   async tomarRegalo() { const f = (await this.ctx.storage.get("fondo")) || 0; if (f <= 0) return 0; await this.ctx.storage.put("fondo", f - 1); return 1; }
 }
 
@@ -193,14 +197,35 @@ export class Maquina extends DurableObject {
   gastado30(t) { const h = Date.now() - 30 * 86400000; return t.compras.filter((c) => c.h > h).reduce((a, c) => a + (c.monto || 0), 0); }
   vistaTienda(m) { const t = this.tiendaDe(m); return { nivel: t.nivel, mecenas: t.mecenas, compras: t.compras.length, gastado30: this.gastado30(t), pinta: filtrarPinta(m.pinta, t.nivel) }; }
   async tienda() { const m = await this.ctx.storage.get("m"); return m ? this.vistaTienda(m) : { nivel: 0, mecenas: 0, compras: 0, gastado30: 0, pinta: {} }; }
+  async cerrarExperimento() { const m = await this.ctx.storage.get("m"); if (!m) return null; const t = this.tiendaDe(m), o = (t.exp || [])[t.exp.length - 1]; if (o && o.r === "abierto") { o.r = "ignorado"; await this.ctx.storage.put("m", m); } return o; }
+  async ponerSenales(seg, rec, tot) { const m = await this.ctx.storage.get("m"); if (!m) return null; m.est = { ...(m.est || {}), seg, rec, tot }; await this.ctx.storage.put("m", m); return 1; }
+  // La oferta de esta maquinita: el experimento abierto (nivel sugerido y descuento), o uno nuevo si el anterior venció.
+  async oferta(global, abrir) {
+    const m = await this.ctx.storage.get("m"); if (!m) return null;
+    const t = this.tiendaDe(m); t.exp = t.exp || [];
+    let o = t.exp[t.exp.length - 1], cambio = false;
+    if (o && o.r === "abierto" && Date.now() - o.h > OFERTA_DIAS * 86400000) { o.r = o.vistas ? "ignorado" : "sinver"; cambio = true; o = null; }
+    if (!o || o.r !== "abierto") {
+      const c = motorConfort(m, global);
+      o = { n: t.exp.filter((x) => x.r !== "abierto").length + 1, nivel: c.nivel, desc: c.desc, h: Date.now(), vistas: 0, r: "abierto", s: c.s };
+      t.exp = t.exp.concat(o).slice(-24); cambio = true;
+    }
+    if (abrir) { o.vistas++; t.vistas = (t.vistas || 0) + 1; cambio = true; }
+    if (cambio) await this.ctx.storage.put("m", m);
+    return { nivel: o.nivel, desc: o.desc, hasta: o.h + OFERTA_DIAS * 86400000, n: o.n, de: EXPERIMENTOS, s: o.s };
+  }
   // Entregar una compra: una sola vez por sesión de pago; el nivel solo sube.
-  async entregar({ sid, tipo, nivel, monto, de }) {
+  async entregar({ sid, tipo, nivel, monto, de, desc }) {
     const m = await this.ctx.storage.get("m"); if (!m) return null;
     const t = this.tiendaDe(m); let nuevo = 0;
     if (!t.compras.some((c) => c.sid === sid)) {
       nuevo = 1;
       t.compras = t.compras.concat({ sid, tipo, n: nivel || 0, monto: monto || 0, de: de || "", h: Date.now() }).slice(-200);
       if (tipo === "nivel") t.nivel = Math.max(t.nivel, nivel || 0);
+      if (tipo === "nivel" && desc !== undefined && desc !== null) {           // el experimento abierto se cierra como comprado; ese descuento es su punto cómodo
+        t.exp = t.exp || []; const o = t.exp[t.exp.length - 1]; if (o && o.r === "abierto") { o.r = "comprado"; o.desc = desc; o.hc = Date.now(); }
+        t.confort = desc;
+      }
       if (tipo === "mecenas") t.mecenas = (t.mecenas || 0) + (monto || 0);
       await this.ctx.storage.put("m", m);
     }
@@ -371,13 +396,16 @@ async function tiendaApi(u, request, env) {
   const stripe = await secreto(env.STRIPE_SECRET_KEY);
   if (u.pathname === "/api/tienda") {
     const mio = llaveOk(d.k) ? await maq(d.k).tienda() : { nivel: 0, mecenas: 0, compras: 0, gastado30: 0, pinta: {} };
-    let fondo = 0; try { fondo = await tabla().fondo(); } catch {}
-    return json({ niveles: NIVELES, mecenasMin: MECENAS_MIN, fondoPrecio: FONDO_PRECIO, tope: TOPE_MES, fondo, pagos: stripe ? 1 : 0, mio });
+    let fondo = 0, eco = { desc0: 0 }, oferta = null; try { fondo = await tabla().fondo(); eco = await tabla().economia(); } catch {}
+    if (llaveOk(d.k)) { try { oferta = await maq(d.k).oferta(eco, true); } catch {} }
+    return json({ niveles: NIVELES, mecenasMin: MECENAS_MIN, fondoPrecio: FONDO_PRECIO, tope: TOPE_MES, fondo, pagos: stripe ? 1 : 0, mio, oferta });
   }
   // Solo en la computadora de pruebas (MINA_PRUEBA en .dev.vars, nunca publicado): entregar un nivel sin pagar, para probar la tienda.
   if (u.pathname === "/api/tienda/prueba") {
     if (env.MINA_PRUEBA !== "1" || !["::1", "127.0.0.1"].includes(request.headers.get("CF-Connecting-IP")) || !llaveOk(d.k)) return json({ error: "no" }, 404);
-    const e = await maq(d.k).entregar({ sid: "prueba-" + Date.now(), tipo: d.tipo === "mecenas" ? "mecenas" : "nivel", nivel: entero(d.nivel, 0, 10, 0), monto: entero(d.monto, 0, 1e6, 0), de: "prueba" });
+    if (d.exp === "cerrar") { const o = await maq(d.k).cerrarExperimento(); return json({ ok: 1, cerrado: o }); }      // cerrar el experimento abierto como ignorado (solo pruebas)
+    if (d.exp === "senales") { const m = await env.MAQUINA.get(env.MAQUINA.idFromName(d.k)).ponerSenales(d.seg, d.rec, d.tot); return json({ ok: 1, m }); }
+    const e = await maq(d.k).entregar({ sid: "prueba-" + Date.now(), tipo: d.tipo === "mecenas" ? "mecenas" : "nivel", nivel: entero(d.nivel, 0, 10, 0), monto: entero(d.monto, 0, 1e6, 0), de: "prueba", desc: d.desc });
     return e ? json({ ok: 1, mio: e }) : json({ error: "maquina" }, 404);
   }
   if (u.pathname === "/api/tienda/pagar") {
@@ -388,7 +416,7 @@ async function tiendaApi(u, request, env) {
     if (!c || !llaveOk(d.k) || c.k !== d.k) return json({ error: "cuenta" }, 401);
     let volver = u.origin + "/"; try { const x = new URL(String(d.volver || ""), u.origin); if (x.origin === u.origin) volver = x.origin + x.pathname; } catch {}
     const tipo = d.tipo === "mecenas" ? "mecenas" : d.tipo === "fondo" ? "fondo" : "nivel";
-    let monto = 0, nombre = "", para = d.k, nivel = 0, cantidad = 1;
+    let monto = 0, nombre = "", para = d.k, nivel = 0, cantidad = 1, desc = 0;
     if (tipo === "nivel") {
       nivel = entero(d.nivel, 1, 10, 0); if (!nivel) return json({ error: "datos" }, 400);
       // regalo: la maquinita número i de un mundo (su llave la da el mundo, nunca el navegador)
@@ -396,7 +424,9 @@ async function tiendaApi(u, request, env) {
       const actual = (await maq(para).tienda()).nivel;
       if (nivel <= actual) return json({ error: "ya", actual }, 400);
       monto = precioDe(nivel) - precioDe(actual);
-      nombre = `Mina · La Pinturería · nivel ${nivel} «${NIVELES[nivel - 1].nombre}»` + (para !== d.k ? " · regalo" : "") + (actual ? ` (solo la diferencia desde el nivel ${actual})` : "");
+      // el precio exacto de esta persona: su descuento del motor de confort (solo para ella, nunca arriba de lista; los regalos van a lista)
+      if (para === d.k) { let eco = { desc0: 0 }; try { eco = await tabla().economia(); } catch {} const o = await maq(d.k).oferta(eco, false); if (o && o.desc > 0) { desc = o.desc; monto = Math.max(1, Math.round(monto * (1 - desc))); } }
+      nombre = `Mina · La Pinturería · nivel ${nivel} «${NIVELES[nivel - 1].nombre}»` + (para !== d.k ? " · regalo" : "") + (actual ? ` (solo la diferencia desde el nivel ${actual})` : "") + (desc ? ` · ${Math.round(desc * 100)} % menos` : "");
     } else if (tipo === "mecenas") {
       monto = entero(d.monto, MECENAS_MIN, 100000, 0); if (!monto) return json({ error: "datos" }, 400);
       nombre = "Mina · ✦ Mecenas · gracias por sostener el juego";
@@ -409,7 +439,7 @@ async function tiendaApi(u, request, env) {
     const f = new URLSearchParams();
     f.set("mode", "payment"); f.set("success_url", volver + "?compra={CHECKOUT_SESSION_ID}"); f.set("cancel_url", volver + "?tienda=" + (nivel || 1));
     f.set("line_items[0][quantity]", "1"); f.set("line_items[0][price_data][currency]", "mxn"); f.set("line_items[0][price_data][unit_amount]", String(monto * 100)); f.set("line_items[0][price_data][product_data][name]", nombre);
-    f.set("metadata[k]", d.k); f.set("metadata[para]", para); f.set("metadata[tipo]", tipo); f.set("metadata[nivel]", String(nivel)); f.set("metadata[cantidad]", String(cantidad)); f.set("metadata[monto]", String(monto)); f.set("metadata[de]", sub);
+    f.set("metadata[k]", d.k); f.set("metadata[para]", para); f.set("metadata[tipo]", tipo); f.set("metadata[nivel]", String(nivel)); f.set("metadata[cantidad]", String(cantidad)); f.set("metadata[monto]", String(monto)); f.set("metadata[de]", sub); f.set("metadata[desc]", String(desc));
     f.set("locale", "es-419"); if (c.email) f.set("customer_email", c.email);
     let r, sesion; try { r = await fetch("https://api.stripe.com/v1/checkout/sessions", { method: "POST", headers: { authorization: "Bearer " + stripe, "content-type": "application/x-www-form-urlencoded" }, body: f }); sesion = await r.json(); } catch { return json({ error: "stripe" }, 502); }
     if (!r.ok || !sesion.url) return json({ error: "stripe" }, 502);
@@ -425,7 +455,8 @@ async function tiendaApi(u, request, env) {
     if (!llaveOk(md.k)) return json({ error: "datos" }, 400);
     const para = llaveOk(md.para) ? md.para : md.k;
     let e = null;
-    if (tipo === "nivel") e = await maq(para).entregar({ sid, tipo, nivel, monto, de: md.de });
+    const desc = Math.max(0, Math.min(0.6, Number(md.desc) || 0));
+    if (tipo === "nivel") { e = await maq(para).entregar({ sid, tipo, nivel, monto, de: md.de, desc: para === md.k ? desc : undefined }); if (e && e.nuevo && para === md.k) { try { await tabla().anotarCompra(desc); } catch {} } }
     else if (tipo === "mecenas") e = await maq(md.k).entregar({ sid, tipo, monto, de: md.de });
     else if (tipo === "fondo") { e = await maq(md.k).entregar({ sid, tipo, monto, de: md.de }); if (e && e.nuevo) await tabla().sumarFondo(Math.max(1, cantidad)); }
     if (!e) return json({ error: "maquina" }, 404);

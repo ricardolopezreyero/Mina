@@ -1316,6 +1316,21 @@ No se pudo ver el movimiento en vivo porque el navegador de pruebas está oculto
 
 **Probado** en local con una hoja de muestra (cinco maquinitas con combinaciones distintas) y en vuelo con las tres estelas. No cuesta cuadros: todo son trazos, sin sombras difuminadas.
 
+### 9.51 El motor de confort: el precio exacto de cada quien, sin cobrar nunca de más
+
+**Lo que pidió Ricardo.** Un motor dinámico que decida el precio exacto para cada persona leyéndolo todo (tiempo de uso, velocidad, pericia, los primeros tres experimentos y los tres siguientes), que calibre hasta un punto cómodo y que ese punto se mueva con la economía que percibimos de la gente.
+
+**La única regla fija: el motor solo baja.** Los precios de lista son públicos e iguales para todos; lo que cambia por persona es el descuento. Así nadie paga más que otro por lo mismo y la tienda puede decirlo con todas sus letras.
+
+**Cómo quedó.**
+- **Señales** (`senales` en `src/tienda.js`, de lo que la maquinita ya guarda): segundos jugados, récord de profundidad, dinero por segundo, días de vida, veces que abrió la tienda, compras y nivel.
+- **Decisión** (`motorConfort`): nivel sugerido (uno a tres arriba del suyo) y descuento. Seis experimentos de siete días cada uno: lista, −20 %, −40 % y luego −50 %, −60 %, −60 % si no compra; si compra, el siguiente tanteo es diez puntos menos. A quien lleva menos de veinte minutos no se le experimenta. Tras el sexto se queda en su punto cómodo (último descuento con el que compró, o −60 %).
+- **Economía percibida** (`Tabla.economia`): el promedio de descuento de las compras reales (con diez o más) menos diez puntos, entre 0 y 30 %, es el arranque de todos.
+- **Dónde vive:** `Maquina.oferta` abre, vence y cierra experimentos (`t.exp`), `entregar` cierra el abierto como «comprado» y guarda `t.confort`; `/api/tienda` devuelve `oferta`; `/pagar` aplica el descuento solo a compras propias (regalos y Fondo a lista) y lo manda en el metadato de Stripe; `/confirmar` lo anota en la tabla mundial.
+- **Lo que ve la persona:** «$2,000 de lista · 40 % menos, tu precio · vale hasta el 11 de octubre. Mina ajusta descuentos según cómo juega cada quien; nunca cobra más que el precio de lista».
+
+**Probado** con ocho pruebas unitarias del motor y, en el servidor local con ganchos de prueba, la secuencia completa: lista → 20 % → 40 %, compra con 40 % → siguiente 30 % y nivel 10, oferta estable entre aperturas y con vencimiento a siete días; la tienda muestra el precio tachado y el personal. En vivo, `/api/tienda` ya devuelve `oferta`. Falta lo de siempre: una compra real para cerrar el ciclo con Stripe.
+
 ## 10. Revisión de código del 2 de octubre
 
 Se revisó todo el código buscando fallas y se corrigieron estas:

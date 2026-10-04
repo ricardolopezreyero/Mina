@@ -90,6 +90,20 @@ Por qué estos precios: el primer escalón cuesta menos que un café para que na
 - **La cuenta de Stripe, por lo pronto, es la de SuperLeads** (la página de pago dice «SuperLeads»). Ricardo va a abrir una cuenta de Stripe de CapitalTorreon y entonces se cambia el binding (`wrangler.jsonc` → `secrets_store_secrets`) y se redespliega; no hay nada más que mover.
 - **La única llave** es `STRIPE_SECRET_KEY`, ligada desde la bóveda de la cuenta (Secrets Store). Sin la llave, la tienda deja probarse todo y dice «los pagos se abren pronto».
 
+## 6b. El motor de confort (pedido de Ricardo, 4 de octubre, tarde)
+
+Ricardo pidió un motor que decida el precio exacto para cada persona, leyéndolo todo (tiempo de uso, velocidad, pericia, cómo salieron sus primeros tres experimentos y los tres siguientes), que calibre hasta un punto cómodo para todos, y que ese punto se mueva con la economía real de la gente, no con nuestra opinión. Quedó construido con **una sola línea fija: el motor solo baja; nunca cobra más que el precio de lista.** Así, lo que cada quien paga es su precio exacto, los precios de lista siguen siendo públicos e iguales para todos, y nadie descubre que a él le cobraron más que a su amigo: como mucho, descubre que a su amigo le hicieron un descuento.
+
+**Qué lee (`senales`, en el servidor, de lo que la maquinita ya guarda):** segundos de juego real, récord de profundidad (pericia), dinero del juego por segundo (velocidad), días desde que nació, cuántas veces abrió la tienda, cuántas compras lleva y qué nivel tiene.
+
+**Qué decide (`motorConfort`):** un **nivel sugerido** (de uno a tres arriba del suyo, según dedicación, pericia y velocidad) y un **descuento** para esa persona.
+
+**Los seis experimentos:** cada oferta vale siete días o hasta que compra. Los tres primeros tantean: lista, −20 %, −40 % (más el arranque que diga la economía general). Si no compró, los tres siguientes afinan hacia abajo: −50 %, −60 %, −60 %. Si compró con cierto descuento, el siguiente tanteo es diez puntos menos (afina hacia arriba, despacio). A quien lleva menos de veinte minutos de juego no se le experimenta: lista y nada de prisa. Después del sexto, se queda en su **punto cómodo** (el último descuento con el que compró; si nunca compró, −60 %).
+
+**La economía que vamos percibiendo:** cada compra anota su descuento en la tabla mundial; con diez o más, el promedio menos diez puntos (entre 0 y 30 %) es el arranque de los experimentos de todos (`desc0`). Si la gente compra solo con rebaja, se arranca más abajo; si compra a lista, en cero. Nadie lo fija a mano.
+
+**Lo que ve la persona:** «$79 de lista · 40 % menos, tu precio · vale hasta el 11 de octubre. Mina ajusta descuentos según cómo juega cada quien; nunca cobra más que el precio de lista». Los regalos y el Fondo común van a lista. El tope de cuidado y las devoluciones siguen igual.
+
 ## 7. Lo que se mide (y lo que no)
 
 Se mide para cuidar, no para exprimir: cuántos abren la tienda, cuántos se prueban algo, cuántos compran, cuántos regalan, cuántas devoluciones, cuántas quejas. La meta no es «más conversión»: es que **nadie se sienta empujado** (cero quejas) y que quien compra lo haga contento (devoluciones casi en cero). Si un cambio sube la venta pero sube las quejas, se revierte.
