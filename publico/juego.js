@@ -1206,7 +1206,7 @@ function pasoCeremonia() {
     if (!soloVer) {                                            // de vuelta a la superficie, para empezar otra vez
       yo.x = ant.x = vis.x = INICIO_X; yo.y = ant.y = vis.y = INICIO_Y; yo.vx = yo.vy = 0; S.x = INICIO_X; S.y = INICIO_Y; sucio = true; enviarEst();
       camX = Math.max(0, Math.min(W - cols, yo.x - cols / 2)); camY = Math.max(-filas * 0.68, yo.y - filas * 0.5);
-      verJardin();
+      reinicioPend = true; verJardin();
       tarjeta('🌅 Volviste a empezar', 'El mundo quedó de pura tierra; los tesoros, los huesos y la colección siguen donde estaban. Cuando quieras que vuelva a haber mineral, la Remineralizadora.', 'msj', 20000, true);
     }
   }
@@ -1291,7 +1291,26 @@ function cuadroCine(ms) {
   const x = (A - c.width * sc) / 2 * aleja, y = yBaja * (1 - aleja) + (B - c.height * sc) / 2 * aleja;
   c.style.transform = `translate(${x.toFixed(1)}px,${y.toFixed(1)}px) scale(${sc.toFixed(5)})`;
 }
-function cerrarCine() { if (!cine) return; const d = cine.d; cine = null; d.classList.remove('on'); setTimeout(() => d.remove(), 600); }
+function cerrarCine() { if (!cine) return; const d = cine.d; cine = null; d.classList.remove('on'); setTimeout(() => d.remove(), 600); if (reinicioPend) { reinicioPend = false; pantallaReinicio(); } }
+// Al terminar el mundo: volver a arrancar. Un mundo nuevo, con la maquinita como está (sus mejoras, su dinero, sus objetos)
+// o desde cero (maquinita nueva: $20 y equipo de fábrica; se quedan los logros, el tiempo jugado y la colección del mundo).
+// También desde Menú → Mundo, mientras el mundo esté terminado.
+let reinicioPend = false;
+function pantallaReinicio() {
+  inicio(`<header><h2>🌅 Terminaste este mundo</h2></header><div class="cuerpo">
+    <p class="nota">Quedó de pura tierra; los tesoros, los huesos y la colección siguen ahí, y con la Remineralizadora vuelve a tener mineral. O arranca uno nuevo, desde arriba:</p>
+    <div class="fila"><div class="ic">🚀</div><div class="t"><b>Mundo nuevo con mis mejoras</b><small>Semilla nueva. Tu maquinita entra como está: ${fmt(S.d)}, su equipo y sus objetos.</small></div><button id="bConMejoras">Arrancar</button></div>
+    <div class="fila"><div class="ic">🌱</div><div class="t"><b>Mundo nuevo desde cero</b><small>Semilla nueva y maquinita de fábrica: $20, equipo básico, sin objetos. Se quedan tus logros y tu tiempo jugado.</small></div><button class="s" id="bDesdeCero">Arrancar</button></div>
+    <div class="fila"><div class="ic">🏡</div><div class="t"><b>Seguir en este mundo</b><small>Tal como está, en la superficie.</small></div><button class="s" id="bSeguir">Seguir</button></div></div>`);
+  $('#bConMejoras').onclick = () => nuevoMundoTras(false);
+  $('#bDesdeCero').onclick = () => { if (confirm('¿Empezar desde cero? Tu maquinita vuelve a $20 y equipo de fábrica; pierdes dinero, mejoras y objetos. Los logros y el tiempo jugado se quedan.')) nuevoMundoTras(true); };
+  $('#bSeguir').onclick = () => { cerrar(); };
+}
+function nuevoMundoTras(desdeCero) {
+  if (desdeCero) { const viejo = S; S = sanear(null); S.v = (viejo.v || 0) + 1; S.seg = viejo.seg || 0; S.log = viejo.log || []; S.fl = viejo.fl || {}; S.st = { ...S.st, ...viejo.st }; S.rec = viejo.rec || 0; S.rango = viejo.rango || 0; }
+  enviarEst(); guardarCopia();
+  crearMundo();
+}
 // Con el jardín completo, vive: pájaros que cruzan, pétalos que caen, luciérnagas entre las raíces, destellos en el lago y el sol girando despacio.
 function vidaEden(ox, oy, y0, y1) {
   const X = (x) => ox + x * T, Y = (y) => oy + (EDEN0 + y) * T, ve = (y) => EDEN0 + y >= y0 - 2 && EDEN0 + y <= y1 + 2;
@@ -4309,6 +4328,7 @@ const acciones = {
     return 'no';
   },
   mundos() { enviarEst(); guardarCopia(); location.href = '/?mundos'; },
+  reiniciar() { pantallaReinicio(); return 'no'; },
   salirCuenta() { salirCuenta(); return 'no'; },
   quitarP(v) { enviar({ t: 'quitar', i: +v }); const o = otros.get(+v); if (o) aviso('Le quitaste el permiso a ' + o.n + ': puede mirar y volver a pedirlo'); },
   devolverP(v) { enviar({ t: 'devolver', i: +v }); const o = otros.get(+v); if (o) aviso(o.n + ' vuelve a tener permiso'); },
@@ -4441,6 +4461,7 @@ function menuPrincipal() {
       <p class="nota"><b>Tu maquinita es tuya.</b> Entra contigo a cualquier mundo con todo lo que trae, y no se pierde aunque un mundo se borre. Para seguir con ella en otra computadora o en el teléfono, entra allá con tu cuenta de Google, o abre su liga o su código QR. <b>No los compartas:</b> quien los abra maneja tu maquinita.</p>
       <div class="fila"><div class="t"><small>Código: <code>${esc(miK)}</code></small></div><button class="s" data-a="menu" data-v="qrmaq">Ver su código QR</button><button data-a="ligaMaq">Copiar su liga</button></div>
       <div class="fila"><div class="t"><b>Guardar este mundo en un archivo</b><small>Semilla, reglas, todos los túneles y la colección. Desde «Mis mundos» puedes abrirlo cuando quieras como un mundo nuevo, idéntico.</small></div><button data-a="guardarArchivo">💾 Guardar archivo</button></div>
+      ${S.fl.edenF && S.fl.edenF[mundoId + '|' + remin] ? `<div class="fila"><div class="ic">🌅</div><div class="t"><b>Este mundo ya se terminó</b><small>Arranca uno nuevo desde arriba: con tus mejoras o desde cero.</small></div><button data-a="reiniciar">🔄 Volver a arrancar</button></div>` : ''}
       <div class="fila"><div class="t"></div><button class="s" data-a="mundos">Mis mundos · crear o cargar otro</button><button class="mal" data-a="desechar">Desechar este mundo</button></div>`;
   } else if (pestana === 10) {
     h += htmlTop();

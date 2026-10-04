@@ -1244,6 +1244,14 @@ No se pudo ver el movimiento en vivo porque el navegador de pruebas está oculto
 
 **Probado** con toques simulados: amarra arriba y abajo, se mantiene al soltar el dedo, un toque suelta, lo lento no amarra; con la física avanzada a mano, perfora sola 20 celdas y luego sube sola.
 
+### 9.45 Al terminar el mundo: volver a arrancar
+
+**Lo que pidió Ricardo.** Cuando ya terminaste el juego, un botón para volver a arrancar o reiniciar el mundo que te ponga arriba, con dos opciones: desde cero o manteniendo las mejoras.
+
+**Cómo quedó.** Al cerrar el jardín entero (después de la ceremonia) sale la pantalla «🌅 Terminaste este mundo» con tres caminos: **Mundo nuevo con mis mejoras** (semilla nueva; la maquinita entra como está: dinero, equipo y objetos), **Mundo nuevo desde cero** (semilla nueva y maquinita de fábrica: $20, equipo básico, sin objetos; se quedan logros, tiempo jugado, récord y estadísticas; pide confirmar) y **Seguir en este mundo**. Mientras el mundo esté terminado, la misma pantalla está en Menú → Mundo («🔄 Volver a arrancar»). El estado nuevo lleva la versión siguiente (`S.v + 1`) para que el servidor lo acepte. `pantallaReinicio`, `nuevoMundoTras(desdeCero)`, `reinicioPend`.
+
+**Probado** en local: desde cero deja $20, equipo 000000 y versión 559 (venía de 557), crea un mundo nuevo y pone la maquinita en la superficie; el tiempo jugado se conserva.
+
 ## 10. Revisión de código del 2 de octubre
 
 Se revisó todo el código buscando fallas y se corrigieron estas:
