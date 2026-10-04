@@ -1615,7 +1615,8 @@ function fisica(dt) {
   if (crucero) { if (yo.y < cruY - 0.01) { cruY = yo.y; cruT = 0; } else if ((cruT += dt) > 0.5) crucero = false; }
   if (crucero && (teclas.aba || yo.y <= TECHO + 1)) crucero = false;
   if (crucero && S.fuel / tanque() < 0.12) { crucero = false; tarjeta('Combustible bajo', yo.y < -25 ? 'Dejaste de subir sola. Déjate caer: allá arriba casi no se gasta.' : 'Dejaste de subir sola: queda poco combustible.'); }
-  const izq = teclas.izq, der = teclas.der, arr = teclas.arr || crucero, aba = teclas.aba;
+  if (amarreAba && (teclas.arr || yo.y >= H - 2 || S.fuel <= 0)) amarreAba = false;
+  const izq = teclas.izq, der = teclas.der, arr = teclas.arr || crucero, aba = teclas.aba || amarreAba;
   const caballos = hp(), pesoMax = caballos * 29.5, peso = 1980 + kgCarga();
   const alto = Math.max(0, -(yo.y + HH));        // celdas sobre el suelo
   const vmax = (5 + brio() / 30) * k * (agua ? 0.7 : 1);
@@ -2139,7 +2140,7 @@ function iniciarMundo(d, local) {
   document.body.classList.add('jugando');
   surtirContratos(); pintarHud(true); pintarTabla(); if (!local) ponerChat(d.chat); arrancar();
   { const f = new Date(), hoy = f.getDate() + '/' + (f.getMonth() + 1); if (primera && hoy === '11/7') tarjeta('⛏️ ¡Feliz Día del Minero!', 'Hoy, 11 de julio, México celebra a su gente de mina. Buen turno.', 'msj', 10000); if (primera && hoy === '4/12') tarjeta('🕯️ Día de Santa Bárbara', 'Hoy, 4 de diciembre, las minas festejan a su patrona.', 'msj', 10000); }
-  if (primera && !d.est) tarjeta('⛏️ Tu maquinita se llama ' + miNombre, (tactil ? 'Pon el dedo donde sea y arrástralo: abajo perfora, a los lados camina, arriba vuela. Las caídas no te lastiman. Con dos dedos acercas la vista.' : 'Usa las flechas para moverte.') + ' Primero: carga combustible en la Gasolinera (' + (tactil ? 'un toque' : '↓') + ' para entrar). El nombre se cambia en Menú → Mundo.', 'msj', 11000);
+  if (primera && !d.est) tarjeta('⛏️ Tu maquinita se llama ' + miNombre, (tactil ? 'Pon el dedo donde sea y arrástralo: abajo perfora, a los lados camina, arriba vuela. Dos empujones seguidos hacia arriba o hacia abajo y sigue sola. Las caídas no te lastiman. Con dos dedos acercas la vista.' : 'Usa las flechas para moverte.') + ' Primero: carga combustible en la Gasolinera (' + (tactil ? 'un toque' : '↓') + ' para entrar). El nombre se cambia en Menú → Mundo.', 'msj', 11000);
   if (primera) { const n = leer('mina_nota', ''); if (n) { try { localStorage.removeItem('mina_nota'); } catch {} aviso(n); } }
 }
 
@@ -3535,7 +3536,7 @@ function arrancar() {
   const id = ++cicloId; requestAnimationFrame((x) => (soloVer ? cicloVer : ciclo)(x, id));
   if (pistaDe === PAUSA) pistaDe = undefined;
 }
-function detener() { corriendo = false; for (const k in teclas) teclas[k] = false; sonarLazos(true); }
+function detener() { corriendo = false; for (const k in teclas) teclas[k] = false; amarreAba = false; sonarLazos(true); }
 
 const raton = { x: -1, y: -1, t: 0 };
 addEventListener('mousemove', (e) => { raton.x = e.clientX; raton.y = e.clientY; raton.t = performance.now(); });
@@ -3619,7 +3620,7 @@ function cadaTanto() {
   let e = null;
   if (yo.suelo && yo.y < 0) e = EDIF.find((b) => yo.x > b.x + 0.2 && yo.x < b.x + 2.8) || null;
   pistaDe = e;
-  pista(yo.frena ? 'Aterrizaje suave: frenando sola' : crucero ? (tactil ? 'Subiendo sola · ↓ o el botón para soltar' : 'Subiendo sola · barra espaciadora o ↓ para soltar') : yo.planea && yo.y < -40 ? '↓ caer en picada · ↑ frenar' : yo.picada ? 'En picada · suelta ↓ para planear' : teclas.arr && yo.vuela && !yo.suelo && !tactil ? 'Doble ↑ o barra espaciadora: seguir subiendo sin sostener la tecla' : vistaLibre ? 'Vista libre · ' + donde(camY + filas / 2) + (tactil ? ' · un dedo vuelve a tu maquinita' : ' · pulsa una flecha para volver a tu maquinita') : e ? (tactil ? 'Toca para entrar a ' : '↓  Entrar a ') + e.n + ' · ' + e.h.toLowerCase() : '', !e);      // solo la invitación a entrar a un edificio va destacada
+  pista(amarreAba ? 'Perforando sola hacia abajo · un toque la suelta' : yo.frena ? 'Aterrizaje suave: frenando sola' : crucero ? (tactil ? 'Subiendo sola · un toque la suelta' : 'Subiendo sola · barra espaciadora o ↓ para soltar') : yo.planea && yo.y < -40 ? '↓ caer en picada · ↑ frenar' : yo.picada ? 'En picada · suelta ↓ para planear' : teclas.arr && yo.vuela && !yo.suelo && !tactil ? 'Doble ↑ o barra espaciadora: seguir subiendo sin sostener la tecla' : vistaLibre ? 'Vista libre · ' + donde(camY + filas / 2) + (tactil ? ' · un dedo vuelve a tu maquinita' : ' · pulsa una flecha para volver a tu maquinita') : e ? (tactil ? 'Toca para entrar a ' : '↓  Entrar a ') + e.n + ' · ' + e.h.toLowerCase() : '', !e);      // solo la invitación a entrar a un edificio va destacada
   // los lugares: al entrar por primera vez se celebra y queda apuntado en El Elevador
   const lg = yo.y >= 165 ? lugarDe(Math.floor(yo.x), Math.floor(yo.y), true) : -1;
   if (lg >= 0 && !S.lug[lg]) {
@@ -4445,7 +4446,7 @@ function menuPrincipal() {
   } else if (pestana === 11) {
     h += MANIFIESTO;
   } else {
-    h += (tactil ? '<p><b>Con el dedo:</b> ponlo donde sea y arrástralo. Hacia abajo perfora, a los lados camina, hacia arriba vuela; al soltar se detiene. Un toque frente a un edificio entra. <b>Dos dedos</b> acercan o alejan la vista y la recorren. Las caídas no quitan casco (se encienden en Opciones → Golpes de caída) y la maquinita frena sola antes del piso (Aterrizaje suave). <b>⬆ Subir sola</b> la deja subiendo sin sostener el dedo.</p>' : '') +
+    h += (tactil ? '<p><b>Con el dedo:</b> ponlo donde sea y arrástralo. Hacia abajo perfora, a los lados camina, hacia arriba vuela; al soltar se detiene. Un toque frente a un edificio entra. <b>Dos dedos</b> acercan o alejan la vista y la recorren. Las caídas no quitan casco (se encienden en Opciones → Golpes de caída) y la maquinita frena sola antes del piso (Aterrizaje suave). <b>Dos empujones seguidos</b> hacia arriba y sube sola; dos hacia abajo y perfora sola hacia abajo (también con el botón <b>⬆ Subir sola</b>). Un toque en la pantalla la suelta.</p>' : '') +
       `<p><b>Moverte:</b> con las flechas. <b>↑</b> vuela. <b>↓</b> perfora hacia abajo. <b>← →</b> contra una pared, perfora de lado. Nunca se perfora hacia arriba.</p>
       <p><b>El ciclo:</b> baja, llena la bodega, sube, vende en La Báscula, carga combustible y mejora tu equipo en El Taller. En la superficie, párate frente a un edificio y pulsa ↓.</p>
       <p><b>Las teclas son la inicial de lo que hacen:</b> <b>R</b> Reserva · <b>N</b> Nanobots · <b>D</b> Dinamita · <b>P</b> Plástico · <b>Q</b> Cuántico · <b>T</b> Transmisor · <b>C</b> Chat · <b>S</b> Señal · <b>A</b> Ayudar · <b>G</b> Grúa · <b>M</b> Mapa · <b>Esc</b> Menú.</p>
@@ -4557,10 +4558,26 @@ addEventListener('blur', () => { for (const k in teclas) teclas[k] = false; });
 let tactil = matchMedia('(pointer: coarse)').matches, movil = false;
 // Celular: pantalla táctil y lado corto de hasta 820 px (teléfonos y tabletas chicas). Las tabletas grandes usan el tablero de computadora, con el dedo.
 function medirMovil() { movil = tactil && Math.min(innerWidth, innerHeight) <= 820; document.body.classList.toggle('movil', movil); document.body.classList.toggle('tactil', tactil); }
-const pal = $('#palanca'), dedo = { id: -1, x: 0, y: 0, t: 0, mov: false, eje: '' }, dedos = new Map();
+const pal = $('#palanca'), dedo = { id: -1, x: 0, y: 0, t: 0, mov: false, eje: '', fue: { arr: false, aba: false }, fin: { arr: -1e9, aba: -1e9 } }, dedos = new Map();
+// Amarrar: dos empujones seguidos hacia arriba (en menos de medio segundo) y la maquinita sube sola, como el doble ↑ del
+// teclado; dos hacia abajo y perfora sola hacia abajo. Un toque en la pantalla la suelta.
+let amarreAba = false;
+function amarrar(d) {
+  if (d === 'arr') { amarreAba = false; subirSola(); }
+  else { crucero = false; amarreAba = true; son.clic(); }
+  dedo.fin.arr = dedo.fin.aba = -1e9;
+}
+function vigilarAmarre() {
+  const ahora = performance.now();
+  for (const d of ['arr', 'aba']) {
+    if (teclas[d] && !dedo.fue[d] && ahora - dedo.fin[d] < 480) amarrar(d);
+    if (!teclas[d] && dedo.fue[d]) dedo.fin[d] = ahora;
+    dedo.fue[d] = teclas[d];
+  }
+}
 let pinza = null, lupaT = 0;
 addEventListener('pointerdown', () => nacer(), true);
-function soltarPalanca() { dedo.id = -1; dedo.eje = ''; pal.classList.remove('on'); teclas.izq = teclas.der = teclas.arr = teclas.aba = false; }
+function soltarPalanca() { dedo.id = -1; dedo.eje = ''; pal.classList.remove('on'); teclas.izq = teclas.der = teclas.arr = teclas.aba = false; vigilarAmarre(); }
 lienzo.addEventListener('pointerdown', (e) => {
   if (e.pointerType !== 'touch') return;
   if (!tactil) { tactil = true; aplicarOp(); } audio();
@@ -4575,6 +4592,7 @@ lienzo.addEventListener('pointerdown', (e) => {
   }
   if (dedos.size > 2 || soloVer) return;
   if (pausa) { pausa = false; pista(''); arrancar(); }
+  if (crucero || amarreAba) { crucero = false; amarreAba = false; dedo.fin.arr = dedo.fin.aba = -1e9; }      // un toque suelta lo amarrado
   dedo.id = e.pointerId; dedo.x = e.clientX; dedo.y = e.clientY; dedo.t = performance.now(); dedo.mov = false; dedo.eje = ''; vistaLibre = false;
   pal.style.left = e.clientX + 'px'; pal.style.top = e.clientY + 'px'; pal.firstChild.style.transform = ''; pal.classList.add('on');
 });
@@ -4599,6 +4617,7 @@ lienzo.addEventListener('pointermove', (e) => {
   else if (dedo.eje === 'y' && ax > ay * 1.35) dedo.eje = 'x';
   const x = dedo.eje === 'x', y = dedo.eje === 'y', vuelo = y && dy < 0 && ax > ay * 0.5;
   teclas.izq = (x || vuelo) && dx < 0; teclas.der = (x || vuelo) && dx > 0; teclas.arr = y && dy < 0; teclas.aba = y && dy > 0;
+  vigilarAmarre();
 });
 const soltarDedo = (e) => {
   dedos.delete(e.pointerId);

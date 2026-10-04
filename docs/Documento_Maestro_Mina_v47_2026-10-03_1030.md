@@ -1236,6 +1236,14 @@ No se pudo ver el movimiento en vivo porque el navegador de pruebas está oculto
 
 **Probado** (física avanzada a mano, caída de 40 celdas): Automático con el dedo 0 de daño; Siempre 7; Nunca 0; con aterrizaje suave 0.
 
+### 9.44 Amarrar con el dedo: dos empujones y sigue sola
+
+**Lo que pidió Ricardo.** Traer al celular lo de la computadora: dar dos o tres veces hacia arriba y que quede «amarrada» subiendo; y lo mismo hacia abajo.
+
+**Cómo quedó.** Dos empujones seguidos de la palanca en la misma dirección vertical (el segundo en menos de medio segundo después de soltar el primero, ya sea regresando al centro o levantando el dedo) amarran: hacia arriba sube sola (el mismo crucero del doble ↑ del teclado, que se detiene solo al topar techo o con poco combustible); hacia abajo perfora sola hacia abajo (`amarreAba`), hasta que se toca la pantalla, se empuja hacia arriba, se acaba el combustible o se llega al fondo. **Un toque en la pantalla suelta cualquiera de los dos.** Lo amarrado se suelta también al abrir un menú. La pista de abajo lo dice («Subiendo sola · un toque la suelta», «Perforando sola hacia abajo · un toque la suelta»). Un empujón lento (más de medio segundo entre uno y otro) no amarra. El botón «⬆ Subir sola» sigue ahí. `vigilarAmarre()`, `amarrar(d)`.
+
+**Probado** con toques simulados: amarra arriba y abajo, se mantiene al soltar el dedo, un toque suelta, lo lento no amarra; con la física avanzada a mano, perfora sola 20 celdas y luego sube sola.
+
 ## 10. Revisión de código del 2 de octubre
 
 Se revisó todo el código buscando fallas y se corrigieron estas:
