@@ -262,7 +262,7 @@ export class Maquina extends DurableObject {
     const m = await this.ctx.storage.get("m");
     if (!m) return null;
     const e = m.est || {};
-    return { n: m.n, m: m.mo || 0, tot: Number.isFinite(e.tot) ? Math.floor(e.tot) : 0, rec: entero(e.rec, 0, H * 2, 0), seg: entero(e.seg, 0, 4e9, 0) };
+    return { n: m.n, m: m.mo || 0, tot: Number.isFinite(e.tot) ? Math.floor(e.tot) : 0, rec: entero(e.rec, 0, H * 2, 0), seg: entero(e.seg, 0, 4e9, 0), mundo: m.mundo || "", nv: (m.tienda && m.tienda.nivel) || 0, saldo: m.saldo || 0, vista: m.vista || 0 };
   }
 
   // Rebautizar: el nombre y el modelo son de la maquinita, no del mundo.
@@ -294,6 +294,7 @@ const MUNDOS_CUENTA = 500, SESIONES = 20;
 const hex = (u) => [...u].map((b) => b.toString(16).padStart(2, "0")).join("");
 const sha = async (s) => hex(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode("mina-ses:" + s)))).slice(0, 40);
 const llaveOk = (k) => typeof k === "string" && /^[0-9a-zA-Z]{16,64}$/.test(k);
+const esMia = (c, k) => !!c && !!k && (c.k === k || (Array.isArray(c.maqs) && c.maqs.some((x) => x.k === k)));      // una maquinita del garaje de la cuenta
 const idOk = (id) => typeof id === "string" && /^[2-9A-HJ-NP-Z]{8}$/.test(id);
 export class Cuenta extends DurableObject {
   // Junta lo que trae este equipo con lo guardado: de cada mundo gana lo más reciente, y uno desechado no revive
@@ -314,7 +315,16 @@ export class Cuenta extends DurableObject {
     c.duenos = c.duenos || {};
     for (const [id, d] of Object.entries(duenos && typeof duenos === "object" ? duenos : {}).slice(0, MUNDOS_CUENTA)) if (idOk(id) && /^[0-9a-f]{32}$/.test(d)) c.duenos[id] = d;
   }
-  vista(c) { return { k: c.k, email: c.email, nombre: c.nombre, foto: c.foto, mundos: c.mundos, duenos: c.duenos }; }
+  // El garaje: todas las maquinitas de la cuenta. `k` es la que se usó por última vez (la que toma un equipo nuevo).
+  garajeDe(c) { if (!Array.isArray(c.maqs)) c.maqs = c.k ? [{ k: c.k, h: c.alta || Date.now() }] : []; return c.maqs; }
+  meter(c, k) { const g = this.garajeDe(c); if (llaveOk(k) && !g.some((x) => x.k === k) && g.length < 50) g.push({ k, h: Date.now() }); }
+  vista(c) { return { k: c.k, maqs: this.garajeDe(c).map((x) => x.k), email: c.email, nombre: c.nombre, foto: c.foto, mundos: c.mundos, duenos: c.duenos }; }
+  // El garaje con sus fichas: nombre, modelo, dinero, récord, tiempo, nivel de pintura y en qué mundo anda cada maquinita.
+  async garaje(t) {
+    const c = await this.sesion(t); if (!c) return null;
+    const g = this.garajeDe(c), fichas = await Promise.all(g.map(async (x) => { try { const r = await this.env.MAQUINA.get(this.env.MAQUINA.idFromName(x.k)).resumen(); return { k: x.k, h: x.h, ...(r || { n: "", m: 0, tot: 0, rec: 0, seg: 0, vacia: 1 }) }; } catch { return { k: x.k, h: x.h, n: "", m: 0, tot: 0, rec: 0, seg: 0 }; } }));
+    return { k: c.k, maqs: fichas };
+  }
   async sesion(t) {
     const c = await this.ctx.storage.get("c");
     return c && t && (c.ses || []).includes(await sha(t)) ? c : null;
@@ -325,6 +335,8 @@ export class Cuenta extends DurableObject {
     const nueva = !c;
     if (!c) c = { sub: g.sub, k: "", mundos: [], duenos: {}, fuera: {}, ses: [], alta: Date.now() };
     if (!c.k && llaveOk(d.k)) c.k = d.k;
+    this.garajeDe(c); if (nueva) this.meter(c, d.k);
+    for (const k of Array.isArray(d.garaje) ? d.garaje.slice(0, 50) : []) if (nueva || k === c.k) this.meter(c, k);
     c.email = g.email; c.nombre = g.nombre; c.foto = g.foto; c.visto = Date.now();
     this.juntar(c, d.mundos, d.duenos, d.quitar);
     const t = hex(crypto.getRandomValues(new Uint8Array(24)));
@@ -336,14 +348,20 @@ export class Cuenta extends DurableObject {
     const c = await this.sesion(t);
     if (!c) return null;
     this.juntar(c, d.mundos, d.duenos, d.quitar); c.visto = Date.now();
+    for (const k of Array.isArray(d.garaje) ? d.garaje.slice(0, 50) : []) this.meter(c, k);      // las maquinitas que este equipo ya tenía en su garaje
     await this.ctx.storage.put("c", c);
     return this.vista(c);
   }
-  // La única maquinita de la cuenta pasa a ser otra (la de este equipo, si así lo eligió quien entró).
-  async maquina(t, k) {
+  // El garaje cambia: «usar» (pasa a ser la de ahora, y entra al garaje si no estaba), «agregar» (entra sin cambiar la de
+  // ahora), «nueva» (una recién creada), «quitar» (sale del garaje; nunca la última).
+  async maquina(t, k, accion) {
     const c = await this.sesion(t);
     if (!c || !llaveOk(k)) return null;
-    c.k = k; c.visto = Date.now();
+    const g = this.garajeDe(c);
+    if (accion === "quitar") { if (g.length <= 1) return { ...this.vista(c), error: "ultima" }; c.maqs = g.filter((x) => x.k !== k); if (c.k === k) c.k = c.maqs[0].k; }
+    else if (accion === "agregar") this.meter(c, k);
+    else { this.meter(c, k); c.k = k; }
+    c.visto = Date.now();
     await this.ctx.storage.put("c", c);
     return this.vista(c);
   }
@@ -413,7 +431,8 @@ async function cuentaApi(u, request, env) {
   if (punto < 1 || !/^[0-9A-Za-z]{1,40}$/.test(sub) || !/^[0-9a-f]{48}$/.test(t)) return json({ error: "sesion" }, 401);
   const c = cuenta(sub);
   if (u.pathname === "/api/cuenta/sync") { const r = await c.sync(t, d); return r ? json(r) : json({ error: "sesion" }, 401); }
-  if (u.pathname === "/api/cuenta/maquina") { const r = await c.maquina(t, d.k); if (!r) return json({ error: "sesion" }, 401); r.maq = await resumen(r.k); return json(r); }
+  if (u.pathname === "/api/cuenta/maquina") { const r = await c.maquina(t, d.k, ["usar", "agregar", "nueva", "quitar"].includes(d.accion) ? d.accion : "usar"); if (!r) return json({ error: "sesion" }, 401); r.maq = await resumen(r.k); return json(r); }
+  if (u.pathname === "/api/cuenta/garaje") { const r = await c.garaje(t); return r ? json(r) : json({ error: "sesion" }, 401); }
   if (u.pathname === "/api/cuenta/salir") { await c.salir(t); return json({ ok: 1 }); }
   return json({ error: "no" }, 404);
 }
@@ -446,7 +465,7 @@ async function tiendaApi(u, request, env) {
     const ses = String(d.ses || ""), punto = ses.lastIndexOf("."), sub = ses.slice(0, punto), tk = ses.slice(punto + 1);
     if (punto > 0 && /^[0-9A-Za-z]{1,40}$/.test(sub) && /^[0-9a-f]{48}$/.test(tk)) {
       const c = await env.CUENTA.get(env.CUENTA.idFromName("g:" + sub)).sesion(tk);
-      if (c && c.k === d.k && c.email) { try { await tabla().ponerCumple(d.k, md ? { md, correo: c.email, nombre: c.nombre || "", mundo: /^[2-9A-HJ-NP-Z]{8}$/.test(String(d.mundo || "")) ? d.mundo : "" } : null); correo = md ? 1 : 0; } catch {} }
+      if (c && esMia(c, d.k) && c.email) { try { await tabla().ponerCumple(d.k, md ? { md, correo: c.email, nombre: c.nombre || "", mundo: /^[2-9A-HJ-NP-Z]{8}$/.test(String(d.mundo || "")) ? d.mundo : "" } : null); correo = md ? 1 : 0; } catch {} }
     }
     return json({ ok: 1, cumple: r.cumple, p: r.p, correo });
   }
@@ -464,7 +483,7 @@ async function tiendaApi(u, request, env) {
     const ses = String(d.ses || ""), punto = ses.lastIndexOf("."), sub = ses.slice(0, punto), tk = ses.slice(punto + 1);
     if (punto < 1 || !/^[0-9A-Za-z]{1,40}$/.test(sub) || !/^[0-9a-f]{48}$/.test(tk)) return json({ error: "cuenta" }, 401);
     const c = await env.CUENTA.get(env.CUENTA.idFromName("g:" + sub)).sesion(tk);
-    if (!c || !llaveOk(d.k) || c.k !== d.k) return json({ error: "cuenta" }, 401);
+    if (!c || !llaveOk(d.k) || !esMia(c, d.k)) return json({ error: "cuenta" }, 401);
     let volver = u.origin + "/"; try { const x = new URL(String(d.volver || ""), u.origin); if (x.origin === u.origin) volver = x.origin + x.pathname; } catch {}
     const tipo = d.tipo === "mecenas" ? "mecenas" : d.tipo === "fondo" ? "fondo" : "nivel";
     let monto = 0, nombre = "", para = d.k, nivel = 0, cantidad = 1, desc = 0, ajuste = 0, momentoTx = "", motivo = "";

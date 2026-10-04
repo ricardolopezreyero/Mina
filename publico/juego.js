@@ -4849,6 +4849,7 @@ const acciones = {
     return 'no';
   },
   mundos() { enviarEst(); guardarCopia(); location.href = '/?mundos'; },
+  garaje() { pantallaGaraje('juego'); return 'no'; },
   reiniciar() { pantallaReinicio(); return 'no'; },
   tRango(v) { op.rango = +v; escribir('mina_op', op); tienda.nivelVista = nivelPorRango(); },
   tNivel(v) { tienda.nivelVista = +v; },
@@ -4999,7 +5000,7 @@ function menuPrincipal() {
         <small>Objetos: ${OBJ.map((o, i) => S.obj[i] ? CORTO[i] + ' ×' + S.obj[i] : '').filter(Boolean).join(' · ') || 'ninguno'}</small></div></div>
       <label class="op"><span>Nombre de tu maquinita</span><input data-a="nombreMaq" maxlength="14" value="${esc(miNombre)}" autocomplete="off"></label>
       <div class="maqs" id="modelos">${MODELOS.map((m, i) => `<button class="${i === miModelo ? 'on' : ''}" data-a="modeloMaq" data-v="${i}" title="Cambiar a este modelo"><canvas width="112" height="112"></canvas></button>`).join('')}</div>
-      <details><summary class="nota">Ya tengo una maquinita en otro equipo y quiero usarla aquí</summary><p><input id="cod" placeholder="Pega aquí el código de tu maquinita" style="width:70%"> <button class="s" data-a="usarCodigo">Usar código</button></p></details>
+      <div class="fila"><div class="ic">🚜</div><div class="t"><b>Mi garaje${garaje.length > 1 ? ' · ' + garaje.length + ' maquinitas' : ''}</b><small>Cambiar de maquinita, crear otra o traer una de otro equipo. Cada una con lo suyo; todas entran a cualquier mundo.</small></div><button data-a="garaje">Abrir el garaje</button></div>
       <p class="nota"><b>Tu maquinita es tuya.</b> Entra contigo a cualquier mundo con todo lo que trae, y no se pierde aunque un mundo se borre. Para seguir con ella en otra computadora o en el teléfono, entra allá con tu cuenta de Google, o abre su liga o su código QR. <b>No los compartas:</b> quien los abra maneja tu maquinita.</p>
       <div class="fila"><div class="t"><small>Código: <code>${esc(miK)}</code></small></div><button class="s" data-a="menu" data-v="qrmaq">Ver su código QR</button><button data-a="ligaMaq">Copiar su liga</button></div>
       <div class="fila"><div class="ic">🎨</div><div class="t"><b>Pintar mi maquinita</b><small>La Pinturería: colores, calcomanías, luces, estela, claxon, mascota… Se juega completo gratis; esto es solo para que se vea como tú.</small></div><button data-a="menu" data-v="pin">Abrir</button></div>
@@ -5218,9 +5219,55 @@ function pasarCombustible() {
 
 /* ════════ Mis mundos, bautizo y arranque ════════ RLR */
 let mundos = leer('mina_mundos', []), latido = 0, maqLocal = leer('mina_maq', null);
+/* ════════ El garaje: varias maquinitas por persona ════════ RLR */
+// Cada equipo guarda su garaje (las maquinitas que ha usado o creado aquí); con cuenta, el garaje de la cuenta es la verdad
+// y este se le suma. Una maquinita es una llave: su estado vive en el servidor y entra contigo a cualquier mundo.
+let garaje = leer('mina_garaje', []).filter((x) => x && /^[0-9a-zA-Z]{16,64}$/.test(x.k));
+function anotarGaraje(k, n, m) { if (!k) return; const x = garaje.find((g) => g.k === k); if (x) { if (n) x.n = n; if (m !== undefined) x.m = m | 0; } else garaje.push({ k, n: n || '', m: m | 0, h: Date.now() }); escribir('mina_garaje', garaje); }
+function quitarDelGaraje(k) { garaje = garaje.filter((g) => g.k !== k); escribir('mina_garaje', garaje); }
+// Cambiar de maquinita: lo de la actual se manda al mundo, este equipo se queda con la otra y se vuelve a entrar.
+async function cambiarMaquina(k, n, m) {
+  if (listo && !soloVer) { enviarEst(); guardarCopia(); }
+  anotarGaraje(k, n, m); maqLocal = { k, n: n || '', m: m | 0 }; escribir('mina_maq', maqLocal);
+  try { localStorage.removeItem('mina_est'); localStorage.removeItem('mina_maq_antes'); } catch {}
+  if (cuenta) { try { await fetch('/api/cuenta/maquina', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ses: cuenta.ses, k, accion: 'usar' }) }); } catch {} cuenta = { ...cuenta, k, n: n || '', m: m | 0 }; guardarCuenta(); }
+  escribir('mina_nota', 'Ahora juegas con ' + (n || 'tu otra maquinita') + '.');
+  location.href = mundoId ? '/' + mundoId : '/?mundos';
+}
+async function pantallaGaraje(desde) {
+  const volver = () => { if (desde === 'juego') { menu = null; $('#velo').classList.remove('on', 'inicio'); arrancar(); ultPos = ''; enviarPos(); } else pantallaMundos(); };
+  inicio(`<header><h2>🚜 Mi garaje</h2><button class="s" id="bVolverG">${desde === 'juego' ? 'Volver al juego' : 'Volver'}</button></header><div class="cuerpo"><p class="nota">Cargando tus maquinitas…</p></div>`);
+  $('#bVolverG').onclick = volver;
+  // la lista: la de la cuenta (con sus fichas) más la de este equipo
+  let lista = garaje.map((g) => ({ ...g, local: 1 })), activa = (maqLocal && maqLocal.k) || miK;
+  if (cuenta) { try { const r = await fetch('/api/cuenta/garaje', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ses: cuenta.ses }) }), d = await r.json(); if (Array.isArray(d.maqs)) { const l = new Map(lista.map((x) => [x.k, x])); for (const x of d.maqs) l.set(x.k, { ...(l.get(x.k) || {}), ...x, cuenta: 1 }); lista = [...l.values()]; cuenta.maqs = d.maqs.map((x) => x.k); guardarCuenta(); } } catch {} }
+  if (menu !== 'inicio') return;
+  const ficha = (x) => { const enUso = x.k === activa, mundoDe = x.mundo ? mundos.find((w) => w.id === x.mundo) : null; return `<div class="fila" data-k="${x.k}"><div class="ic"><canvas width="56" height="56" data-m="${x.m | 0}"></canvas></div><div class="t"><b>${esc(x.n || (maqLocal && maqLocal.k === x.k && maqLocal.n) || 'Maquinita')}${enUso ? ' <span style="color:var(--ok)">· en uso</span>' : ''}${x.cuenta || !cuenta ? '' : ' <small style="color:var(--su)">· solo en este equipo</small>'}</b><small>${x.seg !== undefined ? `${fmt(x.tot || 0)} ganados · récord ${num(x.rec || 0)} m · ⏱ ${tiempoLargo(x.seg || 0)}${x.nv ? ' · pintura nivel ' + x.nv : ''}${x.saldo ? ' · saldo ' + pesos(x.saldo) : ''}` : 'Sin datos todavía'}${x.mundo ? ' · en ' + esc(mundoDe ? mundoDe.nombre : x.mundo) : ''}</small></div>${enUso ? '' : `<button data-usar="${x.k}">Jugar con esta</button>`}${enUso || lista.length < 2 ? '' : `<button class="s mal" data-quitar="${x.k}">Quitar</button>`}</div>`; };
+  const b = nombreNuevo();
+  $('#caja').innerHTML = `<header><h2>🚜 Mi garaje · ${lista.length} ${lista.length === 1 ? 'maquinita' : 'maquinitas'}</h2><button class="s" id="bVolverG">${desde === 'juego' ? 'Volver al juego' : 'Volver'}</button></header><div class="cuerpo">
+    <p class="nota">Puedes tener las maquinitas que quieras: cada una con su dinero, su equipo, sus récords y su pintura. Entran contigo a cualquier mundo, y en un mismo mundo puedes jugar con la que prefieras.${cuenta ? ' Todas quedan guardadas en tu cuenta.' : ' <b>Sin cuenta viven solo en este equipo:</b> entra con Google (abajo) para que se guarden.'}</p>
+    ${lista.sort((x, y) => (x.k === activa ? -1 : y.k === activa ? 1 : (y.h || 0) - (x.h || 0))).map(ficha).join('')}
+    <h4>＋ Nueva maquinita</h4><p class="nota">Empieza de fábrica: $20, equipo básico, sin objetos. La que usas ahora se queda tal cual, esperándote.</p>
+    <label class="op"><span>Nombre</span><input id="gNombre" maxlength="14" value="${esc(b.n)}" autocomplete="off"></label>
+    <div class="maqs" id="gModelos">${MODELOS.map((m, i) => `<button class="${i === b.m ? 'on' : ''}" data-gm="${i}" title="Este modelo"><canvas width="112" height="112"></canvas></button>`).join('')}</div>
+    <p><button id="gCrear">Crear y jugar con ella</button></p>
+    <details><summary class="nota">Traer una maquinita por su código (de otro equipo)</summary><p><input id="gCod" placeholder="Pega aquí el código de la maquinita" style="width:70%"> <button class="s" id="gUsarCod">Traerla</button></p><p class="nota">El código está en Menú → Mundo → Mi maquinita, en el otro equipo. Quien tenga el código maneja esa maquinita: no lo compartas.</p></details>
+    ${cuenta ? '' : htmlCuenta()}</div>`;
+  $('#bVolverG').onclick = volver;
+  $('#caja').querySelectorAll('canvas[data-m]').forEach((x) => dibMaq(x.getContext('2d'), 28, 31, 50, +x.dataset.m, 1, false, 0, '', ''));
+  $('#caja').querySelectorAll('#gModelos canvas').forEach((x, i) => dibMaq(x.getContext('2d'), 56, 60, 100, i, 1, false, 0, '', ''));
+  let modelo = b.m;
+  $('#caja').querySelectorAll('[data-gm]').forEach((bt) => (bt.onclick = () => { modelo = +bt.dataset.gm; $('#caja').querySelectorAll('[data-gm]').forEach((o) => o.classList.toggle('on', o === bt)); audio(); }));
+  $('#caja').querySelectorAll('[data-usar]').forEach((bt) => (bt.onclick = () => { const x = lista.find((y) => y.k === bt.dataset.usar); bt.disabled = true; cambiarMaquina(x.k, x.n, x.m); }));
+  $('#caja').querySelectorAll('[data-quitar]').forEach((bt) => (bt.onclick = async () => { const x = lista.find((y) => y.k === bt.dataset.quitar); if (!confirm(`¿Quitar a ${x.n || 'esta maquinita'} del garaje?\n\nNo se borra: su código la trae de vuelta. Pero si lo pierdes, se pierde con todo lo que trae.`)) return; quitarDelGaraje(x.k); if (cuenta) { try { await fetch('/api/cuenta/maquina', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ses: cuenta.ses, k: x.k, accion: 'quitar' }) }); } catch {} } pantallaGaraje(desde); }));
+  $('#gCrear').onclick = async () => { const n = ($('#gNombre').value || '').trim(); if (n.length < 2) { aviso('Ponle un nombre de al menos dos letras.'); return; } $('#gCrear').disabled = true; const k = llave(); if (cuenta) { try { await fetch('/api/cuenta/maquina', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ses: cuenta.ses, k, accion: 'nueva' }) }); } catch {} } cambiarMaquina(k, n, modelo); };
+  $('#gUsarCod').onclick = () => { const c = ($('#gCod').value || '').trim(); if (!/^[0-9a-zA-Z]{16,64}$/.test(c)) { aviso('Ese código no tiene la forma de una maquinita.'); return; } if (c === activa) { aviso('Esa es la que ya usas.'); return; } cambiarMaquina(c, '', 0); };
+  if ($('#gBoton')) botonGoogle($('#gBoton'));
+  const lc = $('#caja [data-login-ct]'); if (lc && window.LoginCT) LoginCT.montar(lc);
+}
 function guardarMundo() {
   if (soloVer || !mundoId) return;
-  maqLocal = { k: miK, n: miNombre, m: miModelo }; escribir('mina_maq', maqLocal);      // la maquinita de este navegador: la misma en todos los mundos
+  maqLocal = { k: miK, n: miNombre, m: miModelo }; escribir('mina_maq', maqLocal); anotarGaraje(miK, miNombre, miModelo);      // la maquinita de este navegador: la misma en todos los mundos, y en el garaje
   mundos = mundos.filter((m) => m.id !== mundoId);
   mundos.unshift({ id: mundoId, k: miK, nombre: cfg.nombre || 'Mundo ' + mundoId, maq: miNombre, modelo: miModelo, creador: soyCreador ? 1 : 0, ult: Date.now() });
   escribir('mina_mundos', mundos); subirCuentaLuego();
@@ -5236,7 +5283,7 @@ function quitarMundo(id) {
 // se carga solo cuando se va a usar: el inicio sigue siendo jugar al instante.
 let cuenta = leer('mina_cuenta', null), quitarPend = leer('mina_quitar', []), subirCuentaT = 0, gsi = null, avisoOtraMaq = false;
 const guardarCuenta = () => escribir('mina_cuenta', cuenta);
-const datosCuenta = () => ({ mundos: mundos.map((m) => ({ id: m.id, nombre: m.nombre, maq: m.maq, modelo: m.modelo, creador: m.creador, ult: m.ult })), duenos, quitar: quitarPend });
+const datosCuenta = () => ({ mundos: mundos.map((m) => ({ id: m.id, nombre: m.nombre, maq: m.maq, modelo: m.modelo, creador: m.creador, ult: m.ult })), duenos, quitar: quitarPend, garaje: garaje.map((g) => g.k) });
 function subirCuentaLuego() { if (!cuenta) return; clearTimeout(subirCuentaT); subirCuentaT = setTimeout(subirCuenta, 2500); }
 async function subirCuenta() {
   if (!cuenta) return;
@@ -5258,8 +5305,8 @@ function deCuenta(d, enviado) {
   mundos = [...l.values()].sort((a, b) => b.ult - a.ult); escribir('mina_mundos', mundos);
   if (d.duenos) { Object.assign(duenos, d.duenos); escribir('mina_duenos', duenos); }
   if (cuenta) {
-    cuenta = { ...cuenta, email: d.email || cuenta.email, nombre: d.nombre || cuenta.nombre, foto: d.foto || cuenta.foto, k: d.k || cuenta.k }; guardarCuenta();
-    if (cuenta.k && miK && cuenta.k !== miK && listo && !soloVer && !avisoOtraMaq) { avisoOtraMaq = true; tarjeta('Tu cuenta cambió de maquinita', 'La próxima vez que abras Mina entras con la de tu cuenta.', 'msj', 7000); }
+    cuenta = { ...cuenta, email: d.email || cuenta.email, nombre: d.nombre || cuenta.nombre, foto: d.foto || cuenta.foto, k: d.k || cuenta.k, ...(Array.isArray(d.maqs) ? { maqs: d.maqs } : {}) }; guardarCuenta();
+    for (const k of cuenta.maqs || []) if (!garaje.some((g) => g.k === k)) anotarGaraje(k);      // las maquinitas de la cuenta también están en el garaje de este equipo
   }
 }
 // Entrar: todo CapitalTorreon entra por login.capitaltorreon.com (un solo login para todos los servicios). Se va allá con la
@@ -5292,9 +5339,9 @@ async function alEntrarGoogle(resp) {
     const r = await fetch('/api/cuenta/google', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ credential: resp && resp.credential, k, n: miNombre, m: miModelo, ...datosCuenta() }) });
     const d = await r.json(); if (!r.ok || !d.ses) throw 0;
     quitarPend = []; escribir('mina_quitar', quitarPend);
-    cuenta = { ses: d.ses, email: d.email, nombre: d.nombre, foto: d.foto, k: d.k, n: (d.maq && d.maq.n) || '', m: (d.maq && d.maq.m) | 0 }; guardarCuenta();
+    cuenta = { ses: d.ses, email: d.email, nombre: d.nombre, foto: d.foto, k: d.k, maqs: d.maqs || [], n: (d.maq && d.maq.n) || '', m: (d.maq && d.maq.m) | 0 }; guardarCuenta();
     deCuenta(d, Date.now());
-    if (!d.k || d.k === k) {
+    if (!d.k || d.k === k || (d.maqs || []).includes(k)) {
       son.logro(); tarjeta('💾 Listo: todo queda guardado en tu cuenta', (d.email || '') + ' · tu maquinita y tus mundos, en cualquier equipo.', 'msj', 7000);
       if (menu === 'menu') pintarMenu(); else if (menu === 'inicio' && location.search.includes('mundos')) pantallaMundos();
       return;
@@ -5317,16 +5364,16 @@ function elegirMaquina(d, k) {
   const sub = (x) => `${fmt(x.tot || 0)} ganados · récord ${num(x.rec || 0)} m · ⏱ ${tiempoLargo(x.seg || 0)}`;
   if (listo && !soloVer) { enviarEst(); guardarCopia(); }
   inicio(`<header><h2>💾 ¿Con cuál maquinita sigues?</h2></header><div class="cuerpo">
-    <p class="nota">Tu cuenta ya tiene su maquinita y en este equipo traes otra. Cada cuenta lleva una sola: la que no elijas se queda fuera de tu cuenta.</p>
+    <p class="nota">Tu cuenta ya tiene su maquinita y en este equipo traes otra. <b>Las dos se quedan en tu garaje</b>; elige con cuál sigues ahora (cambias cuando quieras en Mi garaje).</p>
     <div class="fila"><div class="ic">⭐</div><div class="t"><b>${esc(a.n)}</b><small>La de tu cuenta · ${sub(a)}</small></div><button id="bCuenta">Seguir con esta</button></div>
-    <div class="fila"><div class="ic">⛏️</div><div class="t"><b>${esc(b.n)}</b><small>La de este equipo · ${sub(b)}</small></div><button class="s" id="bAqui">Quedarme con esta</button></div></div>`);
-  $('#bCuenta').onclick = () => usarMaquinaCuenta(d);
+    <div class="fila"><div class="ic">⛏️</div><div class="t"><b>${esc(b.n)}</b><small>La de este equipo · ${sub(b)}</small></div><button class="s" id="bAqui">Seguir con esta</button></div></div>`);
+  $('#bCuenta').onclick = async (e) => { e.target.disabled = true; try { await fetch('/api/cuenta/maquina', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ses: cuenta.ses, k, accion: 'agregar' }) }); } catch {} anotarGaraje(k, b.n, b.m); anotarGaraje(d.k, a.n, a.m); usarMaquinaCuenta(d); };
   $('#bAqui').onclick = async (e) => {
     e.target.disabled = true;
     try {
-      const r = await fetch('/api/cuenta/maquina', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ses: cuenta.ses, k }) }), x = await r.json();
+      const r = await fetch('/api/cuenta/maquina', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ses: cuenta.ses, k, accion: 'usar' }) }), x = await r.json();
       if (!r.ok || x.k !== k) throw 0;
-      cuenta = { ...cuenta, k, n: b.n, m: b.m | 0 }; guardarCuenta();
+      anotarGaraje(k, b.n, b.m); anotarGaraje(d.k, a.n, a.m); cuenta = { ...cuenta, k, maqs: x.maqs || cuenta.maqs, n: b.n, m: b.m | 0 }; guardarCuenta();
       escribir('mina_nota', 'Listo: ' + b.n + ' es la maquinita de tu cuenta.'); location.reload();
     } catch { e.target.disabled = false; tarjeta('No se pudo guardar', 'Se fue la conexión. Inténtalo otra vez.', 'msj', 5000); }
   };
@@ -5403,11 +5450,11 @@ function pantallaFinal(t, x) {
 function pantallaMundos() {
   const nota = leer('mina_nota', ''); if (nota) { try { localStorage.removeItem('mina_nota'); } catch {} }
   inicio(`<header><h2>⛏️ Mina · Mis mundos</h2></header><div class="cuerpo">` + (nota ? `<p class="nota" style="color:var(--ac)"><b>${esc(nota)}</b></p>` : '') + htmlCuenta() +
-    (maqLocal && maqLocal.n ? `<p class="nota">Tu maquinita <b>${esc(maqLocal.n)}</b> entra contigo al mundo que elijas, con todo lo que trae.</p>` : '') +
+    (maqLocal && maqLocal.n ? `<div class="fila"><div class="ic">🚜</div><div class="t"><b>Tu maquinita: ${esc(maqLocal.n)}</b><small>Entra contigo al mundo que elijas, con todo lo que trae.${garaje.length > 1 ? ' Tienes ' + garaje.length + ' en el garaje.' : ''}</small></div><button class="s" id="bGaraje">🚜 Mi garaje</button></div>` : '') +
     mundos.map((m) => `<div class="fila"><div class="t"><b>${esc(m.nombre)}</b><small>${m.maq ? 'Tu maquinita: ' + esc(m.maq) + ' · ' : ''}${new Date(m.ult).toLocaleDateString('es-MX', { day: 'numeric', month: 'long' })} · ${m.id}</small></div>
       <button data-ir="${m.id}">Continuar</button><button class="s" data-des="${m.id}">Desechar</button></div>`).join('') +
     `<p style="margin-top:14px"><button id="bNuevo">＋ Crear mundo nuevo</button></p><p class="nota">Cada mundo nace con una semilla distinta y se guarda solo, completo y para siempre: con su liga se vuelve a entrar cuando sea, tal como se dejó. Para jugar acompañado, entra y copia su liga.</p></div>`);
-  $('#bNuevo').onclick = pantallaCrear;
+  $('#bNuevo').onclick = pantallaCrear; if ($('#bGaraje')) $('#bGaraje').onclick = () => pantallaGaraje('mundos');
   $('#caja').querySelectorAll('[data-ir]').forEach((b) => (b.onclick = () => (location.href = '/' + b.dataset.ir)));
   $('#caja').querySelectorAll('[data-des]').forEach((b) => (b.onclick = () => { const m = mundos.find((x) => x.id === b.dataset.des); desechar(m.id, m.creador, m.k || (maqLocal && maqLocal.k)); }));
   if ($('#gBoton')) botonGoogle($('#gBoton'));
@@ -5489,7 +5536,7 @@ setInterval(() => {                       // lo poco que corre aunque el juego e
 const ligaMaquinita = (location.hash.match(/maquinita=([0-9a-zA-Z]{16,64})/) || [])[1] || '';
 if (location.hash) history.replaceState(null, '', location.pathname);
 if (ligaMaquinita) { maqLocal = { k: ligaMaquinita }; escribir('mina_maq', maqLocal); }
-else if (cuenta && cuenta.k && (!maqLocal || maqLocal.k !== cuenta.k)) {      // con cuenta, este equipo juega con la maquinita de la cuenta
+else if (cuenta && cuenta.k && (!maqLocal || (maqLocal.k !== cuenta.k && !(cuenta.maqs || []).includes(maqLocal.k)))) {      // con cuenta, un equipo sin maquinita del garaje toma la última usada
   maqLocal = { k: cuenta.k, ...(cuenta.n ? { n: cuenta.n, m: cuenta.m | 0 } : {}) }; escribir('mina_maq', maqLocal);
   try { localStorage.removeItem('mina_est'); } catch {}
 }

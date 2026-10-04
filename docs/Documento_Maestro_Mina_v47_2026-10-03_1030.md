@@ -1370,6 +1370,23 @@ No se pudo ver el movimiento en vivo porque el navegador de pruebas está oculto
 
 **Probado** en local, de punta a punta: una maquinita nueva entra con `?de=`, abre cuenta (pase de prueba) → quien invitó recibe las dos tarjetas (entró con tu liga / abrió su cuenta +$333), el panel marca 1 entró · 1 cuenta · $333; con once referidos ($3,663) el nivel 10 ($3,490) se paga completo con saldo, sin tarjeta, y quedan $173.
 
+### 9.55 El garaje: varias maquinitas por persona, y la auditoría del login
+
+**Lo que pidió Ricardo.** Revisar que el login (botón, sección, conexión) esté bien puesto y guarde todo sin fallos; y que una persona pueda tener varias maquinitas y varios mundos, «sumamente bien resuelto».
+
+**La auditoría del login (lo que ya estaba y se comprobó).**
+- El botón: `htmlCuenta()` monta el botón de Google en Mis mundos, en Menú → Mundo y ahora en el garaje; `botonGoogle` manda a login.capitaltorreon.com con la liga de regreso; el pase vuelve en `#sesion=` y nunca viaja en la dirección; `alEntrarGoogle` lo manda a `/api/cuenta/google`, que lo verifica con la llave pública de la casa (`verificarPase`).
+- Entra sola: si la casa ya reconoce a la persona (`LoginCT.pase()`), Mina entra sin tocar nada (`yaCasa`); al cerrar sesión se sale también de la casa.
+- Lo que se guarda y cuándo: el estado de cada maquinita (dinero, equipo, objetos, carga, récords, logros, tiempo, contratos) viaja al mundo cada 30 s de juego, al ocultar la pestaña y al cerrarla (`enviarEst`), y el mundo lo pasa a su objeto `Maquina`; nombre y modelo en `Maquina`; la lista de mundos y las llaves de dueño en `Cuenta` (`sync` a los 2.5 s de cada cambio); capturas en `Cuenta` + R2; compras, pintura, saldo, referidos y cumpleaños en `Maquina`; preferencias (texto, contraste, movimiento, sonido) en la casa vía `data-prefs`.
+- Lo que se corrigió: la regla «cada cuenta lleva una sola maquinita» (al entrar con otra maquinita en el equipo, una se quedaba fuera); el aviso «tu cuenta cambió de maquinita» que empujaba a todos los equipos a la misma; y la tienda solo aceptaba pagar con la maquinita «oficial» de la cuenta.
+
+**El garaje.**
+- `Cuenta.maqs = [{k, h}]` (hasta 50) con `c.k` como la última usada; `garajeDe` migra las cuentas viejas; `meter`, `garaje(t)` (fichas con `resumen`: nombre, modelo, dinero, récord, tiempo, nivel de pintura, saldo, mundo), `maquina(t, k, accion)` con `usar` / `agregar` / `nueva` / `quitar` (nunca la última). `sync` y `entrar` reciben el garaje local del equipo. `esMia(c, k)` sustituye a `c.k === d.k` en la tienda y el cumpleaños.
+- Cliente: `garaje` local (`mina_garaje`), `anotarGaraje`, `cambiarMaquina(k, n, m)` (manda el estado de la actual, limpia la copia local, avisa a la cuenta y vuelve a entrar al mismo mundo), `pantallaGaraje(desde)` (lista con fichas y «en uso», Jugar con esta, Quitar, Nueva maquinita con nombre y modelo, traer por código, botón de Google si no hay cuenta). Entradas: Menú → Mundo → «Mi garaje» y Mis mundos → «🚜 Mi garaje».
+- Reglas: un equipo con cuenta sigue con su maquinita si está en el garaje (ya no se le impone la última usada); al entrar con otra maquinita en el equipo, las dos quedan en el garaje y solo se elige con cuál seguir; en un mismo mundo se puede jugar con cualquiera de ellas (cada una es una maquinita más del mundo).
+
+**Probado** en local: garaje con la maquinita en uso y su ficha; crear «La Segunda» (modelo 5) → vuelve a entrar al mismo mundo con $20 y la vieja aparece en la lista del mundo; la cuenta guarda dos; volver a «El Jale» recupera sus $5,000, nivel 10 de pintura y saldo; pagar con una maquinita del garaje que no es la última usada pasa la verificación de cuenta, y con una ajena no.
+
 ## 10. Revisión de código del 2 de octubre
 
 Se revisó todo el código buscando fallas y se corrigieron estas:
