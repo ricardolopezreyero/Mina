@@ -1301,6 +1301,21 @@ No se pudo ver el movimiento en vivo porque el navegador de pruebas está oculto
 
 **Probado** en local: subir (240 KB, 1600 × 1200), listar, carpetas, galería, vista grande con pie, borrar; sin sesión responde 401; sin cuenta descarga.
 
+### 9.50 Los objetos de La Pinturería, al máximo: piezas que dan gusto coleccionar
+
+**Lo que pidió Ricardo.** Dedicarle trabajo de verdad a lo visual: que cada objeto comprable sea bonito, coleccionable, que la gente lo quiera y lo quiera acumular, y que comprarlo ponga a la persona un poco más contenta. Calidad máxima.
+
+**Cómo quedó (todo dibujado por código, en `dibMaq`, `dibMascota` y `dibujarEstelas`).**
+- **Pintura con laca:** cualquier maquinita pintada lleva un brillo diagonal y una franja de luz sobre el lomo, como laca recién puesta.
+- **Carrocerías:** *El Escarabajo*, lomo de catarina con raya central, lunares con brillo y una defensa cromada con degradado de cromo. *La Locomotora*, caldera con bandas de latón y tapa, chimenea con copa que **humea** (tres bocanadas que suben y se desvanecen), campana de latón y quitapiedras al frente. *El Submarino*, remaches a lo largo, dos ojos de buey con aro de latón y vidrio con reflejo, periscopio con lente, aleta dorsal y una **hélice que gira**.
+- **Mascotas, en vez de emojis:** un pájaro naranja de panza clara que **aletea** y se mece; un perro café que **corre** (patas alternadas, oreja caída, cola que se menea) al nivel del piso; un dron con dos rotores girando y una luz roja que parpadea; una mariposa con alas en degradado rosa-naranja-amarillo que **se abren y cierran**; una luciérnaga que **late** y deja chispitas detrás.
+- **Estelas con figura propia:** chispas doradas con halo; cinta de arcoíris (segmentos que recorren el matiz); estrellas de cinco puntas blancas con borde dorado que giran; corazones con brillo; burbujas que suben con su reflejo. Sistema propio (`huellas`), hasta 240 a la vez.
+- **Calcomanías troqueladas:** la calcomanía va sobre un cuadrito blanco con borde y sombra, un poco ladeado, como las de verdad.
+- **Luces:** el faro echa un **haz hacia adelante** con degradado y un halo, además de la luz de piso.
+- **Placas:** la dorada es texto con degradado de oro; la corona es una **corona dibujada** con tres joyas; el marco es una **placa de metal** con degradado y cuatro remaches, con el borde del color de la maquinita.
+
+**Probado** en local con una hoja de muestra (cinco maquinitas con combinaciones distintas) y en vuelo con las tres estelas. No cuesta cuadros: todo son trazos, sin sombras difuminadas.
+
 ## 10. Revisión de código del 2 de octubre
 
 Se revisó todo el código buscando fallas y se corrigieron estas:

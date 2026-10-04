@@ -2656,9 +2656,31 @@ function dibMaq(q, px, py, t, modelo, dir, vuela, perfDir, nombre, estado, mundo
   else if (carro === 3) q.roundRect(x - t * 0.03, y + h * 0.14, w + t * 0.06, h * 0.62, h * 0.31);      // El Submarino: cápsula
   else q.roundRect(x, y + h * 0.16, w, h * 0.6, t * 0.12);
   q.fill(); q.strokeStyle = mezcla(c2, -0.5); q.lineWidth = lw; q.stroke();
-  if (carro === 1) { q.fillStyle = mezcla(c2, -0.4); for (const [a, b] of [[-0.3, 0.3], [-0.12, 0.2], [0.08, 0.3], [0.28, 0.24]]) { q.beginPath(); q.arc(px + a * w, y + h * b, w * 0.045, 0, 7); q.fill(); } }
-  else if (carro === 2) { q.fillStyle = mezcla(c2, -0.3); q.fillRect(px + dir * w * 0.3 - t * 0.045, y + h * 0.02, t * 0.09, h * 0.24); q.fillStyle = c1; q.beginPath(); q.ellipse(px + dir * w * 0.3, y + h * 0.5, w * 0.17, h * 0.21, 0, 0, 7); q.fill(); q.strokeStyle = mezcla(c2, -0.5); q.stroke(); }
-  else if (carro === 3) { q.fillStyle = '#7f8791'; q.fillRect(px - dir * w * 0.25 - t * 0.02, y, t * 0.04, h * 0.18); q.fillRect(px - dir * w * 0.25 - (dir > 0 ? t * 0.02 : t * 0.07), y, t * 0.09, t * 0.04); q.fillStyle = '#9fe3ff'; q.beginPath(); q.arc(px - dir * w * 0.25, y + h * 0.42, w * 0.07, 0, 7); q.fill(); q.strokeStyle = mezcla(c2, -0.5); q.stroke(); }
+  if (P.c1) {                                        // pintura de La Pinturería: un brillo de laca sobre el lomo
+    q.save(); q.beginPath(); if (carro === 1) { q.moveTo(x, y + h * 0.76); q.lineTo(x, y + h * 0.5); q.quadraticCurveTo(x, y + h * 0.08, px, y + h * 0.08); q.quadraticCurveTo(x + w, y + h * 0.08, x + w, y + h * 0.5); q.lineTo(x + w, y + h * 0.76); q.closePath(); } else if (carro === 2) q.roundRect(x, y + h * 0.24, w, h * 0.52, t * 0.04); else if (carro === 3) q.roundRect(x - t * 0.03, y + h * 0.14, w + t * 0.06, h * 0.62, h * 0.31); else q.roundRect(x, y + h * 0.16, w, h * 0.6, t * 0.12); q.clip();
+    const br = q.createLinearGradient(x, y, x + w * 0.6, y + h * 0.7); br.addColorStop(0, 'rgba(255,255,255,.38)'); br.addColorStop(0.35, 'rgba(255,255,255,.1)'); br.addColorStop(0.5, 'rgba(255,255,255,0)'); q.fillStyle = br; q.fillRect(x, y, w, h);
+    q.fillStyle = 'rgba(255,255,255,.28)'; q.beginPath(); q.roundRect(x + w * 0.1, y + h * (carro === 1 ? 0.14 : 0.2), w * 0.55, h * 0.07, h * 0.035); q.fill(); q.restore();
+  }
+  if (carro === 1) {                                 // El Escarabajo: lomo de catarina con lunares brillantes, defensa cromada y faro redondo con aro
+    q.fillStyle = mezcla(c2, -0.55); q.fillRect(px - t * 0.012, y + h * 0.1, t * 0.024, h * 0.56);          // la raya del lomo
+    for (const [a, b, r] of [[-0.3, 0.3, 0.05], [-0.12, 0.19, 0.045], [0.1, 0.3, 0.05], [0.27, 0.22, 0.04], [0.02, 0.5, 0.035]]) { q.fillStyle = mezcla(c2, -0.55); q.beginPath(); q.arc(px + a * w, y + h * b, w * r, 0, 7); q.fill(); q.fillStyle = 'rgba(255,255,255,.35)'; q.beginPath(); q.arc(px + a * w - w * r * 0.3, y + h * b - w * r * 0.3, w * r * 0.35, 0, 7); q.fill(); }
+    const cr = q.createLinearGradient(0, y + h * 0.66, 0, y + h * 0.76); cr.addColorStop(0, '#f4f6f8'); cr.addColorStop(0.5, '#9aa3ab'); cr.addColorStop(1, '#e8ecef'); q.fillStyle = cr; q.beginPath(); q.roundRect(x - t * 0.04, y + h * 0.66, w + t * 0.08, h * 0.09, h * 0.045); q.fill();   // la defensa cromada
+  } else if (carro === 2) {                          // La Locomotora: caldera con bandas de latón, chimenea que humea, campana y quitapiedras
+    const bx = px + dir * w * 0.28, cal = q.createLinearGradient(0, y + h * 0.28, 0, y + h * 0.72); cal.addColorStop(0, mezcla(c1, 0.3)); cal.addColorStop(0.5, c1); cal.addColorStop(1, mezcla(c2, -0.2));
+    q.fillStyle = cal; q.beginPath(); q.roundRect(bx - w * 0.2, y + h * 0.28, w * 0.4, h * 0.44, h * 0.22); q.fill(); q.strokeStyle = mezcla(c2, -0.5); q.stroke();
+    q.fillStyle = '#e2b24a'; for (const k of [-0.1, 0.1]) q.fillRect(bx + k * w - t * 0.012, y + h * 0.28, t * 0.024, h * 0.44);           // bandas de latón
+    q.fillStyle = '#d9d2c4'; q.beginPath(); q.arc(bx + dir * w * 0.2, y + h * 0.5, h * 0.1, 0, 7); q.fill(); q.strokeStyle = '#2b2b2b'; q.stroke();   // la tapa de la caldera
+    q.fillStyle = '#2b2b2b'; q.fillRect(bx - t * 0.045, y + h * 0.02, t * 0.09, h * 0.28); q.beginPath(); q.roundRect(bx - t * 0.075, y - h * 0.02, t * 0.15, h * 0.08, t * 0.02); q.fill();   // chimenea con copa
+    for (let k = 0; k < 3; k++) { const f = ((reloj * 0.9 + k * 0.33) % 1); q.globalAlpha = 0.35 * (1 - f); q.fillStyle = '#e8e4dc'; q.beginPath(); q.arc(bx - dir * f * w * 0.5, y - h * 0.08 - f * h * 0.5, t * (0.05 + f * 0.09), 0, 7); q.fill(); } q.globalAlpha = 1;   // el humo
+    q.fillStyle = '#e2b24a'; q.beginPath(); q.arc(bx - dir * w * 0.22, y + h * 0.2, h * 0.055, Math.PI, 0); q.fill(); q.fillRect(bx - dir * w * 0.22 - t * 0.008, y + h * 0.1, t * 0.016, h * 0.1);   // la campana
+    q.strokeStyle = '#2b2b2b'; q.lineWidth = Math.max(1, t * 0.025); q.beginPath(); for (let k = 0; k < 4; k++) { q.moveTo(px + dir * w * (0.44 + k * 0.03), y + h * 0.62); q.lineTo(px + dir * w * (0.5 + k * 0.03), y + h * 0.78); } q.stroke();   // quitapiedras
+  } else if (carro === 3) {                          // El Submarino: remaches, ojos de buey con vidrio, periscopio, aleta y hélice que gira
+    q.fillStyle = mezcla(c2, -0.5); for (let k = 0; k < 9; k++) { q.beginPath(); q.arc(x + w * (0.08 + k * 0.105), y + h * 0.62, t * 0.012, 0, 7); q.fill(); }     // remaches
+    for (const k of [-0.28, -0.06]) { const ox2 = px + dir * k * w, oy2 = y + h * 0.42; q.fillStyle = '#e2b24a'; q.beginPath(); q.arc(ox2, oy2, w * 0.095, 0, 7); q.fill(); const vd = q.createRadialGradient(ox2 - w * 0.03, oy2 - w * 0.03, 0, ox2, oy2, w * 0.075); vd.addColorStop(0, '#dff6ff'); vd.addColorStop(1, '#3a8fb8'); q.fillStyle = vd; q.beginPath(); q.arc(ox2, oy2, w * 0.072, 0, 7); q.fill(); q.fillStyle = 'rgba(255,255,255,.55)'; q.beginPath(); q.ellipse(ox2 - w * 0.025, oy2 - w * 0.03, w * 0.025, w * 0.014, -0.7, 0, 7); q.fill(); }   // ojos de buey
+    q.fillStyle = '#7f8791'; q.fillRect(px - dir * w * 0.18 - t * 0.016, y - h * 0.02, t * 0.032, h * 0.2); q.fillRect(px - dir * w * 0.18 - (dir > 0 ? t * 0.016 : t * 0.07), y - h * 0.02, t * 0.086, t * 0.035); q.fillStyle = '#9fe3ff'; q.fillRect(px - dir * w * 0.18 + (dir > 0 ? t * 0.05 : -t * 0.07), y - h * 0.015, t * 0.02, t * 0.025);   // periscopio con lente
+    q.fillStyle = mezcla(c2, -0.3); q.beginPath(); q.moveTo(px - dir * w * 0.3, y + h * 0.16); q.lineTo(px - dir * w * 0.42, y + h * 0.02); q.lineTo(px - dir * w * 0.46, y + h * 0.18); q.closePath(); q.fill();   // aleta
+    q.save(); q.translate(px - dir * w * 0.52, y + h * 0.45); q.fillStyle = '#c9ced3'; for (let k = 0; k < 3; k++) { q.rotate(2.094); q.beginPath(); q.ellipse(0, -h * 0.07 * (0.3 + 0.7 * Math.abs(Math.sin(reloj * 9 + k))), h * 0.03, h * 0.08, 0, 0, 7); q.fill(); } q.restore();   // la hélice
+  }
   q.fillStyle = mezcla(c2, -0.25); q.fillRect(x + w * 0.06, y + h * 0.6, w * 0.88, h * 0.05);
   if (modelo % 4 === 1) { q.fillStyle = '#ffffffcc'; q.fillRect(x + w * 0.06, y + h * 0.5, w * 0.88, h * 0.05); }
   else if (modelo % 4 === 2) { q.fillStyle = '#1b120e99'; for (let i = 0; i < 4; i++) q.fillRect(px - dir * w * (0.08 + i * 0.09) - t * 0.015, y + h * 0.26, t * 0.03, h * 0.28); }
@@ -2670,22 +2692,91 @@ function dibMaq(q, px, py, t, modelo, dir, vuela, perfDir, nombre, estado, mundo
   q.closePath(); q.fill(); q.strokeStyle = '#1b3a4a'; q.stroke();
   q.fillStyle = '#ffffffaa'; q.beginPath(); q.ellipse(cx - w * 0.07, cy - h * 0.1, w * 0.05, h * 0.05, -0.6, 0, 7); q.fill();
   q.fillStyle = '#24323a'; q.beginPath(); q.arc(cx + dir * w * 0.02, cy - h * 0.03, w * 0.055, 0, 7); q.fill();     // piloto
-  if (P.calca !== undefined && TC.CALCAS[P.calca]) { q.font = `${h * 0.3}px system-ui`; q.textAlign = 'center'; q.textBaseline = 'middle'; q.fillText(TC.CALCAS[P.calca], px - dir * w * 0.24, y + h * 0.47); }      // la calcomanía
-  // faro
-  q.fillStyle = P.luz || (q === g ? faroCol : '#fff3b0'); q.beginPath(); q.arc(px + dir * w * 0.44, y + h * 0.5, h * 0.06, 0, 7); q.fill(); if (q === g) faroCol = '#fff3b0';
-  if (P.mascota) {                                   // la mascota: va a un lado, flotando
-    const mx = px - dir * w * 0.95, my = y - h * 0.05 + Math.sin(reloj * 3.1 + px * 0.013) * t * 0.07;
-    if (P.mascota === 5) { const gl = q.createRadialGradient(mx, my, 0, mx, my, t * 0.24); gl.addColorStop(0, 'rgba(255,240,120,.9)'); gl.addColorStop(1, 'rgba(255,240,120,0)'); q.fillStyle = gl; q.fillRect(mx - t * 0.24, my - t * 0.24, t * 0.48, t * 0.48); q.fillStyle = '#fff7b0'; q.beginPath(); q.arc(mx, my, t * 0.05, 0, 7); q.fill(); }
-    else { q.font = `${t * 0.42}px system-ui`; q.textAlign = 'center'; q.textBaseline = 'middle'; q.save(); q.translate(mx, my); if (dir < 0) q.scale(-1, 1); q.fillText(TC.MASC_EMOJI[P.mascota] || '', 0, 0); q.restore(); }
+  if (P.calca !== undefined && TC.CALCAS[P.calca]) {                                   // la calcomanía: troquelada en blanco, un poco ladeada, como las de verdad
+    const sx = px - dir * w * 0.24, sy = y + h * 0.46, r = h * 0.19; q.save(); q.translate(sx, sy); q.rotate(-0.14 * dir);
+    q.fillStyle = 'rgba(0,0,0,.28)'; q.beginPath(); q.roundRect(-r + t * 0.015, -r + t * 0.02, r * 2, r * 2, r * 0.45); q.fill();
+    q.fillStyle = '#fff'; q.beginPath(); q.roundRect(-r, -r, r * 2, r * 2, r * 0.45); q.fill(); q.strokeStyle = '#d8d2c6'; q.lineWidth = Math.max(1, t * 0.015); q.stroke();
+    q.font = `${h * 0.27}px system-ui,"Apple Color Emoji","Segoe UI Emoji"`; q.textAlign = 'center'; q.textBaseline = 'middle'; q.fillStyle = '#000'; q.fillText(TC.CALCAS[P.calca], 0, h * 0.015); q.restore();
   }
+  // faro
+  if (P.luz) {                                       // luz de La Pinturería: el faro echa un haz hacia adelante y brilla
+    const fx = px + dir * w * 0.44, fy = y + h * 0.5, hz = q.createLinearGradient(fx, fy, fx + dir * w * 1.9, fy); hz.addColorStop(0, rgba(P.luz, 0.32)); hz.addColorStop(1, rgba(P.luz, 0));
+    q.fillStyle = hz; q.beginPath(); q.moveTo(fx, fy - h * 0.05); q.lineTo(fx + dir * w * 1.9, fy - h * 0.55); q.lineTo(fx + dir * w * 1.9, fy + h * 0.55); q.lineTo(fx, fy + h * 0.05); q.closePath(); q.fill();
+    const ha = q.createRadialGradient(fx, fy, 0, fx, fy, h * 0.22); ha.addColorStop(0, rgba(P.luz, 0.9)); ha.addColorStop(1, rgba(P.luz, 0)); q.fillStyle = ha; q.fillRect(fx - h * 0.22, fy - h * 0.22, h * 0.44, h * 0.44);
+  }
+  q.fillStyle = P.luz || (q === g ? faroCol : '#fff3b0'); q.beginPath(); q.arc(px + dir * w * 0.44, y + h * 0.5, h * 0.06, 0, 7); q.fill(); if (q === g) faroCol = '#fff3b0';
+  if (P.mascota) dibMascota(q, P.mascota, px - dir * w * 0.98, y + (P.mascota === 2 ? h * 0.62 : -h * 0.05), t, dir, reloj + px * 0.013);
   if (nombre) {
-    const placa = P.placa | 0, tx = (placa === 2 ? '👑 ' : '') + (estado ? nombre + ' · ' + estado : nombre), ty = y - t * 0.16, tam = Math.max(10 * RES, t * 0.27);
+    const placa = P.placa | 0, tx = estado ? nombre + ' · ' + estado : nombre, ty = y - t * 0.16, tam = Math.max(10 * RES, t * 0.27);
     q.font = `700 ${tam}px system-ui`; q.textAlign = 'center'; q.textBaseline = 'bottom';
-    if (placa === 3) { const an = q.measureText(tx).width + t * 0.3, al = tam * 1.35; q.fillStyle = '#000a'; q.beginPath(); q.roundRect(px - an / 2, ty - al, an, al, t * 0.08); q.fill(); q.strokeStyle = c1; q.lineWidth = Math.max(1, t * 0.03); q.stroke(); }
-    q.lineWidth = Math.max(2, t * 0.07); q.strokeStyle = '#000c'; q.strokeText(tx, px, ty); q.fillStyle = placa === 1 ? '#ffd23f' : '#fff'; q.fillText(tx, px, ty);
+    const an = q.measureText(tx).width;
+    if (placa === 3) {                               // con marco: una placa de metal con remaches
+      const a2 = an + t * 0.34, al = tam * 1.4, mx = px - a2 / 2, my = ty - al - t * 0.02, mg = q.createLinearGradient(0, my, 0, my + al); mg.addColorStop(0, '#3a3f45'); mg.addColorStop(1, '#15181b');
+      q.fillStyle = mg; q.beginPath(); q.roundRect(mx, my, a2, al, t * 0.06); q.fill(); q.strokeStyle = c1; q.lineWidth = Math.max(1, t * 0.035); q.stroke();
+      q.fillStyle = '#c9ced3'; for (const [a, b] of [[0.08, 0.3], [0.92, 0.3], [0.08, 0.7], [0.92, 0.7]]) { q.beginPath(); q.arc(mx + a2 * a, my + al * b, t * 0.018, 0, 7); q.fill(); }
+    }
+    if (placa === 2) {                               // con corona: una corona de oro con sus joyas, sobre el nombre
+      const cw = tam * 0.9, ch = tam * 0.62, cx2 = px, cy2 = ty - tam * 1.08; q.fillStyle = '#ffd23f'; q.beginPath(); q.moveTo(cx2 - cw / 2, cy2); q.lineTo(cx2 - cw / 2, cy2 - ch * 0.75); q.lineTo(cx2 - cw * 0.25, cy2 - ch * 0.35); q.lineTo(cx2, cy2 - ch); q.lineTo(cx2 + cw * 0.25, cy2 - ch * 0.35); q.lineTo(cx2 + cw / 2, cy2 - ch * 0.75); q.lineTo(cx2 + cw / 2, cy2); q.closePath(); q.fill(); q.strokeStyle = '#8a5a00'; q.lineWidth = Math.max(1, t * 0.02); q.stroke();
+      for (const [a, c] of [[-0.3, '#ff5a7a'], [0, '#6ec3ff'], [0.3, '#6fdc7a']]) { q.fillStyle = c; q.beginPath(); q.arc(cx2 + a * cw, cy2 - ch * 0.22, tam * 0.08, 0, 7); q.fill(); }
+    }
+    q.lineWidth = Math.max(2, t * 0.07); q.strokeStyle = '#000c'; q.strokeText(tx, px, ty);
+    if (placa === 1) { const og = q.createLinearGradient(0, ty - tam, 0, ty); og.addColorStop(0, '#fff2b0'); og.addColorStop(0.45, '#ffd23f'); og.addColorStop(0.55, '#d99a1a'); og.addColorStop(1, '#ffe27a'); q.fillStyle = og; } else q.fillStyle = '#fff';
+    q.fillText(tx, px, ty);
   }
 }
 
+// Las mascotas de La Pinturería, dibujadas y vivas: un pájaro que aletea, un perro que corre, un dron que zumba, una mariposa y una luciérnaga.
+function dibMascota(q, k, mx, my, t, dir, r) {
+  q.save(); q.translate(mx, my + (k === 2 ? 0 : Math.sin(r * 3.1) * t * 0.07)); if (dir < 0) q.scale(-1, 1);
+  const u = t * 0.42, lw = Math.max(1, t * 0.02); q.lineWidth = lw; q.lineJoin = 'round';
+  if (k === 1) {                                                        // pájaro naranja con panza clara
+    const al = Math.sin(r * 16);
+    q.fillStyle = '#ffb347'; q.beginPath(); q.ellipse(0, 0, u * 0.42, u * 0.3, 0, 0, 7); q.fill(); q.strokeStyle = '#8a4b12'; q.stroke();
+    q.fillStyle = '#ffe3b0'; q.beginPath(); q.ellipse(u * 0.05, u * 0.08, u * 0.24, u * 0.16, 0, 0, 7); q.fill();
+    q.fillStyle = '#ff9a3a'; q.beginPath(); q.ellipse(-u * 0.05, -u * 0.05 - al * u * 0.12, u * 0.26, u * 0.11, -0.4 - al * 0.5, 0, 7); q.fill(); q.stroke();      // el ala
+    q.fillStyle = '#ff9a3a'; q.beginPath(); q.moveTo(-u * 0.4, 0); q.lineTo(-u * 0.62, -u * 0.12); q.lineTo(-u * 0.6, u * 0.1); q.closePath(); q.fill();        // la cola
+    q.fillStyle = '#ffd23f'; q.beginPath(); q.moveTo(u * 0.4, -u * 0.04); q.lineTo(u * 0.6, u * 0.02); q.lineTo(u * 0.4, u * 0.08); q.closePath(); q.fill();      // el pico
+    q.fillStyle = '#1b120e'; q.beginPath(); q.arc(u * 0.24, -u * 0.09, u * 0.045, 0, 7); q.fill();
+  } else if (k === 2) {                                                 // perro café que corre
+    const p = Math.sin(r * 14);
+    q.fillStyle = '#b07a4a'; q.beginPath(); q.roundRect(-u * 0.42, -u * 0.22, u * 0.78, u * 0.36, u * 0.16); q.fill(); q.strokeStyle = '#5b3d17'; q.stroke();
+    q.beginPath(); q.arc(u * 0.42, -u * 0.26, u * 0.22, 0, 7); q.fill(); q.stroke();                                                                    // cabeza
+    q.fillStyle = '#7a5230'; q.beginPath(); q.ellipse(u * 0.3, -u * 0.3, u * 0.08, u * 0.17, 0.5, 0, 7); q.fill();                                       // oreja caída
+    q.fillStyle = '#1b120e'; q.beginPath(); q.arc(u * 0.5, -u * 0.3, u * 0.035, 0, 7); q.fill(); q.beginPath(); q.arc(u * 0.63, -u * 0.2, u * 0.045, 0, 7); q.fill();   // ojo y nariz
+    q.strokeStyle = '#5b3d17'; q.lineWidth = lw * 2.2; q.lineCap = 'round'; for (const [bx, f] of [[-0.3, 1], [-0.12, -1], [0.12, 1], [0.3, -1]]) { q.beginPath(); q.moveTo(bx * u, u * 0.1); q.lineTo(bx * u + f * p * u * 0.12, u * 0.36); q.stroke(); }   // patas
+    q.beginPath(); q.moveTo(-u * 0.42, -u * 0.14); q.lineTo(-u * 0.62, -u * 0.34 + p * u * 0.1); q.stroke();                                              // la cola, meneándose
+  } else if (k === 3) {                                                 // dron con dos rotores y luz que parpadea
+    q.fillStyle = '#4a4f55'; q.beginPath(); q.roundRect(-u * 0.22, -u * 0.1, u * 0.44, u * 0.2, u * 0.06); q.fill(); q.strokeStyle = '#1b1b1b'; q.stroke();
+    q.fillStyle = '#2b2b2b'; q.fillRect(-u * 0.5, -u * 0.05, u, u * 0.04);
+    for (const bx of [-0.46, 0.46]) { q.fillStyle = '#9aa3ab'; q.fillRect(bx * u - u * 0.015, -u * 0.18, u * 0.03, u * 0.14); q.globalAlpha = 0.65; q.fillStyle = '#e8eef2'; q.beginPath(); q.ellipse(bx * u, -u * 0.18, u * (0.1 + 0.16 * Math.abs(Math.sin(r * 70 + bx))), u * 0.025, 0, 0, 7); q.fill(); q.globalAlpha = 1; }
+    q.fillStyle = Math.sin(r * 6) > 0 ? '#ff3d3d' : '#5a1010'; q.beginPath(); q.arc(u * 0.14, 0, u * 0.045, 0, 7); q.fill(); q.fillStyle = '#9fe3ff'; q.beginPath(); q.arc(-u * 0.1, 0, u * 0.05, 0, 7); q.fill();
+  } else if (k === 4) {                                                 // mariposa con alas degradadas que se abren y cierran
+    const ab = 0.35 + 0.65 * Math.abs(Math.sin(r * 9)), ala = (sx) => { const gw = q.createLinearGradient(0, -u * 0.4, 0, u * 0.3); gw.addColorStop(0, '#ff7ac8'); gw.addColorStop(0.6, '#ff9f40'); gw.addColorStop(1, '#ffd23f'); q.fillStyle = gw; q.save(); q.scale(sx * ab, 1); q.beginPath(); q.ellipse(u * 0.26, -u * 0.12, u * 0.26, u * 0.2, 0.4, 0, 7); q.fill(); q.beginPath(); q.ellipse(u * 0.2, u * 0.16, u * 0.17, u * 0.13, -0.3, 0, 7); q.fill(); q.strokeStyle = '#7a2a5a'; q.lineWidth = lw; q.beginPath(); q.ellipse(u * 0.26, -u * 0.12, u * 0.26, u * 0.2, 0.4, 0, 7); q.stroke(); q.fillStyle = 'rgba(255,255,255,.5)'; q.beginPath(); q.arc(u * 0.3, -u * 0.14, u * 0.06, 0, 7); q.fill(); q.restore(); };
+    ala(1); ala(-1);
+    q.strokeStyle = '#3a2a22'; q.lineWidth = lw * 2; q.lineCap = 'round'; q.beginPath(); q.moveTo(0, -u * 0.2); q.lineTo(0, u * 0.22); q.stroke(); q.lineWidth = lw; q.beginPath(); q.moveTo(0, -u * 0.2); q.lineTo(-u * 0.12, -u * 0.38); q.moveTo(0, -u * 0.2); q.lineTo(u * 0.12, -u * 0.38); q.stroke();
+  } else if (k === 5) {                                                 // luciérnaga: brilla a pulsos y deja chispitas
+    const pulso = 0.6 + 0.4 * Math.sin(r * 4), gl = q.createRadialGradient(0, 0, 0, 0, 0, u * 0.7); gl.addColorStop(0, `rgba(255,240,120,${0.9 * pulso})`); gl.addColorStop(0.4, `rgba(255,230,90,${0.35 * pulso})`); gl.addColorStop(1, 'rgba(255,240,120,0)'); q.fillStyle = gl; q.fillRect(-u * 0.7, -u * 0.7, u * 1.4, u * 1.4);
+    q.fillStyle = '#3a2a22'; q.beginPath(); q.ellipse(0, 0, u * 0.14, u * 0.08, 0, 0, 7); q.fill(); q.fillStyle = '#fff7b0'; q.beginPath(); q.ellipse(-u * 0.08, 0, u * 0.08, u * 0.06, 0, 0, 7); q.fill();
+    q.globalAlpha = 0.5; q.fillStyle = '#ffffff'; q.beginPath(); q.ellipse(u * 0.02, -u * 0.1, u * 0.14, u * 0.05, -0.4 + Math.sin(r * 30) * 0.4, 0, 7); q.fill(); q.globalAlpha = 1;
+    for (let k2 = 0; k2 < 3; k2++) { const f = (r * 0.7 + k2 * 0.33) % 1; q.globalAlpha = 0.8 * (1 - f); q.fillStyle = '#fff2a0'; q.beginPath(); q.arc(-u * (0.25 + f * 0.7), u * 0.1 + Math.sin(r * 5 + k2) * u * 0.15, u * 0.035, 0, 7); q.fill(); } q.globalAlpha = 1;
+  }
+  q.restore();
+}
+// Las estelas de La Pinturería: cada una con su propia figura (estrellas de cinco puntas, cinta de arcoíris, corazones, burbujas, chispas doradas con halo).
+const huellas = [];
+function dibujarEstelas(ox, oy, dt) {
+  for (let i = huellas.length - 1; i >= 0; i--) {
+    const e = huellas[i]; e.t -= dt; if (e.t <= 0) { huellas.splice(i, 1); continue; }
+    e.x += e.vx * dt; e.y += e.vy * dt; e.rot += dt * e.giro; const k = e.t / e.t0, px = ox + e.x * T, py = oy + e.y * T, r = e.r * T * (e.tipo === 5 ? 1 + (1 - k) * 0.6 : 0.5 + k * 0.5);
+    g.save(); g.translate(px, py); g.globalAlpha = Math.min(1, k * 1.6);
+    if (e.tipo === 1) { const gl = g.createRadialGradient(0, 0, 0, 0, 0, r * 2.2); gl.addColorStop(0, 'rgba(255,230,120,.9)'); gl.addColorStop(1, 'rgba(255,200,40,0)'); g.fillStyle = gl; g.fillRect(-r * 2.2, -r * 2.2, r * 4.4, r * 4.4); g.rotate(e.rot); g.fillStyle = '#fff3b0'; g.beginPath(); for (let a = 0; a < 4; a++) { g.moveTo(0, 0); g.lineTo(Math.cos(a * 1.571) * r * 1.8, Math.sin(a * 1.571) * r * 1.8); g.lineTo(Math.cos(a * 1.571 + 0.785) * r * 0.35, Math.sin(a * 1.571 + 0.785) * r * 0.35); } g.closePath(); g.fill(); }       // chispa dorada con halo
+    else if (e.tipo === 2) { g.fillStyle = e.col; g.beginPath(); g.roundRect(-r * 1.6, -r * 0.5, r * 3.2, r, r * 0.5); g.fill(); }       // cinta de arcoíris
+    else if (e.tipo === 3) { g.rotate(e.rot); g.fillStyle = '#ffffff'; g.beginPath(); for (let a = 0; a < 5; a++) { const an = -1.571 + a * 1.2566, an2 = an + 0.628; g.lineTo(Math.cos(an) * r * 1.4, Math.sin(an) * r * 1.4); g.lineTo(Math.cos(an2) * r * 0.6, Math.sin(an2) * r * 0.6); } g.closePath(); g.fill(); g.strokeStyle = '#ffd23f'; g.lineWidth = Math.max(1, r * 0.2); g.stroke(); }       // estrella de cinco puntas
+    else if (e.tipo === 4) { g.rotate(e.rot * 0.3); g.fillStyle = '#ff5e9a'; g.beginPath(); g.moveTo(0, r * 1.2); g.bezierCurveTo(-r * 1.9, -r * 0.3, -r * 0.9, -r * 1.6, 0, -r * 0.5); g.bezierCurveTo(r * 0.9, -r * 1.6, r * 1.9, -r * 0.3, 0, r * 1.2); g.fill(); g.fillStyle = 'rgba(255,255,255,.5)'; g.beginPath(); g.ellipse(-r * 0.6, -r * 0.6, r * 0.3, r * 0.18, -0.6, 0, 7); g.fill(); }       // corazón con brillo
+    else { g.strokeStyle = 'rgba(200,235,255,.9)'; g.lineWidth = Math.max(1, r * 0.18); g.beginPath(); g.arc(0, 0, r * 1.2, 0, 7); g.stroke(); g.fillStyle = 'rgba(200,235,255,.18)'; g.fill(); g.fillStyle = 'rgba(255,255,255,.85)'; g.beginPath(); g.ellipse(-r * 0.45, -r * 0.5, r * 0.32, r * 0.18, -0.7, 0, 7); g.fill(); }       // burbuja
+    g.restore();
+  }
+}
 /* ── El cuadro completo ── */
 // Subir es un viaje con su orden: tarde dorada, atardecer, hora azul, noche de estrellas, estrellas fugaces,
 // aurora al cruzar al espacio, la estación en órbita, la Luna que crece y, al final, el Sol que vuelve a salir
@@ -3138,6 +3229,7 @@ function dibujar() {
   if (!soloVer && !ceremonia) dibMaq(g, mx + bx, my, T, miModelo, yo.dir, yo.vuela ? 1 : yo.planea || enPelea || (yo.agua && yo.picada) ? 2 : 0, p ? (p.ty > Math.floor(p.oy) ? 2 : p.tx < Math.floor(p.ox) ? -1 : 1) : yo.ataca || 0, op.nombres ? (miMe ? '✦ ' : '') + miNombre : '', '', vis.x, pintaVista());
   if (!soloVer && !ceremonia) estela(pintaVista(), vis.x, vis.y, yo.vuela || yo.planea || Math.abs(yo.vx) + Math.abs(yo.vy) > 5);
   if (!soloVer && !ceremonia && enPleito(miI)) barraVida(mx + bx, my, S.vida, vidaMax(), '#ffd23f');
+  if (huellas.length) dibujarEstelas(ox, oy, Math.min(0.05, (performance.now() - (dibujarEstelas.t || performance.now())) / 1000)); dibujarEstelas.t = performance.now();
   // el aire como resistencia: al caer rápido se forma un arco bajo la maquinita; muy rápido se pone al rojo y deja estela
   const dens = vis.y < 0 ? Math.max(0, 1 + (vis.y + HH) / 45000) : 0;
   if (yo.vy > 30 && dens > 0.02) {
@@ -3689,8 +3781,10 @@ function invitarPintureria() {
 }
 // La estela: una chispita por cuadro (de dos) detrás de quien vuela con estela.
 function estela(P, x, y, mueve) {
-  if (!P || !P.estela || !mueve || !op.part || (++estelaN & 1)) return;
-  chispas(x + (Math.random() - 0.5) * 0.4, y + 0.35, [0, '#ffd23f', `hsl(${(reloj * 240) % 360},95%,62%)`, '#ffffff', '#ff5e9a', '#9fe3ff'][P.estela], 1, 2);
+  if (!P || !P.estela || !mueve || !op.part || (++estelaN & 1) || huellas.length > 240) return;
+  const tipo = P.estela, az = (a) => (Math.random() - 0.5) * a;
+  huellas.push({ x: x + az(0.5), y: y + 0.3 + az(0.3), vx: az(0.6), vy: tipo === 5 ? -0.9 - Math.random() * 0.6 : 0.3 + az(0.5), t0: 0, t: 0, rot: Math.random() * 6.3, giro: az(5), r: tipo === 2 ? 0.1 : 0.09 + Math.random() * 0.07, tipo, col: `hsl(${(reloj * 240) % 360},95%,62%)` });
+  const e = huellas[huellas.length - 1]; e.t0 = e.t = tipo === 5 ? 1.6 : 0.9 + Math.random() * 0.5;
 }
 // El claxon (tecla B): todos tienen el pip-pip; con el nivel 6 se elige la melodía. Lo oyen los de cerca.
 const CLAXON = [[[880, 0.08, 0], [880, 0.08, 0.14]], [[523, 0.12, 0], [659, 0.12, 0.12], [784, 0.12, 0.24], [1047, 0.3, 0.36]], [[220, 0.6, 0], [277, 0.6, 0], [330, 0.6, 0]], [[98, 1.1, 0], [123, 1.1, 0]], [[784, 0.09, 0], [659, 0.09, 0.1], [523, 0.09, 0.2], [440, 0.14, 0.3], [784, 0.09, 0.5], [659, 0.09, 0.6], [523, 0.09, 0.7], [440, 0.14, 0.8]], [[1319, 0.5, 0], [1568, 0.5, 0.15], [2093, 0.8, 0.3]]];
