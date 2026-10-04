@@ -2215,6 +2215,13 @@ function mezcla(hex, k) {            // k < 0 oscurece, k > 0 aclara
   const c = (v) => Math.round(v + (m - v) * a);
   return `rgb(${c(n >> 16)},${c((n >> 8) & 255)},${c(n & 255)})`;
 }
+// El acercamiento cambia suave: la lupa arranca donde estaba la vista y llega a 1 en un cuarto de segundo.
+let lupaAnim = 0;
+function animarLupa(desde) {
+  const t0 = performance.now(), id = ++lupaAnim, de = Math.max(0.3, Math.min(3, desde));
+  const paso = () => { if (id !== lupaAnim) return; const k = Math.min(1, (performance.now() - t0) / 260), e = 1 - Math.pow(1 - k, 3); lupa = de + (1 - de) * e; medir(); if (k < 1) requestAnimationFrame(paso); else lupa = 1; };
+  lupa = de; paso();
+}
 function medir() {
   DPR = Math.min(2.5, window.devicePixelRatio || 1);
   RES = Math.max(0.75, DPR * NITIDEZ[rit.niv]);
@@ -3700,7 +3707,8 @@ function pintarViaje() {
   const sig = RANGOS.find((r) => r[0] > S.rec);
   if (h.indexOf('class="pill"') < 0) h += `<div class="l rec col" title="Ver la colección del mundo"><span>Colección</span><b>${nHallados()} de ${NCOL}</b></div>`;
   if (h.indexOf('class="pill"') < 0) h += `<div class="l rec" title="${sig ? 'Sigue: ' + sig[1] + ' a los ' + sig[0].toLocaleString('es-MX') + ' m' : 'Llegaste al último rango'}"><span>Récord</span><b>${S.rec.toLocaleString('es-MX')} m · ${RANGOS[S.rango][1]}</b></div>`;
-  poner($('#vjDatos'), h);
+  const vj = $('#vjDatos'), modo = h.indexOf('class="pill"') < 0 ? 1 : 0; if (vj._modo !== modo) { vj._modo = modo; vj.classList.remove('entra'); void vj.offsetWidth; vj.classList.add('entra'); }
+  poner(vj, h);
   const b = $('#bGrua'), c = lejos ? costoGrua() : 0;
   poner(b, lejos ? `<span>🚁 Grúa · <b>${fmt(c)}</b>${S.d < c ? ' · no alcanza' : ''}</span><kbd>G</kbd>` : '');      // en un solo renglón, para que quepan los números
   b.style.display = lejos ? 'flex' : 'none'; b.classList.toggle('no', S.d < c);
@@ -3919,7 +3927,7 @@ let mapaMenuT = 0, pestana = 0, pieza = 0, cuantos = 1, eleM = 0, ultVenta = 0, 
 function abrir(id) {
   if (!S || (soloVer && id !== 'top')) return;
   son.clic();
-  menu = id; detener(); $('#velo').classList.add('on');
+  menu = id; detener(); $('#velo').classList.add('on'); $('#velo').classList.remove('inicio'); $('#caja').classList.toggle('alta', id === 'menu' || id === 'tal' || id === 'alm' || id === 'top' || id === 'pub');
   if (id === 'gas' && S.fuel >= tanque() - 0.001) evento('comb');   // llegar con el tanque lleno también cuenta
   pintarMenu(); ultPos = ''; enviarPos();
 }
@@ -3955,7 +3963,7 @@ function pintarMenu() {
     h = cab('🧰 El Almacén') + `<div class="cuerpo"><div class="fila"><div class="ic">🛠️</div><div class="t"><b>Reparar el casco</b><small>${Math.ceil(S.vida)} / ${vidaMax()} de vida · $15 por punto</small></div>
       <div class="v">${dano > 0.01 ? fmt(costo) : ''}</div><button data-a="reparar" ${dano <= 0.01 || puede < 1 ? 'disabled' : ''}>${dano > 0.01 && puede >= 1 ? '<kbd>Enter</kbd>' : ''}${dano <= 0.01 ? 'Intacto' : puede < costo ? 'Reparar lo que alcance' : 'Reparar'}</button></div>
       <div class="cant"><span>Comprar de a</span>${[1, 5, 10, 50, 100].map((q) => `<button class="s${q === cuantos ? ' on' : ''}" data-a="cuantos" data-v="${q}">${q}</button>`).join('')}</div>` +
-      OBJ.map((o, i) => `<div class="fila"><div class="ic">${o.ic}</div><div class="t"><b>${o.n} <small style="display:inline">· tecla ${o.k} · tienes ${S.obj[i]}</small></b><small>${o.h}</small><small>${o.ef}</small></div>
+      OBJ.map((o, i) => `<div class="fila"><div class="ic">${o.ic}</div><div class="t"><b>${o.n} <small style="display:inline">${tactil ? '' : '· tecla ' + o.k + ' '}· tienes ${S.obj[i]}</small></b><small>${o.h}</small><small>${o.ef}</small></div>
       <div class="v">${fmt(o.p * cuantos)}</div><button data-a="objeto" data-v="${i}" ${S.d < o.p * cuantos ? 'disabled' : ''}><kbd>${o.k}</kbd>Comprar${cuantos > 1 ? ' ' + cuantos : ''}</button></div>`).join('') + '</div>';
   } else if (menu === 'ele') {
     const u = ultimoPunto(), fila = (ic, n, sub, m, v) => `<div class="fila"><div class="ic">${ic}</div><div class="t"><b>${n}</b><small>${sub}</small></div><div class="v">${fmt(costoEle(m))}</div><button data-a="bajar" data-v="${v}" ${S.d >= costoEle(m) ? '' : 'disabled'}>Bajar</button></div>`;
@@ -4001,6 +4009,7 @@ function pintarMenu() {
   const sube = c.querySelector('.cuerpo')?.scrollTop || 0, misma = c._m === menu + pieza; c._m = menu + pieza;
   c.innerHTML = h + (tactil || !listo ? '' : `<div class="tecl">${TECLAS_MENU[menu] ? TECLAS_MENU[menu] + ' · ' : ''}<kbd>↑</kbd> <kbd>↓</kbd> recorren · <kbd>Esc</kbd> cierra</div>`);
   const cu = c.querySelector('.cuerpo'), act = menu === 'tal' && c.querySelector('.fila.act');
+  if (cu && !misma && movil) cu.classList.add('entra');
   if (cu) { if (misma) cu.scrollTop = sube; else if (act) cu.scrollTop = Math.max(0, act.offsetTop - cu.offsetTop - 70); }
   const mp = $('#mapa'); if (mp) {
     pintarMapa(mp); c.querySelector('.cuerpo').scrollTop = Math.max(0, mp.offsetTop + Math.max(0, yo.y) / (mp.height / mp.clientHeight) - 220);
@@ -4237,7 +4246,7 @@ const acciones = {
   },
   compartir() { navigator.share?.({ title: 'Mina', text: 'Entra a excavar a mi mundo', url: location.origin + '/' + mundoId }).catch(() => {}); return 'no'; },
   tirar(v) { if (S.carga[+v] > 0) S.carga[+v]--; },
-  op(v, el) { const k = el.dataset.k; op[k] = el.type === 'checkbox' ? (el.checked ? 1 : 0) : +el.value; if (k === 'zoom') { lupa = 1; op.lupa = 1; } escribir('mina_op', op); aplicarOp(); return 'no'; },
+  op(v, el) { const k = el.dataset.k, antes = op[k]; op[k] = el.type === 'checkbox' ? (el.checked ? 1 : 0) : +el.value; if (k === 'zoom') { if (movil) animarLupa(lupa * [9, 12, 16][op.zoom] / [9, 12, 16][antes]); else lupa = 1; op.lupa = 1; } escribir('mina_op', op); aplicarOp(); return 'no'; },
   texto(v) { op.texto = Math.max(0.85, Math.min(1.5, op.texto + +v)); escribir('mina_op', op); aplicarOp(); },
   ligaMaq(v, el) {
     const liga = location.origin + '/' + mundoId + '#maquinita=' + miK;
@@ -4299,6 +4308,7 @@ const acciones = {
   devolverP(v) { enviar({ t: 'devolver', i: +v }); const o = otros.get(+v); if (o) aviso(o.n + ' vuelve a tener permiso'); },
   desechar() { desechar(mundoId, soyCreador); },
 };
+$('#velo').addEventListener('click', (e) => { if (e.target === e.currentTarget && movil && menu && menu !== 'inicio') { audio(); cerrar(); } });
 $('#caja').addEventListener('click', (e) => {
   const el = e.target.closest('[data-a]'); if (!el || el.disabled || el.tagName === 'SELECT' || el.tagName === 'INPUT') return;
   const r = acciones[el.dataset.a]?.(el.dataset.v, el);
@@ -4384,7 +4394,7 @@ function menuPrincipal() {
       chk('contraste', 'Alto contraste') + chk('dalton', 'Marcas para daltónicos (cada mineral con su símbolo)') + chk('temblor', 'Temblor de pantalla') +
       `<label class="op"><span>Partículas</span><select data-a="op" data-k="part">${[[2, 'Todas'], [1, 'Pocas'], [0, 'Ninguna']].map(([v, t]) => `<option value="${v}" ${op.part == v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
       <label class="op"><span>Acercamiento</span><select data-a="op" data-k="zoom">${[[0, 'Cerca'], [1, 'Normal'], [2, 'Lejos']].map(([v, t]) => `<option value="${v}" ${op.zoom == v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>` +
-      `<label class="op"><span>Aterrizaje suave (frena sola antes del piso)</span><select data-a="op" data-k="suave">${[[2, tactil ? 'Automático: sí, con el dedo' : 'Automático: no, con teclado'], [1, 'Siempre'], [0, 'Nunca']].map(([v, t]) => `<option value="${v}" ${(op.suave ?? 2) == v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>` +
+      `<label class="op" title="Al caer sin tocar nada, los rotorcitos frenan solos antes del piso"><span>Aterrizaje suave${movil ? '' : ' (frena sola antes del piso)'}</span><select data-a="op" data-k="suave">${[[2, tactil ? 'Automático: sí, con el dedo' : 'Automático: no, con teclado'], [1, 'Siempre'], [0, 'Nunca']].map(([v, t]) => `<option value="${v}" ${(op.suave ?? 2) == v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>` +
       chk('nombres', 'Mostrar los nombres de las maquinitas') +
       `<label class="op"><span>Cuadros por segundo</span><select data-a="op" data-k="fps">${[[0, 'Lo máximo de tu pantalla'], [60, '60'], [30, '30 (ahorra batería)']].map(([v, t]) => `<option value="${v}" ${op.fps == v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
       <p class="nota">Tu pantalla refresca a <b>${rit.hz} Hz</b> y el juego está mostrando <b>${Math.round(Math.min(rit.fps, rit.hz))} cuadros por segundo</b>, con nitidez al ${Math.round(NITIDEZ[rit.niv] * 100)} %. Señal con el mundo: ${red.rtt ? Math.round(red.rtt) + ' ms' : 'midiendo…'}. El juego se ajusta solo: si tu equipo no alcanza el refresco de su pantalla, baja la nitidez antes que la fluidez.</p>
@@ -4545,7 +4555,7 @@ function medirMovil() { movil = tactil && Math.min(innerWidth, innerHeight) <= 8
 const pal = $('#palanca'), dedo = { id: -1, x: 0, y: 0, t: 0, mov: false, eje: '' }, dedos = new Map();
 let pinza = null, lupaT = 0;
 addEventListener('pointerdown', () => nacer(), true);
-function soltarPalanca() { dedo.id = -1; dedo.eje = ''; pal.style.display = 'none'; teclas.izq = teclas.der = teclas.arr = teclas.aba = false; }
+function soltarPalanca() { dedo.id = -1; dedo.eje = ''; pal.classList.remove('on'); teclas.izq = teclas.der = teclas.arr = teclas.aba = false; }
 lienzo.addEventListener('pointerdown', (e) => {
   if (e.pointerType !== 'touch') return;
   if (!tactil) { tactil = true; aplicarOp(); } audio();
@@ -4561,14 +4571,14 @@ lienzo.addEventListener('pointerdown', (e) => {
   if (dedos.size > 2 || soloVer) return;
   if (pausa) { pausa = false; pista(''); arrancar(); }
   dedo.id = e.pointerId; dedo.x = e.clientX; dedo.y = e.clientY; dedo.t = performance.now(); dedo.mov = false; dedo.eje = ''; vistaLibre = false;
-  pal.style.left = e.clientX + 'px'; pal.style.top = e.clientY + 'px'; pal.firstChild.style.transform = ''; pal.style.display = 'block';
+  pal.style.left = e.clientX + 'px'; pal.style.top = e.clientY + 'px'; pal.firstChild.style.transform = ''; pal.classList.add('on');
 });
 lienzo.addEventListener('pointermove', (e) => {
   const f = dedos.get(e.pointerId); if (f) { f.x = e.clientX; f.y = e.clientY; }
   if (pinza && dedos.size >= 2) {
     const [p1, p2] = [...dedos.values()], d = Math.hypot(p1.x - p2.x, p1.y - p2.y), mx = (p1.x + p2.x) / 2, my = (p1.y + p2.y) / 2;
     const nl = Math.max(0.6, Math.min(2.2, pinza.lupa0 * d / pinza.d0));
-    if (movil && Math.abs(nl - lupa) > 0.015 && performance.now() - lupaT > 70) { lupa = nl; lupaT = performance.now(); medir(); }
+    if (movil && Math.abs(nl - lupa) > 0.012 && performance.now() - lupaT > 50) { lupa = nl; lupaT = performance.now(); medir(); }
     panX = Math.max(-W, Math.min(W, panX - (mx - pinza.mx) * RES / T)); panY = Math.max(-H, Math.min(H, panY - (my - pinza.my) * RES / T)); pinza.mx = mx; pinza.my = my; vistaLibre = true;
     return;
   }
@@ -4780,7 +4790,7 @@ async function nacer() {
   naciendo = false;
 }
 function llave() { return [...crypto.getRandomValues(new Uint8Array(16))].map((b) => b.toString(16).padStart(2, '0')).join(''); }
-function inicio(h) { menu = 'inicio'; detener(); $('#velo').classList.add('on'); $('#caja').innerHTML = h; }
+function inicio(h) { menu = 'inicio'; detener(); $('#velo').classList.add('on', 'inicio'); $('#caja').innerHTML = h; }
 function pantallaFinal(t, x) {
   inicio(`<header><h2>${t}</h2></header><div class="cuerpo"><p>${x}</p><p><button id="bIr">Ir a mis mundos</button></p></div>`);
   $('#bIr').onclick = () => (location.href = '/?mundos');

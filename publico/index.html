@@ -31,20 +31,22 @@
 /* RLR · todo el estilo va aquí: una sola descarga, tipografía del sistema */
 :root{--f:1;--bg:#1b120e;--caja:#2a1c16;--borde:#5a3d2c;--tx:#f3e6d8;--su:#c9b29c;--ac:#ffd23f;--ok:#6fdc7a;--mal:#ff6b5a;--az:#6ec3ff}
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;background:var(--bg);color:var(--tx);
+html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;background:var(--bg);color:var(--tx);transition:font-size .2s;
   font:calc(14px*var(--f))/1.35 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-user-select:none;user-select:none}
 body.contraste{--caja:#000;--borde:#fff;--tx:#fff;--su:#fff;--ac:#ffe600}
 canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
 #c{touch-action:none;-webkit-touch-callout:none}
 /* La palanca aparece donde se pone el dedo: arrastrar mueve la maquinita, soltar la detiene. */
-#palanca{position:fixed;z-index:4;width:112px;height:112px;margin:-56px 0 0 -56px;border-radius:50%;border:2px solid #fff5;background:#0003;pointer-events:none;display:none}
+#palanca{position:fixed;z-index:4;width:112px;height:112px;margin:-56px 0 0 -56px;border-radius:50%;border:2px solid #fff5;background:#0003;pointer-events:none;visibility:hidden;opacity:0;transition:opacity .12s,visibility 0s .12s}
+#palanca.on{visibility:visible;opacity:1;transition:opacity .12s}
 #palanca i{position:absolute;left:50%;top:50%;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;background:#ffd23fcc;border:2px solid #2a1a14}
 button{font:inherit;color:#1b120e;background:var(--ac);border:0;border-radius:6px;padding:.45em .9em;font-weight:700;cursor:pointer}
 button:hover{filter:brightness(1.1)}button:disabled{background:#6b5a4c;color:#2a1c16;cursor:not-allowed;filter:none}
 button.s{background:transparent;color:var(--tx);border:1px solid var(--borde)}
 button.mal{background:var(--mal)}
 input,select{font:inherit;background:#120b08;color:var(--tx);border:1px solid var(--borde);border-radius:6px;padding:.4em .6em}
-.hud{position:fixed;pointer-events:none;text-shadow:0 1px 2px #000;visibility:hidden}
+.hud{position:fixed;pointer-events:none;text-shadow:0 1px 2px #000;visibility:hidden;opacity:0;transition:opacity .25s,visibility 0s .25s}
+body.jugando .hud{opacity:1;transition:opacity .25s}
 body.jugando .hud{visibility:visible}
 .hud>*{pointer-events:auto}
 #izq{left:10px;top:10px;width:calc(210px*var(--f))}
@@ -261,8 +263,12 @@ body.libre.jugando #regla,body.libre.viendo #regla{display:block;visibility:visi
 #pista.dis{bottom:calc(50px*var(--f));font-weight:500;font-size:.8em;background:#0005;padding:2px 10px;color:var(--su)}
 #aviso-red{left:50%;top:8px;transform:translateX(-50%);background:#000b;border:1px solid var(--borde);border-radius:99px;padding:3px 12px;font-size:.78em;font-weight:700;color:var(--su);display:none;white-space:nowrap}
 #cuenta{left:50%;top:14%;transform:translateX(-50%);font-size:2em;font-weight:900;color:var(--ac);display:none;text-align:center}
-#velo{position:fixed;inset:0;background:#000b;display:none;align-items:center;justify-content:center;padding:12px;z-index:5}
-#velo.on{display:flex}
+#velo{position:fixed;inset:0;background:#000b;display:flex;align-items:center;justify-content:center;padding:12px;z-index:5;visibility:hidden;opacity:0;transition:opacity .18s,visibility 0s .18s}
+#velo.on{visibility:visible;opacity:1;transition:opacity .18s}
+.caja{transition:transform .22s cubic-bezier(.2,.8,.2,1)}
+#velo:not(.on) .caja{transform:translateY(10px)}
+.cuerpo.entra{animation:cuerpoEntra .2s ease-out}
+@keyframes cuerpoEntra{from{opacity:0;transform:translateY(6px)}}
 .caja{background:var(--caja);border:2px solid var(--borde);border-radius:12px;width:min(760px,100%);max-height:94vh;display:flex;flex-direction:column;box-shadow:0 12px 40px #000a}
 .caja header{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--borde)}
 .caja header h2{margin:0;font-size:1.2em;flex:1;display:flex;align-items:center;gap:.45em}
@@ -327,32 +333,40 @@ a{color:var(--az)}
    Los tableros van a las orillas y el centro queda libre para la tierra. Botones de 44 px o más, sin letras de teclado,
    todo respeta las zonas seguras del teléfono. body.tactil quita las pistas de teclado en cualquier pantalla táctil. */
 body.tactil :is(#botones,#caja,#bGrua,#objetos,#chat header,#mapaLat header,#tabla,#verBarra,#verEspera) kbd,body.tactil .tecl,body.tactil #chatTeclas{display:none!important}
-body.movil #izq{left:calc(8px + env(safe-area-inset-left));top:calc(8px + env(safe-area-inset-top));width:min(40vw,170px)}
+body.movil #izq{left:calc(8px + env(safe-area-inset-left));top:calc(8px + env(safe-area-inset-top));width:min(38vw,160px)}
 body.movil #izq>div:not(.barra):not(#datos):not(#vel){display:none}
-body.movil .barra{height:24px;margin:0 0 5px;border-radius:8px;background:#000a;border-color:#ffffff22}
-body.movil .barra b{line-height:24px;font-size:.78em;padding-left:20px}
-body.movil .barra::after{content:"⛽";position:absolute;left:6px;top:0;line-height:24px;font-size:.72em}
+body.movil .barra{height:22px;margin:0 0 4px;border-radius:8px;background:#000a;border-color:#ffffff22}
+body.movil .barra b{line-height:22px;font-size:.76em;padding-left:20px}
+body.movil .barra::after{content:"⛽";position:absolute;left:6px;top:0;line-height:22px;font-size:.7em}
 body.movil #bCasco::after{content:"🛡️"}
-body.movil #datos{gap:6px;font-size:.95em}
+body.movil #datos{gap:6px;font-size:.95em;margin-top:2px}
 body.movil #datos span{padding:3px 8px;background:#000a;border-radius:8px}
 body.movil #vel{width:96px;padding:3px 6px 4px;margin-top:6px}
 body.movil #der{right:calc(8px + env(safe-area-inset-right));top:calc(8px + env(safe-area-inset-top))}
-body.movil #botones{gap:6px}
-body.movil #botones button{position:relative;width:44px;height:44px;padding:0;border-radius:12px;font-size:1.3em;line-height:1;display:flex;align-items:center;justify-content:center;background:#000a;border:1px solid #ffffff22}
+body.movil #botones{gap:4px}
+body.movil #botones button{position:relative;width:48px;height:48px;padding:0;border-radius:13px;font-size:1.35em;line-height:1;display:flex;align-items:center;justify-content:center;background:#000a;border:1px solid #ffffff22}
+body.movil :is(#botones button,#objetos div,#bSube,#bGrua,#vjDatos,.pest button,#caja button,#chatEmo button){transition:transform .1s,background-color .15s,filter .15s}
+body.movil :is(#botones button,#objetos div,#bSube,#bGrua,#vjDatos,.pest button,#caja button,#chatEmo button):active{transform:scale(.94);filter:brightness(1.15)}
+body.movil #botones button:hover{filter:none}
 body.movil #botones :is(span,#bMenos,#bVol,#bMas,#bTipos,#bInv){display:none}
 body.movil #bChat i{position:absolute;top:-5px;right:-5px;margin:0;font-size:.6em;padding:1px 5px}
 body.movil #panSon{width:min(270px,calc(100vw - 20px))}
 body.movil #tabla{width:auto;max-width:min(58vw,250px);font-size:.74em;margin-top:5px}
 body.movil #tabla:empty{display:none}
-body.movil #tarjeta{position:fixed;left:10px;right:10px;top:calc(112px + env(safe-area-inset-top));width:auto;margin:0;font-size:.88em;text-align:left}
-body.movil #metas{left:10px;right:auto;width:min(62vw,300px);top:auto;bottom:calc(156px + env(safe-area-inset-bottom));transform:none;font-size:.76em}
+body.movil #tarjeta{position:fixed;left:8px;right:8px;top:calc(108px + env(safe-area-inset-top));width:auto;margin:0;font-size:.88em;text-align:left}
+body.movil #tarjeta div{animation:popY .25s;border-radius:10px;padding:7px 11px}
+@keyframes popY{from{transform:translateY(-8px);opacity:0}}
+body.movil #avisos div{animation:entraY .25s;border-radius:8px}
+@keyframes entraY{from{opacity:0;transform:translateY(6px)}}
+body.movil #metas{left:8px;right:auto;width:min(62vw,300px);top:auto;bottom:calc(156px + env(safe-area-inset-bottom));transform:none;font-size:.76em}
 body.movil #avisos{display:block;left:50%;right:auto;top:auto;bottom:calc(206px + env(safe-area-inset-bottom));width:min(82vw,360px);transform:translateX(-50%);text-align:center;font-size:.82em}
-body.movil #chatVivo{left:10px;right:10px;width:auto;bottom:auto;top:calc(168px + env(safe-area-inset-top))}
+body.movil #chatVivo{left:8px;right:8px;width:auto;bottom:auto;top:calc(168px + env(safe-area-inset-top))}
 body.movil #pista,body.movil #pista.dis{bottom:calc(78px + env(safe-area-inset-bottom));max-width:calc(100vw - 24px);white-space:normal;text-align:center}
 body.movil #regla{left:8px;top:calc(116px + env(safe-area-inset-top));bottom:calc(216px + env(safe-area-inset-bottom));width:100px;font-size:.8em}
 /* abajo a la izquierda: «Subir sola», la grúa y una píldora con el viaje (un toque la despliega, otro abre la bodega) */
 body.movil #viaje{left:calc(8px + env(safe-area-inset-left));bottom:calc(8px + env(safe-area-inset-bottom));width:auto;max-width:calc(100vw - 88px);font-size:.9em;display:flex;flex-direction:column;align-items:flex-start;gap:6px}
 body.movil #vjDatos{padding:7px 11px;border-radius:12px;background:#000c;order:3;max-width:100%}
+body.movil #vjDatos.entra{animation:cuerpoEntra .18s ease-out}
 body.movil #vjDatos:not(:has(.pill)){min-width:min(250px,calc(100vw - 88px))}
 body.movil #vjDatos .pill{display:flex;gap:10px;align-items:center;white-space:nowrap;font-weight:700}
 body.movil #vjDatos .pill b{color:var(--ac)}
@@ -369,8 +383,26 @@ body.movil #objetos i{font-size:1.6em;line-height:1.1}
 body.movil #palanca{width:136px;height:136px;margin:-68px 0 0 -68px;border-width:3px;background:#0004}
 body.movil #palanca i{width:58px;height:58px;margin:-29px 0 0 -29px}
 /* los menús ocupan toda la pantalla */
-body.movil #velo{padding:0}
-body.movil .caja{width:100%;height:100%;max-height:none;border-radius:0;border:0;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+/* una hoja que sube desde abajo: corta si el contenido es corto, completa si es largo */
+body.movil #velo{padding:0;align-items:flex-end}
+body.movil .caja{width:100%;height:auto;max-height:calc(100% - env(safe-area-inset-top));border-radius:18px 18px 0 0;border:0;border-top:1px solid var(--borde);padding-bottom:max(8px,env(safe-area-inset-bottom));box-shadow:0 -10px 40px #000a}
+body.movil .caja header{padding:12px 14px 10px}
+body.movil .caja header::before{content:"";position:absolute;left:50%;top:6px;width:38px;height:4px;margin-left:-19px;border-radius:2px;background:#ffffff33}
+body.movil .caja header{position:relative}
+body.movil #velo:not(.on) .caja{transform:translateY(40px)}
+body.movil #velo.inicio .caja{border-radius:0;border-top:0;padding-top:env(safe-area-inset-top)}
+body.movil #velo.inicio .caja header::before{display:none}
+body.movil #velo.inicio .caja,body.movil .caja.alta{min-height:calc(100% - env(safe-area-inset-top))}
+body.movil label.op{gap:10px}
+body.movil label.op>span{flex:1 1 0;min-width:90px}
+body.movil label.op select{max-width:62%}
+body.movil .fila{justify-content:flex-end}
+body.movil .fila .t{flex:1 1 150px}
+body.movil .fila:has(.v) .t{flex-basis:calc(100% - 52px)}
+body.movil .fila:has(.v):not(:has(.ic)) .t{flex-basis:100%}
+body.movil .fila.top .t{flex-basis:0;min-width:80px}
+body.movil .fila.top .v{font-size:.95em}
+body.movil #panSon{position:relative;z-index:3}
 body.movil .caja header{padding:10px 12px}
 body.movil .pest{gap:5px;padding:8px 10px 0}
 body.movil .pest button{padding:.5em .75em}

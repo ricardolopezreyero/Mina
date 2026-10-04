@@ -1209,6 +1209,25 @@ No se pudo ver el movimiento en vivo porque el navegador de pruebas está oculto
 
 **Probado.** En el navegador de pruebas emulando un iPhone (375 × 812, puntero grueso): tablero sin encimados ni desbordes, botones de 44 px, 12 columnas; palanca con toques simulados (zona muerta, derecha, diagonal que no despega, arriba, diagonal volando, abajo); pinza de 31 a 69 px por celda y vista libre; aterrizaje suave con y sin ayuda; «Subir sola» aparece bajo tierra y enciende el crucero; menú a pantalla completa con la opción nueva. Lo que no se pudo probar: un teléfono real en la mano (la sensación de la palanca, el peso del dedo sobre la maquinita, Safari con su barra). El trabajador de servicio sube a `mina-24` para que los teléfonos tomen la versión nueva.
 
+### 9.42 Pulir el celular: alineaciones y suavidad
+
+**Lo que pidió Ricardo.** Madurar cada píxel de la vista del celular: alineaciones, la apertura de los menús, el cambio de opciones; en celular todo debe sentirse suave y bien hecho.
+
+**Recorrido.** Se revisó pantalla por pantalla con una maquinita recién nacida (como la ve quien entra por primera vez) y con una avanzada: tablero, tarjeta de bienvenida, Gasolinera, Taller, Almacén, Invitar, las pestañas del menú (Opciones, Mundo, Top 33, Estadísticas), el chat, el mapa de un lado, el panel de sonido y Mis mundos.
+
+**Lo que se afinó.**
+- **Arriba, todo a la misma altura:** las dos barras (22 px + 4 de aire) suman 48 px, igual que los cuatro botones, que crecieron a 48 px. Las orillas van todas a 8 px (tablero, tarjetas, metas, chat en vivo).
+- **Los menús son una hoja que sube desde abajo**, con asa arriba: corta si el contenido es corto (Gasolinera, Báscula), completa si es largo (menú, Taller, Almacén, Top). Entra con un fundido y un deslizamiento de 0.22 s; se cierra igual (antes aparecían y desaparecían de golpe). **Tocar fuera de la hoja la cierra.** Las pantallas de inicio van completas y sin asa.
+- **Cambiar de pestaña** hace entrar el contenido con un fundido corto; los repintados en vivo (mapa, cifras) no parpadean.
+- **Cambiar el Acercamiento** ya no brinca: la vista se acerca o aleja en un cuarto de segundo (`animarLupa`). El tamaño del texto también cambia suave.
+- **Los toques se sienten:** botones del tablero, objetos, Subir sola, grúa, píldora, pestañas y botones de menú se encogen un poco al pulsar.
+- **La palanca** aparece y se va con un fundido; **el tablero** entra con un fundido al empezar; las tarjetas bajan desde arriba y los avisos suben desde abajo.
+- **Filas de los menús:** en el Almacén y el Taller el texto ocupa el renglón completo y el precio con su botón van juntos abajo a la derecha (antes el texto quedaba en una columna angosta); en el Top 33 el nombre y el dinero caben en un renglón; en las opciones el selector se queda a la derecha y es el texto el que parte renglón; «tecla R» ya no se menciona con el dedo.
+- **El panel de sonido** queda por encima de las tarjetas.
+- La pinza responde cada 50 ms (antes 70).
+
+**Probado** emulando un iPhone: todas las pantallas de arriba, en capturas. Sigue sin probarse en un teléfono real.
+
 ## 10. Revisión de código del 2 de octubre
 
 Se revisó todo el código buscando fallas y se corrigieron estas:
