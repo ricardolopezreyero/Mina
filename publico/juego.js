@@ -5252,7 +5252,18 @@ function botonGoogle(caja) {
 const paseLogin = (location.hash.match(/sesion=([\w-]+\.[\w-]+\.[\w-]+)/) || [])[1] || '';
 if (paseLogin) { try { localStorage.setItem('ct_sesion', paseLogin); } catch {} history.replaceState(null, '', location.pathname + location.search); setTimeout(() => alEntrarGoogle({ credential: paseLogin }), listo ? 0 : 1500); }
 // Si la casa ya reconoce a esta persona (entró en otro servicio), Mina entra sola con ese mismo pase.
-addEventListener('load', () => { if (!window.LoginCT) return; LoginCT.alPrefs(() => { op = { vol: 0.7, temblor: 1, part: 2, texto: 1, contraste: 0, dalton: 0, nombres: 1, zoom: 1, fps: 0, mudo: 0, ...leer('mina_op', {}) }; aplicarOp(); volumenes(); pintarBocina(); if (menu === 'menu') pintarMenu(); aviso('Tus preferencias llegaron de tu cuenta'); }); const yaCasa = () => { const p = LoginCT.pase(); if (!cuenta && p && !paseLogin) setTimeout(() => alEntrarGoogle({ credential: p }), listo ? 0 : 1500); }; yaCasa(); LoginCT.al(yaCasa); });
+// Los superpoderes de la casa (texto grande, contraste, menos movimiento, silencio, noche) se traducen a las opciones de Mina.
+function casaAMina(c) {
+  if (!c || !Object.keys(c).length) return;
+  const antes = JSON.stringify(op);
+  if (c.texto) op.texto = c.texto === 'grande' ? Math.max(op.texto, 1.2) : Math.min(op.texto, 1);
+  if (c.contraste) op.contraste = c.contraste === '1' ? 1 : 0;
+  if (c.movimiento) { op.temblor = c.movimiento === 'reducido' ? 0 : 1; op.part = c.movimiento === 'reducido' ? 1 : 2; }
+  if (c.sonido) op.mudo = c.sonido === 'silencio' ? 1 : 0;
+  if (c.noche === '1') { op.temblor = 0; op.part = 1; }
+  if (JSON.stringify(op) !== antes) { escribir('mina_op', op); aplicarOp(); volumenes(); pintarBocina(); if (menu === 'menu') pintarMenu(); }
+}
+addEventListener('load', () => { if (!window.LoginCT) return; casaAMina(LoginCT.casa()); LoginCT.alCasa(casaAMina); LoginCT.alPrefs(() => { op = { vol: 0.7, temblor: 1, part: 2, texto: 1, contraste: 0, dalton: 0, nombres: 1, zoom: 1, fps: 0, mudo: 0, ...leer('mina_op', {}) }; aplicarOp(); volumenes(); pintarBocina(); if (menu === 'menu') pintarMenu(); aviso('Tus preferencias llegaron de tu cuenta'); }); const yaCasa = () => { const p = LoginCT.pase(); if (!cuenta && p && !paseLogin) setTimeout(() => alEntrarGoogle({ credential: p }), listo ? 0 : 1500); }; yaCasa(); LoginCT.al(yaCasa); });
 async function alEntrarGoogle(resp) {
   const k = miK || (maqLocal && maqLocal.k) || '';
   aviso('Entrando con Google…');
