@@ -87,6 +87,7 @@ Por qué estos precios: el primer escalón cuesta menos que un café para que na
 - **Lo comprado vive en la maquinita** (`m.tienda = { nivel, mecenas, compras[] }`) y la maquinita vive en la cuenta: cambiar de equipo no pierde nada.
 - **Pago con Stripe Checkout** (tarjeta, en la página de Stripe). `POST /api/tienda/pagar` crea la sesión con el precio del servidor (nunca del navegador) y la diferencia de nivel ya calculada; al volver, `POST /api/tienda/confirmar` pregunta a Stripe si se pagó y entonces entrega. Cada sesión se entrega una sola vez.
 - **Precios en un solo lugar**: `src/tienda.js`. El juego los pide al abrir la tienda; no hay copia en el navegador.
+- **La cuenta de Stripe, por lo pronto, es la de SuperLeads** (la página de pago dice «SuperLeads»). Ricardo va a abrir una cuenta de Stripe de CapitalTorreon y entonces se cambia el binding (`wrangler.jsonc` → `secrets_store_secrets`) y se redespliega; no hay nada más que mover.
 - **La única llave** es `STRIPE_SECRET_KEY`, ligada desde la bóveda de la cuenta (Secrets Store). Sin la llave, la tienda deja probarse todo y dice «los pagos se abren pronto».
 
 ## 7. Lo que se mide (y lo que no)
