@@ -41,7 +41,7 @@ Este juego está hecho con todo el cariño con el que se puede hacer un juego. N
 - **Sin internet** se sigue jugando; al volver la señal, todo se manda al mundo.
 - El sonido se maneja con la bocina de arriba a la derecha: música, taladro, hélice y motor tienen cada uno su interruptor (el motor viene apagado).
 - Tu maquinita es tuya: entra contigo a cualquier mundo y a cualquier equipo.
-- **Guardar con Google** (Menú → Mundo, o Mis mundos): jugar nunca lo pide. Si quieres guardar tu maquinita y tus mundos, entras con tu correo de Google. Cada cuenta lleva una sola maquinita y todos los mundos que quieras, y los recupera en cualquier equipo. Cerrar sesión deja todo guardado en la cuenta y el equipo empieza de cero.
+- **Guardar con Google** (Menú → Mundo, o Mis mundos), a través de [login.capitaltorreon.com](https://login.capitaltorreon.com), el login único de CapitalTorreon: jugar nunca lo pide. Si quieres guardar tu maquinita y tus mundos, entras con tu correo de Google. Cada cuenta lleva una sola maquinita y todos los mundos que quieras, y los recupera en cualquier equipo. Cerrar sesión deja todo guardado en la cuenta y el equipo empieza de cero.
 - **Los permisos duran**: quien ya jugó en tu mundo, o a quien aceptaste, entra cuando quiera, aunque vuelva en un mes. En el panel (**J**) le quitas o le devuelves el permiso en un clic. Sin permiso puede mirar y volver a pedirlo.
 
 ## Qué hay en el repositorio

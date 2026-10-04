@@ -1252,6 +1252,12 @@ No se pudo ver el movimiento en vivo porque el navegador de pruebas está oculto
 
 **Probado** en local: desde cero deja $20, equipo 000000 y versión 559 (venía de 557), crea un mundo nuevo y pone la maquinita en la superficie; el tiempo jugado se conserva.
 
+### 9.46 El login pasa a login.capitaltorreon.com
+
+**Lo que pidió Ricardo.** Un solo login para todos los servicios de CapitalTorreon, sin agregar un origen autorizado en Google por cada microservicio.
+
+**Cómo quedó.** Existe `login.capitaltorreon.com` (repo `login-capitaltorreon`): Google solo autoriza ese origen. Mina ya no carga el botón de Google: el botón «Entrar con Google» manda a `login.capitaltorreon.com/?volver=<esta página>`; se vuelve con `#sesion=<pase>` (un JWT ES256 de 30 días) y el juego lo manda a `/api/cuenta/google` como `credential`. El mundo lo verifica solo con la llave pública del login (`src/verificar.js`), sin llamar a nadie; si no es un pase de la casa, sigue el camino viejo (tokeninfo). Probado de punta a punta en vivo con la cuenta de Ricardo: entra, vuelve a Mis mundos con «Guardado en tu cuenta».
+
 ## 10. Revisión de código del 2 de octubre
 
 Se revisó todo el código buscando fallas y se corrigieron estas:
