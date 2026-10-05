@@ -910,7 +910,9 @@ function sonarLazos(quieto) {
   if (quieto || !S) { for (const k in lazo) if (!(k === 'motor' && motorPrueba)) pon(lazo[k].g.gain, 0, 0.04); return; }
   const alto = Math.max(0, -(yo.y + HH)), km = alto / 500, vel = Math.abs(yo.vx), cae = Math.max(0, yo.vy), sube = Math.max(0, -yo.vy), p = yo.perf, v = yo.vuela, niv = Math.min(8, S.eq[0]);
   // taladro: suena exactamente mientras perfora; el tono sube mientras muerde cada celda y se aclara contra el mineral
-  pon(lazo.taladro.g.gain, p ? 0.145 : 0, p ? 0.012 : 0.035);
+  const sgS = sigo >= 0 ? otros.get(sigo) : null, suTaladro = !p && sgS && sgS.on && (sgS.fl & 4) && !(sgS.fl & 16);      // siguiendo a alguien, se oye su taladro (más bajito)
+  pon(lazo.taladro.g.gain, p ? 0.145 : suTaladro ? 0.07 : 0, p ? 0.012 : 0.035);
+  if (suTaladro) { pon(lazo.taladro.o1.frequency, 100, 0.05); pon(lazo.taladro.o2.frequency, 100.7, 0.05); pon(lazo.taladro.fG.frequency, 520, 0.05); }
   if (p) { const e = Math.min(1, p.t / p.dur), duro = (p.tipo >= 10 && p.tipo < 40) || p.tipo === 2, f = (92 + niv * 8) * (0.88 + 0.3 * e) * (duro ? 1.12 : 1); pon(lazo.taladro.o1.frequency, f, 0.02); pon(lazo.taladro.o2.frequency, f * 1.007, 0.02); pon(lazo.taladro.fG.frequency, 420 + 260 * e + (duro ? 520 : 0), 0.03); pon(lazo.taladro.l1.frequency, 23 + niv * 2 + 6 * e); }
   // hélice: prende con la tecla y, al soltarla, el rotor se va frenando
   const pl = yo.planea, aspas = v ? 20 + Math.min(9, sube * 0.6) : pl ? 30 + Math.min(14, cae * 0.2) : 12;      // al planear giran los rotorcitos: más agudos y más bajito
@@ -2140,10 +2142,10 @@ function mascaraTeclas() {
   return b;
 }
 function enviarPos() {
-  if (!conectado || soloVer || !(mirones || [...otros.values()].some((o) => o.on))) return;
+  if (!conectado || soloVer || !(mirones || miradoPor.size || [...otros.values()].some((o) => o.on))) return;
   const x = Math.round(yo.x * 256), y = Math.round(yo.y * 64);
   const f = (yo.dir > 0 ? 1 : 0) | (yo.vuela ? 2 : 0) | (yo.planea || (yo.agua && yo.picada) ? 32 : 0) | (tiempo - (yo.pelea || -9) < 0.7 ? 64 : 0) | (yo.perf || yo.ataca ? 4 : 0) | (menu || pausa ? 8 : 0) | ((yo.perf && yo.perf.ty > Math.floor(yo.perf.oy)) || yo.ataca === 2 ? 16 : 0);
-  const tk = mirones ? mascaraTeclas() : 0, k = x + ',' + y + ',' + f + ',' + tk;
+  const tk = mirones || miradoPor.size ? mascaraTeclas() : 0, k = x + ',' + y + ',' + f + ',' + tk;
   if (k === ultPos) return; ultPos = k;
   bufPos[0] = 1; datoPos.setUint16(1, x, true); datoPos.setInt32(3, y, true); bufPos[7] = f; datoPos.setUint16(8, tk, true);
   ws.send(bufPos);
@@ -2156,6 +2158,28 @@ let cita = null, tCompartirCard = 0, bienvenidaDe = 0;
 // Cómo se llevan dos maquinitas en este mundo: 'comercio' (se dan dinero y objetos, nunca se lastiman) o 'batalla'. Lo decide el
 // primero que se topa con el otro; el otro se entera y cualquiera lo cambia después en el panel de la gente (J).
 let rel = {}, relCon_i = -1, tRelPregunta = -9, tComercio = -9, comercioCon = -1;
+// Quiénes me están mirando (metiches): a ellos les mando mis teclas y mi panel cada 2 s, para que vean lo que yo veo.
+const miradoPor = new Set();
+function mandarMiPanel() { if (!conectado || !S || !miradoPor.size) return; enviar({ t: 'yo', d: Math.floor(S.d), f: Math.round(S.fuel), fm: Math.round(tanque()), v: Math.round(S.vida), vm: Math.round(vidaMax()), c: nCarga(), cm: bodega(), z: donde(yo.y) }); }
+// Mientras sigo a alguien: su panel abajo (combustible, casco, carga, dinero), sus teclas y las reacciones que le puedo mandar.
+const REACCIONES = ['👋', '👍', '❤️', '🔥', '😂', '🎉'];
+function pintarSigo() {
+  const el = $('#sigoHud'); if (!el) return;
+  const o = sigo >= 0 ? otros.get(sigo) : null;
+  if (!o) { el.style.display = 'none'; el._h = ''; return; }
+  const f = o.ficha, tk = o.on && performance.now() - (o.tkT || 0) < 1500 ? o.tk | 0 : 0;
+  const barra = (v, m, cls) => `<div class="bar ${cls}"><i style="width:${Math.round(Math.min(1, v / Math.max(1, m)) * 100)}%"></i></div>`;
+  const h = `<div class="quien"><b>👁 ${esc(o.n)}</b><small>${o.y !== undefined ? donde(o.y) : ''}${f && f.z ? ' · ' + esc(f.z) : ''}</small></div>` +
+    (f ? `<div class="datos"><span>⛽ ${f.f} / ${f.fm} L${barra(f.f, f.fm, 'g')}</span><span>🛡 ${num(f.v)} / ${num(f.vm)}${barra(f.v, f.vm, 'v')}</span><span>⛏️ lleva ${f.c} de ${f.cm}${barra(f.c, f.cm, 'c')}</span><span>💰 ${fmt(f.d)}</span></div>` : '<div class="datos nota">Esperando su panel…</div>') +
+    `<div class="teclas">${[[0, '←'], [2, '↑'], [1, '→'], [3, '↓']].map(([b, t]) => `<kbd class="${tk & (1 << b) ? 'on' : ''}">${t}</kbd>`).join('')} <span class="sep"></span> ${[[5, 'R'], [6, 'N'], [7, 'D'], [8, 'P'], [9, 'Q'], [10, 'T'], [4, '␣']].map(([b, t]) => `<kbd class="${tk & (1 << b) ? 'on' : ''}">${t}</kbd>`).join('')}</div>` +
+    `<div class="rx">${REACCIONES.map((e) => `<button data-rx="${e}">${e}</button>`).join('')}<small>${tactil ? 'Toca la pantalla para volver' : 'Tab: la siguiente · cualquier tecla: volver'}</small></div>`;
+  if (el._h !== h) { el._h = h; el.innerHTML = h; }
+  el.style.display = 'block';
+}
+function reaccionar(e) { if (!conectado || sigo < 0) return; enviar({ t: 'rx', a: sigo, e }); son.clic(); }
+// Seguir a la siguiente maquinita conectada (Tab mientras sigo; V desde el juego sigue a la más cercana)
+function seguirSiguiente() { const l = [...otros.values()].filter((o) => o.on && o.x !== undefined && o.i !== miI).sort((a, b) => a.i - b.i); if (!l.length) return; const k = l.findIndex((o) => o.i === sigo); seguir(l[(k + 1) % l.length].i); }
+function seguirCercana() { let m = null, d0 = 1e9; for (const o of otros.values()) { if (!o.on || o.x === undefined || o.i === miI) continue; const d = Math.hypot(o.x - yo.x, o.y - yo.y); if (d < d0) { d0 = d; m = o; } } if (m) seguir(m.i); else aviso('No hay nadie más jugando ahora.'); }
 const parDe = (a, b) => Math.min(a, b) + '|' + Math.max(a, b);
 const relCon = (i) => rel[parDe(miI, i)] || '';
 function elegirRel(i, modo) { if (!conectado) return; enviar({ t: 'rel', a: i, modo }); rel[parDe(miI, i)] = modo; son.clic(); }
@@ -2258,7 +2282,9 @@ function recibir(d) {
       return hola(bautizo);
     }
     case 'pinta': { if (d.i === miI) { miPinta = d.p || {}; miMe = d.me | 0; ponerMotor(miPinta.motor | 0); } else { const o = otros.get(d.i); if (o) { o.p = d.p || {}; o.me = d.me | 0; } } edenE = null; if (menu === 'pin') pintarMenu(); return; }
-    case 'mira': { if (d.a === miI) { son.chat(); tarjeta('👀 ' + nombreDe(d.i) + ' está viendo lo que tú ves', 'Tú también puedes: toca su nombre arriba a la derecha y ves lo que ve. Así es Mina: tú mandas tu maquinita, pero nos vemos todos.', 'msj', 9000); } else if (d.a === -1 && d.fue === miI) aviso(nombreDe(d.i) + ' dejó de verte'); return; }
+    case 'yoDe': { const o = otros.get(d.i); if (o) { o.ficha = d; if (d.i === sigo) pintarSigo(); } return; }
+    case 'rx': { const o = d.a === miI ? null : otros.get(d.a), x = o ? o.x : yo.x, y = o ? o.y : yo.y; if (x === undefined) return; flota(x, y - 1.6, d.e + ' ' + nombreDe(d.de), '#fff'); if (d.a === miI) { son.chat(); aviso(nombreDe(d.de) + ' te manda ' + d.e); } chispas(x, y - 1.2, '#ffd23f', 6, 4); return; }
+    case 'mira': { if (d.a === miI) { miradoPor.add(d.i); mandarMiPanel(); ultPos = ''; enviarPos(); son.chat(); tarjeta('👀 ' + nombreDe(d.i) + ' está viendo lo que tú ves', 'Tú también puedes: toca su nombre arriba a la derecha y ves lo que ve. Así es Mina: tú mandas tu maquinita, pero nos vemos todos.', 'msj', 9000); } else if (d.a === -1 && d.fue === miI) { miradoPor.delete(d.i); aviso(nombreDe(d.i) + ' dejó de verte'); } return; }
     case 'bocina': { const o = otros.get(d.i); if (!o || !o.on || o.x === undefined) return; const dist = Math.hypot(o.x - yo.x, o.y - yo.y); if (dist < 40) claxon(d.b | 0, Math.max(0.15, 1 - dist / 40), 'otros'); return; }
     case 'nom': {              // alguien rebautizó su maquinita o le cambió el modelo
       if (d.i === miI) {
@@ -2439,10 +2465,10 @@ let panX = 0, panY = 0, vistaLibre = false;       // vista libre con la rueda o 
 let sigo = -1, sigoT = 0;
 function seguir(i) {
   const o = otros.get(i); if (!o || !o.on || o.x === undefined || i === miI) { aviso('Ahora no está jugando.'); return; }
-  sigo = i; sigoT = Date.now(); vistaLibre = false; panX = panY = 0; for (const k in teclas) teclas[k] = false;
-  if (conectado) enviar({ t: 'mira', a: i }); son.clic(); aviso('Viendo lo que ve ' + o.n + '. Cualquier tecla o toque te regresa.'); pintarTabla();
+  sigo = i; sigoT = Date.now(); vistaLibre = false; panX = panY = 0; for (const k in teclas) teclas[k] = false; o.ficha = null;
+  if (conectado) enviar({ t: 'mira', a: i }); son.clic(); aviso('Viendo lo que ve ' + o.n + '. ' + (tactil ? 'Un toque te regresa.' : 'Tab pasa a la siguiente; cualquier tecla te regresa.')); pintarTabla(); pintarSigo();
 }
-function dejarDeSeguir() { if (sigo < 0) return; sigo = -1; if (conectado) enviar({ t: 'mira', a: -1 }); pintarTabla(); }
+function dejarDeSeguir(porque) { if (sigo < 0) return; const n = nombreDe(sigo); sigo = -1; if (conectado) enviar({ t: 'mira', a: -1 }); pintarTabla(); pintarSigo(); if (porque) aviso(n + ' ' + porque + '. Vuelves a tu maquinita.'); }
 const vis = { x: INICIO_X, y: INICIO_Y };         // dónde se dibuja mi maquinita (entre dos pasos de física)
 const tiles = new Map(), casas = new Map();
 // ── Bloques. El terreno casi nunca cambia, así que no se arma en cada cuadro: se compone una vez en bloques de 4 × 4 celdas
@@ -4266,7 +4292,7 @@ function animar(d) {
     const rec = soloVer ? (otros.get(veo)?.rec || 0) : S.rec, alt = soloVer ? 1e9 : Math.max(S.alt, 40);
     maxY = Math.min(maxY, Math.max(vis.y, rec / 2 - HH) - filas * 0.5); minY = Math.max(minY, Math.min(vis.y, -alt / 2 - HH) - filas * 0.5);
   }
-  const sg = sigo >= 0 ? otros.get(sigo) : null; if (sigo >= 0 && (!sg || !sg.on || sg.x === undefined)) dejarDeSeguir();
+  const sg = sigo >= 0 ? otros.get(sigo) : null; if (sigo >= 0 && (!sg || !sg.on || sg.x === undefined)) dejarDeSeguir('salió del mundo');
   let cx = (sg && sg.on && sg.x !== undefined ? sg.x : vis.x) - cols / 2 + panX, cy = (sg && sg.on && sg.y !== undefined ? sg.y : vis.y) - filas * 0.5 + panY;
   if (cols >= W) cx = (W - cols) / 2; else if (cx < minX) { panX += minX - cx; cx = minX; } else if (cx > maxX) { panX += maxX - cx; cx = maxX; }
   if (cy < minY) { panY += minY - cy; cy = minY; } else if (cy > maxY) { panY += maxY - cy; cy = maxY; }
@@ -5208,6 +5234,7 @@ $('#reglaVia').addEventListener('click', (e) => {          // un clic en la regl
 });
 $('#verQuien').addEventListener('click', (e) => { const b = e.target.closest('[data-veo]'); if (b) { audio(); veo = +b.dataset.veo; tkVisto = -1; pintarVer(); } });
 $('#verPedir').addEventListener('click', () => { audio(); pedirJugar(); });
+$('#sigoHud').addEventListener('click', (e) => { const b = e.target.closest('[data-rx]'); if (b) { audio(); reaccionar(b.dataset.rx); } });
 $('#tabla').addEventListener('click', (e) => { const v = e.target.closest('[data-ver]'); if (v && listo && !menu && !soloVer) { audio(); if (+v.dataset.ver === sigo) dejarDeSeguir(); else seguir(+v.dataset.ver); return; } if (e.target.closest('[data-dejar]')) { audio(); dejarDeSeguir(); return; } if (e.target.closest('[data-pub]') && listo && !menu && !soloVer) { audio(); abrir('pub'); } if (e.target.closest('[data-cita]') && listo && !soloVer && cita && conectado) { audio(); const voy = (cita.voy || []).includes(miI); enviar({ t: 'voy', si: voy ? 0 : 1 }); aviso(voy ? 'Ya no vas a la cita' : 'Vas a la cita: ' + horaCitaTx(cita.h)); } });
 $('#verChat').addEventListener('click', () => { audio(); if (chat.abierto) cerrarChat(); else abrirChat(); });
 $('#verTop').addEventListener('click', () => { audio(); abrir('top'); });
@@ -5410,6 +5437,8 @@ addEventListener('keydown', (e) => {
   if (k === 'b') tocarClaxon();                     // Bocina (claxon)
   if (k === 'f') tomarFoto();                       // Foto: captura de lo que estás viendo
   if (k === 'i') abrir('qr');                       // Invitar: primero el QR
+  if (k === 'v' && listo && !soloVer) { if (sigo >= 0) dejarDeSeguir(); else seguirCercana(); return; }      // V: ver lo que ve la maquinita más cercana
+  if (k === 'Tab' && sigo >= 0) { e.preventDefault(); seguirSiguiente(); return; }
   if (k === 'j') abrir('pub');                      // Jugadores y público: solicitudes, quién mira, sacar
   if (k === 'v' && edenVivo && yo.y > EDEN0 - 6) verJardin();      // Ver el jardín entero
   if (k === ' ') { e.preventDefault(); if (crucero) crucero = false; else subirSola(); }
@@ -5825,6 +5854,7 @@ setInterval(() => {                       // lo poco que corre aunque el juego e
   if (topAbierta()) document.querySelectorAll('#caja .tt[data-vivo="1"]').forEach((el) => { el.dataset.seg = +el.dataset.seg + 1; el.textContent = '⏱ ' + tiempoLargo(+el.dataset.seg); });
   if (soloVer && (pido === 'espera' || pido === 'ausente')) pintarEspera();
   if (peleas.size) { for (const [i, p] of peleas) if (tiempo - p.h > 6) peleas.delete(i); pintarPleito(); if (soloVer) pintarVer(); }
+  if (miradoPor.size && latido % 2 === 0) mandarMiPanel(); if (sigo >= 0) pintarSigo();
   pendientesTienda(); if (latido % 5 === 0) invitarPintureria(); if (latido % 7 === 0) diaDeCumple(); if (latido % 11 === 0) invitarGente();
   if (!cuenta && S && listo && !soloVer && S.seg > 600 && !leer('mina_invitoG', 0)) { escribir('mina_invitoG', 1); tarjeta('💾 ¿Guardamos tu maquinita?', 'Con tu correo de Google la recuperas en cualquier equipo, con todos tus mundos. Cuando quieras: Menú → Mundo.', 'msj', 9000); }
   if (latido % 4 === 0) ocio(guardarCopia);

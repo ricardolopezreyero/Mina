@@ -1015,6 +1015,18 @@ export class Mundo extends DurableObject {
         this.avisarTabla(i, true);
         break;
       }
+      case "yo": {               // mi panel (combustible, casco, carga, dinero) para quienes me están mirando: solo a ellos
+        const f = { t: "yoDe", i, d: Number.isFinite(d.d) ? d.d : 0, f: entero(d.f, 0, 1e9, 0), fm: entero(d.fm, 1, 1e9, 1), v: entero(d.v, 0, 1e9, 0), vm: entero(d.vm, 1, 1e9, 1), c: entero(d.c, 0, 99999, 0), cm: entero(d.cm, 1, 99999, 1), z: limpio(d.z, 30) };
+        for (const o of this.ctx.getWebSockets()) { const a = o.deserializeAttachment(); if (a && a.i !== undefined && this.jug[a.i] && this.jug[a.i].mira === i) manda(o, f); }
+        break;
+      }
+      case "rx": {               // una reacción (👋 👍 ❤️ 🔥 😂 🎉) de quien mira para quien es mirado; la ven todos sobre su maquinita
+        const a = entero(d.a, 0, MAX_MAQUINITAS - 1, -1), e = ["👋", "👍", "❤️", "🔥", "😂", "🎉"].includes(d.e) ? d.e : "";
+        if (a < 0 || !e || !this.jug[a]) return;
+        const ahora = Date.now(); if (ahora - (yo.rxT || 0) < 700) return; yo.rxT = ahora;
+        this.difundir({ t: "rx", de: i, a, e });
+        break;
+      }
       case "rel": {              // cómo se llevan dos maquinitas: comercio (se dan cosas, nunca se lastiman) o batalla. Lo elige el primero que se topa; se cambia cuando sea.
         const a = entero(d.a, 0, MAX_MAQUINITAS - 1, -1), modo = d.modo === "batalla" ? "batalla" : "comercio";
         if (a < 0 || a === i || !this.jug[a]) return;

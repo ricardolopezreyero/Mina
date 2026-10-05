@@ -1432,6 +1432,17 @@ No se pudo ver el movimiento en vivo porque el navegador de pruebas está oculto
 
 **Cómo quedó.** Por pareja de maquinitas y por mundo: `m.rel["a|b"]` en la meta del mundo (mensaje `rel {a, modo}`, lo manda cualquiera de los dos; se difunde a todos y viaja en `mundo`). El servidor no pasa ningún `golpe` si la pareja no está en batalla, y el cliente también lo ignora. En el contacto bajo tierra: sin modo → se abre el menú «¿Cómo se llevan?» (una vez cada 3 s); con comercio → se abre el intercambio (una vez cada 4 s); con batalla → el pleito de siempre. Intercambio: `dar {a, d, o}` (solo con comercio acordado; el servidor valida y se lo entrega al otro; quien da descuenta en el momento; queda nota en el chat). Panel J: botones 🤝 / ⚔️ para elegir o cambiar, y «🤝 Dar» cuando hay comercio. Tarjeta al otro cuando alguien elige o cambia.
 
+### 9.62 Metiches, la experiencia completa
+
+**Lo que pidió Ricardo.** Cuidar cada detalle de ver en vivo a la otra persona, para una sensación de unión que no hayan sentido antes; mejorar lo que existe y hacer algo original.
+
+**Cómo quedó.**
+- La luz y la oscuridad son de quien se sigue; el servidor manda todas sus posiciones a quien lo mira (`jug.mira`).
+- **Su panel, en vivo:** quien es mirado manda cada 2 s `yo {d, f, fm, v, vm, c, cm, z}` (dinero, combustible y tanque, casco y máximo, carga y bodega, dónde anda); el servidor lo reparte solo a quienes lo miran (`yoDe`). Abajo, `#sigoHud`: nombre, zona, cuatro barras, y **sus teclas** encendidas conforme las aprieta (la máscara de teclas ya viajaba en el paquete de posición solo para observadores; ahora también cuando te miran jugadores: `miradoPor`).
+- **Se oye su taladro** (más bajito) cuando está perforando (`fl & 4`).
+- **Reacciones:** 👋 👍 ❤️ 🔥 😂 🎉 (`rx {a, e}`, una cada 0.7 s): flotan sobre la maquinita mirada con el nombre de quien las manda, con chispas; quien las recibe oye un aviso.
+- **Tab** pasa a la siguiente maquinita conectada; **V** sigue a la más cercana (o deja de seguir); si quien sigues sale del mundo, vuelves a tu maquinita con aviso.
+
 ## 10. Revisión de código del 2 de octubre
 
 Se revisó todo el código buscando fallas y se corrigieron estas:

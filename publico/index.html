@@ -194,6 +194,13 @@ body.viendo #verTeclado{display:flex}
 #verTeclado kbd{display:inline-block;min-width:28px;padding:5px 6px;border-radius:6px;background:#1b120e;border:1px solid var(--borde);color:var(--su);font:800 .85em system-ui;text-align:center;transition:background .06s,color .06s,transform .06s}
 #verTeclado kbd.esp{min-width:90px}
 #verTeclado kbd.on{background:var(--ac);color:#1b120e;border-color:var(--ac);transform:translateY(1px)}
+#sigoHud{display:none;position:fixed;left:50%;bottom:14px;transform:translateX(-50%);background:#000c;border:1px solid #ffd23f66;border-radius:12px;padding:8px 12px;min-width:min(520px,92vw);max-width:94vw;z-index:6;text-align:center}
+#sigoHud .quien b{color:var(--ac)}#sigoHud .quien small{margin-left:6px;color:var(--su)}
+#sigoHud .datos{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin:6px 0;font-size:.85em}#sigoHud .datos span{min-width:110px}
+#sigoHud .bar{height:5px;background:#ffffff22;border-radius:3px;margin-top:3px;overflow:hidden}#sigoHud .bar i{display:block;height:100%;background:#6fdc7a}#sigoHud .bar.g i{background:#6ec3ff}#sigoHud .bar.c i{background:#ffd23f}
+#sigoHud .teclas{margin:4px 0}#sigoHud kbd{display:inline-block;min-width:22px;padding:2px 5px;margin:1px;border:1px solid #ffffff33;border-radius:5px;background:#0006;font:700 .8em system-ui;color:#ffffff88}#sigoHud kbd.on{background:var(--ac);color:#2a1a14;border-color:var(--ac)}#sigoHud .sep{display:inline-block;width:10px}
+#sigoHud .rx button{font-size:1.25em;padding:2px 8px;margin:0 2px;background:#ffffff14;border:1px solid #ffffff22;border-radius:8px}#sigoHud .rx small{display:block;color:var(--su);margin-top:4px;font-size:.75em}
+body.movil #sigoHud{bottom:120px;min-width:0;font-size:.9em}
 #tabla .pub,#tabla .cita,#tabla .ver{cursor:pointer}#tabla .ver:hover{background:#ffffff14}#tabla .sigo{outline:1px solid #ffd23f;border-radius:4px}#tabla .cita{color:#ffd23f}#tabla .pub kbd{font:800 1em system-ui;color:var(--ac)}
 @media (max-width:700px){#verTeclado{transform:translateX(-50%) scale(.8);transform-origin:bottom center}}
 #verDatos{min-width:0}#verDatos b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#verDatos small{display:block;color:var(--su);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -521,6 +528,7 @@ body.movil #verTeclado{display:none!important}
 <div class="hud" id="pista"></div>
 <div class="hud" id="cuenta"></div>
 <div class="hud" id="regla"><small id="reglaArr">superficie</small><div id="reglaVia"><div id="reglaLug"></div><i id="reglaYo"></i><i id="reglaVer"><b id="reglaTx"></b></i></div><small id="reglaAb"></small></div>
+<div class="hud" id="sigoHud"></div>
 <div class="hud" id="aviso-red">📡 Sin señal · sigues jugando, se guarda al volver</div>
 <div id="flash"></div>
 <div id="palanca"><i></i></div>
