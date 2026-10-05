@@ -1,4 +1,4 @@
-MINA · Kit de marca v2 · 2026-10-05 1120
+MINA · Kit de marca v3 · 2026-10-05 1138
 Guía de estilos en línea: https://mina.capitaltorreon.com/guia-estilos
 Hecho por Ing. Ricardo López Reyero · CapitalTorreon
 
@@ -15,7 +15,7 @@ QUÉ HAY AQUÍ
   10-tipografia/  Tipografía (8 archivos)
   11-color/  Color (2 archivos)
   12-gemas/  Las 22 gemas (22 archivos)
-  13-arte/  Arte con gemas (6 archivos)
+  13-arte/  Arte con gemas (12 archivos)
   14-brochure/  Brochure (1 archivos)
 
 PARA EMPEZAR EN TIKTOK
@@ -27,8 +27,8 @@ PARA EMPEZAR EN TIKTOK
   6. Liga en la biografía: https://mina.capitaltorreon.com
 
 ARTE CON GEMAS Y BROCHURE
-  · 13-arte/ trae seis imágenes verticales hechas con las gemas del juego (aquí en JPG para que el zip pese poco;
-    en PNG se bajan una por una en la guía, o todas en Mina_Arte_con_Gemas_v2_2026-10-05_1120.zip).
+  · 13-arte/ trae doce imágenes verticales hechas con las gemas del juego (aquí en JPG para que el zip pese poco;
+    en PNG se bajan una por una en la guía, o todas en Mina_Arte_con_Gemas_v3_2026-10-05_1138.zip).
   · Para hacer más: https://mina.capitaltorreon.com/guia-estilos/#arte, botón «Generar». Cada una es distinta y se baja en PNG.
   · 14-brochure/ es el PDF de seis hojas para cuando piden más información.
     También se lee en línea: https://mina.capitaltorreon.com/guia-estilos/brochure/

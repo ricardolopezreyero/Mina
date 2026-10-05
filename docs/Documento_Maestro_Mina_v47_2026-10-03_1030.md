@@ -1484,6 +1484,19 @@ Ricardo vio que el menú de la guía traía catorce ligas y que los botones A−
 - Las piezas de marca (logotipo, ícono, maquinita, color, tipografía y gemas sueltas) no llevan ícono de red: sirven en cualquiera.
 - En el pie se aclara que los nombres y logotipos de las redes son de sus dueños.
 
+### 9.67 El generador de arte, dentro del juego, y seis imágenes más
+
+A Ricardo le gustaron las imágenes de gemas y pidió dos cosas: otras seis, y que cualquier jugador pueda hacer las suyas desde el juego.
+
+- **Menú → 💎 Arte** (pestaña 13 del menú). Al abrirla ya hay una imagen hecha. **Generar otra** saca una nueva, siempre distinta; **Descargar** la baja en PNG; en el teléfono, **Compartir** la manda con la hoja del sistema, junto con la liga del mundo. Tres formatos: vertical, cuadrada y horizontal.
+- **Un solo programa.** El juego no trae copia del generador: carga `/guia-estilos/arte.js` la primera vez que alguien abre la pestaña, y de ahí mismo las 22 gemas, la palabra MINA y el cintillo. Lo que se mejore en la guía mejora en el juego.
+- **Sin internet también**, después de la primera vez: el service worker guarda ese programa y esas 24 imágenes en un almacén aparte (`mina-arte`) que no se borra al cambiar de versión. Versión del service worker: `mina-44`.
+- **Que la imagen no cambie sola.** El menú se repinta seguido (llega alguien, cambia el dinero). La imagen vive en un lienzo propio (`arte.lienzo`) que se vuelve a colgar en cada repintado; solo cambia cuando se pide otra o se cambia el formato.
+- **Decisión:** «Generar» no descarga sola. Bajaría un archivo por cada clic aunque la imagen no guste; por eso son dos botones juntos.
+- **Las otras seis** (`kit/13-arte/`, ahora doce): Rombos de la corteza, Flor de la cristalera, Espiral de joyas, Mandala del atardecer, Mandala de la corteza y Corona de medianoche. Con ellas ya hay una de cada figura. La lista completa está en `diseno-fuente/kit-captura/arte-lista.json`.
+- **Kit v3:** 124 piezas. Para no pasar de 25 MiB, dentro del zip el arte va en JPG de calidad 88 y ya no se repite el zip de las fuentes; el zip del arte usa los PNG ya optimizados.
+- **Qué falta:** quien mira a otro jugador (el espejo de menús) ve el cuadro de la imagen vacío, porque el espejo copia el texto del menú y no los lienzos.
+
 ## 10. Revisión de código del 2 de octubre
 
 Se revisó todo el código buscando fallas y se corrigieron estas:

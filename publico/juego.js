@@ -3978,6 +3978,39 @@ async function cargarCapturas() {
   capturas.cargando = 0; if (menu === 'menu' && pestana === 12) pintarMenu();
 }
 const urlCaptura = (c) => `/capturas/${capturas.sub}/${c.mundo}/${c.id}.jpg`;
+// ── Arte con gemas: el generador de la guía de estilos, dentro del juego (Menú → 💎 Arte) ─────────────────────────────────
+// Usa el mismo programa de la guía (/guia-estilos/arte.js) y sus gemas: se traen la primera vez que alguien abre la pestaña.
+// La imagen vive en un lienzo propio que se vuelve a colgar cada vez que el menú se repinta, para que no cambie sola.
+const arte = { lienzo: null, info: null, cargando: 0, error: '', formato: 'vertical', p: null };
+const ARTE_FORMATOS = [['vertical', 'Vertical', 'TikTok, Reels, Shorts y estados'], ['cuadrado', 'Cuadrada', 'Instagram y Facebook'], ['horizontal', 'Horizontal', 'YouTube y fondos de pantalla']];
+function arteCargar() {
+  if (window.ArteMina) return Promise.resolve();
+  if (!arte.p) arte.p = new Promise((si, no) => { const g = document.createElement('script'); g.src = '/guia-estilos/arte.js'; g.onload = si; g.onerror = () => { arte.p = null; g.remove(); no(new Error('sin red')); }; document.head.appendChild(g); });
+  return arte.p;
+}
+const arteRepinta = () => { if (menu === 'menu' && pestana === 13) pintarMenu(); };
+async function arteNueva() {
+  if (arte.cargando) return; arte.cargando = 1; arte.error = ''; arteRepinta();
+  try {
+    await arteCargar(); const c = document.createElement('canvas');
+    arte.info = await ArteMina.pintar(c, { base: '/guia-estilos/', formato: arte.formato }); arte.lienzo = c;
+  } catch { arte.error = 'No se pudieron traer las gemas. Hace falta internet la primera vez: revisa la señal y vuelve a intentar.'; }
+  arte.cargando = 0; arteRepinta();
+}
+const arteBlob = () => new Promise((r) => arte.lienzo.toBlob(r, 'image/png'));
+function htmlArte() {
+  if (!arte.info && !arte.cargando && !arte.error) setTimeout(arteNueva, 0);
+  const F = ARTE_FORMATOS.find((f) => f[0] === arte.formato), listo = arte.lienzo && arte.info;
+  return `<p class="nota">Las 22 gemas de Mina, acomodadas en una figura distinta cada vez. Genera las que quieras y descarga la que te guste: de fondo, de estado o para presumir tu mundo.</p>
+    <div class="arteCaja"><div class="arteVista" id="arteAqui">${listo ? '' : `<span>${arte.error ? esc(arte.error) : 'Acomodando las gemas…'}</span>`}</div>
+    <div class="arteMando">
+      <button data-a="arteOtra" ${arte.cargando ? 'disabled' : ''}>🎲 ${arte.cargando ? 'Generando…' : listo ? 'Generar otra' : 'Generar'}</button>
+      <button data-a="arteBaja" ${listo ? '' : 'disabled'}>⬇ Descargar</button>
+      ${navigator.canShare ? `<button class="s" data-a="arteComparte" ${listo ? '' : 'disabled'}>📤 Compartir</button>` : ''}
+      <div class="arteForma">${ARTE_FORMATOS.map((f) => `<button class="s${f[0] === arte.formato ? ' on' : ''}" data-a="arteFormato" data-v="${f[0]}">${f[1]}</button>`).join('')}</div>
+      <small>${F[1]}: ${F[2]}.${listo ? '<br>' + esc(arte.info.texto) : ''}</small>
+    </div></div>`;
+}
 function htmlCapturas() {
   if (!cuenta) return `<div class="fila"><div class="ic">📸</div><div class="t"><b>Tus capturas, por mundo, desde cualquier equipo</b><small>Pulsa 📸 (tecla F) y lo que estás viendo se guarda en tu cuenta, en la carpeta de ese mundo. Sin cuenta, la captura se descarga a tu equipo.</small></div><button data-a="capEntrar">Entrar con Google</button></div>`;
   if (!capturas.cargada) { if (!capturas.cargando && !capturas.error) cargarCapturas(); return capturas.error ? '<p class="nota">No se pudieron cargar tus capturas. Revisa tu conexión.</p><p><button class="s" data-a="capRecargar">Intentar otra vez</button></p>' : '<p class="nota">Abriendo tus capturas…</p>'; }
@@ -4918,6 +4951,7 @@ function pintarMenu() {
   }
   if (topAbierta()) { animarTop(c); if (Date.now() - tablaM.pedido > 3500) pedirTop(); }
   const ql = $('#qrLienzo'); if (ql) pintarQR(ql, ql.dataset.t, 8);
+  const aa = $('#arteAqui'); if (aa && arte.lienzo && arte.info) aa.appendChild(arte.lienzo);
   const fa = $('#fotoAqui'); if (fa) { const f = fotoRecord(); f.className = 'foto'; fa.appendChild(f); }
   for (const id of ['#ligaAqui']) { const la = $(id); if (la) { const f = fotoLiga(!!la.dataset.m); f.className = 'foto'; f.style.width = 'min(100%,520px)'; f.style.height = 'auto'; la.appendChild(f); subirFotos(true); } }
   c.querySelectorAll('#modelos canvas').forEach((x, i) => dibMaq(x.getContext('2d'), 56, 60, 100, i, 1, false, 0, '', ''));
@@ -5135,6 +5169,21 @@ const acciones = {
   cuantos(v) { cuantos = +v; son.clic(); },
   remin() { if (!conectado || cuentaFin || S.d < costoRemin()) return; enviar({ t: 'remin' }); cerrar(); return 'no'; },
   pest(v) { pestana = +v; },
+  arteOtra() { arteNueva(); return 'no'; },
+  arteFormato(v) { if (v === arte.formato || arte.cargando) return 'no'; arte.formato = v; arteNueva(); return 'no'; },
+  async arteBaja() {
+    if (!arte.lienzo) return 'no';
+    const a = document.createElement('a'); a.href = URL.createObjectURL(await arteBlob()); a.download = arte.info.nombre; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    tarjeta('💎 Imagen descargada', 'Ya está en tus descargas. Súbela a donde quieras.', 'msj', 5000);
+    return 'no';
+  },
+  async arteComparte() {
+    if (!arte.lienzo) return 'no';
+    const blob = await arteBlob(), f = new File([blob], arte.info.nombre, { type: 'image/png' });
+    if (navigator.canShare?.({ files: [f] })) { try { await navigator.share({ files: [f], title: 'Mina', text: 'Excava conmigo en Mina: ' + ligaInvitacion() }); return 'no'; } catch (x) { if (x && x.name === 'AbortError') return 'no'; } }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = f.name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    return 'no';
+  },
   menu(v) { menu = v; },
   async compartirFoto() {
     const blob = await new Promise((r) => fotoRecord().toBlob(r, 'image/png')), liga = location.origin + '/' + mundoId + '?j=' + miI;
@@ -5294,7 +5343,7 @@ function sel(k, ops, quien = 'regla') {
   return `<select data-a="${quien}" data-k="${k}" ${soyCreador ? '' : 'disabled'}>${ops.map(([v, t]) => `<option value="${v}" ${cfg[k] == v ? 'selected' : ''}>${t}</option>`).join('')}</select>`;
 }
 function menuPrincipal() {
-  const P = ['Bodega', 'Colección', 'Mapa', '', 'Logros', 'Catálogo', 'Estadísticas', 'Opciones', 'Mundo', 'Ayuda', '🏆 Top 33', 'Manifiesto', '📸 Capturas'];      // la 3 eran los contratos
+  const P = ['Bodega', 'Colección', 'Mapa', '', 'Logros', 'Catálogo', 'Estadísticas', 'Opciones', 'Mundo', 'Ayuda', '🏆 Top 33', 'Manifiesto', '📸 Capturas', '💎 Arte'];      // la 3 eran los contratos
   if (pestana === 3) pestana = 0;
   let h = cab('<span class="hamb"></span>' + esc(cfg.nombre || 'Mina')) + `<div class="pest">${P.map((p, i) => (p ? `<button data-a="pest" data-v="${i}" class="${i === pestana ? 'on' : ''}">${p}</button>` : '')).join('')}</div><div class="cuerpo">`;
   if (pestana === 0) {
@@ -5382,6 +5431,8 @@ function menuPrincipal() {
     h += MANIFIESTO;
   } else if (pestana === 12) {
     h += htmlCapturas();
+  } else if (pestana === 13) {
+    h += htmlArte();
   } else {
     h += (tactil ? '<p><b>Con el dedo:</b> ponlo donde sea y arrástralo. Hacia abajo perfora, a los lados camina, hacia arriba vuela; al soltar se detiene. Un toque frente a un edificio entra. <b>Dos dedos</b> acercan o alejan la vista y la recorren. Las caídas no quitan casco (se encienden en Opciones → Golpes de caída) y la maquinita frena sola antes del piso (Aterrizaje suave). <b>Dos empujones seguidos</b> hacia arriba y sube sola; dos hacia abajo y perfora sola hacia abajo (también con el botón <b>⬆ Subir sola</b>). Un toque en la pantalla la suelta.</p>' : '') +
       `<p><b>Moverte:</b> con las flechas. <b>↑</b> vuela. <b>↓</b> perfora hacia abajo. <b>← →</b> contra una pared, perfora de lado. Nunca se perfora hacia arriba.</p>

@@ -1,14 +1,14 @@
 // RLR · Mina — la app instalada: guarda el juego completo en el equipo para que abra aunque no haya internet.
 // Con señal siempre se pide lo más nuevo (así llega cada versión); sin señal, o si tarda, sale lo guardado.
 // Ricardo López Reyero
-const VERSION = 'mina-43';
+const VERSION = 'mina-44';
 const ARCHIVOS = ['/', '/juego.js', '/three.min.js', '/escaparate.js', '/manifest.webmanifest', '/iconos/icono-32.png', '/iconos/icono-180.png', '/iconos/icono-192.png', '/iconos/icono-512.png', '/iconos/icono-mascara-512.png', '/mina.jpg'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(VERSION).then((c) => c.addAll(ARCHIVOS)).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', (e) => {
-  e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== VERSION && k !== 'mina-mapas').map((k) => caches.delete(k)))).then(() => self.clients.claim()));
+  e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== VERSION && k !== 'mina-mapas' && k !== 'mina-arte').map((k) => caches.delete(k)))).then(() => self.clients.claim()));
 });
 
 // Lo de la red, con un tope de espera; si no llega, lo guardado.
@@ -22,6 +22,15 @@ self.addEventListener('fetch', (e) => {
   const u = new URL(e.request.url);
   if (e.request.method !== 'GET' || u.origin !== location.origin) return;
   if (u.pathname.startsWith('/api/') || u.pathname.startsWith('/ws/') || u.pathname.startsWith('/og/')) return;
+  // El generador de arte del juego (Menú → 💎 Arte) usa el programa y las gemas de la guía: se guardan aparte para que también salga sin internet.
+  if (/^\/guia-estilos\/(arte\.js|kit\/12-gemas\/[\w-]+\.png|kit\/03-logotipo\/mina-palabra\.png|kit\/09-video\/cintillo-liga\.png)$/.test(u.pathname)) {
+    e.respondWith((async () => {
+      const c = await caches.open('mina-arte'), guardado = await c.match(u.pathname);
+      try { const r = await conTope(new Request(u.pathname, { cache: 'no-cache' }), guardado ? 2500 : 15000); if (r.ok) c.put(u.pathname, r.clone()); return r; }
+      catch (x) { if (guardado) return guardado; throw x; }
+    })());
+    return;
+  }
   if (/^\/(guia-estilos|guia-de-estilos|gu(i|%C3%AD|í)a(-de)?(-estilos)?|marca|kit)(\/|$)/i.test(u.pathname)) return;      // la guía de estilos no es el juego: va directo a la red
   // Cualquier página del juego (el inicio o la liga de un mundo) es la misma: se guarda una sola.
   const pagina = e.request.mode === 'navigate', llave = pagina ? '/' : u.pathname;
