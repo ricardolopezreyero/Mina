@@ -3937,7 +3937,7 @@ function htmlTienda() {
   if (tienda.mio.saldo > 0) h += `<div class="promesa" style="border-color:#ffd23f88">💛 <b>Tienes ${pesos(tienda.mio.saldo)} de saldo</b> por tus referidos. Paga niveles con él, para ti o de regalo.${!cuenta ? ' Entra con tu cuenta para usarlo.' : ''} <a href="#" data-a="menu" data-v="inv">Ver mis referidos</a>.</div>`;
   const nv = tienda.nivelVista || nivelPorRango(); tienda.nivelVista = nv; const N = L[nv - 1], tuyo = nv <= mio;
   h += `<div class="escalera">${L.map((x) => `<button data-a="tNivel" data-v="${x.n}" class="${x.n === nv ? 'on' : ''}${x.n <= mio ? ' mio' : ''}" title="${esc(x.nombre)}"><b>${x.n}</b><small>${x.precio ? pesos(x.precio) : 'Gratis'}</small></button>`).join('')}</div>`;
-  h += `<div class="carpeta"><div><div class="vista"><canvas id="pintaMaq" width="420" height="340"></canvas><small>${esc(miNombre)}</small></div>${tuyo ? '<p class="nota">Lo que cambies aquí se guarda al momento y lo ven todos.</p>' : '<p class="nota">Lo que cambies aquí se ve, pero no se guarda hasta que el nivel sea tuyo.</p>'}</div><div>`;
+  h += `<div class="carpeta"><div><div class="vista"><canvas id="pintaMaq" width="420" height="400"></canvas><small>${esc(miNombre)}</small></div>${tuyo ? '<p class="nota">Lo que cambies aquí se guarda al momento y lo ven todos.</p>' : '<p class="nota">Lo que cambies aquí se ve, pero no se guarda hasta que el nivel sea tuyo.</p>'}</div><div>`;
   h += `<h4>Nivel ${N.n} · ${esc(N.nombre)} · ${N.precio ? pesos(N.precio) : 'Gratis'}${tuyo ? ' · <span style="color:var(--ok)">' + (N.precio ? 'tuyo' : 'de todos') + '</span>' : ''}</h4><p class="nota">${esc(N.que)}${N.n > GRATIS + 1 ? ' Incluye todo lo de los niveles anteriores.' : ''}</p>`;
   h += editorNivel(nv) + (tuyo ? '' : htmlPago(nv)) + '</div></div>' + htmlSonidos();
   const cerca = cumpleCerca(tienda.cumple), hoyCumple = cerca === 0, gracias = tienda.gracias || cerca !== 9;
@@ -4754,8 +4754,28 @@ function pintarMenu() {
   const gb = $('#gBoton'); if (gb) botonGoogle(gb);
   const lc = $('#caja [data-login-ct]'); if (lc && window.LoginCT) LoginCT.montar(lc);
   const pm = $('#pintaMaq'); if (pm) {                 // la maquinita, en vivo, con lo que se esté probando
-    const dib = () => { const q = pm.getContext('2d'); q.clearRect(0, 0, pm.width, pm.height); dibMaq(q, pm.width / 2, pm.height * 0.58, pm.width * 0.6, miModelo, 1, false, 0, miNombre, '', reloj * 0.4, pintaVista()); };
-    dib(); clearInterval(tiendaAnimT); tiendaAnimT = setInterval(() => { if (menu !== 'pin' || !pm.isConnected) return clearInterval(tiendaAnimT); reloj += 0.05; dib(); }, 50);
+    // El escaparate: la maquinita sobre una tarima que gira despacio (se ve de un lado, de frente, del otro lado), con su sombra
+    // y una luz de aparador. El giro usa su propio reloj: no toca el del juego, para que nada parpadee afuera.
+    let relT = 0, ult = performance.now();
+    const dib = () => {
+      const q = pm.getContext('2d'), Wc = pm.width, Hc = pm.height, t = Wc * 0.5, cx = Wc / 2, cy = Hc * 0.66;
+      q.clearRect(0, 0, Wc, Hc);
+      const luz = q.createRadialGradient(cx, Hc * 0.3, 0, cx, Hc * 0.5, Wc * 0.6); luz.addColorStop(0, 'rgba(255,255,255,.22)'); luz.addColorStop(1, 'rgba(255,255,255,0)'); q.fillStyle = luz; q.fillRect(0, 0, Wc, Hc);
+      const ang = relT * 0.5, k = Math.cos(ang), ancho = Math.max(0.4, Math.abs(k)), dir = k >= 0 ? 1 : -1;      // el giro: la anchura sigue al coseno y a la mitad se voltea
+      // la tarima y la sombra
+      const tg = q.createLinearGradient(0, cy + t * 0.3, 0, cy + t * 0.52); tg.addColorStop(0, '#6b4a33'); tg.addColorStop(1, '#3a2619');
+      q.fillStyle = tg; q.beginPath(); q.ellipse(cx, cy + t * 0.42, t * 0.78, t * 0.13, 0, 0, 7); q.fill();
+      q.fillStyle = '#8a6448'; q.beginPath(); q.ellipse(cx, cy + t * 0.38, t * 0.78, t * 0.12, 0, 0, 7); q.fill();
+      q.strokeStyle = 'rgba(255,255,255,.18)'; q.lineWidth = 2; q.stroke();
+      const sb = q.createRadialGradient(cx, cy + t * 0.38, 0, cx, cy + t * 0.38, t * 0.5 * ancho + t * 0.1); sb.addColorStop(0, 'rgba(0,0,0,.45)'); sb.addColorStop(1, 'rgba(0,0,0,0)'); q.fillStyle = sb; q.beginPath(); q.ellipse(cx, cy + t * 0.38, t * 0.5 * ancho + t * 0.1, t * 0.09, 0, 0, 7); q.fill();
+      // la maquinita, ancha o estrecha según el ángulo, apenas inclinada hacia la luz
+      q.save(); q.translate(cx, cy); q.transform(ancho, 0, -0.05 * Math.sin(ang), 1, 0, 0);
+      dibMaq(q, 0, 0, t, miModelo, dir, false, 0, '', '', relT * 0.4, pintaVista());
+      q.restore();
+      // el nombre con su placa, aparte y sin estirar: solo la franja de arriba, recortada
+      q.save(); q.beginPath(); q.rect(0, 0, Wc, cy - t * 0.46); q.clip(); dibMaq(q, cx, cy, t, miModelo, 1, false, 0, miNombre, '', relT * 0.4, { ...pintaVista(), mascota: 0, cu: 0 }); q.restore();
+    };
+    dib(); clearInterval(tiendaAnimT); tiendaAnimT = setInterval(() => { if (menu !== 'pin' || !pm.isConnected) return clearInterval(tiendaAnimT); const n = performance.now(); relT += (n - ult) / 1000; ult = n; dib(); }, 40);
   }
   if (topAbierta()) { animarTop(c); if (Date.now() - tablaM.pedido > 3500) pedirTop(); }
   const ql = $('#qrLienzo'); if (ql) pintarQR(ql, ql.dataset.t, 8);
