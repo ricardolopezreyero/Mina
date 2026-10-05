@@ -112,6 +112,14 @@ td[data-redes] .grupito{display:inline-flex;gap:4px;margin-right:.6em;vertical-a
 .gen-mando label.chk{display:flex;gap:8px;font-weight:700}.gen-mando label.chk input{width:1.2em;height:1.2em;accent-color:var(--ac)}
 .gen-mando button,.gen-mando .boton{justify-content:center}
 .gen-dato{color:var(--su);font-size:.9em;margin:0;min-height:2.8em}
+.gen-mando label.palanca{display:flex;grid-template-columns:none;gap:12px;align-items:center;cursor:pointer;background:#120b08;border:1px solid var(--borde);border-radius:12px;padding:10px 12px}
+.palanca input{position:absolute;opacity:0;pointer-events:none}
+.palanca i{flex:none;width:46px;height:26px;border-radius:999px;background:#5a3d2c;position:relative;transition:background .18s}
+.palanca i::after{content:"";position:absolute;left:3px;top:3px;width:20px;height:20px;border-radius:50%;background:#f3e6d8;transition:transform .18s}
+.palanca input:checked+i{background:var(--ac)}.palanca input:checked+i::after{transform:translateX(20px);background:var(--tinta)}
+.palanca input:focus-visible+i{outline:2px solid var(--ac);outline-offset:2px}
+.palanca span{display:block;line-height:1.25}.palanca small{display:block;font-weight:600}
+.gif-ops{display:flex;flex-direction:column;gap:12px;border-left:3px solid var(--ac);padding-left:12px}.gen-mando .gif-ops label{grid-template-columns:6.4em 1fr}
 .gen-mando small{color:var(--su);line-height:1.4}
 .bro{display:grid;grid-template-columns:minmax(0,300px) 1fr;gap:28px;align-items:start;margin:18px 0}
 .bro-img{display:block;border-radius:12px;overflow:hidden;border:1px solid var(--borde);box-shadow:0 10px 26px #000a;line-height:0}
@@ -227,7 +235,7 @@ Gratis · sin registro · sin anuncios 👇</div>
   <p><a class="boton" id="arteZip" href="#" download><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 20h16"/></svg><span>Bajar las doce en PNG (.zip)</span><small id="arteZipDato"></small></a></p>
 
   <h3 id="generador">El generador</h3>
-  <p>Toca <b>Generar</b> y sale una imagen nueva, distinta cada vez. Si quieres mandar tú, elige la figura, las gemas, el fondo o el formato: lo que dejes «Al azar» lo decide la máquina.</p>
+  <p>Toca <b>Generar</b> y sale una imagen nueva, distinta cada vez. Si quieres mandar tú, elige la figura, las gemas, el fondo o el formato: lo que dejes «Al azar» lo decide la máquina. Y si prendes la palanca <b>Con movimiento</b>, la misma imagen cobra vida y se baja en GIF.</p>
   <div class="gen">
     <div class="gen-vista"><canvas id="genLienzo" width="1080" height="1920" aria-label="La imagen generada"></canvas></div>
     <div class="gen-mando">
@@ -239,12 +247,25 @@ Gratis · sin registro · sin anuncios 👇</div>
       <p class="para chica" id="genRedes"></p>
       <label>Semilla<input type="text" id="genSemilla" inputmode="numeric" placeholder="Al azar" autocomplete="off"></label>
       <label class="chk"><input type="checkbox" id="genLiga" checked> Con la liga del juego abajo</label>
+      <label class="palanca"><input type="checkbox" id="genMov"><i></i><span><b>Con movimiento (GIF)</b><small>Las gemas se mueven en un bucle sin corte</small></span></label>
+      <div id="genGifOps" class="gif-ops" hidden>
+        <label>Movimiento<select id="genMovTipo"></select></label>
+        <label>Duración<select id="genSeg"><option value="2">2 segundos</option><option value="3" selected>3 segundos</option><option value="4">4 segundos</option><option value="6">6 segundos</option></select></label>
+        <label>Tamaño<select id="genTam"><option value="0.3|15">Ligero</option><option value="0.4|20" selected>Normal</option><option value="0.5|20">Grande</option></select></label>
+      </div>
       <p class="gen-dato" id="genTexto">Cargando las gemas…</p>
       <button id="genBaja">⬇ Descargar esta imagen (PNG)</button>
       <button id="gen20">Generar 20 y bajarlas juntas (.zip)</button>
       <small>Las 20 salen todas distintas y respetan lo que hayas elegido arriba. La misma semilla, con la misma figura, gemas y fondo, vuelve a dar la misma imagen.</small>
     </div>
   </div>
+
+  <h3>Tres con movimiento</h3>
+  <p>Hechas con la palanca <b>Con movimiento</b> del generador. El bucle no tiene corte: el último cuadro empata con el primero. El GIF va bien en WhatsApp, Mensajes, X y Facebook; TikTok, Reels y Shorts piden video, así que ahí se usa la imagen quieta.</p>
+  <div class="rejilla"><article class="tarjeta"><div class="redes" data-fichas="wa,msj,x,fb"></div><div class="vista foto"><img loading="lazy" src="gif/arte-gemas-gif-01-mandala-de-joyas.gif" alt="Mandala de joyas · Giro" width="432" height="768"></div><div class="dato"><b>Mandala de joyas · Giro</b><span class="uso">Cada anillo gira un paso de su propia simetría, los vecinos al revés. Semilla 88.</span>
+    <a class="boton baja" href="gif/arte-gemas-gif-01-mandala-de-joyas.gif" download="arte-gemas-gif-01-mandala-de-joyas.gif" title="Descargar arte-gemas-gif-01-mandala-de-joyas.gif"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 20h16"/></svg><span>Descargar</span><small>GIF · 432 × 768 · 3 s · 5.7 MB</small></a></div></article><article class="tarjeta"><div class="redes" data-fichas="wa,msj,x,fb"></div><div class="vista foto"><img loading="lazy" src="gif/arte-gemas-gif-02-corona-de-las-22.gif" alt="Corona de las 22 · Cascada" width="432" height="768"></div><div class="dato"><b>Corona de las 22 · Cascada</b><span class="uso">Un brillo baja por los dos lados y enciende cada gema al pasar. Semilla 12.</span>
+    <a class="boton baja" href="gif/arte-gemas-gif-02-corona-de-las-22.gif" download="arte-gemas-gif-02-corona-de-las-22.gif" title="Descargar arte-gemas-gif-02-corona-de-las-22.gif"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 20h16"/></svg><span>Descargar</span><small>GIF · 432 × 768 · 3 s · 1.4 MB</small></a></div></article><article class="tarjeta"><div class="redes" data-fichas="wa,msj,x,fb"></div><div class="vista foto"><img loading="lazy" src="gif/arte-gemas-gif-03-panal-de-gemas.gif" alt="Panal de gemas · Latido" width="432" height="768"></div><div class="dato"><b>Panal de gemas · Latido</b><span class="uso">Las gemas laten en dos golpes y la onda sale del centro. Semilla 9.</span>
+    <a class="boton baja" href="gif/arte-gemas-gif-03-panal-de-gemas.gif" download="arte-gemas-gif-03-panal-de-gemas.gif" title="Descargar arte-gemas-gif-03-panal-de-gemas.gif"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 20h16"/></svg><span>Descargar</span><small>GIF · 432 × 768 · 3 s · 2.2 MB</small></a></div></article></div>
 
   <h3>Las 22 gemas, sueltas</h3>
   <p>Sin fondo, para pegarlas en lo que sea.</p>
@@ -433,6 +454,7 @@ function redesDe(a) {            // en qué redes sirve cada pieza, por su carpe
 }
 const FORMATO_REDES = { vertical: [['tt'], ['ig', 'Reels'], ['yt', 'Shorts'], ['wa', 'Estados']], cuatro5: [['ig'], ['fb']], cuadrado: [['ig'], ['fb'], ['x'], ['in']], horizontal: [['yt'], ['fb'], ['x'], ['in']] };
 for (const p of document.querySelectorAll('.para[data-redes]')) p.innerHTML = pastillas(p.dataset.redes.split(',').map((x) => x.split(':')));
+for (const d of document.querySelectorAll('[data-fichas]')) d.innerHTML = d.dataset.fichas.split(',').map(ficha).join('');
 for (const td of document.querySelectorAll('td[data-redes]')) td.insertAdjacentHTML('afterbegin', `<span class="grupito">${td.dataset.redes.split(',').map(ficha).join('')}</span>`);
 function tarjeta(a) {
   const ruta = `kit/${a.c}/${a.f}`, ext = a.f.split('.').pop().toUpperCase(), marco = a.fondo.startsWith('foto-marco');
@@ -469,22 +491,38 @@ for (const d of document.querySelectorAll('[data-copia]')) { const b = document.
   llena('#genEstilo', A.ESTILOS, (v) => v.n); llena('#genPaleta', A.PALETAS, (v) => v.n); llena('#genFondo', A.FONDOS, (v) => v.n);
   $('#genFormato').innerHTML = Object.entries(A.FORMATOS).map(([k, v]) => `<option value="${k}">${esc(v[2])} · ${v[0]} × ${v[1]}</option>`).join('');
   const nueva = () => 1 + Math.floor(Math.random() * 999999);
-  const ponRedes = () => { $('#genRedes').innerHTML = pastillas(FORMATO_REDES[$('#genFormato').value] || []); };
+  const ponRedes = () => { $('#genRedes').innerHTML = pastillas($('#genMov').checked ? [['wa'], ['msj'], ['x'], ['fb']] : FORMATO_REDES[$('#genFormato').value] || []); };      // el GIF no entra como video en TikTok, Reels ni Shorts
   const op = (semilla) => ({ semilla, estilo: $('#genEstilo').value, paleta: $('#genPaleta').value, fondo: $('#genFondo').value, formato: $('#genFormato').value, liga: $('#genLiga').checked });
   const bajar = (blob, nombre) => { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nombre; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 30000); };
-  let ultima = null, ocupado = false;
+  $('#genMovTipo').innerHTML = '<option value="">Al azar</option>' + Object.entries(A.MOVIMIENTOS).map(([k, v]) => `<option value="${k}">${esc(v)}</option>`).join('');
+  const conMov = () => $('#genMov').checked, tam = () => $('#genTam').value.split('|').map(Number);
+  let ultima = null, ocupado = false, vivo = null;
   async function pinta(semilla) {
     if (ocupado) return; ocupado = true;
-    try { ultima = await A.pintar(L, op(semilla)); $('#genSemilla').value = ultima.semilla; $('#genTexto').textContent = `${ultima.texto} · ${ultima.gemas} gemas`; }
-    catch { $('#genTexto').textContent = 'No se pudieron cargar las gemas. Recarga la página.'; }
+    try {
+      if (vivo) { vivo.parar(); vivo = null; }
+      if (conMov()) { vivo = await A.animar(L, { ...op(semilla), movimiento: $('#genMovTipo').value, escala: tam()[0], segundos: +$('#genSeg').value }); ultima = vivo.info; $('#genTexto').textContent = `${ultima.texto} · ${L.width} × ${L.height} · ${$('#genSeg').value} s`; }
+      else { ultima = await A.pintar(L, op(semilla)); $('#genTexto').textContent = `${ultima.texto} · ${ultima.gemas} gemas`; }
+      $('#genSemilla').value = ultima.semilla;
+    } catch { $('#genTexto').textContent = 'No se pudieron cargar las gemas. Recarga la página.'; }
     ocupado = false;
   }
+  const ponModo = () => { const m = conMov(); $('#genGifOps').hidden = !m; $('#gen20').hidden = m; $('#gen20').nextElementSibling.hidden = m; $('#genBaja').textContent = m ? '⬇ Descargar este GIF' : '⬇ Descargar esta imagen (PNG)'; };
   $('#genYa').onclick = () => pinta(nueva());
-  for (const id of ['#genEstilo', '#genPaleta', '#genFondo', '#genFormato', '#genLiga']) $(id).onchange = () => { ponRedes(); pinta(ultima ? ultima.semilla : nueva()); };
-  ponRedes();
+  for (const id of ['#genEstilo', '#genPaleta', '#genFondo', '#genFormato', '#genLiga', '#genMov', '#genMovTipo', '#genSeg', '#genTam']) $(id).onchange = () => { ponRedes(); ponModo(); pinta(ultima ? ultima.semilla : nueva()); };
+  ponRedes(); ponModo();
   $('#genSemilla').onchange = () => pinta(parseInt($('#genSemilla').value.replace(/\D/g, ''), 10) || nueva());
   $('#genSemilla').onkeydown = (e) => { if (e.key === 'Enter') e.target.blur(); };
-  $('#genBaja').onclick = async () => { if (!ultima || ocupado) return; aviso('Descargando…'); bajar(await A.aPng(L), ultima.nombre); };
+  $('#genBaja').onclick = async () => {
+    if (!ultima || ocupado) return;
+    if (!conMov()) { aviso('Descargando…'); return bajar(await A.aPng(L), ultima.nombre); }
+    ocupado = true; const b = $('#genBaja'), [escala, fps] = tam();
+    try {
+      const g = await A.gif({ ...op(ultima.semilla), movimiento: ultima.movimiento, escala }, { segundos: +$('#genSeg').value, fps, alAvance: (x) => { b.textContent = `Haciendo el GIF… ${Math.round(x * 100)} %`; } });
+      bajar(g, ultima.nombre); $('#genTexto').textContent = `${ultima.texto} · GIF de ${g.info.segundos} s · ${g.info.ancho} × ${g.info.alto} · ${(g.size / 1048576).toFixed(1)} MB`; aviso('GIF listo');
+    } catch { aviso('No se pudo hacer el GIF. Intenta con el tamaño Ligero.'); }
+    ocupado = false; ponModo();
+  };
   $('#gen20').onclick = async () => {
     if (ocupado) return; ocupado = true; const b = $('#gen20'), antes = b.textContent, c = document.createElement('canvas'), arch = [], ya = new Set();
     try {

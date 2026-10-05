@@ -347,6 +347,7 @@ body:has(#velo.on) #veloEspejo{visibility:hidden;opacity:0}
 .arteVista canvas{position:static;inset:auto;max-width:100%;max-height:58vh;width:auto;height:auto;border-radius:6px;display:block}
 .arteMando{display:flex;flex-direction:column;gap:8px}
 .arteMando small{color:var(--su);line-height:1.4}
+.artePalanca{display:flex;align-items:center;gap:10px;justify-content:flex-start;text-align:left}.artePalanca i{flex:none;width:40px;height:22px;border-radius:999px;background:#5a3d2c;position:relative;transition:background .18s}.artePalanca i::after{content:"";position:absolute;left:3px;top:3px;width:16px;height:16px;border-radius:50%;background:#f3e6d8;transition:transform .18s}.artePalanca.on i{background:var(--ac)}.artePalanca.on i::after{transform:translateX(18px);background:#1b120e}
 .arteForma{display:flex;gap:4px;flex-wrap:wrap}.arteForma button{flex:1;font-size:.86em}.arteForma button.on{background:var(--ac);color:#1b120e;border-color:var(--ac)}
 body.movil .arteCaja{grid-template-columns:1fr}body.movil .arteVista canvas{max-height:46vh}
 .vende{display:grid;grid-template-columns:1fr 1fr;gap:5px 14px}

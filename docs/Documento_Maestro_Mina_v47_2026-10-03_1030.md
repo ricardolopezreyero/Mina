@@ -1515,6 +1515,23 @@ A Ricardo le gustaron las imágenes de gemas y pidió dos cosas: otras seis, y q
 - **El peso:** con las piezas grandes del kit los dos PDF pesaban el doble. Ahora el brochure y esta guía usan copias chicas de gemas, maquinitas, palabra y QR (`brochure/img/`, las hace `brochure-imagenes.py`): el brochure bajó de 5.8 a 3 MB y el zip del kit quedó en 20 MB. Kit v4: 125 piezas.
 - **Qué falta:** que Ricardo lea las 60 frases y cambie las que no suenen a él; versión en inglés no hay.
 
+### 9.69 El generador, ahora con movimiento: GIF en bucle
+
+**Lo que pidió Ricardo.** Que al generador de arte se le pueda prender una palanca para que las joyas se muevan y se baje un GIF, muy simétrico y buscando el bucle perfecto, con opción de que dure menos. Opción secundaria: de inicio sigue saliendo la imagen quieta.
+
+**Cómo quedó.**
+- **La palanca «Con movimiento (GIF)»** está en el generador de la guía y en Menú → 💎 Arte del juego, apagada de inicio. Al prenderla, la misma imagen (misma semilla) cobra vida en la vista previa y el botón de descarga pasa a «Descargar este GIF».
+- **El bucle no tiene corte, por construcción.** Todo movimiento es una función del tiempo t, de 0 a 1, que en 1 vale lo mismo que en 0. No se «busca» el empate: no puede no empatar. Medido en las pruebas: la diferencia entre el último cuadro y el primero es igual a la de dos cuadros vecinos cualesquiera.
+- **Cinco movimientos:** *giro* (cada anillo avanza un paso de su propia simetría, los vecinos en sentido contrario: al terminar, cada gema está donde había otra igual), *latido* (dos golpes, como corazón, y la onda sale del centro), *ola* (los anillos se acercan y se alejan), *vaivén* (cada gema se mece, las vecinas al revés) y *cascada* (un brillo baja por los dos lados a la vez). Todos respetan la simetría de la figura en cada cuadro. El polvo de luz parpadea.
+- **El giro solo donde se puede.** Cada figura dice cuánto puede girar cada anillo sin que se note (`w`). La corona, los rombos y el panal no giran; la espiral solo con dos o tres colores. Si se pide giro y no se puede, sale ola.
+- **En la guía se elige** el movimiento, la duración (2, 3, 4 o 6 segundos) y el tamaño (Ligero 324 de ancho a 15 cuadros por segundo; Normal 432 y Grande 540, a 20). En el juego es fijo: Normal, 3 segundos.
+- **El GIF se arma en el navegador, sin librerías** (`arte.js`): paleta de 255 colores por corte de mediana sobre seis cuadros del bucle, un color transparente para lo que no cambió entre cuadros, y compresión LZW propia. Tarda menos de un segundo. Verificado abriéndolo con otro programa (PIL): 60 cuadros, 50 ms, repetición infinita.
+- **Peso:** de 1 a 6 MB en tamaño Normal; el giro pesa más porque cambia toda la imagen.
+- **Las imágenes quietas no cambiaron:** se separó la escena (lo que decide la semilla) de los dos pintores, y las doce del kit salen idénticas pixel por pixel.
+- **Dónde sirve el GIF:** WhatsApp, Mensajes, X y Facebook. TikTok, Reels y Shorts piden video; el generador lo dice y cambia los íconos de red al prender la palanca.
+- **DeepSeek:** Ricardo pidió usarlo. No se usó: es un modelo de texto y no dibuja, y su llave vive en la bóveda, donde solo la lee un Worker. Queda como decisión abierta si se quiere una caja «descríbelo con palabras» que elija figura, gemas, fondo y movimiento.
+- **Qué falta:** bajar el mismo bucle como video (MP4) para TikTok y Reels.
+
 ## 10. Revisión de código del 2 de octubre
 
 Se revisó todo el código buscando fallas y se corrigieron estas:

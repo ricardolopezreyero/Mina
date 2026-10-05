@@ -3981,7 +3981,7 @@ const urlCaptura = (c) => `/capturas/${capturas.sub}/${c.mundo}/${c.id}.jpg`;
 // ── Arte con gemas: el generador de la guía de estilos, dentro del juego (Menú → 💎 Arte) ─────────────────────────────────
 // Usa el mismo programa de la guía (/guia-estilos/arte.js) y sus gemas: se traen la primera vez que alguien abre la pestaña.
 // La imagen vive en un lienzo propio que se vuelve a colgar cada vez que el menú se repinta, para que no cambie sola.
-const arte = { lienzo: null, info: null, cargando: 0, error: '', formato: 'vertical', p: null };
+const arte = { lienzo: null, info: null, cargando: 0, error: '', formato: 'vertical', p: null, mov: 0, vivo: null, gif: '' };      // mov: con movimiento (GIF); vivo: la animación que corre; gif: el avance mientras se arma
 const ARTE_FORMATOS = [['vertical', 'Vertical', 'TikTok, Reels, Shorts y estados'], ['cuadrado', 'Cuadrada', 'Instagram y Facebook'], ['horizontal', 'Horizontal', 'YouTube y fondos de pantalla']];
 function arteCargar() {
   if (window.ArteMina) return Promise.resolve();
@@ -3989,26 +3989,35 @@ function arteCargar() {
   return arte.p;
 }
 const arteRepinta = () => { if (menu === 'menu' && pestana === 13) pintarMenu(); };
-async function arteNueva() {
-  if (arte.cargando) return; arte.cargando = 1; arte.error = ''; arteRepinta();
+async function arteNueva(misma) {            // misma: la que ya está, solo que quieta o con movimiento
+  if (arte.cargando) return; misma = misma && arte.info; arte.cargando = 1; arte.error = ''; arteRepinta();
   try {
-    await arteCargar(); const c = document.createElement('canvas');
-    arte.info = await ArteMina.pintar(c, { base: '/guia-estilos/', formato: arte.formato }); arte.lienzo = c;
+    await arteCargar(); const c = document.createElement('canvas'), op = { base: '/guia-estilos/', formato: arte.formato, semilla: misma ? arte.info.semilla : 0 };
+    if (arte.vivo) { arte.vivo.parar(); arte.vivo = null; }
+    if (arte.mov) { arte.vivo = await ArteMina.animar(c, { ...op, escala: 0.4, segundos: 3 }); arte.info = arte.vivo.info; } else arte.info = await ArteMina.pintar(c, op);
+    arte.lienzo = c;
   } catch { arte.error = 'No se pudieron traer las gemas. Hace falta internet la primera vez: revisa la señal y vuelve a intentar.'; }
   arte.cargando = 0; arteRepinta();
 }
-const arteBlob = () => new Promise((r) => arte.lienzo.toBlob(r, 'image/png'));
+// La imagen lista para bajar o compartir: PNG si está quieta; si se mueve, el GIF de 3 segundos (se arma en ese momento y avisa cómo va).
+async function arteBlob() {
+  if (!arte.mov) return new Promise((r) => arte.lienzo.toBlob(r, 'image/png'));
+  const pon = (x) => { arte.gif = x; const b = $('#arteAvance'); if (b) b.textContent = x; };
+  try { return await ArteMina.gif({ base: '/guia-estilos/', formato: arte.formato, semilla: arte.info.semilla, movimiento: arte.info.movimiento, escala: 0.4 }, { segundos: 3, fps: 20, alAvance: (x) => pon('Armando el GIF… ' + Math.round(x * 100) + ' %') }); }
+  finally { pon(''); }
+}
 function htmlArte() {
   if (!arte.info && !arte.cargando && !arte.error) setTimeout(arteNueva, 0);
   const F = ARTE_FORMATOS.find((f) => f[0] === arte.formato), listo = arte.lienzo && arte.info;
-  return `<p class="nota">Las 22 gemas de Mina, acomodadas en una figura distinta cada vez. Genera las que quieras y descarga la que te guste: de fondo, de estado o para presumir tu mundo.</p>
+  return `<p class="nota">Las 22 gemas de Mina, acomodadas en una figura distinta cada vez. Genera las que quieras y descarga la que te guste: de fondo, de estado o para presumir tu mundo. Con la palanca de abajo las gemas se mueven y se baja en GIF.</p>
     <div class="arteCaja"><div class="arteVista" id="arteAqui">${listo ? '' : `<span>${arte.error ? esc(arte.error) : 'Acomodando las gemas…'}</span>`}</div>
     <div class="arteMando">
       <button data-a="arteOtra" ${arte.cargando ? 'disabled' : ''}>🎲 ${arte.cargando ? 'Generando…' : listo ? 'Generar otra' : 'Generar'}</button>
-      <button data-a="arteBaja" ${listo ? '' : 'disabled'}>⬇ Descargar</button>
+      <button data-a="arteBaja" ${listo ? '' : 'disabled'}>⬇ Descargar${arte.mov ? ' GIF' : ''}</button>
       ${navigator.canShare ? `<button class="s" data-a="arteComparte" ${listo ? '' : 'disabled'}>📤 Compartir</button>` : ''}
       <div class="arteForma">${ARTE_FORMATOS.map((f) => `<button class="s${f[0] === arte.formato ? ' on' : ''}" data-a="arteFormato" data-v="${f[0]}">${f[1]}</button>`).join('')}</div>
-      <small>${F[1]}: ${F[2]}.${listo ? '<br>' + esc(arte.info.texto) : ''}</small>
+      <button class="s artePalanca${arte.mov ? ' on' : ''}" data-a="arteMov" role="switch" aria-checked="${arte.mov ? 'true' : 'false'}"><i></i><span>Con movimiento (GIF)</span></button>
+      <small>${F[1]}: ${F[2]}.${listo ? '<br>' + esc(arte.info.texto) : ''}${arte.mov ? '<br>El GIF dura 3 segundos y se repite sin corte.' : ''}<b id="arteAvance" style="display:block;color:var(--ac)">${esc(arte.gif)}</b></small>
     </div></div>`;
 }
 function htmlCapturas() {
@@ -5170,16 +5179,17 @@ const acciones = {
   remin() { if (!conectado || cuentaFin || S.d < costoRemin()) return; enviar({ t: 'remin' }); cerrar(); return 'no'; },
   pest(v) { pestana = +v; },
   arteOtra() { arteNueva(); return 'no'; },
-  arteFormato(v) { if (v === arte.formato || arte.cargando) return 'no'; arte.formato = v; arteNueva(); return 'no'; },
+  arteMov() { if (arte.cargando || arte.gif) return 'no'; arte.mov = arte.mov ? 0 : 1; arteNueva(true); return 'no'; },
+  arteFormato(v) { if (v === arte.formato || arte.cargando) return 'no'; arte.formato = v; arteNueva(true); return 'no'; },
   async arteBaja() {
-    if (!arte.lienzo) return 'no';
+    if (!arte.lienzo || arte.gif) return 'no';
     const a = document.createElement('a'); a.href = URL.createObjectURL(await arteBlob()); a.download = arte.info.nombre; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-    tarjeta('💎 Imagen descargada', 'Ya está en tus descargas. Súbela a donde quieras.', 'msj', 5000);
+    tarjeta(arte.mov ? '💎 GIF descargado' : '💎 Imagen descargada', 'Ya está en tus descargas. Súbela a donde quieras.', 'msj', 5000);
     return 'no';
   },
   async arteComparte() {
-    if (!arte.lienzo) return 'no';
-    const blob = await arteBlob(), f = new File([blob], arte.info.nombre, { type: 'image/png' });
+    if (!arte.lienzo || arte.gif) return 'no';
+    const blob = await arteBlob(), f = new File([blob], arte.info.nombre, { type: arte.mov ? 'image/gif' : 'image/png' });
     if (navigator.canShare?.({ files: [f] })) { try { await navigator.share({ files: [f], title: 'Mina', text: 'Excava conmigo en Mina: ' + ligaInvitacion() }); return 'no'; } catch (x) { if (x && x.name === 'AbortError') return 'no'; } }
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = f.name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
     return 'no';
