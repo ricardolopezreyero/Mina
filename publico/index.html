@@ -458,6 +458,12 @@ body.movil #verTeclado{display:none!important}
 .tienda .promesa b{color:var(--tx)}
 .tienda .chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 12px}
 .tienda .chips button{padding:.45em .9em}
+.tienda .pz{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin:6px 0}
+.tienda .pz>div{background:#0005;border:1px solid var(--borde);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:4px}
+.tienda .pz>div.on{border-color:var(--ok)}
+.tienda .pz small{color:var(--su);flex:1}
+.tienda .pz .fila{margin:4px 0 0;padding:0;border:0;background:none;gap:6px}
+.tienda .pz .fila .nota{margin:0;color:var(--ok)}
 .tienda .aparte.gracias{border:1px solid #ff7ac866;background:#ff7ac812;border-radius:12px;padding:10px 12px;margin-bottom:12px}
 .tienda .aparte.gracias .chips button.on{border-color:#ff7ac8;color:#ff7ac8}
 .tienda .escalera{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px}

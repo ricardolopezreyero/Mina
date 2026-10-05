@@ -8,7 +8,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { DurableObject } from "cloudflare:workers";
 import { verificarPase } from "./verificar.js";      // el pase del Login de CapitalTorreon (login.capitaltorreon.com)
-import { NIVELES, MECENAS_MIN, FONDO_PRECIO, TOPE_MES, precioDe, filtrarPinta, motorConfort, OFERTA_DIAS, EXPERIMENTOS, momento, precioFinal, cumpleOk, cumpleCerca, horaTorreon, GRATITUD_MIN, GRATITUD_HORA, REFERIDO_PREMIO, GRATIS, CALCAS, calcaHoy } from "./tienda.js";      // La Pinturería: precios y pintura
+import { NIVELES, MECENAS_MIN, FONDO_PRECIO, TOPE_MES, precioDe, filtrarPinta, motorConfort, OFERTA_DIAS, EXPERIMENTOS, momento, precioFinal, cumpleOk, cumpleCerca, horaTorreon, GRATITUD_MIN, GRATITUD_HORA, REFERIDO_PREMIO, GRATIS, CALCAS, calcaHoy, PIEZAS, pieza } from "./tienda.js";      // La Pinturería: precios y pintura
 // Un secreto de la bóveda (Secrets Store) llega como objeto con .get(); en local, como texto de .dev.vars. Sin él: "".
 async function secreto(v) { if (!v) return ""; if (typeof v === "string") return v; try { return (await v.get()) || ""; } catch { return ""; } }
 
@@ -196,7 +196,7 @@ export class Maquina extends DurableObject {
     return { n: m.n, mo: m.mo, est: m.est, p: this.pintaPublica(m), nv: t.nivel, me: t.mecenas > 0 ? 1 : 0, regalo };
   }
   // La pintura que ven todos: lo del nivel comprado y, el día de su cumpleaños (hora de Torreón), un gorrito de fiesta (cu).
-  pintaPublica(m) { const t = this.tiendaDe(m), p = filtrarPinta(m.pinta, t.nivel); if (cumpleOk(t.cumple) && t.cumple === horaTorreon().md) p.cu = 1; return p; }
+  pintaPublica(m) { const t = this.tiendaDe(m), p = filtrarPinta(m.pinta, t.nivel, t.piezas); if (cumpleOk(t.cumple) && t.cumple === horaTorreon().md) p.cu = 1; return p; }
   async ponerCumple(md) { const m = await this.ctx.storage.get("m"); if (!m) return null; const t = this.tiendaDe(m); if (md) t.cumple = md; else delete t.cumple; await this.ctx.storage.put("m", m); return { cumple: t.cumple || "", p: this.pintaPublica(m), nv: t.nivel, me: t.mecenas > 0 ? 1 : 0 }; }
 
   // ── Referidos: el saldo y las cuentas viven en la maquinita de quien invita (una por persona).
@@ -215,10 +215,10 @@ export class Maquina extends DurableObject {
   // Gastar saldo: se descuenta lo que haya (nunca más de lo que hay); devuelve cuánto se usó.
   async usarSaldo(monto) { const m = await this.ctx.storage.get("m"); if (!m) return 0; const usa = Math.max(0, Math.min(m.saldo || 0, monto | 0)); if (usa) { m.saldo -= usa; this.refDe(m).gastado += usa; await this.ctx.storage.put("m", m); } return usa; }
   // ── La Pinturería: lo comprado y la pintura son de la maquinita (y la maquinita, de su cuenta).
-  tiendaDe(m) { return m.tienda || (m.tienda = { nivel: 0, mecenas: 0, compras: [] }); }
+  tiendaDe(m) { const t = m.tienda || (m.tienda = { nivel: 0, mecenas: 0, compras: [] }); t.piezas = t.piezas || []; return t; }
   gastado30(t) { const h = Date.now() - 30 * 86400000; return t.compras.filter((c) => c.h > h).reduce((a, c) => a + (c.monto || 0), 0); }      // solo dinero real: el saldo de referidos no cuenta para el tope
-  vistaTienda(m) { const t = this.tiendaDe(m), r = this.refDe(m); return { nivel: t.nivel, mecenas: t.mecenas, compras: t.compras.length, gastado30: this.gastado30(t), pinta: this.pintaPublica(m), saldo: m.saldo || 0, padrino: m.padrino ? 1 : 0, ref: { clics: r.clics, llegaron: r.llegaron, cuentas: r.cuentas, ganado: r.ganado, gastado: r.gastado, lista: r.lista.slice(-60).reverse().map((x) => ({ n: x.n, h: x.h, monto: x.monto })) } }; }
-  async tienda() { const m = await this.ctx.storage.get("m"); return m ? this.vistaTienda(m) : { nivel: 0, mecenas: 0, compras: 0, gastado30: 0, pinta: {}, saldo: 0, padrino: 0, ref: { clics: 0, llegaron: 0, cuentas: 0, ganado: 0, gastado: 0, lista: [] } }; }
+  vistaTienda(m) { const t = this.tiendaDe(m), r = this.refDe(m); return { nivel: t.nivel, piezas: t.piezas, mecenas: t.mecenas, compras: t.compras.length, gastado30: this.gastado30(t), pinta: this.pintaPublica(m), saldo: m.saldo || 0, padrino: m.padrino ? 1 : 0, ref: { clics: r.clics, llegaron: r.llegaron, cuentas: r.cuentas, ganado: r.ganado, gastado: r.gastado, lista: r.lista.slice(-60).reverse().map((x) => ({ n: x.n, h: x.h, monto: x.monto })) } }; }
+  async tienda() { const m = await this.ctx.storage.get("m"); return m ? this.vistaTienda(m) : { nivel: 0, piezas: [], mecenas: 0, compras: 0, gastado30: 0, pinta: {}, saldo: 0, padrino: 0, ref: { clics: 0, llegaron: 0, cuentas: 0, ganado: 0, gastado: 0, lista: [] } }; }
   async cerrarExperimento() { const m = await this.ctx.storage.get("m"); if (!m) return null; const t = this.tiendaDe(m), o = (t.exp || [])[t.exp.length - 1]; if (o && o.r === "abierto") { o.r = "ignorado"; await this.ctx.storage.put("m", m); } return o; }
   async ponerSenales(seg, rec, tot) { const m = await this.ctx.storage.get("m"); if (!m) return null; m.est = { ...(m.est || {}), seg, rec, tot }; await this.ctx.storage.put("m", m); return 1; }
   // La oferta de esta maquinita: el experimento abierto (nivel sugerido y descuento), o uno nuevo si el anterior venció.
@@ -237,12 +237,13 @@ export class Maquina extends DurableObject {
     return { nivel: o.nivel, desc: o.desc, hasta: o.h + OFERTA_DIAS * 86400000, n: o.n, de: EXPERIMENTOS, s: o.s, cumple: t.cumple || "", seg: (m.est || {}).seg || 0, gratitud: t.gratitud || 0 };
   }
   // Entregar una compra: una sola vez por sesión de pago; el nivel solo sube.
-  async entregar({ sid, tipo, nivel, monto, de, desc, motivo, saldo }) {
+  async entregar({ sid, tipo, nivel, monto, de, desc, motivo, saldo, pieza: pz }) {
     const m = await this.ctx.storage.get("m"); if (!m) return null;
     const t = this.tiendaDe(m); let nuevo = 0;
     if (!t.compras.some((c) => c.sid === sid)) {
       nuevo = 1;
-      t.compras = t.compras.concat({ sid, tipo, n: nivel || 0, monto: monto || 0, de: de || "", h: Date.now(), ...(motivo ? { motivo } : {}), ...(saldo ? { saldo } : {}) }).slice(-200);
+      t.compras = t.compras.concat({ sid, tipo, n: nivel || 0, monto: monto || 0, de: de || "", h: Date.now(), ...(motivo ? { motivo } : {}), ...(saldo ? { saldo } : {}), ...(pz ? { pieza: pz } : {}) }).slice(-200);
+      if (tipo === "pieza" && pz && !t.piezas.includes(pz)) t.piezas = t.piezas.concat(pz);
       if (motivo === "gratitud") t.gratitud = Date.now();
       if (tipo === "nivel") t.nivel = Math.max(t.nivel, nivel || 0);
       if (tipo === "nivel" && desc !== undefined && desc !== null) {           // el experimento abierto se cierra como comprado; ese descuento es su punto cómodo
@@ -257,7 +258,7 @@ export class Maquina extends DurableObject {
   // La pintura: se guarda solo lo que el nivel comprado permite.
   async ponerPinta(p) {
     const m = await this.ctx.storage.get("m"); if (!m) return null; const t = this.tiendaDe(m), antes = m.pinta || {};
-    m.pinta = filtrarPinta(p, t.nivel);
+    m.pinta = filtrarPinta(p, t.nivel, t.piezas);
     // una calcomanía de temporada solo se pone en su temporada; la que ya traía se queda de recuerdo
     if (m.pinta.calca >= CALCAS.length && m.pinta.calca !== antes.calca && !calcaHoy(m.pinta.calca, horaTorreon().md)) { if (antes.calca !== undefined) m.pinta.calca = antes.calca; else delete m.pinta.calca; }
     await this.ctx.storage.put("m", m); return { p: this.pintaPublica(m), nv: t.nivel, me: t.mecenas > 0 ? 1 : 0 };
@@ -460,7 +461,7 @@ async function tiendaApi(u, request, env) {
     if (llaveOk(d.k)) { try { oferta = await maq(d.k).oferta(eco, true); } catch {} }
     // el momento (hora de Torreón): lo que hoy, a esta hora y con este ánimo, baja el precio. Solo baja.
     const mom = momento(Date.now(), { tienda: { cumple: oferta && oferta.cumple }, est: { seg: oferta ? oferta.seg : 0 } }, d.animo);
-    return json({ niveles: NIVELES, referidoPremio: REFERIDO_PREMIO, mecenasMin: MECENAS_MIN, gratitudMin: GRATITUD_MIN, gratitudHora: GRATITUD_HORA, fondoPrecio: FONDO_PRECIO, tope: TOPE_MES, fondo, pagos: stripe ? 1 : 0, mio, oferta, momento: mom, cumple: (oferta && oferta.cumple) || "", gratitud: (oferta && oferta.gratitud) || 0 });
+    return json({ niveles: NIVELES, piezas: PIEZAS, referidoPremio: REFERIDO_PREMIO, mecenasMin: MECENAS_MIN, gratitudMin: GRATITUD_MIN, gratitudHora: GRATITUD_HORA, fondoPrecio: FONDO_PRECIO, tope: TOPE_MES, fondo, pagos: stripe ? 1 : 0, mio, oferta, momento: mom, cumple: (oferta && oferta.cumple) || "", gratitud: (oferta && oferta.gratitud) || 0 });
   }
   // El cumpleaños (día y mes, nada más): para el gorrito ese día y, si entró con su cuenta, el correo de gratitud a las 3:33 pm.
   if (u.pathname === "/api/tienda/cumple") {
@@ -482,7 +483,7 @@ async function tiendaApi(u, request, env) {
     if (d.exp === "referido") { const a = await maq(d.k).acreditarReferido({ n: d.n || "Prueba", de: "prueba-" + Date.now() }); return json({ ok: 1, a }); }
     if (d.exp === "momento") return json({ ok: 1, momento: momento(d.ts || Date.now(), { tienda: { cumple: d.cumple }, est: { seg: d.seg || 0 } }, d.animo) });
     if (d.exp === "senales") { const m = await env.MAQUINA.get(env.MAQUINA.idFromName(d.k)).ponerSenales(d.seg, d.rec, d.tot); return json({ ok: 1, m }); }
-    const e = await maq(d.k).entregar({ sid: "prueba-" + Date.now(), tipo: d.tipo === "mecenas" ? "mecenas" : "nivel", nivel: entero(d.nivel, 0, 10, 0), monto: entero(d.monto, 0, 1e6, 0), de: "prueba", desc: d.desc });
+    const e = await maq(d.k).entregar({ sid: "prueba-" + Date.now(), tipo: d.tipo === "mecenas" ? "mecenas" : d.tipo === "pieza" ? "pieza" : "nivel", nivel: entero(d.nivel, 0, 10, 0), pieza: pieza(d.pieza) ? d.pieza : "", monto: entero(d.monto, 0, 1e6, 0), de: "prueba", desc: d.desc });
     return e ? json({ ok: 1, mio: e }) : json({ error: "maquina" }, 404);
   }
   if (u.pathname === "/api/tienda/pagar") {
@@ -491,9 +492,13 @@ async function tiendaApi(u, request, env) {
     const c = await env.CUENTA.get(env.CUENTA.idFromName("g:" + sub)).sesion(tk);
     if (!c || !llaveOk(d.k) || !esMia(c, d.k)) return json({ error: "cuenta" }, 401);
     let volver = u.origin + "/"; try { const x = new URL(String(d.volver || ""), u.origin); if (x.origin === u.origin) volver = x.origin + x.pathname; } catch {}
-    const tipo = d.tipo === "mecenas" ? "mecenas" : "nivel";      // el Fondo común se retiró el 4 de octubre: los colores ya son gratis para todos
-    let monto = 0, nombre = "", para = d.k, nivel = 0, cantidad = 1, desc = 0, ajuste = 0, momentoTx = "", motivo = "";
-    if (tipo === "nivel") {
+    const tipo = d.tipo === "mecenas" ? "mecenas" : d.tipo === "pieza" ? "pieza" : "nivel";      // el Fondo común se retiró el 4 de octubre: los colores ya son gratis para todos
+    let monto = 0, nombre = "", para = d.k, nivel = 0, cantidad = 1, desc = 0, ajuste = 0, momentoTx = "", motivo = "", piezaId = "";
+    if (tipo === "pieza") {              // una pieza de sonido: su precio de lista, una sola vez, para la propia maquinita
+      const pz = pieza(d.pieza); if (!pz) return json({ error: "datos" }, 400);
+      if (((await maq(d.k).tienda()).piezas || []).includes(d.pieza)) return json({ error: "ya" }, 400);
+      piezaId = d.pieza; monto = pz.precio; nombre = `Mina · La Pinturería · ${pz.tipo === "motor" ? "motor" : "canción"} «${pz.n}»`;
+    } else if (tipo === "nivel") {
       nivel = entero(d.nivel, 1, 10, 0); if (!nivel) return json({ error: "datos" }, 400);
       // regalo: la maquinita número i de un mundo (su llave la da el mundo, nunca el navegador)
       if (Number.isInteger(d.paraI) && d.paraI >= 0 && /^[2-9A-HJ-NP-Z]{8}$/.test(String(d.mundo || ""))) { const k2 = await env.MUNDO.get(env.MUNDO.idFromName(d.mundo)).llaveDe(d.paraI); if (llaveOk(k2) && k2 !== d.k) para = k2; else return json({ error: "regalo" }, 400); }
@@ -517,13 +522,13 @@ async function tiendaApi(u, request, env) {
     const mio = await maq(d.k).tienda();
     // El saldo de referidos paga niveles (propios o de regalo). Si alcanza, se entrega aquí mismo; si no, Stripe cobra el resto.
     let usaSaldo = 0;
-    if (tipo === "nivel" && d.saldo && (mio.saldo || 0) > 0) {
+    if ((tipo === "nivel" || tipo === "pieza") && d.saldo && (mio.saldo || 0) > 0) {
       usaSaldo = Math.min(mio.saldo, monto);
       if (usaSaldo >= monto) {
         const usado = await maq(d.k).usarSaldo(monto); if (usado < monto) return json({ error: "saldo" }, 400);
-        const e = await maq(para).entregar({ sid: "saldo-" + Date.now() + "-" + hex(crypto.getRandomValues(new Uint8Array(4))), tipo, nivel, monto: 0, saldo: monto, de: sub, desc: para === d.k ? desc : undefined });
+        const e = await maq(para).entregar({ sid: "saldo-" + Date.now() + "-" + hex(crypto.getRandomValues(new Uint8Array(4))), tipo, nivel, pieza: piezaId, monto: 0, saldo: monto, de: sub, desc: para === d.k ? desc : undefined });
         if (!e) return json({ error: "maquina" }, 404);
-        return json({ ok: 1, saldo: 1, tipo, nivel, regalo: para !== d.k ? 1 : 0, usado: monto, mio: await maq(d.k).tienda() });
+        return json({ ok: 1, saldo: 1, tipo, nivel, pieza: piezaId, regalo: para !== d.k ? 1 : 0, usado: monto, mio: await maq(d.k).tienda() });
       }
     }
     const cobra = monto - usaSaldo;
@@ -532,7 +537,7 @@ async function tiendaApi(u, request, env) {
     const f = new URLSearchParams();
     f.set("mode", "payment"); f.set("success_url", volver + "?compra={CHECKOUT_SESSION_ID}"); f.set("cancel_url", volver + "?tienda=" + (nivel || 1));
     f.set("line_items[0][quantity]", "1"); f.set("line_items[0][price_data][currency]", "mxn"); f.set("line_items[0][price_data][unit_amount]", String(cobra * 100)); f.set("line_items[0][price_data][product_data][name]", nombre);
-    f.set("metadata[k]", d.k); f.set("metadata[para]", para); f.set("metadata[tipo]", tipo); f.set("metadata[nivel]", String(nivel)); f.set("metadata[cantidad]", String(cantidad)); f.set("metadata[monto]", String(monto)); f.set("metadata[de]", sub); f.set("metadata[desc]", String(desc)); f.set("metadata[ajuste]", String(ajuste)); if (motivo) f.set("metadata[motivo]", motivo); if (usaSaldo) f.set("metadata[saldo]", String(usaSaldo));
+    f.set("metadata[k]", d.k); f.set("metadata[para]", para); f.set("metadata[tipo]", tipo); f.set("metadata[nivel]", String(nivel)); f.set("metadata[cantidad]", String(cantidad)); f.set("metadata[monto]", String(monto)); f.set("metadata[de]", sub); f.set("metadata[desc]", String(desc)); f.set("metadata[ajuste]", String(ajuste)); if (motivo) f.set("metadata[motivo]", motivo); if (piezaId) f.set("metadata[pieza]", piezaId); if (usaSaldo) f.set("metadata[saldo]", String(usaSaldo));
     f.set("locale", "es-419"); if (c.email) f.set("customer_email", c.email);
     let r, sesion; try { r = await fetch("https://api.stripe.com/v1/checkout/sessions", { method: "POST", headers: { authorization: "Bearer " + stripe, "content-type": "application/x-www-form-urlencoded" }, body: f }); sesion = await r.json(); } catch { return json({ error: "stripe" }, 502); }
     if (!r.ok || !sesion.url) return json({ error: "stripe" }, 502);
@@ -553,10 +558,11 @@ async function tiendaApi(u, request, env) {
       const conSaldo = entero(md.saldo, 0, 1e6, 0), usado = conSaldo ? await maq(md.k).usarSaldo(conSaldo) : 0;      // lo que se reservó de saldo se descuenta al confirmar
       e = await maq(para).entregar({ sid, tipo, nivel, monto: monto - conSaldo, saldo: usado, de: md.de, desc: para === md.k ? desc : undefined }); if (e && e.nuevo && para === md.k) { try { await tabla().anotarCompra(desc); } catch {} }
     }
+    else if (tipo === "pieza" && pieza(md.pieza)) { const conSaldo = entero(md.saldo, 0, 1e6, 0), usado = conSaldo ? await maq(md.k).usarSaldo(conSaldo) : 0; e = await maq(md.k).entregar({ sid, tipo, pieza: md.pieza, monto: monto - conSaldo, saldo: usado, de: md.de }); }
     else if (tipo === "mecenas") e = await maq(md.k).entregar({ sid, tipo, monto, de: md.de, motivo: md.motivo === "gratitud" ? "gratitud" : "" });
     else if (tipo === "fondo") { e = await maq(md.k).entregar({ sid, tipo, monto, de: md.de }); if (e && e.nuevo) await tabla().sumarFondo(Math.max(1, cantidad)); }
     if (!e) return json({ error: "maquina" }, 404);
-    return json({ ok: 1, tipo, nivel, regalo: para !== md.k ? 1 : 0, cantidad, monto, motivo: md.motivo || "", mio: await maq(md.k).tienda() });
+    return json({ ok: 1, tipo, nivel, pieza: md.pieza || "", regalo: para !== md.k ? 1 : 0, cantidad, monto, motivo: md.motivo || "", mio: await maq(md.k).tienda() });
   }
   return json({ error: "no" }, 404);
 }

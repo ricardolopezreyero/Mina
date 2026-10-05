@@ -44,10 +44,32 @@ export function calcaHoy(i, md) { if (i < CALCAS.length) return true; let k = CA
 export const temporadasHoy = (md) => CALCAS_TEMPORADA.filter((t) => enFechas(md, t.de, t.a)).map((t) => t.n);
 const hex = (v, lista) => (typeof v === "string" && lista.includes(v.toLowerCase()) ? v.toLowerCase() : "");
 const idx = (v, lista) => (Number.isInteger(v) && v >= 0 && v < lista.length ? v : 0);
-export function filtrarPinta(p, nivel) {
+// ── Piezas sueltas de sonido: se coleccionan una por una, cada una con su precio (fuera de la escalera de niveles).
+export const MOTORES = [
+  { i: 1, n: "Diésel clásico", d: "El motor de siempre, afinado: explosiones graves y parejas, con el soplido del escape.", precio: 39 },
+  { i: 2, n: "V8 ronco", d: "Ocho cilindros que gruñen al acelerar y ronronean parados.", precio: 49 },
+  { i: 3, n: "Eléctrico", d: "Casi silencio: un silbido limpio que sube con la velocidad.", precio: 59 },
+  { i: 4, n: "Turbina", d: "Un reactor chiquito: aire que se enrosca y un agudo que se afina al acelerar.", precio: 79 },
+  { i: 5, n: "De vapor", d: "Resoplidos que se aprietan al correr, como La Locomotora.", precio: 99 },
+  { i: 6, n: "Nave", d: "Un zumbido de otro planeta que late despacio y se abre al volar.", precio: 149 },
+];
+export const CANCIONES = [
+  { i: 1, n: "Vals de la mina", d: "Un vals lento de piano, a tres tiempos, que gira sin prisa.", precio: 39 },
+  { i: 2, n: "Bolero de la Gasolinera", d: "Cuerdas pulsadas en menor, con mucho aire entre nota y nota.", precio: 39 },
+  { i: 3, n: "Cumbia bajita", d: "Un bajo que camina y un güiro suave; alegre, sin gritar.", precio: 39 },
+  { i: 4, n: "Nana de las estrellas", d: "Una caja de música pentatónica, para bajar de noche.", precio: 39 },
+  { i: 5, n: "Jazz de medianoche", d: "Acordes de séptima, un bajo que pasea y escobillas.", precio: 39 },
+];
+export const PIEZAS = { motor: MOTORES, cancion: CANCIONES };
+export function pieza(id) { const [tipo, i] = String(id || "").split(":"); const l = PIEZAS[tipo], x = l && l.find((y) => y.i === +i); return x ? { tipo, ...x } : null; }
+
+export function filtrarPinta(p, nivel, piezas) {
   p = p && typeof p === "object" ? p : {};
   nivel = Math.max(GRATIS, nivel | 0);           // los colores son de todos
+  piezas = Array.isArray(piezas) ? piezas : [];
   const q = {};
+  if (piezas.includes("motor:" + (p.motor | 0))) q.motor = p.motor | 0;          // las piezas de sonido: solo las que se compraron
+  if (piezas.includes("cancion:" + (p.cancion | 0))) q.cancion = p.cancion | 0;
   if (nivel >= 1) q.c1 = hex(p.c1, COLORES);
   if (nivel >= 2) { q.c2 = hex(p.c2, COLORES); q.c3 = hex(p.c3, COLORES); }
   if (nivel >= 3) q.calca = idx(p.calca, CALCAS_TODAS);                  // el 0 = ninguna

@@ -159,6 +159,18 @@ Ricardo pidió auditar todo lo que decidimos monetizar, regalar el 20 % que de v
 
 **Lo que no cambió:** precios de lista del 3 al 10, el motor de confort y el momento (solo bajan), el tope de cuidado, las devoluciones, los referidos ($333 de saldo), Mecenas y la gratitud de cumpleaños.
 
+## 6f. Piezas sueltas de sonido: seis voces de motor y cinco canciones (4 de octubre, noche)
+
+Ricardo pidió meternos al sonido como con el claxon, con cuidado premium y sin que canse: distintas voces para el motor, cada una con su precio para coleccionarlas, y cinco canciones de fondo a $39 cada una. También revisar la placa para que quede de mejor calidad.
+
+**Las voces del motor** (cada una un instrumento continuo, bajito y redondo, que sigue las vueltas, la velocidad, el vuelo y la perforación): Diésel clásico $39, V8 ronco $49, Eléctrico $59, Turbina $79, De vapor $99, Nave $149. Se oyen tres segundos de acelerón antes de comprar. El motor viene apagado en las opciones; al usar un motor comprado se enciende solo. Lo oye quien lo trae (el motor siempre fue local).
+
+**Las canciones de fondo** ($39 cada una): Vals de la mina (piano a tres tiempos), Bolero de la Gasolinera (cuerdas en menor), Cumbia bajita (bajo que camina y güiro), Nana de las estrellas (caja de música pentatónica), Jazz de medianoche (séptimas, bajo que pasea, escobillas con swing). Cada una tiene su compás, sus acordes, su bajo, su acompañamiento, su percusión y sus frases, y descansa un compás de vez en cuando, como la música del mundo. Se oyen diez segundos antes de comprar; sin canción sigue la música del mundo.
+
+**Por qué piezas sueltas y no niveles:** el sonido no es «más que» las calcomanías ni «menos que» la mascota; es otro eje. Se colecciona: cada pieza es tuya para siempre y la cambias cuando quieras. El saldo de referidos también las paga. Van a precio de lista (sin motor de confort), porque son precios chicos y distintos a propósito: la gracia es juntarlas.
+
+**La placa, de mejor calidad:** la de marco es acero cepillado con bisel, borde del color de la maquinita, tornillos con ranura y el nombre grabado; la corona tiene oro con luz, banda, perlas y joyas con destello; la dorada lleva contorno café y un brillo de laca; la de neón es un tubo con halo doble y un parpadeo apenas perceptible.
+
 ## 7. Lo que se mide (y lo que no)
 
 Se mide para cuidar, no para exprimir: cuántos abren la tienda, cuántos se prueban algo, cuántos compran, cuántos regalan, cuántas devoluciones, cuántas quejas. La meta no es «más conversión»: es que **nadie se sienta empujado** (cero quejas) y que quien compra lo haga contento (devoluciones casi en cero). Si un cambio sube la venta pero sube las quejas, se revierte.

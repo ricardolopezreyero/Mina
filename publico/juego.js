@@ -806,13 +806,69 @@ const son = {
 };
 
 // ── sonidos continuos: se arman una vez y después solo se les mueve el volumen y el tono, cuadro por cuadro
+const aFuente = () => { const s = AC.createBufferSource(); s.buffer = ruidoBuf; s.loop = true; s.start(0, Math.random()); return s; };
+const aSalida = (b) => { const g = AC.createGain(); g.gain.value = 0; g.connect(bus[b]); return g; };
+const aGan = (v) => { const g = AC.createGain(); g.gain.value = v; return g; };
+const aOsc = (tipo, hz) => { const o = AC.createOscillator(); o.type = tipo; o.frequency.value = hz; o.start(); return o; };
+const aFiltro = (tipo, hz, q = 0.7) => { const f = AC.createBiquadFilter(); f.type = tipo; f.frequency.value = hz; f.Q.value = q; return f; };
+const aVaiven = (hz, hondo, destino, tipo = 'sine') => { const l = aOsc(tipo, hz), a = aGan(hondo); l.connect(a).connect(destino.gain); return l; };   // un oscilador lento que mece el volumen, sin cortes bruscos
+const ponParam = (p, v, c = 0.03) => { const t = AC.currentTime; if (p._v === undefined || Math.abs(p._v - v) > Math.abs(v) * 0.01 + 1e-5) { p._v = v; p.setTargetAtTime(v, t, c); } };
+// ── Las voces del motor (La Pinturería · piezas sueltas). Cada una es un pequeño instrumento continuo con su propio carácter;
+// todas bajitas y redondas, para acompañar horas sin cansar. `ajustar` recibe las vueltas, la velocidad, si vuela y si perfora.
+function armarMotor(tipo) {
+  const g = aSalida('motor'), nodos = [], o = (t, hz) => { const x = aOsc(t, hz); nodos.push(x); return x; }, F = aFiltro, G = aGan, vv = (hz, h, d, t) => { const l = aVaiven(hz, h, d, t); nodos.push(l); return l; };
+  const apagar = () => { try { g.disconnect(); for (const n of nodos) n.stop(); } catch {} };
+  const m = { g, tipo, apagar, ajustar() {} };
+  if (tipo === 1) {                        // Diésel clásico: dos cilindros graves, cada explosión mece el cuerpo, y el escape sopla
+    const a = o('sawtooth', 28), b = o('square', 14), f = F('lowpass', 210, 1.6), cuerpo = G(0.42), esc = G(0.2); a.connect(f); b.connect(f); f.connect(cuerpo).connect(g);
+    const l = vv(14, 0.3, cuerpo, 'sine'); aFuente().connect(F('bandpass', 130, 1.3)).connect(esc).connect(g); const l2 = vv(14, 0.25, esc, 'sawtooth');
+    m.ajustar = (vu, vel, v, p, pon) => { pon(g.gain, 0.05 + Math.min(0.025, vel * 0.004)); pon(a.frequency, vu * 0.95, 0.08); pon(b.frequency, vu / 2, 0.08); pon(l.frequency, vu / 2, 0.08); pon(l2.frequency, vu / 2, 0.08); pon(f.frequency, 190 + vel * 6, 0.1); };
+  } else if (tipo === 2) {                 // V8 ronco: dos sierras casi iguales que baten, un sub que sostiene, y el filtro se abre al acelerar
+    const a = o('sawtooth', 60), b = o('sawtooth', 61.5), sub = o('sine', 30), f = F('lowpass', 240, 2.2), cuerpo = G(0.3), gs = G(0.5); a.connect(f); b.connect(f); f.connect(cuerpo).connect(g); sub.connect(gs).connect(g);
+    const l = vv(7.5, 0.22, cuerpo);
+    m.ajustar = (vu, vel, v, p, pon) => { pon(g.gain, 0.05 + Math.min(0.03, vel * 0.005)); pon(a.frequency, vu * 2, 0.08); pon(b.frequency, vu * 2.03, 0.08); pon(sub.frequency, vu, 0.08); pon(l.frequency, vu / 4, 0.08); pon(f.frequency, 230 + vel * 18 + (p ? 60 : 0), 0.12); };
+  } else if (tipo === 3) {                 // Eléctrico: un silbido limpio de inversor que sube con la velocidad; abajo casi nada
+    const a = o('sine', 170), b = o('triangle', 340), f = F('lowpass', 2400, 0.7), cuerpo = G(0.35), gb = G(0.2), aire = G(0.025); a.connect(f); b.connect(gb).connect(f); f.connect(cuerpo).connect(g); aFuente().connect(F('highpass', 2600)).connect(aire).connect(g);
+    m.ajustar = (vu, vel, v, p, pon) => { const hz = 160 + vel * 55 + (v ? 120 : 0) + (p ? 40 : 0); pon(g.gain, 0.028 + Math.min(0.03, vel * 0.005)); pon(a.frequency, hz, 0.12); pon(b.frequency, hz * 2, 0.12); pon(aire.gain, 0.01 + Math.min(0.05, vel * 0.004), 0.2); };
+  } else if (tipo === 4) {                 // Turbina: aire que se enrosca por un filtro que sube, con un agudo que se afina al acelerar
+    const f = F('bandpass', 700, 1.2), aire = G(0.55), w = o('sine', 380), gw = G(0.08); aFuente().connect(f).connect(aire).connect(g); w.connect(gw).connect(g); const l = vv(0.6, 0.12, aire);
+    m.ajustar = (vu, vel, v, p, pon) => { pon(g.gain, 0.03 + Math.min(0.04, vel * 0.004) + (v ? 0.02 : 0)); pon(f.frequency, 650 + vel * 120 + (v ? 500 : 0), 0.15); pon(w.frequency, 360 + vel * 70 + (v ? 300 : 0), 0.15); pon(gw.gain, 0.05 + Math.min(0.08, vel * 0.006), 0.15); };
+  } else if (tipo === 5) {                 // De vapor: resoplidos (ruido grave abierto y cerrado por un pulso) que se aprietan al correr, sobre un fondo que respira
+    const f = F('lowpass', 900, 0.6), puerta = G(0.5), sub = o('sine', 60), gs = G(0.25); aFuente().connect(f).connect(puerta).connect(g); sub.connect(gs).connect(g); const l = vv(1.4, 0.5, puerta, 'square');
+    m.ajustar = (vu, vel, v, p, pon) => { pon(g.gain, 0.055 + Math.min(0.03, vel * 0.004)); pon(l.frequency, 1.2 + vel * 0.45 + (p ? 0.8 : 0), 0.1); pon(f.frequency, 700 + vel * 40, 0.15); pon(sub.frequency, 55 + vel * 1.5, 0.1); };
+  } else if (tipo === 6) {                 // Nave: dos triángulos a la octava que laten despacio, un sine arriba, y el filtro se abre al volar
+    const a = o('triangle', 55), b = o('triangle', 110.4), c = o('sine', 220), f = F('lowpass', 350, 1.1), cuerpo = G(0.3), gc = G(0.12); a.connect(f); b.connect(f); c.connect(gc).connect(f); f.connect(cuerpo).connect(g); const l = vv(0.9, 0.3, cuerpo);
+    m.ajustar = (vu, vel, v, p, pon) => { pon(g.gain, 0.04 + Math.min(0.03, vel * 0.003) + (v ? 0.015 : 0)); pon(f.frequency, v ? 900 : 330 + vel * 20, 0.25); pon(l.frequency, v ? 1.6 : 0.9, 0.3); pon(c.frequency, 220 + vel * 6, 0.2); };
+  } else {                                 // el de fábrica: explosiones lentas y graves, con el soplido del escape
+    const a = o('sawtooth', 30), b = o('triangle', 15), f = F('lowpass', 180, 1.2), cuerpo = G(0.5), esc = G(0.22); a.connect(f); b.connect(f); f.connect(cuerpo).connect(g);
+    aFuente().connect(F('bandpass', 140, 1.4)).connect(esc).connect(g); const l = vv(30, 0.2, esc, 'sawtooth');
+    m.ajustar = (vu, vel, v, p, pon) => { pon(g.gain, 0.045 + Math.min(0.02, vel * 0.004)); pon(a.frequency, vu, 0.08); pon(b.frequency, vu / 2, 0.08); pon(l.frequency, vu, 0.08); };
+  }
+  return m;
+}
+// Cambiar la voz del motor: la anterior se apaga suave y se desconecta; la nueva entra con su primer ajuste.
+function ponerMotor(tipo) {
+  tipo |= 0; if (!AC || !lazo.motor) return; if (lazo.motor.tipo === tipo) return;
+  const viejo = lazo.motor; viejo.g.gain.setTargetAtTime(0, AC.currentTime, 0.05); setTimeout(() => viejo.apagar(), 500);
+  lazo.motor = armarMotor(tipo);
+}
+// Oír un motor desde la tienda: tres segundos de acelerón con la voz elegida, aunque el motor venga apagado en las opciones.
+let motorPrueba = null;
+function oirMotor(i) {
+  if (!audio()) return; if (op.mudo) { aviso('Enciende el sonido para oírlo.'); return; }
+  const antes = motorPrueba ? motorPrueba.antes : (lazo.motor ? lazo.motor.tipo : 0);
+  if (motorPrueba) clearInterval(motorPrueba.id);
+  ponerMotor(i); bus.motor.gain.setTargetAtTime(0.7, AC.currentTime, 0.05);
+  const t0 = performance.now(), prueba = { antes, i: 0 };
+  prueba.id = setInterval(() => {
+    const x = (performance.now() - t0) / 1000, vel = x < 1.4 ? x / 1.4 * 15 : x < 2.2 ? 15 : Math.max(0, 15 - (x - 2.2) * 15);
+    if (lazo.motor && lazo.motor.tipo === i) lazo.motor.ajustar(30 + vel * 3.2, vel, x > 1.4 && x < 2.3, null, ponParam);
+    if (x > 3.3) { clearInterval(prueba.id); motorPrueba = null; if (lazo.motor) lazo.motor.g.gain.setTargetAtTime(0, AC.currentTime, 0.08); setTimeout(() => { ponerMotor(miPinta.motor | 0); volumenes(); }, 400); }
+  }, 50);
+  motorPrueba = prueba;
+}
 function armarLazos() {
-  const fuente = () => { const s = AC.createBufferSource(); s.buffer = ruidoBuf; s.loop = true; s.start(0, Math.random()); return s; };
-  const salida = (b) => { const g = AC.createGain(); g.gain.value = 0; g.connect(bus[b]); return g; };
-  const gan = (v) => { const g = AC.createGain(); g.gain.value = v; return g; };
-  const osc = (tipo, hz) => { const o = AC.createOscillator(); o.type = tipo; o.frequency.value = hz; o.start(); return o; };
-  const filtro = (tipo, hz, q = 0.7) => { const f = AC.createBiquadFilter(); f.type = tipo; f.frequency.value = hz; f.Q.value = q; return f; };
-  const vaiven = (hz, hondo, destino, tipo = 'sine') => { const l = osc(tipo, hz), a = gan(hondo); l.connect(a).connect(destino.gain); return l; };   // un oscilador lento que mece el volumen, sin cortes bruscos
+  const fuente = aFuente, salida = aSalida, gan = aGan, osc = aOsc, filtro = aFiltro, vaiven = aVaiven;
   // taladro: tierra que se muele (grano que vibra y un fondo grave) y el zumbido de la broca
   { const g = salida('taladro'), grano = gan(0.6), fG = filtro('bandpass', 520, 1.1), fondo = gan(0.85), o1 = osc('sawtooth', 100), o2 = osc('sawtooth', 100.7), fO = filtro('lowpass', 600, 1.4), gO = gan(0.085);
     fuente().connect(fG).connect(filtro('lowpass', 1150, 0.5)).connect(grano).connect(g); const l1 = vaiven(27, 0.28, grano); vaiven(6.1, 0.16, grano);
@@ -824,11 +880,8 @@ function armarLazos() {
     fuente().connect(fA).connect(aire).connect(g); const l = vaiven(20, 0.4, aire), l2 = vaiven(40, 0.1, aire);
     z.connect(fZ).connect(gZ).connect(g);
     lazo.helice = { g, fA, l, l2, z }; }
-  // motor: explosiones lentas y graves, con el soplido del escape
-  { const g = salida('motor'), o = osc('sawtooth', 30), o2 = osc('triangle', 15), f = filtro('lowpass', 180, 1.2), cuerpo = gan(0.5), esc = gan(0.22);
-    o.connect(f); o2.connect(f); f.connect(cuerpo).connect(g);
-    fuente().connect(filtro('bandpass', 140, 1.4)).connect(esc).connect(g); const l = vaiven(30, 0.2, esc, 'sawtooth');
-    lazo.motor = { g, o, o2, l }; }
+  // motor: la voz que traiga la maquinita (La Pinturería) o la de fábrica
+  lazo.motor = armarMotor(miPinta.motor | 0);
   // viento
   { const f = filtro('lowpass', 500, 0.5), g = salida('ambiente'); fuente().connect(f).connect(g); lazo.viento = { g, f }; }
   // ráfaga: el aire ya silba y viene por rachas
@@ -842,7 +895,7 @@ function sonarLazos(quieto) {
   if (!AC || !lazo.motor) return;
   const t = AC.currentTime;
   const pon = (p, v, c = 0.03) => { if (p._v === undefined || Math.abs(p._v - v) > Math.abs(v) * 0.01 + 1e-5) { p._v = v; p.setTargetAtTime(v, t, c); } };
-  if (quieto || !S) { for (const k in lazo) pon(lazo[k].g.gain, 0, 0.04); return; }
+  if (quieto || !S) { for (const k in lazo) if (!(k === 'motor' && motorPrueba)) pon(lazo[k].g.gain, 0, 0.04); return; }
   const alto = Math.max(0, -(yo.y + HH)), km = alto / 500, vel = Math.abs(yo.vx), cae = Math.max(0, yo.vy), sube = Math.max(0, -yo.vy), p = yo.perf, v = yo.vuela, niv = Math.min(8, S.eq[0]);
   // taladro: suena exactamente mientras perfora; el tono sube mientras muerde cada celda y se aclara contra el mineral
   pon(lazo.taladro.g.gain, p ? 0.145 : 0, p ? 0.012 : 0.035);
@@ -853,7 +906,7 @@ function sonarLazos(quieto) {
   pon(lazo.helice.l.frequency, aspas, v ? 0.05 : 0.15); pon(lazo.helice.l2.frequency, aspas * 2, v ? 0.05 : 0.15); pon(lazo.helice.z.frequency, aspas * 4, v ? 0.05 : 0.15); pon(lazo.helice.fA.frequency, v ? 650 + Math.min(650, sube * 40) : 1150, 0.1);
   // motor: las vueltas siguen a lo que le pides
   const vueltas = 30 + vel * 3.2 + (p ? 9 : 0) + (v ? 7 : 0);
-  pon(lazo.motor.g.gain, 0.045 + Math.min(0.02, vel * 0.004)); pon(lazo.motor.o.frequency, vueltas, 0.08); pon(lazo.motor.o2.frequency, vueltas / 2, 0.08); pon(lazo.motor.l.frequency, vueltas, 0.08);
+  if (!motorPrueba) lazo.motor.ajustar(vueltas, vel, v, p, pon);
   // El viento: brisa, ráfaga y rugido se van relevando según la velocidad. En el espacio no hay aire: se cae en silencio.
   const rapidez = cae + sube, den = yo.y < 1 ? Math.max(0, 1 - km / 90) : yo.suelo ? 0 : 0.5;
   pon(lazo.viento.g.gain, den * (0.03 + 0.1 * tope(rapidez / 40) + Math.min(0.03, alto / 60000)) * (1 - 0.6 * suave(60, 200, rapidez)), 0.2); pon(lazo.viento.f.frequency, 380 + Math.min(900, rapidez * 10), 0.1);
@@ -887,6 +940,62 @@ const FRASES = [
   [[4, 1, 0], [5, 2, 0], [6, 3, 0], [7, 2, 0]],
 ];
 const musica = { t: 0, n: 0, quedan: 0, z: '', ult: -1, acs: [] };
+// ── Las canciones de fondo (La Pinturería · piezas sueltas): cada una con su compás, sus acordes, su bajo, su acompañamiento,
+// su percusión y sus frases. Suenan bajito y con aire, como la música del mundo, y a veces descansan un compás.
+const CANC = {
+  1: { raiz: 146.83, paso: 0.6, beats: 6, oct: 2, cola: 2.4, calla: 0.15, ac: [[0, 4, 7], [-3, 0, 4], [5, 9, 12], [7, 11, 14]],      // Vals de la mina: um-pa-pa a tres tiempos
+    bajo: [[0, 0, -1], [3, 0, -1]], bajoV: 0.06, acomp: [[1, [1, 2]], [2, [1, 2]], [4, [1, 2]], [5, [1, 2]]], acompInst: 'cuerda', acompV: 0.022, acompCola: 0.7, melInst: 'piano', melV: 0.04,
+    frases: [[[0, 2, 0], [1, 1, 0], [2, 0, 0], [3, 2, 0], [4.5, 1, 0]], [[0, 0, 1], [2, 2, 0], [3, 1, 0], [5, 0, 0]], [[1, 1, 0], [2, 2, 0], [3, 2, 1], [5, 1, 0]], [[0, 1, 0], [3, 2, 0], [4, 1, 0], [5, 0, 0]]] },
+  2: { raiz: 110, paso: 0.72, beats: 8, oct: 2, cola: 2.8, calla: 0.3, ac: [[0, 3, 7], [-4, 0, 3], [5, 8, 12], [7, 11, 14]],         // Bolero de la Gasolinera: arpegio de cuerdas en menor
+    bajo: [[0, 0, -1], [2.5, 2, -1], [4, 0, -1], [6.5, 2, -1]], bajoV: 0.05, arp: { cada: 0.5, ciclo: [0, 1, 2, 1], inst: 'cuerda', v: 0.018, cola: 0.6, oct: 0 }, perc: [[2, 'bongo'], [3.5, 'bongoA'], [6, 'bongo'], [7.5, 'bongoA']], melInst: 'cuerda', melV: 0.045,
+    frases: [[[0, 2, 0], [1.5, 1, 0], [3, 0, 0], [6, 2, 0]], [[1, 0, 1], [2, 2, 0], [4.5, 1, 0]], [[0.5, 1, 0], [2, 2, 0], [5, 0, 1], [7, 2, 0]], [[0, 2, 1], [3, 1, 0], [4, 0, 0], [6.5, 1, 0]]] },
+  3: { raiz: 130.81, paso: 0.5, beats: 8, oct: 2, cola: 1.4, calla: 0.2, ac: [[0, 4, 7], [5, 9, 12], [7, 11, 14], [0, 4, 7]],          // Cumbia bajita: el bajo camina y el güiro raspa suave
+    bajo: [[0, 0, -1], [1.5, 2, -1], [2, 0, -1], [3, 2, -1], [4, 0, -1], [5.5, 2, -1], [6, 0, -1], [7, 2, -1]], bajoInst: 'cuerda', bajoV: 0.06, bajoCola: 0.5, acomp: [[0.5, [1, 2]], [1.5, [1, 2]], [2.5, [1, 2]], [3.5, [1, 2]], [4.5, [1, 2]], [5.5, [1, 2]], [6.5, [1, 2]], [7.5, [1, 2]]], acompInst: 'piano', acompV: 0.016, acompCola: 0.5,
+    perc: [[0, 'guiroL'], [1, 'guiro'], [1.5, 'guiro'], [2, 'guiroL'], [3, 'guiro'], [3.5, 'guiro'], [4, 'guiroL'], [5, 'guiro'], [5.5, 'guiro'], [6, 'guiroL'], [7, 'guiro'], [7.5, 'guiro']], melInst: 'piano', melV: 0.04,
+    frases: [[[0, 2, 0], [0.5, 2, 0], [1, 1, 0], [2, 0, 0], [3, 1, 0], [3.5, 2, 0]], [[4, 2, 1], [4.5, 1, 1], [5, 0, 1], [6, 1, 0]], [[0, 1, 0], [1, 2, 0], [1.5, 1, 0], [2.5, 0, 0], [4, 2, 0], [5, 1, 0], [6, 0, 0]], [[2, 0, 1], [2.5, 2, 0], [3, 1, 0], [6, 2, 0], [7, 1, 0]]] },
+  4: { raiz: 196, paso: 0.7, beats: 8, oct: 4, cola: 2.6, calla: 0.2, ac: [[0, 4, 7], [5, 9, 12], [-3, 0, 4], [7, 11, 14]],           // Nana de las estrellas: caja de música pentatónica
+    arp: { cada: 0.5, ciclo: [0, 1, 2, 1], inst: 'caja', v: 0.022, cola: 1.6, oct: 0 }, colchon: { v: 0.012, oct: -2 }, melInst: 'caja', melV: 0.035,
+    frases: [[[0, 2, 1], [1, 1, 1], [2, 0, 1], [4, 2, 0], [6, 1, 1]], [[1, 0, 1], [2, 1, 1], [3, 2, 1], [5, 1, 1], [7, 0, 1]], [[0, 1, 1], [2, 2, 1], [3, 1, 1], [6, 0, 1]]] },
+  5: { raiz: 87.31, paso: 0.58, beats: 8, oct: 2, swing: 0.3, cola: 1.8, calla: 0.25, ac: [[2, 5, 9, 12], [7, 11, 14, 17], [0, 4, 7, 11], [-3, 0, 4, 7]],      // Jazz de medianoche: bajo que pasea, acordes de séptima y escobillas
+    bajo: [[0, 0, 0], [1, 1, 0], [2, 2, 0], [3, 3, 0], [4, 2, 0], [5, 1, 0], [6, 0, 0], [7, 3, -1]], bajoV: 0.055, bajoCola: 0.9, acomp: [[1.5, [1, 2, 3]], [3, [1, 2, 3]], [5.5, [1, 2, 3]], [7, [1, 2, 3]]], acompInst: 'piano', acompV: 0.014, acompCola: 1.2,
+    perc: [[1, 'escoba'], [3, 'escoba'], [5, 'escoba'], [7, 'escoba'], [0.5, 'escobaS'], [4.5, 'escobaS']], melInst: 'piano', melV: 0.04,
+    frases: [[[0, 3, 0], [0.5, 2, 0], [1.5, 1, 0], [2, 0, 0], [4, 2, 0], [5.5, 3, 0]], [[1, 1, 1], [1.5, 0, 1], [2.5, 3, 0], [6, 2, 0]], [[0, 0, 1], [3, 3, 0], [3.5, 2, 0], [4.5, 1, 0], [7, 0, 0]], [[2, 2, 0], [2.5, 3, 0], [3, 2, 0], [5, 1, 0], [6.5, 0, 0]]] },
+};
+const INSTR = { piano: (f, d, v, c) => piano(f, d, v, c), cuerda: (f, d, v, c) => cuerda(f, d, v, 'musica', c), caja: (f, d, v, c) => campana(f, d, v, 'musica', c), colchon: (f, d, v, c) => colchon(f, d, v, 'musica', c) };
+function percu(tipo, c) {
+  if (tipo === 'guiro') ruido(0.05, 0.022, 'musica', 4800, 'bandpass', 2.5, c);
+  else if (tipo === 'guiroL') { ruido(0.11, 0.02, 'musica', 4200, 'bandpass', 2, c); ruido(0.05, 0.016, 'musica', 5200, 'bandpass', 2.5, c + 0.06); }
+  else if (tipo === 'escoba') ruido(0.14, 0.014, 'musica', 6000, 'highpass', 0.7, c);
+  else if (tipo === 'escobaS') ruido(0.07, 0.008, 'musica', 7000, 'highpass', 0.7, c);
+  else if (tipo === 'bongo') tono(190, 0.11, 'sine', 0.045, 140, c, 'musica');
+  else if (tipo === 'bongoA') tono(320, 0.09, 'sine', 0.04, 240, c, 'musica');
+}
+const cancionActiva = () => (tienda.pruebaCancion || (miPinta.cancion | 0)) | 0;
+function componerCancion(def, ahora, adelante) {
+  while (musica.t < ahora + adelante) {
+    if (musica.n % 12 === 11 && Math.random() < 0.7) { musica.n++; musica.t += def.paso * def.beats; continue; }      // de vez en cuando, un compás de aire
+    const c = musica.t - ahora, ac = def.ac[musica.n % def.ac.length], sw = def.swing || 0, base = def.raiz * (def.oct || 1);
+    const bt = (b) => c + (b + (sw && Math.abs(b % 1 - 0.5) < 0.01 ? sw * 0.5 : 0)) * def.paso;
+    const fq = (i, o = 0) => nota(base, ac[((i % ac.length) + ac.length) % ac.length] + 12 * o);
+    musica.acs.push({ t: musica.t, ac, base }); if (musica.acs.length > 3) musica.acs.shift();
+    for (const [b, i, o] of def.bajo || []) INSTR[def.bajoInst || 'piano'](fq(i, (def.bajoOct || -1) + (o || 0) + 1), def.bajoCola || 1.6, def.bajoV || 0.055, bt(b));
+    if (def.arp) for (let b = 0, k = 0; b < def.beats; b += def.arp.cada, k++) INSTR[def.arp.inst](fq(def.arp.ciclo[k % def.arp.ciclo.length], def.arp.oct || 0), def.arp.cola, def.arp.v, bt(b));
+    for (const [b, idx] of def.acomp || []) for (const i of idx) INSTR[def.acompInst](fq(i, 0), def.acompCola, def.acompV, bt(b));
+    for (const [b, tipo] of def.perc || []) percu(tipo, bt(b));
+    if (def.colchon) for (const i of [0, 1, 2]) colchon(fq(i, def.colchon.oct || 0), def.paso * def.beats * 1.1, def.colchon.v, 'musica', c);
+    let f = Math.floor(Math.random() * def.frases.length); if (f === musica.ult) f = (f + 1) % def.frases.length; musica.ult = f;
+    if (Math.random() > def.calla) for (const [b, i, o] of def.frases[f]) INSTR[def.melInst](fq(i, (def.melOct || 0) + o), def.cola, def.melV + Math.random() * 0.012, bt(b) + Math.random() * 0.02);
+    musica.t += def.paso * def.beats; musica.n++;
+  }
+}
+// Oír una canción desde la tienda: diez segundos, y después vuelve la que traiga la maquinita (o la música del mundo).
+let cancionPruebaT = 0;
+function oirCancion(i) {
+  if (!audio()) return; if (op.mudo || !op.son.musica) { aviso('Enciende el sonido (y la música) para oírla.'); return; }
+  clearTimeout(cancionPruebaT); tienda.pruebaCancion = i; musica.t = 0; musica.n = 0; musica.z = ''; componer(0.8);
+  cancionPruebaT = setTimeout(() => { tienda.pruebaCancion = 0; musica.t = 0; musica.n = 0; musica.z = ''; if (menu === 'pin') pintarMenu(); }, 10000);
+  if (menu === 'pin') pintarMenu();
+}
 // El acorde que está sonando en este momento (o el primero de la zona, si la música está callada).
 function acordeAhora() {
   const a = AC ? AC.currentTime : 0; let m = null;
@@ -899,6 +1008,8 @@ function componer(adelante = 0.8) {           // se llama varias veces por segun
   if (!AC || !S || op.mudo || !op.son.musica || (document.hidden && adelante < 1)) { musica.t = 0; return; }
   const ahora = AC.currentTime;
   if (musica.t < ahora) musica.t = ahora + 0.4;
+  const can = cancionActiva(), def = CANC[can];
+  if (def) { if (musica.z !== 'c' + can) { musica.z = 'c' + can; musica.n = 0; } return componerCancion(def, ahora, adelante); }      // la canción de la maquinita, en vez de la música del mundo
   while (musica.t < ahora + adelante) {
     const zn = zonaMusical();
     if (zn !== musica.z) { musica.z = zn; musica.n = 0; musica.quedan = 10 + Math.floor(Math.random() * 6); }
@@ -2111,7 +2222,7 @@ function recibir(d) {
       bautizo = bautizo || (maqLocal && maqLocal.n ? { n: maqLocal.n, m: maqLocal.m | 0 } : nombreNuevo());
       return hola(bautizo);
     }
-    case 'pinta': { if (d.i === miI) { miPinta = d.p || {}; miMe = d.me | 0; } else { const o = otros.get(d.i); if (o) { o.p = d.p || {}; o.me = d.me | 0; } } edenE = null; if (menu === 'pin') pintarMenu(); return; }
+    case 'pinta': { if (d.i === miI) { miPinta = d.p || {}; miMe = d.me | 0; ponerMotor(miPinta.motor | 0); } else { const o = otros.get(d.i); if (o) { o.p = d.p || {}; o.me = d.me | 0; } } edenE = null; if (menu === 'pin') pintarMenu(); return; }
     case 'bocina': { const o = otros.get(d.i); if (!o || !o.on || o.x === undefined) return; const dist = Math.hypot(o.x - yo.x, o.y - yo.y); if (dist < 40) claxon(d.b | 0, Math.max(0.15, 1 - dist / 40), 'otros'); return; }
     case 'nom': {              // alguien rebautizó su maquinita o le cambió el modelo
       if (d.i === miI) {
@@ -2240,7 +2351,7 @@ function iniciarMundo(d, local) {
   nuevaSemilla(); ponerTerreno(d);
   if (otraTierra) { pendientes = []; recientes.clear(); yo.perf = null; if (yo.y > INICIO_Y + 0.01) { yo.x = INICIO_X; yo.y = INICIO_Y; yo.vx = yo.vy = 0; } }
   otros.clear();
-  for (const j of d.jug) { if (j.i === miI) { miNombre = j.n; miModelo = j.m; miPinta = j.p || {}; miMe = j.me | 0; miDe = j.de >= 0 ? j.de : -1; } else otros.set(j.i, j); }
+  for (const j of d.jug) { if (j.i === miI) { miNombre = j.n; miModelo = j.m; miPinta = j.p || {}; miMe = j.me | 0; miDe = j.de >= 0 ? j.de : -1; ponerMotor(miPinta.motor | 0); } else otros.set(j.i, j); }
   if (d.piedras) edenPiedras = d.piedras;
   if (d.regalo) setTimeout(() => tarjeta('🎁 Alguien pagó tu primera pintura', 'Hay para todos. Pásate a La Pinturería (la camioneta rosa, a la izquierda de la Gasolinera) y elige tu color.', 'msj', 14000), 2500);
   const primera = !S;
@@ -2777,20 +2888,29 @@ function dibMaq(q, px, py, t, modelo, dir, vuela, perfDir, nombre, estado, mundo
   if (nombre) {
     const placa = P.placa | 0, titulado = (P.titulo && TC.TITULOS[P.titulo] ? TC.TITULOS[P.titulo] + ' ' : '') + nombre, tx = estado ? titulado + ' · ' + estado : titulado, ty = y - t * (P.cu ? 0.46 : 0.16), tam = Math.max(10 * RES, t * 0.27);      // con gorrito de cumpleaños, el nombre sube
     q.font = `700 ${tam}px system-ui`; q.textAlign = 'center'; q.textBaseline = 'bottom';
-    const an = q.measureText(tx).width;
-    if (placa === 3) {                               // con marco: una placa de metal con remaches
-      const a2 = an + t * 0.34, al = tam * 1.4, mx = px - a2 / 2, my = ty - al - t * 0.02, mg = q.createLinearGradient(0, my, 0, my + al); mg.addColorStop(0, '#3a3f45'); mg.addColorStop(1, '#15181b');
-      q.fillStyle = mg; q.beginPath(); q.roundRect(mx, my, a2, al, t * 0.06); q.fill(); q.strokeStyle = c1; q.lineWidth = Math.max(1, t * 0.035); q.stroke();
-      q.fillStyle = '#c9ced3'; for (const [a, b] of [[0.08, 0.3], [0.92, 0.3], [0.08, 0.7], [0.92, 0.7]]) { q.beginPath(); q.arc(mx + a2 * a, my + al * b, t * 0.018, 0, 7); q.fill(); }
+    const an = q.measureText(tx).width, lwT = Math.max(1, t * 0.02);
+    if (placa === 3) {                               // con marco: placa de acero cepillado con bisel, borde del color de la maquinita y tornillos con ranura
+      const a2 = an + t * 0.4, al = tam * 1.45, mx = px - a2 / 2, my = ty - al - t * 0.02, rr = t * 0.07;
+      q.save(); q.shadowColor = 'rgba(0,0,0,.45)'; q.shadowBlur = t * 0.08; q.shadowOffsetY = t * 0.03;
+      const mg = q.createLinearGradient(mx, my, mx + a2, my + al); mg.addColorStop(0, '#5c636b'); mg.addColorStop(0.3, '#3a4047'); mg.addColorStop(0.5, '#4b5259'); mg.addColorStop(0.75, '#2b3036'); mg.addColorStop(1, '#474e55');
+      q.fillStyle = mg; q.beginPath(); q.roundRect(mx, my, a2, al, rr); q.fill(); q.restore();
+      q.strokeStyle = 'rgba(255,255,255,.3)'; q.lineWidth = lwT; q.beginPath(); q.roundRect(mx + lwT * 1.5, my + lwT * 1.5, a2 - lwT * 3, al - lwT * 3, rr); q.stroke();      // bisel
+      q.strokeStyle = mezcla(c1, -0.1); q.lineWidth = Math.max(1, t * 0.03); q.beginPath(); q.roundRect(mx, my, a2, al, rr); q.stroke();
+      for (const a of [0.06, 0.94]) { const sx = mx + a2 * a, sy = my + al * 0.5, sg = q.createRadialGradient(sx - t * 0.01, sy - t * 0.01, 0, sx, sy, t * 0.03); sg.addColorStop(0, '#eef1f4'); sg.addColorStop(1, '#7c858d'); q.fillStyle = sg; q.beginPath(); q.arc(sx, sy, t * 0.028, 0, 7); q.fill(); q.strokeStyle = '#1b1f23'; q.lineWidth = lwT; q.beginPath(); q.moveTo(sx - t * 0.018, sy + t * 0.007); q.lineTo(sx + t * 0.018, sy - t * 0.007); q.stroke(); }
     }
-    if (placa === 2) {                               // con corona: una corona de oro con sus joyas, sobre el nombre
-      const cw = tam * 0.9, ch = tam * 0.62, cx2 = px, cy2 = ty - tam * 1.08; q.fillStyle = '#ffd23f'; q.beginPath(); q.moveTo(cx2 - cw / 2, cy2); q.lineTo(cx2 - cw / 2, cy2 - ch * 0.75); q.lineTo(cx2 - cw * 0.25, cy2 - ch * 0.35); q.lineTo(cx2, cy2 - ch); q.lineTo(cx2 + cw * 0.25, cy2 - ch * 0.35); q.lineTo(cx2 + cw / 2, cy2 - ch * 0.75); q.lineTo(cx2 + cw / 2, cy2); q.closePath(); q.fill(); q.strokeStyle = '#8a5a00'; q.lineWidth = Math.max(1, t * 0.02); q.stroke();
-      for (const [a, c] of [[-0.3, '#ff5a7a'], [0, '#6ec3ff'], [0.3, '#6fdc7a']]) { q.fillStyle = c; q.beginPath(); q.arc(cx2 + a * cw, cy2 - ch * 0.22, tam * 0.08, 0, 7); q.fill(); }
+    if (placa === 2) {                               // con corona: oro con luz, banda, perlas en las puntas y tres joyas con destello
+      const cw = tam * 0.95, ch = tam * 0.66, cx2 = px, cy2 = ty - tam * 1.1, og2 = q.createLinearGradient(0, cy2 - ch, 0, cy2); og2.addColorStop(0, '#fff2b0'); og2.addColorStop(0.5, '#f2c230'); og2.addColorStop(1, '#b8860b');
+      q.fillStyle = og2; q.beginPath(); q.moveTo(cx2 - cw / 2, cy2); q.lineTo(cx2 - cw / 2, cy2 - ch * 0.72); q.lineTo(cx2 - cw * 0.25, cy2 - ch * 0.38); q.lineTo(cx2, cy2 - ch); q.lineTo(cx2 + cw * 0.25, cy2 - ch * 0.38); q.lineTo(cx2 + cw / 2, cy2 - ch * 0.72); q.lineTo(cx2 + cw / 2, cy2); q.closePath(); q.fill(); q.strokeStyle = '#7a5200'; q.lineWidth = lwT; q.stroke();
+      q.fillStyle = '#b8860b'; q.fillRect(cx2 - cw / 2, cy2 - ch * 0.15, cw, ch * 0.15); q.fillStyle = 'rgba(255,255,255,.35)'; q.fillRect(cx2 - cw / 2, cy2 - ch * 0.15, cw, ch * 0.045);
+      q.fillStyle = '#fff8e6'; for (const a of [-0.5, 0, 0.5]) { q.beginPath(); q.arc(cx2 + a * cw, cy2 - ch * (a ? 0.72 : 1), tam * 0.055, 0, 7); q.fill(); }
+      for (const [a, c] of [[-0.3, '#ff5a7a'], [0, '#6ec3ff'], [0.3, '#6fdc7a']]) { const jx = cx2 + a * cw, jy = cy2 - ch * 0.3; q.fillStyle = c; q.beginPath(); q.arc(jx, jy, tam * 0.085, 0, 7); q.fill(); q.fillStyle = 'rgba(255,255,255,.75)'; q.beginPath(); q.arc(jx - tam * 0.03, jy - tam * 0.03, tam * 0.03, 0, 7); q.fill(); }
     }
-    q.lineWidth = Math.max(2, t * 0.07); q.strokeStyle = '#000c'; q.strokeText(tx, px, ty);
-    if (placa === 4) { const neon = P.c1 || '#6ec3ff'; q.save(); q.shadowColor = neon; q.shadowBlur = tam * 0.9; q.fillStyle = neon; q.fillText(tx, px, ty); q.fillText(tx, px, ty); q.restore(); }      // de neón: el nombre brilla del color de la maquinita
-    if (placa === 1) { const og = q.createLinearGradient(0, ty - tam, 0, ty); og.addColorStop(0, '#fff2b0'); og.addColorStop(0.45, '#ffd23f'); og.addColorStop(0.55, '#d99a1a'); og.addColorStop(1, '#ffe27a'); q.fillStyle = og; } else q.fillStyle = '#fff';
+    q.lineWidth = Math.max(2, t * 0.07); q.strokeStyle = placa === 1 ? '#5a3a00dd' : placa === 3 ? '#0b0d10' : '#000c'; q.strokeText(tx, px, ty);
+    if (placa === 3) { q.fillStyle = 'rgba(0,0,0,.55)'; q.fillText(tx, px + lwT, ty + lwT); }      // grabado: la sombra hundida de las letras
+    if (placa === 4) { const neon = P.c1 || '#6ec3ff', vivo = 0.86 + 0.14 * Math.abs(Math.sin(reloj * 2.3)) * (Math.sin(reloj * 37) > -0.97 ? 1 : 0.6); q.save(); q.globalAlpha = vivo; q.shadowColor = neon; q.shadowBlur = tam * 1.1; q.fillStyle = neon; q.fillText(tx, px, ty); q.fillText(tx, px, ty); q.shadowBlur = tam * 0.35; q.fillText(tx, px, ty); q.restore(); }      // de neón: tubo con halo y un parpadeo apenas
+    if (placa === 1) { const og = q.createLinearGradient(0, ty - tam, 0, ty); og.addColorStop(0, '#fff2b0'); og.addColorStop(0.45, '#ffd23f'); og.addColorStop(0.55, '#d99a1a'); og.addColorStop(1, '#ffe27a'); q.fillStyle = og; } else if (placa === 3) q.fillStyle = '#e6e9ec'; else q.fillStyle = '#fff';
     q.fillText(tx, px, ty);
+    if (placa === 1) { q.fillStyle = 'rgba(255,255,255,.4)'; q.fillRect(px - an / 2, ty - tam * 0.74, an, Math.max(1, tam * 0.05)); }      // la laca sobre el oro
   }
 }
 
@@ -3766,7 +3886,7 @@ function temporadasDeHoy() { const md = horaTorreon().md; let k = TC.CALCAS.leng
 const NIVEL_CLAVE = { c1: 1, c2: 2, c3: 2, calca: 3, luz: 4, estela: 5, bocina: 6, placa: 6, titulo: 6, carro: 7, mascota: 8 };
 const GRATIS = 2;      // los colores (niveles 1 y 2) son de todos
 let miPinta = {}, miMe = 0, miDe = -1, edenPiedras = [], tiendaAnimT = 0, tBocina = 0, estelaN = 0;
-let tienda = { niveles: [], mio: { nivel: 0, mecenas: 0, pinta: {} }, fondo: 0, pagos: 0, cargada: 0, cargando: 0, nivelVista: 0, prueba: null, regaloA: -1, mecenasMonto: 99, fondoN: 3, mecenasMin: 99, gratitudMin: 33, gratitudHora: '15:33', fondoPrecio: 19, tope: 5000, error: '', momento: null, cumple: '', gratitud: 0, gracias: 0, referidoPremio: 333, usarSaldo: 1 };
+let tienda = { niveles: [], piezas: { motor: [], cancion: [] }, pruebaCancion: 0, mio: { nivel: 0, piezas: [], mecenas: 0, pinta: {} }, fondo: 0, pagos: 0, cargada: 0, cargando: 0, nivelVista: 0, prueba: null, regaloA: -1, mecenasMonto: 99, fondoN: 3, mecenasMin: 99, gratitudMin: 33, gratitudHora: '15:33', fondoPrecio: 19, tope: 5000, error: '', momento: null, cumple: '', gratitud: 0, gracias: 0, referidoPremio: 333, usarSaldo: 1 };
 // El ánimo con el que estás jugando, para el momento del precio: cuánto cavaste en los últimos tres minutos y cuántos golpes
 // fuertes (explosiones, pleitos) en los últimos diez. 0 = tranquilo … 1 = a tope. Solo sirve para bajar el precio y para el tono.
 const ritmo = [], ritmoFuerte = [];
@@ -3806,7 +3926,7 @@ function htmlTienda() {
   h += `<div class="escalera">${L.map((x) => `<button data-a="tNivel" data-v="${x.n}" class="${x.n === nv ? 'on' : ''}${x.n <= mio ? ' mio' : ''}" title="${esc(x.nombre)}"><b>${x.n}</b><small>${x.precio ? pesos(x.precio) : 'Gratis'}</small></button>`).join('')}</div>`;
   h += `<div class="carpeta"><div><div class="vista"><canvas id="pintaMaq" width="420" height="340"></canvas><small>${esc(miNombre)}</small></div>${tuyo ? '<p class="nota">Lo que cambies aquí se guarda al momento y lo ven todos.</p>' : '<p class="nota">Lo que cambies aquí se ve, pero no se guarda hasta que el nivel sea tuyo.</p>'}</div><div>`;
   h += `<h4>Nivel ${N.n} · ${esc(N.nombre)} · ${N.precio ? pesos(N.precio) : 'Gratis'}${tuyo ? ' · <span style="color:var(--ok)">' + (N.precio ? 'tuyo' : 'de todos') + '</span>' : ''}</h4><p class="nota">${esc(N.que)}${N.n > GRATIS + 1 ? ' Incluye todo lo de los niveles anteriores.' : ''}</p>`;
-  h += editorNivel(nv) + (tuyo ? '' : htmlPago(nv)) + '</div></div>';
+  h += editorNivel(nv) + (tuyo ? '' : htmlPago(nv)) + '</div></div>' + htmlSonidos();
   const cerca = cumpleCerca(tienda.cumple), hoyCumple = cerca === 0, gracias = tienda.gracias || cerca !== 9;
   if (gracias) h += `<div class="aparte gracias"><h4>🎂 ${hoyCumple ? '¡Feliz cumpleaños!' : 'Gracias de cumpleaños'}</h4><p class="nota">${hoyCumple ? 'Hoy tu maquinita trae gorrito de fiesta. ' : ''}Si Mina te ha dado buenos ratos, estos días puedes darle las gracias a quien lo hace: lo que tú quieras, desde ${pesos(tienda.gratitudMin)}. No cambia nada en el juego y no hace ninguna falta. Es solo gratitud, y llega a quien hace Mina, en CapitalTorreon.${tienda.gratitud ? ' Ya diste las gracias. De corazón.' : ''}</p>
     <div class="chips">${[33, 99, 333, 999].map((v) => `<button class="s${tienda.mecenasMonto === v ? ' on' : ''}" data-a="tGracias" data-v="${v}">${pesos(v)}</button>`).join('')}</div>
@@ -3818,6 +3938,24 @@ function htmlTienda() {
     <div class="fila"><div class="t" style="display:flex;gap:6px;flex-wrap:wrap"><select id="tCumD">${Array.from({ length: 31 }, (_, i) => `<option value="${i + 1}" ${tienda.cumple && +tienda.cumple.slice(3) === i + 1 ? 'selected' : ''}>${i + 1}</option>`).join('')}</select><select id="tCumM">${MESES.map((m, i) => `<option value="${i + 1}" ${tienda.cumple && +tienda.cumple.slice(0, 2) === i + 1 ? 'selected' : ''}>${m}</option>`).join('')}</select></div><button class="s" data-a="tCumple">${tienda.cumple ? 'Cambiar' : 'Guardar'}</button>${tienda.cumple ? '<button class="s" data-a="tCumpleQuitar">Quitar</button>' : ''}</div>
     <h4>Cómo se sostiene Mina</h4><p class="nota">Los colores son gratis para todos. Lo demás se vende sin anuncios, sin cajas sorpresa, sin prisas inventadas, sin ventajas compradas. Mismo precio de lista para todos; subir de nivel cuesta solo la diferencia; tope de ${pesos(tienda.tope)} por maquinita cada 30 días; devoluciones sin preguntas durante 15 días (contacto@ingenieriadigital.mx). Si un día esto deja de ser cierto, está mal y se quita. <a href="#" data-a="tManifiesto">Leer el manifiesto</a>.</p></div>`;
   return h + '</div>';
+}
+// Las piezas de sonido: se coleccionan una por una, cada una con su precio. Se oyen antes de comprar.
+function htmlSonidos() {
+  const PZ = tienda.piezas || { motor: [], cancion: [] }, mias = tienda.mio.piezas || [], P = pintaVista();
+  const tarjeta = (tipo, x) => { const id = tipo + ':' + x.i, mia = mias.includes(id), enUso = (P[tipo] | 0) === x.i, probando = tipo === 'cancion' && tienda.pruebaCancion === x.i;
+    return `<div class="${enUso ? 'on' : ''}"><b>${esc(x.n)}</b>${mia ? ' <span style="color:var(--ok)">· tuya</span>' : ` <span style="color:var(--ac)">· ${pesos(x.precio)}</span>`}<small>${esc(x.d)}</small>
+      <div class="fila"><button class="s" data-a="tOir" data-v="${id}">${probando ? '🔊 Sonando…' : '▶ Oír'}</button>${mia ? (enUso ? '<span class="nota">En uso</span>' : `<button class="s" data-a="tUsar" data-v="${id}">Usar</button>`) : `<button data-a="tComprar" data-v="${id}">Comprar ${pesos(x.precio)}</button>`}</div></div>`; };
+  return `<div class="aparte sonidos"><h4>🔊 Sonidos · piezas sueltas</h4><p class="nota">Se coleccionan una por una, cada una con su precio; son tuyas para siempre y las cambias cuando quieras. El motor viene apagado en las opciones de sonido: al usar un motor comprado, se enciende. La canción de fondo la oyes tú.${tienda.mio.saldo ? ' Tu saldo de referidos también las paga.' : ''}</p>
+    <h4 style="margin-top:10px">🚜 La voz del motor</h4><div class="pz">${PZ.motor.map((x) => tarjeta('motor', x)).join('')}</div>${(P.motor | 0) ? '<p><button class="s" data-a="tUsar" data-v="motor:0">Volver al motor de fábrica</button></p>' : ''}
+    <h4 style="margin-top:10px">🎵 La canción de fondo</h4><div class="pz">${PZ.cancion.map((x) => tarjeta('cancion', x)).join('')}</div>${(P.cancion | 0) ? '<p><button class="s" data-a="tUsar" data-v="cancion:0">Volver a la música del mundo</button></p>' : '<p class="nota">Sin canción, suena la música del mundo: cambia según dónde andes (superficie, mina, fondo, cielo, espacio).</p>'}</div>`;
+}
+const precioPieza = (id) => { const [tipo, i] = String(id).split(':'); const x = ((tienda.piezas || {})[tipo] || []).find((y) => y.i === +i); return x ? x.precio : 0; };
+// Usar una pieza (o volver a la de fábrica con i = 0): se guarda en la pintura de la maquinita, como todo lo demás.
+function usarPieza(tipo, i) {
+  const p = { ...miPinta }; if (i) p[tipo] = i; else delete p[tipo]; miPinta = p; tienda.prueba = null; if (conectado) enviar({ t: 'pinta', p });
+  if (tipo === 'motor') { if (i && !op.son.motor) { op.son.motor = 1; escribir('mina_op', op); volumenes(); } ponerMotor(i); }
+  else { tienda.pruebaCancion = 0; musica.t = 0; musica.n = 0; musica.z = ''; }
+  son.clic(); if (menu === 'pin') pintarMenu();
 }
 function htmlPago(nv) {
   const L = tienda.niveles, mio = nivelMio(), precio = L[nv - 1].precio - (mio ? L[mio - 1].precio : 0), vivos = [...otros.values()].filter((o) => o.on);
@@ -3882,14 +4020,15 @@ async function ponerCumple(md) {
 function precioVista(nv) { const L = tienda.niveles, mio = nivelMio(), precio = L[nv - 1].precio - (mio ? L[mio - 1].precio : 0), o = tienda.oferta, M = tienda.momento, propio = tienda.regaloA < 0, desc = o && o.desc > 0 && propio ? o.desc : 0, ajuste = M && propio ? M.ajuste : 0; return Math.min(precio, Math.max(1, precioBonito(precio * (1 - desc) * (1 - ajuste)))); }
 function irAlLogin(extra) { if (listo && !soloVer) { enviarEst(); guardarCopia(); } location.href = LOGIN_CT + '/?volver=' + encodeURIComponent(location.origin + '/' + mundoId + (extra || '')); }
 async function pagar(o) {
-  const todoSaldo = o.tipo === 'nivel' && o.saldo && (tienda.mio.saldo || 0) >= precioVista(o.nivel);
+  const todoSaldo = o.saldo && ((o.tipo === 'nivel' && (tienda.mio.saldo || 0) >= precioVista(o.nivel)) || (o.tipo === 'pieza' && (tienda.mio.saldo || 0) >= precioPieza(o.pieza)));
   if (o.tipo === 'nivel' && !todoSaldo && !$('#tMayor')?.checked) { aviso('Marca primero que eres mayor de edad o tienes permiso de quien paga.'); return; }
   if (!cuenta) return irAlLogin('?tienda=' + tienda.nivelVista);
-  if (o.tipo !== 'nivel' && !confirm(`Vas a ${o.motivo === 'gratitud' ? 'dar las gracias con' : 'pagar'} ${pesos(o.tipo === 'mecenas' ? o.monto : o.cantidad * tienda.fondoPrecio)} con tarjeta, en la página de Stripe. ¿Eres mayor de edad o tienes permiso de quien paga?`)) return;
+  if (o.tipo !== 'nivel' && !todoSaldo && !confirm(`Vas a ${o.motivo === 'gratitud' ? 'dar las gracias con' : 'pagar'} ${pesos(o.tipo === 'mecenas' ? o.monto : o.tipo === 'pieza' ? precioPieza(o.pieza) : o.cantidad * tienda.fondoPrecio)} con tarjeta, en la página de Stripe. ¿Eres mayor de edad o tienes permiso de quien paga?`)) return;
   if (listo && !soloVer) { enviarEst(); guardarCopia(); }
   try {
     const r = await fetch('/api/tienda/pagar', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ses: cuenta.ses, k: miK, mundo: mundoId, volver: location.origin + '/' + mundoId, animo: animoReciente(), ...o }) }), d = await r.json();
     if (d.url) { location.href = d.url; return; }
+    if (d.ok && d.saldo && d.tipo === 'pieza') { tienda.mio = d.mio; son.logro(); const [tipo, i] = d.pieza.split(':'); usarPieza(tipo, +i); tarjeta('🔊 ¡Es tuya!', 'Pagada con tu saldo de referidos; te quedan ' + pesos(d.mio.saldo) + '. Ya está sonando.', 'msj', 9000); return; }
     if (d.ok && d.saldo) { tienda.mio = d.mio; son.logro(); if (d.regalo) tarjeta('🎁 Regalo entregado con tu saldo', 'El nivel ' + d.nivel + ' ya es de esa maquinita. Te quedan ' + pesos(d.mio.saldo) + '.', 'msj', 10000); else { tienda.nivelVista = d.nivel; tienda.prueba = null; tarjeta('💛 ¡Listo! El nivel ' + d.nivel + ' es tuyo', 'Pagado con tu saldo de referidos; te quedan ' + pesos(d.mio.saldo) + '. Deja tu maquinita como tú quieras.', 'msj', 12000); } if (menu === 'pin') pintarMenu(); return; }
     const msj = { saldo: 'Tu saldo cambió mientras pagabas. Vuelve a intentarlo.', pronto: 'Los pagos se abren en unos días. Mientras, pruébatelo todo.', cuenta: 'Tu sesión venció: vuelve a entrar con Google.', tope: `Este mes ya diste mucho (${pesos(d.gastado || 0)}). Gracias de corazón; vuelve el mes que entra.`, ya: 'Ese nivel ya es de esa maquinita.', regalo: 'No encontré a quién regalárselo: tiene que estar jugando en este mundo.', stripe: 'La página de pago no contestó. Inténtalo otra vez.' }[d.error] || 'No se pudo abrir el pago.';
     tarjeta('La Pinturería', msj, 'msj', 9000);
@@ -3904,6 +4043,7 @@ async function confirmarCompra(sid) {
     tienda.mio = d.mio; miMe = d.mio.mecenas > 0 ? 1 : 0; son.logro();
     if (d.tipo === 'nivel' && !d.regalo) { tienda.nivelVista = d.nivel; tienda.prueba = null; tarjeta('🎨 ¡Listo! El nivel ' + d.nivel + ' es tuyo', 'Gracias. Deja tu maquinita como tú quieras: se abre La Pinturería.', 'msj', 12000); setTimeout(() => { if (listo && !menu) abrir('pin'); }, 1400); }
     else if (d.tipo === 'nivel') tarjeta('🎁 Regalo entregado', 'El nivel ' + d.nivel + ' ya es de esa maquinita. Qué bonito gesto.', 'msj', 10000);
+    else if (d.tipo === 'pieza' && d.pieza) { const [tipo, i] = d.pieza.split(':'); usarPieza(tipo, +i); tarjeta('🔊 ¡Es tuya!', (tipo === 'motor' ? 'Tu motor ya suena distinto.' : 'Tu canción ya está sonando.') + ' La cambias cuando quieras en La Pinturería.', 'msj', 10000); setTimeout(() => { if (listo && !menu) abrir('pin'); }, 1400); }
     else if (d.tipo === 'mecenas' && d.motivo === 'gratitud') { tienda.gratitud = Date.now(); tarjeta('🎂 Gracias a ti', 'Qué bonito gesto en tu cumpleaños. Que Mina te siga dando buenos ratos. Ya tienes tu ✦ junto al nombre.', 'msj', 12000); }
     else if (d.tipo === 'mecenas') tarjeta('✦ Gracias, mecenas', 'Con esto Mina sigue existiendo. Ya tienes tu ✦ junto al nombre.', 'msj', 10000);
     else tarjeta('🎁 Pagaste adelante', 'Las siguientes ' + d.cantidad + ' maquinitas nuevas llegan con su primera pintura. Hay para todos.', 'msj', 10000);
@@ -4897,6 +5037,9 @@ const acciones = {
   tEntrar() { irAlLogin('?tienda=' + tienda.nivelVista); return 'no'; },
   tPagar(v) { pagar({ tipo: 'nivel', nivel: +v, saldo: tienda.usarSaldo && (tienda.mio.saldo || 0) > 0 ? 1 : 0, ...(tienda.regaloA >= 0 ? { paraI: tienda.regaloA } : {}) }); return 'no'; },
   tSaldo(v, el) { tienda.usarSaldo = el.checked ? 1 : 0; },
+  tOir(v) { const [tipo, i] = v.split(':'); if (tipo === 'motor') oirMotor(+i); else oirCancion(+i); return 'no'; },
+  tUsar(v) { const [tipo, i] = v.split(':'); const id = tipo + ':' + i; if (+i && !(tienda.mio.piezas || []).includes(id)) return 'no'; usarPieza(tipo, +i); return 'no'; },
+  tComprar(v) { if (!precioPieza(v)) return 'no'; pagar({ tipo: 'pieza', pieza: v, saldo: tienda.usarSaldo && (tienda.mio.saldo || 0) > 0 ? 1 : 0 }); return 'no'; },
   tGracias(v) { tienda.mecenasMonto = +v; pintarMenu(); const el = $('#tGra'); if (el) el.value = +v; return 'no'; },
   tGraciasDar() { const m = Math.floor(+($('#tGra')?.value || 0)); if (!(m >= tienda.gratitudMin)) { aviso('Desde ' + pesos(tienda.gratitudMin) + '.'); return 'no'; } tienda.mecenasMonto = m; pagar({ tipo: 'mecenas', monto: m, motivo: 'gratitud' }); return 'no'; },
   tCumple() { const d = +($('#tCumD')?.value || 0), m = +($('#tCumM')?.value || 0); if (!(d >= 1 && d <= 31 && m >= 1 && m <= 12) || d > [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][m - 1]) { aviso('Esa fecha no existe.'); return 'no'; } ponerCumple(String(m).padStart(2, '0') + '-' + String(d).padStart(2, '0')); return 'no'; },

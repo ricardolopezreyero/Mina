@@ -1399,6 +1399,15 @@ No se pudo ver el movimiento en vivo porque el navegador de pruebas está oculto
 - Regalar: acción `regalar(i)` desde el panel J (botón 🎁 por persona) que abre la carpeta del siguiente nivel de esa maquinita con «¿Es un regalo?» puesto; sección «🎁 Regalar» en la tienda.
 - Nota: el índice de las calcomanías se corrió uno (el 0 pasó a ser «ninguna»); no había compras del nivel 3 en vivo, así que nadie pierde su calca.
 
+### 9.57 Sonido premium: seis voces de motor, cinco canciones y la placa mejor hecha
+
+**Lo que pidió Ricardo.** Voces distintas para el motor, deliciosas y que no cansen, con un precio distinto cada una para coleccionarlas; cinco canciones de fondo a $39; y la placa de mejor calidad.
+
+**Cómo quedó.**
+- `MOTORES` y `CANCIONES` en `src/tienda.js` (`PIEZAS`, `pieza(id)`); `filtrarPinta(p, nivel, piezas)` solo deja `motor`/`cancion` comprados; `Maquina` guarda `t.piezas`; `/pagar` con `tipo: "pieza"` (una vez, propia, a lista; el saldo la paga; Stripe cobra el resto con `metadata.pieza`); `/confirmar` y `/prueba` la entregan.
+- Cliente: `armarMotor(tipo)` (siete voces: fábrica + seis), `ponerMotor` (la anterior se apaga suave y se desconecta), `oirMotor` (acelerón de 3 s con el canal del motor encendido aunque esté apagado en opciones), `sonarLazos` llama `lazo.motor.ajustar(...)`. `CANC` (cinco definiciones), `componerCancion`, `cancionActiva`, `oirCancion` (10 s de prueba), `componer` usa la canción si hay. Sección «🔊 Sonidos · piezas sueltas» en la tienda (`htmlSonidos`), acciones `tOir`/`tUsar`/`tComprar`, `usarPieza` (guarda en la pintura y enciende el canal del motor).
+- Placa: marco de acero cepillado (bisel, borde del color, tornillos con ranura, nombre grabado), corona con banda, perlas y destellos, dorada con contorno café y laca, neón con halo doble y parpadeo.
+
 ## 10. Revisión de código del 2 de octubre
 
 Se revisó todo el código buscando fallas y se corrigieron estas:
