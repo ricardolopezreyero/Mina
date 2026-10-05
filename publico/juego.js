@@ -2246,7 +2246,7 @@ function recibir(d) {
     case 'noexiste': quitarMundo(mundoId); if (deCasa) return location.replace('/'); return pantallaFinal('Este mundo no existe', 'Puede que lo hayan borrado o que la liga esté incompleta.');
     case 'mira': return conMapa(d, iniciarVer);
     case 'fin': if (d.piedras) edenPiedras = d.piedras; if (!S || d.r !== remin) return; if (!(S.fl.edenF && S.fl.edenF[mundoId + '|' + remin]) && !ceremonia) finDelMundo(d.i, d); else if (sinMineral !== remin) vaciarMinerales(); return;
-    case 'chat': if (d.id && typeof d.x === 'string') agregarChat(d); return;
+    case 'chat': if (d.id && typeof d.x === 'string') agregarChat(d.i === -1 ? { ...d, nota: d.x } : d); return;
     case 'chatMas': return chatViejos(d.l);
     case 'chatNo': return aviso('Vas muy rápido: espera un momento para escribir otra vez.');
     case 'mapa': mapaOk = d.r; if (d.r === remin && d.h !== mapaHash) cambiarMapa(d); return;
@@ -2270,7 +2270,7 @@ function recibir(d) {
       if (d.primera && d.j.de === miI) { S.st.traidos = (S.st.traidos || 0) + 1; sucio = true; son.logro(); tarjeta('💛 ' + d.j.n + ' entró con tu liga', `Ya trajiste a ${S.st.traidos} ${S.st.traidos === 1 ? 'persona' : 'personas'} a excavar.` + (d.nuevo ? ' +$500 para cada quien.' : ''), 'msj', 9000); pintarHud(true); }
       else if (d.nuevo) { tarjeta('🎉 Llegó ' + d.j.n, 'Maquinita nueva en el mundo: +$500 para cada quien.' + (d.j.de >= 0 ? ' La trajo ' + nombreDe(d.j.de) + '.' : '')); pintarHud(true); }
       else aviso(d.j.n + ' entró al mundo');
-      notaChat(d.j.n + (d.nuevo ? ' llegó al mundo por primera vez' + (d.j.de >= 0 ? ' (la trajo ' + nombreDe(d.j.de) + ')' : '') : ' entró')); pintarChatQuien(); if (d.nuevo) { edenE = null; bloques.clear(); }
+      if (!d.primera) notaChat(d.j.n + ' entró'); pintarChatQuien(); if (d.nuevo) { edenE = null; bloques.clear(); }
       son.entra(); ultPos = ''; enviarPos(); return pintarTabla();   // que el recién llegado me vea aunque yo esté quieto
     case 'sale': { const o = otros.get(d.i); if (o) { o.on = 0; o.x = undefined; o.b = []; aviso(o.n + (d.sacada ? ' fue sacada del mundo' : ' salió')); notaChat(o.n + (d.sacada ? ' fue sacada del mundo' : ' salió')); pintarChatQuien(); } return pintarTabla(); }
     case 'j': { const o = otros.get(d.i); if (o) { o.rec = d.rec; o.tot = d.tot; } return pintarTabla(); }
@@ -3702,6 +3702,7 @@ const horaChat = (h) => new Date(h).toLocaleTimeString('es-MX', { hour: 'numeric
 const diaChat = (h) => { const d = new Date(h), hoy = new Date(), ay = new Date(Date.now() - 864e5); return d.toDateString() === hoy.toDateString() ? 'Hoy' : d.toDateString() === ay.toDateString() ? 'Ayer' : d.toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: d.getFullYear() === hoy.getFullYear() ? undefined : 'numeric' }); };
 function nodoChat(m, ant) {
   const f = document.createDocumentFragment(), d = document.createElement('div');
+  if (m.i === -1 && !m.nota) m = { ...m, nota: m.x };      // nota del mundo guardada en el chat (quién llegó)
   if (m.nota) { d.className = 'cn'; d.textContent = m.nota; f.appendChild(d); return f; }
   const otroDia = !ant || !ant.h || new Date(ant.h).toDateString() !== new Date(m.h).toDateString();
   if (otroDia) { const s = document.createElement('div'); s.className = 'cn dia'; s.textContent = diaChat(m.h); f.appendChild(s); }

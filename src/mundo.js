@@ -1206,6 +1206,8 @@ export class Mundo extends DurableObject {
       const de = entero(d.de, 0, MAX_MAQUINITAS - 1, -1);          // llegó con la liga de alguien: queda apuntado quién la trajo
       this.jug[i] = { k, n: r.n, m: r.mo, est: r.est, rec: 0, tot: 0, alta: Date.now(), ...(de >= 0 && de < i && this.jug[de] ? { de } : {}) };
       if (padrinoK) { try { await this.maquina(padrinoK).anotarRef("llegaron"); } catch {} }
+      // En el chat del mundo queda escrito, para siempre, que llegó alguien nuevo y que desde ahora lee este chat (también lo de antes).
+      try { const x = "👋 " + r.n + " llegó al mundo por primera vez. Desde ahora lee este chat, también lo que ya se dijo." + (padrinoK ? " (La trajo " + (this.jug[deI] ? this.jug[deI].n : "alguien") + ".)" : ""), h = Date.now(), id = this.ctx.storage.sql.exec("INSERT INTO chat (h, i, n, m, x) VALUES (?, ?, ?, ?, ?) RETURNING id", h, -1, "", 0, x).one().id; this.difundir({ t: "chat", id, h, i: -1, n: "", m: 0, x }, ws); } catch {}
       m.n = this.jug.length;
       await this.ctx.storage.put({ ["j:" + i]: this.jug[i], meta: m });
     }
