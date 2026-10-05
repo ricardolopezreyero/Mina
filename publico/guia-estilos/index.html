@@ -31,11 +31,13 @@ h3{font-weight:800;font-size:1.2em;color:var(--tx);margin:1.6em 0 .5em}
 p{margin:.5em 0;max-width:68ch}
 .envuelve{max-width:1240px;margin:0 auto;padding:0 clamp(16px,4vw,36px)}
 nav{position:sticky;top:0;z-index:5;background:#1b120ef2;backdrop-filter:blur(8px);border-bottom:1px solid var(--borde)}
-nav .envuelve{display:flex;gap:6px;align-items:center;overflow-x:auto;padding-top:8px;padding-bottom:8px;scrollbar-width:none}
-nav a{white-space:nowrap;text-decoration:none;color:var(--su);font-weight:700;font-size:.86em;padding:.45em .8em;border-radius:999px}
+nav .envuelve{display:flex;gap:10px;align-items:center;padding-top:8px;padding-bottom:8px}
+nav .ligas{display:flex;gap:4px;align-items:center;flex:1;min-width:0;overflow-x:auto;scrollbar-width:none;-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 26px),#0000);mask-image:linear-gradient(90deg,#000 calc(100% - 26px),#0000);padding-right:22px}
+nav .ligas::-webkit-scrollbar{display:none}
+nav a{white-space:nowrap;text-decoration:none;color:var(--su);font-weight:700;font-size:.92em;padding:.45em .8em;border-radius:999px}
 nav a:hover{background:var(--caja);color:var(--tx)}
-nav .marca{color:var(--ac);font-family:Inter,system-ui;font-weight:900;font-size:1.1em;padding-left:0}
-nav .tam{margin-left:auto;display:flex;gap:4px;flex:none;position:sticky;right:0;background:#1b120e;padding-left:10px;box-shadow:-12px 0 12px #1b120e}
+nav .marca{color:var(--ac);font-family:Inter,system-ui;font-weight:900;font-size:1.1em;padding-left:0;flex:none}
+nav .tam{display:flex;gap:4px;flex:none}
 button,.boton{font:inherit;font-weight:800;cursor:pointer;border:1px solid var(--borde);background:var(--caja);color:var(--tx);border-radius:10px;padding:.45em .8em;text-decoration:none;display:inline-flex;align-items:center;gap:.5em}
 button:hover,.boton:hover{border-color:var(--ac)}
 .boton.grande{background:var(--ac);color:var(--tinta);border-color:var(--ac);font-size:1.12em;padding:.8em 1.3em;border-radius:14px}
@@ -82,8 +84,23 @@ table{border-collapse:collapse;width:100%;margin:14px 0;font-size:.92em}th,td{te
 #aviso{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(20px);background:var(--ac);color:var(--tinta);font-weight:800;padding:.6em 1.1em;border-radius:999px;opacity:0;transition:.25s;pointer-events:none;z-index:9}
 #aviso.on{opacity:1;transform:translateX(-50%)}
 footer{padding:40px 0 70px;color:var(--su);font-size:.9em}
+/* los íconos de cada red: una ficha de color con su figura en blanco */
+.red{display:inline-flex;width:1.55em;height:1.55em;border-radius:.4em;flex:none;vertical-align:-.4em;box-shadow:0 0 0 1px #ffffff2e;overflow:hidden}
+.red svg{width:100%;height:100%;display:block}
+.red.tt,.red.x{background:#000}.red.yt{background:#f00}.red.fb{background:#1877f2}.red.in{background:#0a66c2}.red.wa{background:#25d366}.red.msj{background:#0a84ff}
+.red.ig{background:linear-gradient(45deg,#feda75,#fa7e1e 28%,#d62976 55%,#962fbf 78%,#4f5bd5)}
+.redes{display:flex;gap:5px;align-items:center;padding:10px 12px 0;font-size:.92em;min-height:2.3em}
+.para{display:flex;flex-wrap:wrap;gap:7px;margin:.1em 0 1em;max-width:none}
+.pastilla{display:inline-flex;align-items:center;gap:.5em;background:var(--caja);border:1px solid var(--borde);border-radius:999px;padding:.22em .8em .22em .28em;font-weight:700;font-size:.86em;white-space:nowrap}
+.pastilla .red{vertical-align:0;border-radius:50%}
+.para.chica{margin:-4px 0 0;gap:5px}.para.chica .pastilla{font-size:.78em}
+td[data-redes] .grupito{display:inline-flex;gap:4px;margin-right:.6em;vertical-align:-.4em}td[data-redes] .red{vertical-align:0}
+.redes-tabla td:first-child{white-space:nowrap}
+.grupo{background:var(--ac);color:var(--tinta);padding:20px 0;border-bottom:4px solid var(--tinta)}
+.grupo .envuelve{display:flex;gap:6px 18px;align-items:baseline;flex-wrap:wrap}
+.grupo b{font:900 clamp(1.4em,3.6vw,2em)/1.1 Inter,system-ui,sans-serif}.grupo span{font-weight:700}
 /* el generador de arte y el brochure */
-.boton.grande.claro{background:#1b120ed9;color:var(--ac);border-color:var(--ac);margin-top:8px}
+.atajos{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.boton.claro{background:#1b120ed9;color:#fff;border-color:#ffffff59;font-size:.92em}.boton.claro:hover{border-color:var(--ac)}
 .gen{display:grid;grid-template-columns:minmax(0,430px) minmax(260px,1fr);gap:26px;align-items:start;background:var(--caja);border:2px solid var(--ac);border-radius:18px;padding:clamp(14px,3vw,26px);margin:18px 0}
 .gen-vista{background:#120b08;border-radius:12px;padding:10px;display:flex;justify-content:center;min-height:300px;align-items:center}
 .gen-vista canvas{max-width:100%;max-height:76vh;width:auto;height:auto;border-radius:8px;display:block;box-shadow:0 8px 22px #000a}
@@ -100,6 +117,7 @@ footer{padding:40px 0 70px;color:var(--su);font-size:.9em}
 .bro-img img{width:100%;height:auto;display:block}
 .bro small{display:block;color:var(--su);margin:.5em 0 1em}
 @media(max-width:760px){.gen,.bro{grid-template-columns:1fr}.bro-img{max-width:300px}}
+@media(max-width:700px){.redes-tabla,.redes-tabla tbody,.redes-tabla tr,.redes-tabla td{display:block;width:auto}.redes-tabla tr:first-child{display:none}.redes-tabla tr{padding:11px 0;border-bottom:1px solid var(--borde)}.redes-tabla td{border:0;padding:2px 0}.redes-tabla td:first-child{font-weight:700;white-space:normal;margin-bottom:3px}.redes-tabla td:nth-child(3){color:var(--su)}}
 @media(max-width:640px){header.portada .envuelve{grid-template-columns:1fr}header.portada img{order:-1;width:150px}.rejilla.ancha{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 </style>
@@ -107,7 +125,7 @@ footer{padding:40px 0 70px;color:var(--su);font-size:.9em}
 <body>
 <nav><div class="envuelve">
   <a class="marca" href="#arriba">MINA</a>
-  <a href="#tiktok">Empezar en TikTok</a><a href="#arte">Arte con gemas</a><a href="#brochure">Brochure</a><a href="#perfil">Foto de perfil</a><a href="#logotipo">Logotipo</a><a href="#icono">Ícono</a><a href="#maquinita">La maquinita</a><a href="#color">Color</a><a href="#tipografia">Tipografía</a><a href="#vertical">Vertical</a><a href="#horizontal">Horizontal</a><a href="#cuadrado">Cuadrado</a><a href="#video">Para video</a><a href="#medidas">Medidas</a>
+  <div class="ligas"><a href="#tiktok">Empezar</a><a href="#arte">Arte con gemas</a><a href="#brochure">Brochure</a><a href="#redes">Por red</a><a href="#marca">La marca</a></div>
   <span class="tam"><button id="menos" title="Letra más chica" aria-label="Letra más chica">A−</button><button id="mas" title="Letra más grande" aria-label="Letra más grande">A+</button></span>
 </div></nav>
 
@@ -116,7 +134,7 @@ footer{padding:40px 0 70px;color:var(--su);font-size:.9em}
     <h1>Guía de estilos</h1>
     <p>Todo lo que se necesita para hablar de Mina, listo para descargar.</p>
     <a class="boton grande" id="zipArriba" href="#" download><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 20h16"/></svg><span>Descargar todo (.zip)</span></a>
-    <a class="boton grande claro" href="#brochure"><span>📕 Brochure (PDF)</span></a> <a class="boton grande claro" href="#arte"><span>💎 Generar arte</span></a>
+    <div class="atajos"><a class="boton claro" href="#arte">💎 Generar arte</a><a class="boton claro" href="#brochure">📕 Brochure en PDF</a><a class="boton claro" href="#redes">Qué va en cada red</a></div>
     <small id="zipDato"></small>
   </div>
   <img src="mini/04-maquinita__maquinita-perforando.webp" alt="La maquinita amarilla de Mina, perforando" width="300" height="368">
@@ -135,6 +153,7 @@ footer{padding:40px 0 70px;color:var(--su);font-size:.9em}
 
 <section id="tiktok"><div class="envuelve">
   <h2>Para empezar en TikTok</h2>
+  <p class="para" data-redes="tt:TikTok,ig:Reels de Instagram,yt:Shorts de YouTube"></p>
   <p>Cinco pasos y la cuenta queda lista. Las mismas piezas sirven para Reels de Instagram y Shorts de YouTube.</p>
   <ol class="pasos">
     <li><b>Foto de perfil</b><br>Sube <a href="#perfil">el círculo de atardecer</a>.</li>
@@ -175,6 +194,7 @@ Gratis · sin registro · sin anuncios 👇</div>
 
 <section id="arte"><div class="envuelve">
   <h2>Arte con gemas</h2>
+  <p class="para" data-redes="tt:TikTok,ig:Reels e historias,yt:Shorts,wa:Estados de WhatsApp"></p>
   <p>Las 22 gemas del juego, acomodadas en figuras simétricas con MINA al centro. Sirven de portada, de fondo para un video o de publicación. Aquí van seis para empezar; abajo está la máquina para hacer todas las que hagan falta.</p>
   <div class="rejilla" data-c="13-arte"></div>
   <p><a class="boton" id="arteZip" href="#" download><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 20h16"/></svg><span>Bajar las seis en PNG (.zip)</span><small id="arteZipDato"></small></a></p>
@@ -189,6 +209,7 @@ Gratis · sin registro · sin anuncios 👇</div>
       <label>Gemas<select id="genPaleta"></select></label>
       <label>Fondo<select id="genFondo"></select></label>
       <label>Formato<select id="genFormato"></select></label>
+      <p class="para chica" id="genRedes"></p>
       <label>Semilla<input type="text" id="genSemilla" inputmode="numeric" placeholder="Al azar" autocomplete="off"></label>
       <label class="chk"><input type="checkbox" id="genLiga" checked> Con la liga del juego abajo</label>
       <p class="gen-dato" id="genTexto">Cargando las gemas…</p>
@@ -205,6 +226,7 @@ Gratis · sin registro · sin anuncios 👇</div>
 
 <section id="brochure"><div class="envuelve">
   <h2>Brochure</h2>
+  <p class="para" data-redes="wa:WhatsApp,msj:Mensajes"></p>
   <p>Para cuando alguien dice «pásame más información». Seis hojas con capturas del juego: qué es, cómo se juega, cómo se juega con tu gente, el mundo y sus 22 minerales, La Pinturería y cómo empezar.</p>
   <div class="bro">
     <a class="bro-img" href="brochure/" title="Ver el brochure en línea"><img loading="lazy" src="mini/14-brochure__portada.webp" alt="Portada del brochure de Mina" width="760" height="984"></a>
@@ -221,18 +243,69 @@ Y para jugar de una vez: https://mina.capitaltorreon.com</div>
   </div>
 </div></section>
 
+<div class="grupo" id="porred"><div class="envuelve"><b>Para cada red</b><span>Lo que se sube, con su medida y la red donde va.</span></div></div>
+
+<section id="redes"><div class="envuelve">
+  <h2>Qué va en cada red</h2>
+  <p>Cada pieza trae arriba el ícono de la red donde sirve. Aquí está el resumen: toca el archivo y te lleva a él.</p>
+  <div class="tabla"><table class="redes-tabla">
+    <tr><th>Red</th><th>Pieza</th><th>Medida</th><th>Archivo</th></tr>
+    <tr><td data-redes="tt,ig,yt">TikTok · Reels · Shorts</td><td>Video y portada</td><td>1080 × 1920</td><td><a href="#vertical">portada-vertical</a></td></tr>
+    <tr><td data-redes="tt,ig,yt,wa">TikTok · Reels · Shorts · Estados</td><td>Arte con gemas</td><td>1080 × 1920</td><td><a href="#arte">arte-gemas · generador</a></td></tr>
+    <tr><td data-redes="ig,fb">Instagram · Facebook</td><td>Publicación</td><td>1080 × 1350 o 1080 × 1080</td><td><a href="#cuadrado">publicacion-4x5 · publicacion</a></td></tr>
+    <tr><td data-redes="yt">YouTube</td><td>Miniatura</td><td>1280 × 720</td><td><a href="#horizontal">miniatura-youtube</a></td></tr>
+    <tr><td data-redes="yt">YouTube</td><td>Banner del canal</td><td>2560 × 1440</td><td><a href="#horizontal">banner-youtube</a></td></tr>
+    <tr><td data-redes="fb">Facebook</td><td>Portada</td><td>1640 × 624</td><td><a href="#horizontal">portada-facebook</a></td></tr>
+    <tr><td data-redes="x,in">X · LinkedIn</td><td>Encabezado</td><td>1500 × 500</td><td><a href="#horizontal">encabezado-x</a></td></tr>
+    <tr><td data-redes="wa,msj">WhatsApp · Mensajes</td><td>Vista previa de la liga</td><td>1200 × 630</td><td><a href="#horizontal">liga</a></td></tr>
+    <tr><td data-redes="wa">WhatsApp</td><td>Brochure para mandar</td><td>PDF, 6 hojas carta</td><td><a href="#brochure">Mina_Brochure.pdf</a></td></tr>
+    <tr><td data-redes="tt,ig,yt,fb,x,wa">Todas</td><td>Foto de perfil</td><td>1080 × 1080</td><td><a href="#perfil">perfil-…</a></td></tr>
+  </table></div>
+</div></section>
+
 <section id="perfil"><div class="envuelve">
   <h2>Foto de perfil: el círculo</h2>
+  <p class="para" data-redes="tt:TikTok,ig:Instagram,yt:YouTube,fb:Facebook,x:X,wa:WhatsApp"></p>
   <p>Todas las redes recortan la foto en círculo, así que la maquinita va al centro y nada importante toca la orilla. El <b>atardecer</b> es el principal. Para la <b>comunidad de WhatsApp</b> están los círculos sobrios: negro, blanco, café o tierra, con el ícono en gris.</p>
   <h3>En círculo, con fondo transparente</h3>
   <div class="rejilla chica" data-c="05-perfil" data-inc="-circulo"></div>
   <h3>Cuadradas, para subir a cada red</h3>
   <div class="rejilla chica" data-c="05-perfil" data-exc="-circulo"></div>
   <div class="tabla"><table><tr><th>Dónde</th><th>Cuál</th></tr>
-    <tr><td>TikTok, Instagram, YouTube, Facebook, X</td><td>Atardecer</td></tr>
-    <tr><td>Grupo de WhatsApp</td><td>Atardecer o Tierra</td></tr>
-    <tr><td>Comunidad de WhatsApp</td><td>Negro, Blanco, Café o Tierra, con ícono gris</td></tr></table></div>
+    <tr><td data-redes="tt,ig,yt,fb,x">TikTok, Instagram, YouTube, Facebook, X</td><td>Atardecer</td></tr>
+    <tr><td data-redes="wa">Grupo de WhatsApp</td><td>Atardecer o Tierra</td></tr>
+    <tr><td data-redes="wa">Comunidad de WhatsApp</td><td>Negro, Blanco, Café o Tierra, con ícono gris</td></tr></table></div>
 </div></section>
+
+<section id="vertical"><div class="envuelve">
+  <h2>Vertical · 9:16</h2>
+  <p class="para" data-redes="tt:TikTok,ig:Reels e historias,yt:Shorts,wa:Estados de WhatsApp"></p>
+  <p>1080 × 1920. Para TikTok, Reels, Shorts e historias. El título de la portada queda donde no lo tapan los botones ni se corta en la cuadrícula del perfil.</p>
+  <div class="rejilla" data-c="06-vertical"></div>
+</div></section>
+
+<section id="cuadrado"><div class="envuelve">
+  <h2>Cuadrado y 4:5</h2>
+  <p class="para" data-redes="ig:Instagram,fb:Facebook,x:X,in:LinkedIn"></p>
+  <p>Para publicaciones de Instagram y Facebook, y para estados.</p>
+  <div class="rejilla" data-c="08-cuadrado"></div>
+</div></section>
+
+<section id="horizontal"><div class="envuelve">
+  <h2>Horizontal</h2>
+  <p class="para" data-redes="yt:YouTube,fb:Facebook,x:X,in:LinkedIn,wa:Vista previa de la liga"></p>
+  <p>Para YouTube, presentaciones, encabezados y la imagen que aparece al pegar la liga.</p>
+  <div class="rejilla ancha" data-c="07-horizontal"></div>
+</div></section>
+
+<section id="video"><div class="envuelve">
+  <h2>Piezas para video</h2>
+  <p class="para" data-redes="tt:TikTok,ig:Reels,yt:Shorts y YouTube"></p>
+  <p>Transparentes, para ponerlas encima de lo grabado.</p>
+  <div class="rejilla ancha" data-c="09-video"></div>
+</div></section>
+
+<div class="grupo" id="marca"><div class="envuelve"><b>La marca</b><span>Las piezas con las que se arma todo lo demás.</span></div></div>
 
 <section id="logotipo"><div class="envuelve">
   <h2>Logotipo</h2>
@@ -281,49 +354,16 @@ Y para jugar de una vez: https://mina.capitaltorreon.com</div>
   <p style="color:var(--su);font-size:.9em">Inter es de Rasmus Andersson y se publica con la licencia SIL Open Font License. Sitio: <a href="https://rsms.me/inter/" target="_blank" rel="noopener">rsms.me/inter</a> · también en <a href="https://fonts.google.com/specimen/Inter" target="_blank" rel="noopener">Google Fonts</a>.</p>
 </div></section>
 
-<section id="vertical"><div class="envuelve">
-  <h2>Vertical · 9:16</h2>
-  <p>1080 × 1920. Para TikTok, Reels, Shorts e historias. El título de la portada queda donde no lo tapan los botones ni se corta en la cuadrícula del perfil.</p>
-  <div class="rejilla" data-c="06-vertical"></div>
-</div></section>
-
-<section id="horizontal"><div class="envuelve">
-  <h2>Horizontal</h2>
-  <p>Para YouTube, presentaciones, encabezados y la imagen que aparece al pegar la liga.</p>
-  <div class="rejilla ancha" data-c="07-horizontal"></div>
-</div></section>
-
-<section id="cuadrado"><div class="envuelve">
-  <h2>Cuadrado y 4:5</h2>
-  <p>Para publicaciones de Instagram y Facebook, y para estados.</p>
-  <div class="rejilla" data-c="08-cuadrado"></div>
-</div></section>
-
-<section id="video"><div class="envuelve">
-  <h2>Piezas para video</h2>
-  <p>Transparentes, para ponerlas encima de lo grabado.</p>
-  <div class="rejilla ancha" data-c="09-video"></div>
-</div></section>
-
-<section id="medidas"><div class="envuelve">
-  <h2>Medidas por red</h2>
-  <div class="tabla"><table>
-    <tr><th>Red</th><th>Pieza</th><th>Medida</th><th>Archivo</th></tr>
-    <tr><td>TikTok · Reels · Shorts</td><td>Video y portada</td><td>1080 × 1920</td><td>portada-vertical</td></tr>
-    <tr><td>Instagram</td><td>Publicación</td><td>1080 × 1350 o 1080 × 1080</td><td>publicacion-4x5 · publicacion</td></tr>
-    <tr><td>YouTube</td><td>Miniatura</td><td>1280 × 720</td><td>miniatura-youtube</td></tr>
-    <tr><td>YouTube</td><td>Banner del canal</td><td>2560 × 1440</td><td>banner-youtube</td></tr>
-    <tr><td>Facebook</td><td>Portada</td><td>1640 × 624</td><td>portada-facebook</td></tr>
-    <tr><td>X · LinkedIn</td><td>Encabezado</td><td>1500 × 500</td><td>encabezado-x</td></tr>
-    <tr><td>WhatsApp · iMessage</td><td>Vista previa de la liga</td><td>1200 × 630</td><td>liga</td></tr>
-    <tr><td>Todas</td><td>Foto de perfil</td><td>1080 × 1080</td><td>perfil-…</td></tr>
-  </table></div>
-  <p style="margin-top:26px"><a class="boton grande" id="zipAbajo" href="#" download><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 20h16"/></svg><span>Descargar todo (.zip)</span></a></p>
+<section id="descargar"><div class="envuelve">
+  <h2>Todo junto</h2>
+  <p>El kit completo en un solo archivo, con todas las piezas ordenadas por carpeta.</p>
+  <p style="margin-top:18px"><a class="boton grande" id="zipAbajo" href="#" download><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 20h16"/></svg><span>Descargar todo (.zip)</span></a></p>
 </div></section>
 </main>
 
 <footer><div class="envuelve">
   <p><b>Mina</b> · <a href="/">mina.capitaltorreon.com</a> · CapitalTorreon</p>
+  <p><small>Los nombres y logotipos de TikTok, Instagram, YouTube, Facebook, X, LinkedIn y WhatsApp son de sus dueños. Aquí solo indican dónde sirve cada pieza.</small></p>
   <p>Hecha con cariño por Ing. <a href="https://ricardolopezreyero.com" target="_blank" rel="noopener">Ricardo López Reyero</a>, en Torreón, Coahuila. <span id="pie"></span></p>
 </div></footer>
 <div id="aviso" role="status" aria-live="polite"></div>
@@ -339,11 +379,39 @@ let avisoT = 0;
 function aviso(t) { const a = $('#aviso'); a.textContent = t; a.classList.add('on'); clearTimeout(avisoT); avisoT = setTimeout(() => a.classList.remove('on'), 1900); }
 async function copiar(t, dicho) { try { await navigator.clipboard.writeText(t); aviso(dicho || 'Copiado'); } catch { window.prompt('Copia:', t); } }
 const peso = (kb) => (kb >= 1000 ? (kb / 1024).toFixed(1) + ' MB' : kb + ' KB');
+// Las redes: [nombre, figura en blanco]. Dibujos propios y sencillos; los nombres y logotipos son de cada red.
+const NOTA = '<path d="M13.3 15.6V4.6c.4 2.5 2 4.1 4.6 4.4"/><circle cx="10" cy="15.6" r="3.3"/>';
+const RED = {
+  tt: ['TikTok', `<svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-width="2.6"><g stroke="#25f4ee" transform="translate(-.8 -.6)">${NOTA}</g><g stroke="#fe2c55" transform="translate(.8 .6)">${NOTA}</g><g stroke="#fff">${NOTA}</g></svg>`],
+  ig: ['Instagram', '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="5" y="5" width="14" height="14" rx="4.2"/><circle cx="12" cy="12" r="3.3"/><circle cx="16.3" cy="7.7" r="1.15" fill="#fff" stroke="none"/></svg>'],
+  yt: ['YouTube', '<svg viewBox="0 0 24 24"><path fill="#fff" d="M9.4 7.4v9.2l7.8-4.6z"/></svg>'],
+  fb: ['Facebook', '<svg viewBox="0 0 24 24"><path fill="#fff" d="M13.5 20.5v-7h2.4l.4-2.9h-2.8V8.8c0-.9.3-1.5 1.6-1.5h1.3V4.7c-.3 0-1.2-.1-2.1-.1-2.2 0-3.6 1.3-3.6 3.7v2.3H8.4v2.9h2.3v7z"/></svg>'],
+  x: ['X', '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><path d="M6.2 5.8l11.6 12.4M17.8 5.8L6.2 18.2"/></svg>'],
+  in: ['LinkedIn', '<svg viewBox="0 0 24 24" fill="#fff"><circle cx="7.4" cy="7.3" r="1.6"/><path d="M6.1 10.2h2.6v8H6.1zM10.6 10.2h2.5v1.2c.5-.9 1.5-1.5 2.8-1.5 2.2 0 3 1.4 3 3.7v4.6h-2.6v-4.2c0-1.2-.4-1.9-1.4-1.9-1.1 0-1.7.8-1.7 2v4.1h-2.6z"/></svg>'],
+  wa: ['WhatsApp', '<svg viewBox="0 0 24 24"><path fill="none" stroke="#fff" stroke-width="1.7" stroke-linejoin="round" d="M12 4.4a7.5 7.5 0 0 0-6.5 11.3L4.5 19.6l4-1.05A7.5 7.5 0 1 0 12 4.4z"/><path fill="#fff" d="M9.7 8.5c-.3 0-.65.2-.85.6-.6 1.2 0 2.95 1.5 4.45 1.5 1.5 3.25 2.1 4.45 1.5.4-.2.6-.55.6-.85l-.1-.5-1.55-.8-.75.75c-.8-.3-1.9-1.35-2.2-2.2l.75-.75-.8-1.55z"/></svg>'],
+  msj: ['Mensajes', '<svg viewBox="0 0 24 24"><path fill="#fff" d="M12 5.4c-4.1 0-7.4 2.7-7.4 6.1 0 1.95 1.1 3.65 2.85 4.8-.1.9-.5 1.75-1.15 2.45 1.35 0 2.65-.5 3.65-1.3.65.1 1.35.2 2.05.2 4.1 0 7.4-2.75 7.4-6.15S16.1 5.4 12 5.4z"/></svg>'],
+};
+const ficha = (k) => `<span class="red ${k}" role="img" aria-label="${RED[k][0]}" title="${RED[k][0]}">${RED[k][1]}</span>`;
+const pastillas = (lista) => lista.map(([k, t]) => `<span class="pastilla">${ficha(k)}${esc(t || RED[k][0])}</span>`).join('');
+function redesDe(a) {            // en qué redes sirve cada pieza, por su carpeta y su nombre
+  const f = a.f;
+  if (a.c === '05-perfil') return f.includes('atardecer') ? ['tt', 'ig', 'yt', 'fb', 'x', 'wa'] : ['wa'];
+  if (a.c === '06-vertical') return /zonas|marco/.test(f) ? ['tt', 'ig', 'yt'] : ['tt', 'ig', 'yt', 'wa'];
+  if (a.c === '09-video') return ['tt', 'ig', 'yt'];
+  if (a.c === '13-arte') return ['tt', 'ig', 'yt', 'wa'];
+  if (a.c === '08-cuadrado') return f.includes('4x5') ? ['ig', 'fb'] : ['ig', 'fb', 'x', 'in'];
+  if (a.c === '07-horizontal') return f.includes('youtube') ? ['yt'] : f.includes('encabezado-x') ? ['x', 'in'] : f.includes('facebook') ? ['fb'] : f.startsWith('liga') ? ['wa', 'msj', 'fb', 'x'] : ['yt', 'fb', 'x', 'in'];
+  return [];
+}
+const FORMATO_REDES = { vertical: [['tt'], ['ig', 'Reels'], ['yt', 'Shorts'], ['wa', 'Estados']], cuatro5: [['ig'], ['fb']], cuadrado: [['ig'], ['fb'], ['x'], ['in']], horizontal: [['yt'], ['fb'], ['x'], ['in']] };
+for (const p of document.querySelectorAll('.para[data-redes]')) p.innerHTML = pastillas(p.dataset.redes.split(',').map((x) => x.split(':')));
+for (const td of document.querySelectorAll('td[data-redes]')) td.insertAdjacentHTML('afterbegin', `<span class="grupito">${td.dataset.redes.split(',').map(ficha).join('')}</span>`);
 function tarjeta(a) {
   const ruta = `kit/${a.c}/${a.f}`, ext = a.f.split('.').pop().toUpperCase(), marco = a.fondo.startsWith('foto-marco');
   const fondo = marco ? 'marco' : a.fondo, estilo = marco ? ` style="background-image:url(mini/${a.fondo.endsWith('v') ? '06-vertical__fondo-vertical-escena-1080x1920' : '07-horizontal__fondo-horizontal-escena-1920x1080'}.webp)"` : '';
   const vista = a.mini ? `<img loading="lazy" src="mini/${esc(a.mini)}" alt="${esc(a.t)}">` : `<span aria-hidden="true">${a.ic || '📄'}</span>`;
-  return `<article class="tarjeta"><div class="vista ${fondo}"${estilo}>${vista}</div><div class="dato"><b>${esc(a.t)}</b><span class="uso">${esc(a.u)}</span>
+  const redes = redesDe(a);
+  return `<article class="tarjeta">${redes.length ? `<div class="redes">${redes.map(ficha).join('')}</div>` : ''}<div class="vista ${fondo}"${estilo}>${vista}</div><div class="dato"><b>${esc(a.t)}</b><span class="uso">${esc(a.u)}</span>
     <a class="boton baja" href="${esc(ruta)}" download="${esc(a.f)}" title="Descargar ${esc(a.f)}">${FLECHA}<span>Descargar</span><small>${ext}${a.w ? ' · ' + a.w + ' × ' + a.h : ''} · ${peso(a.kb)}</small></a></div></article>`;
 }
 (async () => {
@@ -372,6 +440,7 @@ for (const d of document.querySelectorAll('[data-copia]')) { const b = document.
   llena('#genEstilo', A.ESTILOS, (v) => v.n); llena('#genPaleta', A.PALETAS, (v) => v.n); llena('#genFondo', A.FONDOS, (v) => v.n);
   $('#genFormato').innerHTML = Object.entries(A.FORMATOS).map(([k, v]) => `<option value="${k}">${esc(v[2])} · ${v[0]} × ${v[1]}</option>`).join('');
   const nueva = () => 1 + Math.floor(Math.random() * 999999);
+  const ponRedes = () => { $('#genRedes').innerHTML = pastillas(FORMATO_REDES[$('#genFormato').value] || []); };
   const op = (semilla) => ({ semilla, estilo: $('#genEstilo').value, paleta: $('#genPaleta').value, fondo: $('#genFondo').value, formato: $('#genFormato').value, liga: $('#genLiga').checked });
   const bajar = (blob, nombre) => { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nombre; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 30000); };
   let ultima = null, ocupado = false;
@@ -382,7 +451,8 @@ for (const d of document.querySelectorAll('[data-copia]')) { const b = document.
     ocupado = false;
   }
   $('#genYa').onclick = () => pinta(nueva());
-  for (const id of ['#genEstilo', '#genPaleta', '#genFondo', '#genFormato', '#genLiga']) $(id).onchange = () => pinta(ultima ? ultima.semilla : nueva());
+  for (const id of ['#genEstilo', '#genPaleta', '#genFondo', '#genFormato', '#genLiga']) $(id).onchange = () => { ponRedes(); pinta(ultima ? ultima.semilla : nueva()); };
+  ponRedes();
   $('#genSemilla').onchange = () => pinta(parseInt($('#genSemilla').value.replace(/\D/g, ''), 10) || nueva());
   $('#genSemilla').onkeydown = (e) => { if (e.key === 'Enter') e.target.blur(); };
   $('#genBaja').onclick = async () => { if (!ultima || ocupado) return; aviso('Descargando…'); bajar(await A.aPng(L), ultima.nombre); };

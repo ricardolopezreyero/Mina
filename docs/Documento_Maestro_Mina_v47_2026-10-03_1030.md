@@ -1474,6 +1474,16 @@ Lo que se hizo el 5 de octubre de 2026 para que Mina salga al mundo: material pa
 - **El peso manda.** Cloudflare no sirve archivos de más de 25 MiB. Con el arte en PNG el zip del kit se pasaba, así que dentro del zip el arte va en JPG y en la página cada imagen se baja en PNG (y las seis juntas en `Mina_Arte_con_Gemas_…zip`). El generador del kit se detiene con un aviso si algún zip se pasa.
 - **Qué falta**: el brochure dice lo que el juego hace hoy; si cambian los precios, los niveles o los lugares, se rehacen las capturas y el PDF (pasos en el README). No hay versión en inglés.
 
+### 9.66 La guía, más simple: cinco ligas y el ícono de cada red
+
+Ricardo vio que el menú de la guía traía catorce ligas y que los botones A−/A+ las tapaban, y pidió el ícono de cada red social arriba de cada diseño.
+
+- **El menú** quedó en cinco: Empezar, Arte con gemas, Brochure, Por red y La marca. Los botones A−/A+ ya no flotan encima: van en su propio lugar y la tira de ligas se recorre sola en el teléfono.
+- **El orden de la página** ahora va de lo que se publica a lo que se usa para armar: primero empezar, arte y brochure; luego la franja **Para cada red** (qué va en cada red, foto de perfil, vertical, cuadrado, horizontal y piezas para video); al final la franja **La marca** (logotipo, ícono, maquinita, color y tipografía) y el zip.
+- **Los íconos de red** (TikTok, Instagram, YouTube, Facebook, X, LinkedIn, WhatsApp y Mensajes) son dibujos propios y sencillos, hechos en el código de la página: una ficha del color de la red con su figura en blanco. Salen en tres lugares: arriba de cada tarjeta, según para qué red sirve esa pieza (regla `redesDe()` por carpeta y nombre de archivo); bajo el título de cada sección, con nombre; y en la tabla «Qué va en cada red», que además liga cada archivo con su sección. En el generador, al cambiar el formato cambian las redes.
+- Las piezas de marca (logotipo, ícono, maquinita, color, tipografía y gemas sueltas) no llevan ícono de red: sirven en cualquiera.
+- En el pie se aclara que los nombres y logotipos de las redes son de sus dueños.
+
 ## 10. Revisión de código del 2 de octubre
 
 Se revisó todo el código buscando fallas y se corrigieron estas:
