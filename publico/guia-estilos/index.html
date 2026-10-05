@@ -100,6 +100,7 @@ td[data-redes] .grupito{display:inline-flex;gap:4px;margin-right:.6em;vertical-a
 .grupo .envuelve{display:flex;gap:6px 18px;align-items:baseline;flex-wrap:wrap}
 .grupo b{font:900 clamp(1.4em,3.6vw,2em)/1.1 Inter,system-ui,sans-serif}.grupo span{font-weight:700}
 /* el generador de arte y el brochure */
+.arriba-botones{display:flex;flex-wrap:wrap;gap:10px}.boton.grande.oscuro{background:#1b120ef0;color:var(--ac);border-color:var(--ac)}
 .atajos{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.boton.claro{background:#1b120ed9;color:#fff;border-color:#ffffff59;font-size:.92em}.boton.claro:hover{border-color:var(--ac)}
 .gen{display:grid;grid-template-columns:minmax(0,430px) minmax(260px,1fr);gap:26px;align-items:start;background:var(--caja);border:2px solid var(--ac);border-radius:18px;padding:clamp(14px,3vw,26px);margin:18px 0}
 .gen-vista{background:#120b08;border-radius:12px;padding:10px;display:flex;justify-content:center;min-height:300px;align-items:center}
@@ -116,6 +117,8 @@ td[data-redes] .grupito{display:inline-flex;gap:4px;margin-right:.6em;vertical-a
 .bro-img{display:block;border-radius:12px;overflow:hidden;border:1px solid var(--borde);box-shadow:0 10px 26px #000a;line-height:0}
 .bro-img img{width:100%;height:auto;display:block}
 .bro small{display:block;color:var(--su);margin:.5em 0 1em}
+.trae{margin:.4em 0 0;padding-left:1.2em}.trae li{margin:.4em 0}
+#creador .bro-img{background:#fff}
 @media(max-width:760px){.gen,.bro{grid-template-columns:1fr}.bro-img{max-width:300px}}
 @media(max-width:700px){.redes-tabla,.redes-tabla tbody,.redes-tabla tr,.redes-tabla td{display:block;width:auto}.redes-tabla tr:first-child{display:none}.redes-tabla tr{padding:11px 0;border-bottom:1px solid var(--borde)}.redes-tabla td{border:0;padding:2px 0}.redes-tabla td:first-child{font-weight:700;white-space:normal;margin-bottom:3px}.redes-tabla td:nth-child(3){color:var(--su)}}
 @media(max-width:640px){header.portada .envuelve{grid-template-columns:1fr}header.portada img{order:-1;width:150px}.rejilla.ancha{grid-template-columns:1fr}}
@@ -125,7 +128,7 @@ td[data-redes] .grupito{display:inline-flex;gap:4px;margin-right:.6em;vertical-a
 <body>
 <nav><div class="envuelve">
   <a class="marca" href="#arriba">MINA</a>
-  <div class="ligas"><a href="#tiktok">Empezar</a><a href="#arte">Arte con gemas</a><a href="#brochure">Brochure</a><a href="#redes">Por red</a><a href="#marca">La marca</a></div>
+  <div class="ligas"><a href="#creador">Guía del creador</a><a href="#tiktok">Empezar</a><a href="#arte">Arte con gemas</a><a href="#brochure">Brochure</a><a href="#redes">Por red</a><a href="#marca">La marca</a></div>
   <span class="tam"><button id="menos" title="Letra más chica" aria-label="Letra más chica">A−</button><button id="mas" title="Letra más grande" aria-label="Letra más grande">A+</button></span>
 </div></nav>
 
@@ -133,7 +136,8 @@ td[data-redes] .grupito{display:inline-flex;gap:4px;margin-right:.6em;vertical-a
   <div>
     <h1>Guía de estilos</h1>
     <p>Todo lo que se necesita para hablar de Mina, listo para descargar.</p>
-    <a class="boton grande" id="zipArriba" href="#" download><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 20h16"/></svg><span>Descargar todo (.zip)</span></a>
+    <div class="arriba-botones"><a class="boton grande" id="creArriba" href="Mina_Guia_del_Creador.pdf" download><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 20h16"/></svg><span>Guía del creador (PDF)</span></a>
+    <a class="boton grande oscuro" id="zipArriba" href="#" download><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 20h16"/></svg><span>Descargar todo (.zip)</span></a></div>
     <div class="atajos"><a class="boton claro" href="#arte">💎 Generar arte</a><a class="boton claro" href="#brochure">📕 Brochure en PDF</a><a class="boton claro" href="#redes">Qué va en cada red</a></div>
     <small id="zipDato"></small>
   </div>
@@ -141,6 +145,29 @@ td[data-redes] .grupito{display:inline-flex;gap:4px;margin-right:.6em;vertical-a
 </div></header>
 
 <main>
+<section id="creador"><div class="envuelve">
+  <h2>Guía del creador</h2>
+  <p class="para" data-redes="tt:TikTok,ig:Reels,yt:Shorts y YouTube,fb:Facebook"></p>
+  <p>Sesenta vetas de contenido para quien graba, narra y publica sobre Mina. Cada veta es un tema y trae cuatro cosas: la idea, la frase para decir, qué grabar y un consejo. Está hecha en papel blanco para imprimirla, rayarla y marcar lo que ya publicaste.</p>
+  <div class="bro">
+    <a class="bro-img" href="creador/" title="Ver la guía del creador en línea"><img loading="lazy" src="mini/15-creador__portada.webp" alt="Portada de la guía del creador de Mina" width="587" height="760"></a>
+    <div>
+      <a class="boton grande" id="crePdf" href="Mina_Guia_del_Creador.pdf" download><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 20h16"/></svg><span>Descargar la guía del creador (PDF)</span></a>
+      <small id="creDato">28 hojas tamaño carta, lista para imprimir</small>
+      <p><a class="boton" href="creador/">Verla en línea</a></p>
+      <div class="nota si" style="margin-top:18px"><b>Publicar sobre Mina no cuesta nada ni pide permiso.</b> Al contrario: te invitamos. Mina no tiene anuncios, así que tu video sale limpio, y lo que ganes con tus videos es tuyo.</div>
+      <h3>Qué trae</h3>
+      <ul class="trae">
+        <li><b>60 vetas en 10 capítulos:</b> empezar, las reglas, minerales y dinero, el mundo, con tu gente, en batalla, mirar y ser visto, mundos para siempre, tu maquinita y el oficio de creador.</li>
+        <li><b>Frases para decir:</b> para abrir, para cerrar y para cuando pasa algo.</li>
+        <li><b>Un mes de videos:</b> treinta vetas en orden, una por día.</li>
+        <li><b>La lista de antes de publicar</b> y lo que Mina sí dice y no dice.</li>
+        <li><b>Renglones y casillas</b> para apuntar tus ideas y marcar lo grabado.</li>
+      </ul>
+    </div>
+  </div>
+</div></section>
+
 <section id="esencia"><div class="envuelve">
   <h2>Mina, en una línea</h2>
   <p style="font-size:1.25em;color:#fff"><b>Un juego de minería para jugar con tus amigos en el mismo mundo: entras y ya estás jugando.</b></p>
@@ -258,6 +285,7 @@ Y para jugar de una vez: https://mina.capitaltorreon.com</div>
     <tr><td data-redes="fb">Facebook</td><td>Portada</td><td>1640 × 624</td><td><a href="#horizontal">portada-facebook</a></td></tr>
     <tr><td data-redes="x,in">X · LinkedIn</td><td>Encabezado</td><td>1500 × 500</td><td><a href="#horizontal">encabezado-x</a></td></tr>
     <tr><td data-redes="wa,msj">WhatsApp · Mensajes</td><td>Vista previa de la liga</td><td>1200 × 630</td><td><a href="#horizontal">liga</a></td></tr>
+    <tr><td data-redes="tt,ig,yt">Para quien crea</td><td>Guía del creador</td><td>PDF, 28 hojas carta</td><td><a href="#creador">Mina_Guia_del_Creador.pdf</a></td></tr>
     <tr><td data-redes="wa">WhatsApp</td><td>Brochure para mandar</td><td>PDF, 6 hojas carta</td><td><a href="#brochure">Mina_Brochure.pdf</a></td></tr>
     <tr><td data-redes="tt,ig,yt,fb,x,wa">Todas</td><td>Foto de perfil</td><td>1080 × 1080</td><td><a href="#perfil">perfil-…</a></td></tr>
   </table></div>
@@ -424,6 +452,7 @@ function tarjeta(a) {
   for (const id of ['#zipArriba', '#zipAbajo']) { const a = $(id); a.href = K.zip; a.setAttribute('download', K.zip); }
   $('#zipDato').textContent = `${K.archivos.length} archivos · ${K.zipMb} MB · versión ${K.version.replace('v', '')}`;
   if (K.arteZip) { const a = $('#arteZip'); a.href = K.arteZip; a.setAttribute('download', K.arteZip); $('#arteZipDato').textContent = K.arteZipMb + ' MB'; } else $('#arteZip').parentElement.hidden = true;
+  if (K.creador) { for (const id of ['#crePdf', '#creArriba']) { $(id).href = K.creador; $(id).setAttribute('download', K.creadorNombre || K.creador); } $('#creDato').textContent = `28 hojas tamaño carta, lista para imprimir · ${K.creadorMb} MB`; }
   if (K.brochure) { $('#broPdf').href = K.brochure; $('#broPdf').setAttribute('download', K.brochureNombre || K.brochure); $('#broDato').textContent = `6 hojas tamaño carta · ${K.brochureMb} MB`; }
   $('#pie').textContent = `Kit ${K.version} · ${K.sello.replace('_', ' ').replace(/(\d\d)(\d\d)$/, '$1:$2')}.`;
 })();

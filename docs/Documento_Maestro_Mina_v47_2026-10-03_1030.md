@@ -1497,6 +1497,24 @@ A Ricardo le gustaron las imágenes de gemas y pidió dos cosas: otras seis, y q
 - **Kit v3:** 124 piezas. Para no pasar de 25 MiB, dentro del zip el arte va en JPG de calidad 88 y ya no se repite el zip de las fuentes; el zip del arte usa los PNG ya optimizados.
 - **Qué falta:** quien mira a otro jugador (el espejo de menús) ve el cuadro de la imagen vacío, porque el espejo copia el texto del menú y no los lienzos.
 
+### 9.68 La guía del creador: 60 vetas de contenido
+
+**Lo que pidió Ricardo.** Un PDF de consejos para quien crea contenido sobre Mina: que platique el juego, las reglas y el multijugador con tips y frases «muy del estilo de Mina», que le dé temas a la persona, que venda el juego, que esté arriba en la guía de estilos y que se pueda imprimir. Unos 60 temas, tres por hoja, más portada, manifiesto, introducción, conclusión y contraportada.
+
+**Cómo quedó.** `publico/guia-estilos/creador/`: 28 hojas tamaño carta. La misma página es la versión en línea y de ahí sale el PDF.
+- **El nombre:** «Guía del creador · 60 vetas de contenido». Una veta es un tema del que sale un video.
+- **Cada veta trae cuatro partes:** la idea (qué hay en el juego, con sus números), «Di esto» (la frase), «Graba» (la toma que no puede faltar) y un consejo. Más el formato (corto, serie, reto o directo), dos casillas (grabado, publicado) y renglones para notas.
+- **Diez capítulos de seis vetas:** Empieza aquí, Las reglas de la mina, Minerales y dinero, El mundo hacia abajo, Con tu gente, En batalla, Mirar y ser visto, Mundos para siempre, Hazla tuya y Oficio de creador.
+- **Las hojas de alrededor:** portada (las 22 gemas en rueda y un 60 al centro), el manifiesto del juego tal cual más la invitación a publicar, ocho razones por las que Mina funciona en video, cómo usar la guía, frases para abrir y cerrar, un mes de videos (treinta vetas en orden), la lista de antes de publicar con lo que Mina sí dice y no dice, el cierre y la contraportada con el QR.
+- **Lo que se le dice al creador:** cero anuncios, publicar no cuesta ni pide permiso y lo que gane con sus videos es suyo; el juego es fácil de narrar; sirve en amistoso y en batalla; trae liga para mirar; los mundos duran años exactamente como se dejaron.
+- **Papel blanco, a propósito:** es para imprimir. Tinta café, amarillo solo en rellenos, sin fondos oscuros.
+- **Cada dato sale del juego:** $20 y 3 litros al empezar, bodega de 7, precios de minerales y hallazgos, bonos de Doña Chela, rangos, lugares y rincones, $500 por maquinita nueva, 99 medallones, modos Paseo/Clásico/Rudo, 40 jugadores, $333 de saldo por referido. Si el juego cambia, se corrige `vetas.js` y se rehace el PDF.
+- **No cuenta el final.** Varias vetas piden expresamente no contarlo.
+- **La liga fija:** `https://mina.capitaltorreon.com/guia-estilos/Mina_Guia_del_Creador.pdf`.
+- **En la guía de estilos:** es el primer botón de arriba, la primera liga del menú y la primera sección.
+- **El peso:** con las piezas grandes del kit los dos PDF pesaban el doble. Ahora el brochure y esta guía usan copias chicas de gemas, maquinitas, palabra y QR (`brochure/img/`, las hace `brochure-imagenes.py`): el brochure bajó de 5.8 a 3 MB y el zip del kit quedó en 20 MB. Kit v4: 125 piezas.
+- **Qué falta:** que Ricardo lea las 60 frases y cambie las que no suenen a él; versión en inglés no hay.
+
 ## 10. Revisión de código del 2 de octubre
 
 Se revisó todo el código buscando fallas y se corrigieron estas:

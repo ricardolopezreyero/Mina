@@ -1,0 +1,259 @@
+<!doctype html>
+<!-- Mina · Guía del creador · Ricardo López Reyero (RLR) · mina.capitaltorreon.com/guia-estilos/creador -->
+<html lang="es" data-k="eye" data-rev="181218">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mina · Guía del creador</title>
+<meta name="description" content="Sesenta vetas de contenido para quien graba, narra y publica sobre Mina: la idea, la frase para decir, qué grabar y un consejo. Lista para imprimir.">
+<meta name="author" content="Ricardo López Reyero">
+<meta property="og:title" content="Mina · Guía del creador"><meta property="og:description" content="60 temas con su frase, qué grabar y un consejo. Lista para imprimir.">
+<meta property="og:image" content="https://mina.capitaltorreon.com/guia-estilos/kit/07-horizontal/portada-horizontal-1920x1080.jpg">
+<meta name="theme-color" content="#1b120e"><meta name="build" content="eye"><meta name="rev" content="181218">
+<link rel="icon" type="image/png" sizes="32x32" href="/iconos/icono-32.png">
+<style>
+/* RLR · hojas tamaño carta sobre papel blanco, para imprimir sin gastar tinta; la misma página es la versión en línea y de aquí sale el PDF */
+@font-face{font-family:Inter;font-weight:900;src:url(../kit/10-tipografia/Inter-Black.ttf) format("truetype")}
+@font-face{font-family:Inter;font-weight:800;src:url(../kit/10-tipografia/Inter-ExtraBold.ttf) format("truetype")}
+@font-face{font-family:Inter;font-weight:700;src:url(../kit/10-tipografia/Inter-Bold.ttf) format("truetype")}
+@font-face{font-family:Inter;font-weight:600;src:url(../kit/10-tipografia/Inter-SemiBold.ttf) format("truetype")}
+@font-face{font-family:Inter;font-weight:400;src:url(../kit/10-tipografia/Inter-Regular.ttf) format("truetype")}
+@page{size:8.5in 11in;margin:0}
+:root{--tinta:#2a1a14;--cafe:#6b4a35;--su:#7a6351;--raya:#dccbb8;--ac:#ffd23f;--crema:#fff6d9;--papel:#fff}
+*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+html{background:#1b120e}
+body{margin:0;font:400 12px/1.5 Inter,system-ui,sans-serif;color:var(--tinta)}
+h1,h2,h3,p,ul,ol,blockquote{margin:0}
+.hoja{width:816px;height:1056px;position:relative;overflow:hidden;background:var(--papel);page-break-after:always;break-after:page;padding:46px 52px 52px;display:flex;flex-direction:column}
+.hoja:last-of-type{page-break-after:auto;break-after:auto}
+.pie{position:absolute;left:52px;right:52px;bottom:20px;display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:10px;color:var(--su);letter-spacing:.04em}
+.pie b{font-weight:900;color:var(--tinta);font-size:11.5px;letter-spacing:.02em}
+.ceja{font-weight:800;font-size:10.5px;letter-spacing:.17em;text-transform:uppercase;color:var(--su)}
+h2{font-weight:900;font-size:36px;line-height:1.05;letter-spacing:-.01em;margin-top:6px}
+.entrada{font-size:15.6px;line-height:1.55;margin-top:12px;max-width:690px}
+.subr{background:linear-gradient(transparent 62%,var(--ac) 62%)}
+/* portada y contraportada */
+.portada{align-items:center;text-align:center;padding-top:58px}
+.portada .logo{width:330px;height:auto}
+.rueda{position:relative;width:470px;height:470px;margin:26px 0 8px}
+.rueda img{position:absolute;width:62px;height:62px;margin:-31px 0 0 -31px}
+.rueda .centro{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.rueda .n{font:900 170px/0.9 Inter;color:var(--ac);-webkit-text-stroke:9px var(--tinta);paint-order:stroke fill;letter-spacing:-.03em}
+.rueda .de{font:900 25px/1.1 Inter;margin-top:10px}
+.portada h1{font:900 56px/1 Inter;letter-spacing:-.02em}
+.portada .sub{font-weight:600;font-size:17px;color:var(--cafe);margin-top:12px;max-width:560px}
+.chips{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:20px}
+.chip{background:var(--ac);border:2px solid var(--tinta);font-weight:900;font-size:12.5px;padding:5px 13px;border-radius:999px}
+.chip.o{background:#fff}
+.portada .liga{margin-top:auto;font-weight:900;font-size:17px}
+.portada .liga small{display:block;font-weight:600;font-size:11px;color:var(--su);margin-top:3px;letter-spacing:.03em}
+.qr{width:210px;border:3px solid var(--tinta);border-radius:16px;padding:10px;line-height:0}.qr img{width:100%;image-rendering:pixelated}
+/* textos largos */
+.carta p{font-size:16.2px;line-height:1.66;margin-top:15px;max-width:670px}
+.carta .firma{font-weight:800;margin-top:20px}.carta .firma small{display:block;font-weight:600;color:var(--su)}
+.caja{border:1.5px solid var(--raya);border-radius:14px;padding:16px 20px;margin-top:18px}
+.caja b{white-space:nowrap}
+.caja.am{background:var(--crema);border-color:var(--ac)}
+.caja h3{font-weight:900;font-size:17px;margin-bottom:5px}
+.caja p{font-size:13.6px;line-height:1.56;margin-top:0;max-width:none}
+.razones{display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:1fr;gap:13px;margin:22px 0 18px;flex:1;min-height:0}
+.razon{border:1.5px solid var(--raya);border-radius:14px;padding:18px 18px 14px 78px;position:relative}
+.razon img{position:absolute;left:14px;top:16px;width:52px;height:52px}
+.razon h3{font-weight:900;font-size:19px;line-height:1.15}
+.razon p{font-size:13.6px;line-height:1.5;color:var(--cafe);margin-top:6px}
+.lista{list-style:none;padding:0;display:grid;gap:9px}
+.lista li{position:relative;padding-left:28px;font-size:13.8px;line-height:1.45}
+.lista li::before{content:"";position:absolute;left:2px;top:.22em;width:13px;height:13px;border:2px solid var(--tinta);border-radius:3px;background:#fff}
+.lista.rombo li::before{border:0;border-radius:2px;background:var(--ac);box-shadow:0 0 0 1.5px var(--tinta);width:9px;height:9px;top:.4em;left:4px;transform:rotate(45deg)}
+.dosc{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+/* las vetas */
+.capi{display:flex;align-items:flex-end;gap:14px;border-bottom:3px solid var(--tinta);padding-bottom:9px}
+.capi .cn{flex:none;width:46px;height:46px;border-radius:12px;border:2.5px solid var(--tinta);font:900 22px/41px Inter;text-align:center}
+.capi h2{font-size:26px;margin:0}
+.capi p{font-size:11.6px;color:var(--cafe);font-weight:600;margin-top:2px}
+.capi .de{margin-left:auto;font-weight:800;font-size:10.5px;color:var(--su);letter-spacing:.1em;white-space:nowrap}
+.vetas{flex:1;display:grid;grid-template-rows:repeat(3,1fr);gap:11px;margin:12px 0 18px;min-height:0}
+.veta{border:1.5px solid var(--raya);border-radius:14px;padding:12px 16px 9px 78px;position:relative;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.veta .num{position:absolute;left:14px;top:13px;width:50px;height:50px;border-radius:50%;background:var(--ac);border:2.5px solid var(--tinta);font:900 21px/45px Inter;text-align:center}
+.veta .gema{position:absolute;left:15px;top:74px;width:48px;height:48px}
+.veta header{display:flex;align-items:center;gap:10px}
+.veta h3{font-weight:900;font-size:20px;line-height:1.12;letter-spacing:-.01em}
+.veta .fo{margin-left:auto;flex:none;font-weight:800;font-size:9.6px;letter-spacing:.09em;text-transform:uppercase;border:1.5px solid var(--tinta);border-radius:999px;padding:2px 9px}
+.veta .idea{font-size:13px;line-height:1.45;margin-top:5px;color:var(--cafe)}
+.veta .di{background:var(--crema);border-left:5px solid var(--ac);border-radius:0 10px 10px 0;padding:7px 12px 8px;margin-top:8px}
+.veta .di small{display:block;font-weight:800;font-size:8.8px;letter-spacing:.16em;color:var(--su)}
+.veta .di p{font-weight:800;font-size:16.4px;line-height:1.28}
+.veta .dos{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:8px}
+.veta .dos p{font-size:12.3px;line-height:1.43}
+.veta .dos b{font-weight:800;display:block;font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--su)}
+.veta .notas{flex:1;min-height:0;margin-top:7px;overflow:hidden}.veta .notas i{display:block;height:21px;border-bottom:1px solid #d6c6b3}
+.renglones{flex:1;min-height:0;overflow:hidden;margin-bottom:26px}.renglones i{display:block;height:28px;border-bottom:1px solid #d6c6b3}
+.veta footer{padding-top:7px;display:flex;gap:16px;align-items:center;font-weight:700;font-size:9.6px;color:var(--su)}
+.veta footer i{display:inline-block;width:11px;height:11px;border:1.6px solid var(--tinta);border-radius:3px;vertical-align:-2px;margin-right:5px}
+.veta footer u{flex:1;text-decoration:none;text-align:right;font-weight:600}
+/* frases y plan */
+.frases{display:grid;gap:9px;margin-top:10px}
+.frase{background:var(--crema);border-left:5px solid var(--ac);border-radius:0 10px 10px 0;padding:8px 13px;font-weight:800;font-size:14.6px;line-height:1.3}
+.sec{font-weight:900;font-size:16px;margin-top:18px}
+.plan{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:16px}
+.dia{border:1.5px solid var(--raya);border-radius:11px;padding:9px 10px 9px;min-height:126px;display:flex;flex-direction:column}
+.dia small{font-weight:800;font-size:9px;letter-spacing:.14em;color:var(--su)}
+.dia b{font-weight:900;font-size:13.6px;line-height:1.18;margin-top:4px}
+.dia span{margin-top:auto;display:flex;align-items:center;gap:6px;font-weight:800;font-size:9.4px;color:var(--cafe)}
+.dia span em{font-style:normal;background:var(--ac);border:1.6px solid var(--tinta);border-radius:50%;width:24px;height:24px;font:900 10.5px/21px Inter;text-align:center;color:var(--tinta)}
+.dia span i{margin-left:auto;width:12px;height:12px;border:1.6px solid var(--tinta);border-radius:3px}
+/* en pantalla */
+.barra{display:none}
+@media screen{
+  body{padding:74px 0 40px}
+  .hoja{margin:0 auto 22px;box-shadow:0 14px 40px #000c;border-radius:6px}
+  .barra{display:flex;position:fixed;top:0;left:0;right:0;z-index:5;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;padding:10px 14px;background:#1b120ef2;backdrop-filter:blur(8px);border-bottom:1px solid #5a3d2c;font-size:15px}
+  .barra a,.barra button{font:inherit;font-weight:800;text-decoration:none;color:#f3e6d8;border:1px solid #5a3d2c;background:#2a1c16;border-radius:10px;padding:.5em .9em;cursor:pointer}
+  .barra a.ppal{background:#ffd23f;color:#2a1a14;border-color:#ffd23f}
+}
+@media print{.barra{display:none!important}}
+</style>
+</head>
+<body>
+<div class="barra"><a href="../#creador">← Guía de estilos</a><a class="ppal" id="pdf" href="../Mina_Guia_del_Creador.pdf" download>⬇ Descargar el PDF</a><button onclick="print()">🖨 Imprimir</button><a href="/">Jugar Mina</a></div>
+<main id="hojas"></main>
+<script src="vetas.js"></script>
+<script>
+/* RLR · Ricardo López Reyero — arma las hojas de la guía del creador con las 60 vetas de vetas.js */
+'use strict';
+const _RLR = 'Ricardo López Reyero', _k = 'EYE', _rev = 181218;
+const G = ['hierro', 'cobre', 'plata', 'oro', 'platino', 'einstenio', 'esmeralda', 'rubi', 'diamante', 'amazonita', 'aguamarina', 'zafiro', 'perla-negra', 'onix', 'topacio', 'jade-imperial', 'amatista', 'tanzanita', 'alejandrita', 'paladio', 'rodio', 'osmio'];
+const gema = (k) => `../brochure/img/gema-${String((k % 22) + 1).padStart(2, '0')}-${G[k % 22]}.webp`;      // las gemas chicas, las mismas del brochure: así el PDF pesa poco
+const e = (s) => String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+const p2 = (n) => String(n).padStart(2, '0');
+const H = []; let pag = 0;
+const hoja = (html, clase = '', conPie = true) => { pag++; H.push(`<section class="hoja ${clase}">${html}${conPie ? `<div class="pie"><b>MINA · Guía del creador</b><span>mina.capitaltorreon.com · ${pag}</span></div>` : ''}</section>`); };
+const TODAS = CAPITULOS.flatMap((c, k) => c.v.map((v) => ({ ...v, cap: k })));
+
+// 1 · portada
+hoja(`<img class="logo" src="../brochure/img/mina-palabra.png" alt="MINA">
+  <div class="rueda">${G.map((_, k) => { const a = -Math.PI / 2 + k * Math.PI * 2 / 22; return `<img src="${gema(k)}" alt="" style="left:${(235 + Math.cos(a) * 200).toFixed(1)}px;top:${(235 + Math.sin(a) * 200).toFixed(1)}px">`; }).join('')}
+    <div class="centro"><div class="n">60</div><div class="de">vetas de contenido</div></div></div>
+  <h1>Guía del creador</h1>
+  <p class="sub">Temas, frases y consejos para grabar, narrar y publicar sobre Mina. Cada veta trae la idea, qué decir, qué grabar y un consejo.</p>
+  <div class="chips"><span class="chip">Cero anuncios</span><span class="chip">Publicar no cuesta</span><span class="chip">Lo que ganes es tuyo</span><span class="chip o">Lista para imprimir</span></div>
+  <div class="liga">mina.capitaltorreon.com<small>EXCAVA CON TUS AMIGOS</small></div>`, 'portada', false);
+
+// 2 · manifiesto
+hoja(`<div class="ceja">De quien hizo el juego</div><h2>Manifiesto</h2>
+  <div class="carta">
+    <p>Este juego está hecho con todo el cariño con el que se puede hacer un juego.</p>
+    <p>Nació de <b>Motherload</b>, un juego que jugué de niño durante decenas de horas. Todavía me acuerdo de lo que disfrutaba y de lo que no. Me quedé con lo bueno, lo multipliqué, y le di al juego mucho más sentido y una historia que contar.</p>
+    <p>Aquí no se excava solo: se baja con amigos, en el mismo mundo y al mismo tiempo. Cada lugar guarda algo, cada metro tiene su razón de ser, y hasta el fondo, debajo de todo, hay algo esperándote.</p>
+    <p>Ojalá sea un regalo para ti. Disfrútalo sin prisa, y si te gusta, compártelo con alguien que quieras: se disfruta más acompañado.</p>
+    <p>Y si llegas al final, que te deje un buen mensaje y un buen sabor de boca.</p>
+    <p class="firma">Ing. Ricardo López Reyero<small>Torreón, Coahuila, México</small></p>
+  </div>
+  <div class="caja"><h3>Cómo se sostiene Mina</h3><p>Mina se juega completo gratis, para siempre, y pintar tu maquinita de tus colores también es gratis, para todos. Lo único que se vende es lo demás de La Pinturería. Nada de eso te hace bajar más rápido ni ganar más. Sin anuncios, sin cajas sorpresa, sin prisas inventadas. Mismo precio para todos.</p></div>
+  <div class="caja am" style="margin-top:auto;margin-bottom:22px"><h3>Y para ti, que creas</h3><p>Publicar sobre Mina no cuesta nada ni pide permiso. Al contrario: te invitamos a hacerlo. Graba, narra, transmite y haz tuyo el juego. Lo que ganes con tus videos es tuyo. Esta guía es para que nunca te falte de qué hablar.</p></div>`, 'carta');
+
+// 3 · por qué Mina
+const RAZONES = [
+  ['Cero anuncios', 'Ni uno. Tu grabación sale limpia de principio a fin y nada se atraviesa a media toma.'],
+  ['Publicar no cuesta', 'No hay permisos ni cuotas. Súbelo a donde quieras y monetiza tú con tus propios videos.'],
+  ['Fácil de jugar y de narrar', 'Se juega con tres flechas y siempre hay una decisión a la vista. Puedes platicar mientras juegas.'],
+  ['Amistoso o en guerra', 'El mismo mundo sirve para cooperar o para pelear. Comercio o batalla: lo eligen quienes juegan.'],
+  ['Trae modo espectador', 'Con la liga para mirar, tu público te ve en vivo desde el navegador, sin instalar nada y sin límite.'],
+  ['Partidas que duran años', 'Cada mundo se guarda completo y nunca se borra. Vuelven a entrar y todo está exactamente como lo dejaron.'],
+  ['Tu comunidad cabe', 'Juegan hasta 40 a la vez en un mundo, cada quien con su maquinita y sin registro.'],
+  ['El material ya está hecho', 'Logotipo, portadas, fondos, arte con gemas y un brochure, gratis, en mina.capitaltorreon.com/guia-estilos.'],
+];
+hoja(`<div class="ceja">Introducción</div><h2>Mina es un juego hecho para <span class="subr">contarse</span></h2>
+  <p class="entrada">Mina es un juego de minería para navegador, infinito y compartido. Bajas con tu maquinita, llenas la bodega, subes, vendes, mejoras el equipo y bajas más hondo, con tu gente y en vivo. Estas son ocho razones por las que funciona tan bien en video.</p>
+  <div class="razones">${RAZONES.map(([t, x], k) => `<div class="razon"><img src="${gema([3, 6, 8, 7, 10, 14, 11, 16][k])}" alt=""><h3>${e(t)}</h3><p>${e(x)}</p></div>`).join('')}</div>
+  <div class="caja am" style="margin-top:0;margin-bottom:22px"><h3>En una línea</h3><p>Excava con tus amigos. Gratis, sin anuncios y sin registro, en mina.capitaltorreon.com</p></div>`);
+
+// 4 · cómo usar la guía
+const m = TODAS[8];
+hoja(`<div class="ceja">Antes de empezar</div><h2>Cómo usar esta guía</h2>
+  <p class="entrada">Aquí hay sesenta vetas. Una veta es un tema del que puedes hacer un video, y todas tienen las mismas cuatro partes. No hace falta seguir el orden: abre en cualquier hoja y graba la que te llame.</p>
+  <div class="vetas" style="grid-template-rows:auto;flex:none;margin:16px 0 6px"><article class="veta"><div class="num">${p2(9)}</div><img class="gema" src="${gema(8)}" alt="">
+    <header><h3>${e(m.t)}</h3><span class="fo">${e(m.f)}</span></header>
+    <p class="idea">${e(m.i)}</p><div class="di"><small>DI ESTO</small><p>«${e(m.d)}»</p></div>
+    <div class="dos"><p><b>Graba</b>${e(m.g)}</p><p><b>Consejo</b>${e(m.c)}</p></div>
+    <div class="notas"></div><footer><span><i></i>Grabado</span><span><i></i>Publicado</span><u>Mis notas, en los renglones</u></footer></article></div>
+  <div class="dosc" style="margin-top:10px">
+    <div class="caja" style="margin-top:0"><h3>Las cuatro partes</h3><ul class="lista rombo" style="margin-top:6px">
+      <li><b>La idea.</b> Qué hay en el juego, con sus números reales.</li>
+      <li><b>Di esto.</b> Una frase para abrir o cerrar. Cámbiala a tu modo de hablar.</li>
+      <li><b>Graba.</b> La toma que no puede faltar.</li>
+      <li><b>Consejo.</b> Cómo sacarle más al tema.</li>
+      <li><b>Las casillas.</b> Marca lo grabado y lo publicado, y apunta ideas en la línea.</li></ul></div>
+    <div class="caja" style="margin-top:0"><h3>Los cuatro formatos</h3><ul class="lista rombo" style="margin-top:6px">
+      <li><b>Corto.</b> De 15 a 30 segundos, una sola cosa.</li>
+      <li><b>Serie.</b> Varios episodios numerados sobre lo mismo.</li>
+      <li><b>Reto.</b> Una regla, un marcador y un resultado.</li>
+      <li><b>Directo.</b> En vivo, con tu comunidad adentro o mirando.</li></ul></div>
+  </div>
+  <div class="caja am" style="margin-top:auto;margin-bottom:22px"><h3>Mina en un minuto</h3><p>Te mueves con las flechas: abajo perforas, a los lados caminas, arriba vuelas. Lo que recoges va a la bodega. Subes, lo vendes en La Báscula, cargas combustible en la Gasolinera y mejoras tu equipo en El Taller. Con mejor equipo llegas más hondo, donde está lo que más vale. El botón Invitar da la liga y el código QR de tu mundo: quien la abre entra con su propia maquinita.</p></div>`);
+
+// 5 a 24 · las vetas, tres por hoja
+let n = 0;
+CAPITULOS.forEach((c, k) => {
+  for (let parte = 0; parte < 2; parte++) {
+    const tres = c.v.slice(parte * 3, parte * 3 + 3);
+    hoja(`<div class="capi"><div class="cn" style="background:${c.col}">${k + 1}</div><div><h2>${e(c.n)}</h2><p>${e(c.u)}</p></div><div class="de">VETAS ${p2(n + 1)} A ${p2(n + 3)}</div></div>
+      <div class="vetas">${tres.map((v) => { n++; return `<article class="veta"><div class="num">${p2(n)}</div><img class="gema" src="${gema(v.m ?? n - 1)}" alt="">
+        <header><h3>${e(v.t)}</h3><span class="fo">${e(v.f)}</span></header>
+        <p class="idea">${e(v.i)}</p><div class="di"><small>DI ESTO</small><p>«${e(v.d)}»</p></div>
+        <div class="dos"><p><b>Graba</b>${e(v.g)}</p><p><b>Consejo</b>${e(v.c)}</p></div>
+        <div class="notas"></div><footer><span><i></i>Grabado</span><span><i></i>Publicado</span><u>Mis notas, en los renglones</u></footer></article>`; }).join('')}</div>`);
+  }
+});
+
+// 25 · frases
+const ABRIR = ['Empecé con veinte pesos y una maquinita. Mira dónde voy.', 'Este juego no tiene un solo anuncio. Te lo enseño.', 'Hay algo a diez kilómetros bajo tierra y vamos a llegar.', 'Tengo un mundo donde cabemos cuarenta. ¿Quién entra?', 'No bajes más de lo que puedes subir. Hoy no hice caso.', '¿Ves esa piedra azul? Vale un millón.', 'Doña Chela dice que regrese. Voy a seguir bajando.', 'Día uno. Veinte pesos. Tres litros.'];
+const MEDIO = ['Esperen. Eso no es mineral.', 'Bodega llena. Ahora viene lo difícil: subir.', 'Me queda un litro. Uno.', 'Viaje perfecto. Ni un rasguño.', '¿Comercio o batalla? Tú dime.', 'Eso que brilla no lo había visto nunca.'];
+const CERRAR = ['Se juega gratis en mina punto capitaltorreon punto com. Te espero abajo.', 'La liga está en mi perfil. Entras y ya estás jugando.', 'Mañana bajo más. Sígueme para ver hasta dónde.', 'Dime en los comentarios cómo se llama tu maquinita.', 'Mi mundo sigue abierto. Trae a alguien.', 'Gratis, sin anuncios y sin registro. No tienes pretexto.', 'Si llegas antes que yo, no me cuentes el final.', 'Nos vemos en el fondo.'];
+const fr = (l) => `<div class="frases">${l.map((x) => `<div class="frase">«${e(x)}»</div>`).join('')}</div>`;
+hoja(`<div class="ceja">Herramientas</div><h2>Frases para decir</h2>
+  <p class="entrada" style="font-size:13px;margin-top:8px">Para cuando no sabes cómo empezar o cómo despedirte. Dilas como tú hablas.</p>
+  <div class="dosc" style="margin-top:4px"><div><div class="sec">Para abrir</div>${fr(ABRIR)}</div>
+  <div><div class="sec">Para cerrar</div>${fr(CERRAR)}</div></div>
+  <div class="sec">Para cuando pasa algo</div><div class="frases" style="grid-template-columns:1fr 1fr">${MEDIO.map((x) => `<div class="frase">«${e(x)}»</div>`).join('')}</div>
+  <div class="sec">Las mías</div><div class="renglones" style="margin-top:4px"></div>`);
+
+// 26 · plan de 30 días
+const PLAN = [1, 55, 4, 5, 3, 7, 11, 13, 16, 9, 25, 26, 31, 32, 19, 20, 37, 38, 49, 52, 10, 43, 44, 28, 29, 35, 40, 57, 23, 60];
+hoja(`<div class="ceja">Herramientas</div><h2>Un mes de videos</h2>
+  <p class="entrada" style="font-size:13px;margin-top:8px">Treinta vetas en orden, una por día: primero presentas el juego, luego las reglas, después tu gente, y cierras con tu serie. El número amarillo es la veta. Cuando termines, quedan otras treinta.</p>
+  <div class="plan">${PLAN.map((v, d) => `<div class="dia"><small>DÍA ${d + 1}</small><b>${e(TODAS[v - 1].t)}</b><span><em>${p2(v)}</em>${e(TODAS[v - 1].f)}<i></i></span></div>`).join('')}</div>`);
+
+// 27 · antes de publicar y cierre
+hoja(`<div class="ceja">Para terminar</div><h2>Antes de publicar</h2>
+  <div class="dosc" style="margin-top:14px">
+    <div class="caja" style="margin-top:0"><h3>Revisa tu video</h3><ul class="lista" style="margin-top:8px">
+      <li>Lo mejor está en los primeros dos segundos.</li><li>El sonido del juego está encendido.</li><li>Es vertical, 1080 × 1920, sin barras negras.</li><li>El título no queda tapado por los botones de la red.</li>
+      <li>Cuenta una sola cosa.</li><li>Dije dónde se juega.</li><li>La liga está en mi perfil o en la descripción.</li><li>No conté el final del juego.</li></ul></div>
+    <div><div class="caja" style="margin-top:0"><h3>Lo que Mina sí dice</h3><ul class="lista rombo" style="margin-top:8px"><li>Es gratis, sin anuncios y sin registro.</li><li>Se juega con amigos, en el mismo mundo.</li><li>Los mundos son para siempre.</li><li>Pagar no da ventaja.</li></ul></div>
+      <div class="caja"><h3>Lo que Mina no dice</h3><ul class="lista rombo" style="margin-top:8px"><li>Que se gana dinero de verdad jugando.</li><li>Que hay premios o sorteos.</li><li>Nada que el juego no haga hoy.</li></ul></div></div>
+  </div>
+  <div class="carta" style="margin-top:22px"><h2 style="font-size:28px">Y ahora, a bajar</h2>
+    <p>Tienes sesenta vetas y no hace falta trabajarlas todas. Empieza por la que te dio risa o curiosidad al leerla: esa es la que vas a contar mejor.</p>
+    <p>Juega primero y graba después. Lo que de verdad te pasó allá abajo siempre sale mejor que lo planeado. Y si un día no sabes qué publicar, abre esta guía en cualquier hoja.</p>
+    <p>Mina va a seguir creciendo, y esta guía con él. Gracias por contarlo.</p>
+    <p class="firma">Te esperamos abajo.</p></div>
+  <div class="sec" style="margin-top:26px">Mis ideas</div><div class="renglones" style="margin-top:4px"></div>`);
+
+// 28 · contraportada
+hoja(`<img class="logo" src="../brochure/img/mina-palabra.png" alt="MINA" style="margin-top:70px">
+  <p class="sub" style="font-size:22px;font-weight:900;color:var(--tinta);margin-top:14px">Excava con tus amigos</p>
+  <div class="qr" style="margin-top:46px"><img src="../brochure/img/qr-mina.png" alt="Código QR de Mina"></div>
+  <div class="liga" style="margin-top:22px;font-size:24px">mina.capitaltorreon.com<small>APUNTA LA CÁMARA O ESCRIBE LA LIGA</small></div>
+  <div class="chips" style="margin-top:26px"><span class="chip">Gratis</span><span class="chip">Sin anuncios</span><span class="chip">Sin registro</span></div>
+  <div class="caja" style="margin-top:auto;width:100%;text-align:left"><h3>Todo el material para publicar</h3><p>Logotipo, foto de perfil, portadas, fondos, arte con gemas, brochure y esta guía: <b>mina.capitaltorreon.com/guia-estilos</b></p></div>
+  <p style="font-size:10.5px;color:var(--su);font-weight:600;margin:14px 0 0">Hecha en Torreón, Coahuila, por Ing. Ricardo López Reyero · CapitalTorreon</p>`, 'portada', false);
+
+document.getElementById('hojas').innerHTML = H.join('');
+for (const r of document.querySelectorAll('.notas, .renglones')) r.innerHTML = '<i></i>'.repeat(Math.max(0, Math.floor(r.clientHeight / (r.classList.contains('notas') ? 21 : 28))));      // renglones de verdad: los que quepan completos
+fetch('../kit.json', { cache: 'no-cache' }).then((r) => r.json()).then((K) => { const a = document.getElementById('pdf'); if (K.creador) { a.href = '../' + K.creador; a.setAttribute('download', K.creadorNombre || K.creador); } }).catch(() => {});
+const ajusta = () => { if (matchMedia('screen').matches) document.body.style.zoom = Math.min(1, document.documentElement.clientWidth / 850); };
+addEventListener('resize', ajusta); ajusta(); addEventListener('beforeprint', () => { document.body.style.zoom = 1; }); addEventListener('afterprint', ajusta);
+</script>
+</body>
+</html>

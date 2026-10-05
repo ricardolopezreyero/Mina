@@ -102,13 +102,13 @@ h3{font-weight:800;font-size:15.5px;line-height:1.2;color:var(--tx)}
 
 <!-- 1 · portada -->
 <section class="hoja portada">
-  <div class="arriba"><img src="../kit/03-logotipo/mina-palabra.png" alt="MINA"><div class="lema">Excava con tus amigos</div></div>
+  <div class="arriba"><img src="img/mina-palabra.png" alt="MINA"><div class="lema">Excava con tus amigos</div></div>
   <div class="abajo">
     <div>
       <p>Un juego de minería <span>infinito y compartido</span>. Bajas, llenas la bodega, vendes, mejoras tu maquinita y bajas más hondo. Con tu gente, en vivo.</p>
       <div class="chips"><span class="chip">Gratis</span><span class="chip">Sin anuncios</span><span class="chip">Sin registro</span><span class="chip o">mina.capitaltorreon.com</span></div>
     </div>
-    <div class="qr"><img src="../kit/09-video/qr-mina.png" alt="Código QR de Mina"><small>Escanea y juega</small></div>
+    <div class="qr"><img src="img/qr-mina.png" alt="Código QR de Mina"><small>Escanea y juega</small></div>
   </div>
 </section>
 
@@ -238,7 +238,7 @@ h3{font-weight:800;font-size:15.5px;line-height:1.2;color:var(--tx)}
       </ul>
     </div>
   </div>
-  <div class="ficha" style="margin-top:20px;padding:12px 14px 10px"><div class="maqs"><img src="../mini/04-maquinita__maquinita-amarilla.webp" alt=""><img src="../mini/04-maquinita__maquinita-roja.webp" alt=""><img src="../mini/04-maquinita__maquinita-azul.webp" alt=""><img src="../mini/04-maquinita__maquinita-verde.webp" alt=""><img src="../mini/04-maquinita__maquinita-rosa.webp" alt=""><img src="../mini/04-maquinita__maquinita-morada.webp" alt=""><img src="../mini/04-maquinita__maquinita-naranja.webp" alt=""><img src="../mini/04-maquinita__maquinita-crema.webp" alt=""><img src="../mini/04-maquinita__carroceria-escarabajo.webp" alt=""><img src="../mini/04-maquinita__carroceria-locomotora.webp" alt=""><img src="../mini/04-maquinita__carroceria-submarino.webp" alt=""><img src="../mini/04-maquinita__carroceria-tanque.webp" alt=""></div><p class="p" style="margin-top:6px;text-align:center">Los modelos con los que nace cada jugador y las cuatro carrocerías de La Pinturería.</p></div>
+  <div class="ficha" style="margin-top:20px;padding:12px 14px 10px"><div class="maqs"><img src="img/maq-maquinita-amarilla.webp" alt=""><img src="img/maq-maquinita-roja.webp" alt=""><img src="img/maq-maquinita-azul.webp" alt=""><img src="img/maq-maquinita-verde.webp" alt=""><img src="img/maq-maquinita-rosa.webp" alt=""><img src="img/maq-maquinita-morada.webp" alt=""><img src="img/maq-maquinita-naranja.webp" alt=""><img src="img/maq-maquinita-crema.webp" alt=""><img src="img/maq-carroceria-escarabajo.webp" alt=""><img src="img/maq-carroceria-locomotora.webp" alt=""><img src="img/maq-carroceria-submarino.webp" alt=""><img src="img/maq-carroceria-tanque.webp" alt=""></div><p class="p" style="margin-top:6px;text-align:center">Los modelos con los que nace cada jugador y las cuatro carrocerías de La Pinturería.</p></div>
   <div class="ceja" style="margin:22px 0 10px">Empieza en tres pasos</div>
   <div class="tres">
     <div class="paso"><i>1</i><div><h3>Abre la liga</h3><p class="p">En el navegador de tu teléfono o tu computadora. Ya estás jugando.</p></div></div>
@@ -246,7 +246,7 @@ h3{font-weight:800;font-size:15.5px;line-height:1.2;color:var(--tx)}
     <div class="paso"><i>3</i><div><h3>Invita a tu gente</h3><p class="p">Botón Invitar: mandas el QR o la liga de tu mundo.</p></div></div>
   </div>
   <div class="gran" style="margin-top:auto;margin-bottom:34px">
-    <div class="qr"><img src="../kit/09-video/qr-mina.png" alt="Código QR de Mina"></div>
+    <div class="qr"><img src="img/qr-mina.png" alt="Código QR de Mina"></div>
     <div><h2>Juega ahora, gratis</h2><a class="liga" href="https://mina.capitaltorreon.com">mina.capitaltorreon.com</a>
       <p>Apunta la cámara al código o escribe la liga. Sin descargar nada, sin registro y sin anuncios.</p></div>
   </div>
@@ -258,7 +258,7 @@ h3{font-weight:800;font-size:15.5px;line-height:1.2;color:var(--tx)}
 'use strict';
 const _RLR = 'Ricardo López Reyero', _k = 'EYE', _rev = 181218;
 const G = [['hierro', 'Hierro'], ['cobre', 'Cobre'], ['plata', 'Plata'], ['oro', 'Oro'], ['platino', 'Platino'], ['einstenio', 'Einstenio'], ['esmeralda', 'Esmeralda'], ['rubi', 'Rubí'], ['diamante', 'Diamante'], ['amazonita', 'Amazonita'], ['aguamarina', 'Aguamarina'], ['zafiro', 'Zafiro'], ['perla-negra', 'Perla negra'], ['onix', 'Ónix'], ['topacio', 'Topacio'], ['jade-imperial', 'Jade imperial'], ['amatista', 'Amatista'], ['tanzanita', 'Tanzanita'], ['alejandrita', 'Alejandrita'], ['paladio', 'Paladio'], ['rodio', 'Rodio'], ['osmio', 'Osmio']];
-document.getElementById('gemas').innerHTML = G.map(([a, n], k) => `<div><img src="../mini/12-gemas__gema-${String(k + 1).padStart(2, '0')}-${a}.webp" alt="">${n}</div>`).join('');
+document.getElementById('gemas').innerHTML = G.map(([a, n], k) => `<div><img src="img/gema-${String(k + 1).padStart(2, '0')}-${a}.webp" alt="">${n}</div>`).join('');
 fetch('../kit.json', { cache: 'no-cache' }).then((r) => r.json()).then((K) => { const a = document.getElementById('pdf'); if (K.brochure) { a.href = '../' + K.brochure; a.setAttribute('download', K.brochureNombre || K.brochure); } }).catch(() => {});
 const ajusta = () => { if (matchMedia('screen').matches) document.body.style.zoom = Math.min(1, document.documentElement.clientWidth / 850); };
 addEventListener('resize', ajusta); ajusta(); addEventListener('beforeprint', () => { document.body.style.zoom = 1; }); addEventListener('afterprint', ajusta);
