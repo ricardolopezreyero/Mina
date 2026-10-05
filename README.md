@@ -6,7 +6,7 @@ Juego de minería para navegador, infinito y compartido. Bajas con tu maquinita,
 
 Gratis y sin registro: entras y ya estás jugando, sin llenar nada. Se puede instalar como aplicación y sigue funcionando sin internet.
 
-**Guía de estilos y kit de marca:** [mina.capitaltorreon.com/guia-estilos](https://mina.capitaltorreon.com/guia-estilos/) — ícono, favicon, logotipo, la maquinita, foto de perfil (el círculo), portadas y fondos para TikTok y redes, marcos y cierres para video, QR, color y tipografía (Inter). Cada pieza se descarga con un clic y todo junto en un zip.
+**Guía de estilos y kit de marca:** [mina.capitaltorreon.com/guia-estilos](https://mina.capitaltorreon.com/guia-estilos/) — ícono, favicon, logotipo, la maquinita, foto de perfil (el círculo), portadas y fondos para TikTok y redes, marcos y cierres para video, QR, color y tipografía (Inter). Cada pieza se descarga con un clic y todo junto en un zip. Incluye el **generador de arte con gemas** (imágenes simétricas con las 22 gemas, una nueva en cada clic) y el **brochure en PDF** de seis hojas: [mina.capitaltorreon.com/guia-estilos/Mina_Brochure.pdf](https://mina.capitaltorreon.com/guia-estilos/Mina_Brochure.pdf).
 
 ## Manifiesto
 
@@ -66,10 +66,16 @@ Este juego está hecho con todo el cariño con el que se puede hacer un juego. N
 
 ## La guía de estilos
 
-- La página vive en `publico/guia-estilos/` (`index.html`, `kit.json`, `kit/<carpeta>/…`, `mini/` y el zip). También responde en `/guía-estilos`, `/guia-de-estilos`, `/marca` y `/kit`.
-- **Se regenera en dos pasos**, con el juego corriendo en local (`npx wrangler dev`):
-  1. `node diseno-fuente/kit-captura/cdp.mjs` — abre Chrome sin ventana en el modo `?foto` y saca el arte crudo del propio juego (escenas por formato y maquinitas sin fondo) a `kit-captura/raw/`. Las puestas en escena están en `trabajos.mjs`.
-  2. `python3 diseno-fuente/Kit_de_Marca_Mina_v1_2026-10-05_1045.py <raw> <carpeta con Inter-*.ttf>` — arma las 89 piezas, sus miniaturas, `kit.json` y el zip.
+- La página vive en `publico/guia-estilos/` (`index.html`, `arte.js`, `kit.json`, `kit/<carpeta>/…`, `mini/`, `brochure/` y los zips). También responde en `/guía-estilos`, `/guia-de-estilos`, `/marca` y `/kit`.
+- **Arte con gemas** (`#arte`): seis imágenes verticales para TikTok hechas con las 22 gemas del juego en figuras simétricas, con MINA al centro, y **el generador**: botón «Generar» y sale una nueva, distinta cada vez (ocho figuras, nueve juegos de gemas, siete fondos, cuatro formatos). Se baja en PNG, o veinte de un jalón en un zip. Todo corre en el navegador (`arte.js`, sin librerías); la misma semilla con la misma figura, gemas y fondo da la misma imagen.
+- **Brochure** (`#brochure`): seis hojas tamaño carta con capturas del juego de verdad. Se lee en línea en `/guia-estilos/brochure/` y se baja en PDF. **La liga fija para mandar por WhatsApp es `https://mina.capitaltorreon.com/guia-estilos/Mina_Brochure.pdf`**: no cambia aunque el brochure se rehaga.
+- **Se regenera así**, con el juego corriendo en local (`npx wrangler dev --port 8791`) y desde `diseno-fuente/kit-captura/`:
+  1. `node cdp.mjs` — Chrome sin ventana en el modo `?foto`: saca el arte crudo del propio juego (escenas por formato, maquinitas y las 22 gemas sin fondo) a `raw/`. Las puestas en escena están en `trabajos.mjs`.
+  2. `node arte.mjs raw/arte arte-seis.json` — pinta las seis imágenes de gemas con el mismo `arte.js` de la página (necesita que el kit ya tenga `12-gemas`; la primera vez se corre el paso 5 antes).
+  3. `TAM=1200x760 node nav.mjs brochure-capturas.mjs`, `MOVIL=1 TAM=390x844 node nav.mjs brochure-celular.mjs` y `python3 brochure-imagenes.py` — las capturas del brochure: abre un mundo nuevo en local, acomoda la escena y fotografía la pantalla.
+  4. `node pdf.mjs raw/brochure/Mina_Brochure_v1_<fecha>_<hora>.pdf raw/brochure/portada.png` — convierte `brochure/index.html` en PDF.
+  5. `python3 ../Kit_de_Marca_Mina_v2_2026-10-05_1120.py raw <carpeta con Inter-*.ttf>` — arma las 118 piezas, sus miniaturas, `kit.json`, el zip del kit y el zip del arte.
+- **El zip del kit no puede pasar de 25 MiB** (límite de Cloudflare por archivo): por eso el arte va en JPG dentro del zip y en PNG suelto en la página. El generador del kit se detiene si se pasa.
 - El service worker del juego no toca esas rutas, y el juego no arranca en ellas.
 
 ## Probar y publicar

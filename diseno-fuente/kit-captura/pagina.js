@@ -25,7 +25,10 @@ window.__kit = (() => {
     reloj = 2.2; dibMaq(q, c.width / 2, c.height * 0.55, t, modelo, dir || 1, pose === 'vuela' ? 1 : 0, pose === 'perfora' ? 2 : pose === 'lado' ? (dir || 1) : 0, '', '', 0, pinta || null);
     return c.toDataURL('image/png');
   }
+  // Una gema sola, sin fondo, derecha y centrada (las formas que giran al azar en el juego aquí salen derechas, para armar figuras simétricas).
+  function gemaPng(i) { const c = document.createElement('canvas'); c.width = c.height = 512; const q = c.getContext('2d'), T0 = T; T = 300; gema(q, i, 256, 256, 165, () => 0.5); T = T0; return c.toDataURL('image/png'); }
+  function minerales() { return JSON.stringify(MIN.map((m, i) => ({ i, n: m.n, col: m.col, v: m.v, a: m.a, s: m.s }))); }
   function qrMatriz(texto) { const R = qr(texto); return R ? R.map((f) => [...f].map((v) => (v ? 1 : 0))) : null; }
-  return { montar, escena, maq, qrMatriz };
+  return { montar, escena, maq, qrMatriz, gemaPng, minerales };
 })();
 'ok'

@@ -2,3 +2,6 @@ node_modules/
 .wrangler/
 .DS_Store
 .dev.vars
+diseno-fuente/kit-captura/chrome*/
+diseno-fuente/kit-captura/cap/
+diseno-fuente/kit-captura/raw/

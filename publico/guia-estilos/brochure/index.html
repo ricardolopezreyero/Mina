@@ -1,0 +1,267 @@
+<!doctype html>
+<!-- Mina · Brochure · Ricardo López Reyero (RLR) · mina.capitaltorreon.com/guia-estilos/brochure -->
+<html lang="es" data-k="eye" data-rev="181218">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mina · Brochure</title>
+<meta name="description" content="Qué es Mina, cómo se juega, por qué es distinto y cómo empezar. Seis hojas con capturas del juego.">
+<meta name="author" content="Ricardo López Reyero">
+<meta property="og:title" content="Mina · Brochure"><meta property="og:description" content="Seis hojas con capturas: qué es, cómo se juega y cómo empezar.">
+<meta property="og:image" content="https://mina.capitaltorreon.com/guia-estilos/kit/07-horizontal/portada-horizontal-1920x1080.jpg">
+<meta name="theme-color" content="#1b120e"><meta name="build" content="eye"><meta name="rev" content="181218">
+<link rel="icon" type="image/png" sizes="32x32" href="/iconos/icono-32.png">
+<style>
+/* RLR · seis hojas tamaño carta; la misma página es la versión en línea y de aquí sale el PDF */
+@font-face{font-family:Inter;font-weight:900;src:url(../kit/10-tipografia/Inter-Black.ttf) format("truetype")}
+@font-face{font-family:Inter;font-weight:800;src:url(../kit/10-tipografia/Inter-ExtraBold.ttf) format("truetype")}
+@font-face{font-family:Inter;font-weight:700;src:url(../kit/10-tipografia/Inter-Bold.ttf) format("truetype")}
+@font-face{font-family:Inter;font-weight:600;src:url(../kit/10-tipografia/Inter-SemiBold.ttf) format("truetype")}
+@font-face{font-family:Inter;font-weight:400;src:url(../kit/10-tipografia/Inter-Regular.ttf) format("truetype")}
+@page{size:8.5in 11in;margin:0}
+:root{--bg:#1b120e;--caja:#2a1c16;--borde:#5a3d2c;--tx:#f3e6d8;--su:#c9b29c;--ac:#ffd23f;--tinta:#2a1a14;--ok:#6fdc7a}
+*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+html{background:#0d0806}
+body{margin:0;font:400 12.6px/1.5 Inter,system-ui,sans-serif;color:var(--tx)}
+.hoja{width:816px;height:1056px;position:relative;overflow:hidden;background:var(--bg);page-break-after:always;break-after:page;padding:54px 56px 58px;display:flex;flex-direction:column}
+.hoja:last-of-type{page-break-after:auto;break-after:auto}
+h1,h2,h3,p{margin:0}
+h2{font-weight:900;font-size:38px;line-height:1.05;color:var(--ac);letter-spacing:-.01em}
+h3{font-weight:800;font-size:15.5px;line-height:1.2;color:var(--tx)}
+.ceja{font-weight:800;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--su);margin-bottom:8px}
+.entrada{font-size:15.5px;line-height:1.5;color:var(--tx);margin-top:12px;max-width:640px}
+.entrada b,.p b{color:var(--ac);font-weight:700}
+.p{color:var(--su);font-size:12.4px;line-height:1.5}
+.cap{position:relative;border:3px solid var(--tinta);border-radius:12px;overflow:hidden;box-shadow:0 10px 24px #0009,0 0 0 1px var(--borde);background:#000;line-height:0}
+.cap img{width:100%;height:100%;object-fit:cover;display:block}
+.n{position:absolute;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;background:var(--ac);color:var(--tinta);font:900 14px/26px Inter;text-align:center;box-shadow:0 0 0 3px var(--tinta),0 3px 8px #000a}
+.ley{display:grid;gap:7px 22px;margin-top:14px;padding:0;list-style:none}
+.ley li{position:relative;padding-left:32px;color:var(--su);font-size:12.2px;line-height:1.42}
+.ley li b{color:var(--tx);font-weight:700}
+.ley li i{position:absolute;left:0;top:0;width:22px;height:22px;border-radius:50%;background:var(--ac);color:var(--tinta);font:900 12px/22px Inter;text-align:center;font-style:normal}
+.tres{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.dos{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.ficha{background:var(--caja);border:1px solid var(--borde);border-radius:12px;padding:14px 15px}
+.ficha h3{color:var(--ac);margin-bottom:5px}
+.pie{position:absolute;left:56px;right:56px;bottom:22px;display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:10.5px;color:#8d7663;letter-spacing:.04em}
+.pie b{color:var(--ac);font-weight:900;letter-spacing:.02em;font-size:12px}
+.crece{flex:1;min-height:0}
+/* portada */
+.portada{padding:0;background:#22407a url(../kit/06-vertical/fondo-vertical-escena-1080x1920.jpg) center 10%/cover}
+.portada::before{content:"";position:absolute;inset:0;background:linear-gradient(#16264f99 0,#16264f33 26%,#0000 38%,#0000 60%,#120b08ea 75%,#120b08f7 100%)}
+.portada>*{position:relative}
+.portada .arriba{padding:64px 56px 0;text-align:center}
+.portada .arriba img{width:520px;height:auto;filter:drop-shadow(0 10px 14px #0008)}
+.portada .lema{font-weight:900;font-size:30px;color:#fff;-webkit-text-stroke:7px var(--tinta);paint-order:stroke fill;margin-top:6px}
+.portada .abajo{margin-top:auto;padding:0 56px 60px;display:grid;grid-template-columns:1fr auto;gap:28px;align-items:end}
+.portada .abajo p{font-weight:800;font-size:23px;line-height:1.25;color:#fff}
+.portada .abajo p span{color:var(--ac)}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+.chip{background:var(--ac);color:var(--tinta);font-weight:900;font-size:13px;padding:6px 13px;border-radius:999px}
+.chip.o{background:#120b08cc;color:var(--ac);box-shadow:inset 0 0 0 2px var(--ac)}
+.qr{background:#fff;border-radius:14px;padding:9px;width:150px;line-height:0;box-shadow:0 8px 20px #000a}
+.qr img{width:100%;image-rendering:pixelated}
+.qr small{display:block;font:800 10.5px/1.2 Inter;color:var(--tinta);text-align:center;padding:6px 0 2px;letter-spacing:.02em}
+/* pasos */
+.paso{display:flex;gap:10px;align-items:flex-start}
+.paso i{flex:none;width:30px;height:30px;border-radius:50%;background:var(--ac);color:var(--tinta);font:900 16px/30px Inter;text-align:center;font-style:normal}
+.paso h3{margin-bottom:2px}
+.lista{margin:0;padding:0;list-style:none;display:grid;gap:9px}
+.lista li{position:relative;padding-left:18px;color:var(--su);font-size:12.4px;line-height:1.45}
+.lista li::before{content:"";position:absolute;left:0;top:.5em;width:8px;height:8px;border-radius:2px;background:var(--ac);transform:rotate(45deg)}
+.lista b{color:var(--tx);font-weight:700}
+.lista.grande{gap:12px}.lista.grande li{font-size:13.4px}
+.zonas{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}.zonas .ficha{padding:10px 10px}.zonas .zona{font-size:10.8px;white-space:nowrap;gap:6px}.zonas .zona u{width:12px;height:12px}.zonas .p{font-size:10.8px;line-height:1.38;margin-top:5px}
+.maqs{display:grid;grid-template-columns:repeat(12,1fr);gap:4px;align-items:end}.maqs img{width:100%;height:auto;display:block}
+.tel{border:5px solid #0b0706;border-radius:26px;overflow:hidden;box-shadow:0 12px 26px #000b,0 0 0 1px var(--borde);line-height:0;background:#000}
+.tel img{width:100%;display:block}
+.gemas{display:grid;grid-template-columns:repeat(11,1fr);gap:6px 4px;margin-top:10px}
+.gemas div{text-align:center;font-weight:700;font-size:8.6px;line-height:1.15;color:var(--su)}
+.gemas img{width:100%;height:auto;display:block;margin-bottom:1px}
+.zona{display:flex;align-items:center;gap:8px;font-weight:700;font-size:11.5px;color:var(--tx)}
+.zona u{flex:none;width:14px;height:14px;border-radius:4px;text-decoration:none;box-shadow:0 0 0 2px var(--tinta)}
+.cierre{background:linear-gradient(#2a1c16,#1b120e 46%)}
+.gran{display:grid;grid-template-columns:auto 1fr;gap:26px;align-items:center;background:var(--ac);color:var(--tinta);border-radius:18px;padding:22px 26px;box-shadow:0 0 0 4px var(--tinta)}
+.gran .qr{width:170px;box-shadow:0 0 0 3px var(--tinta)}
+.gran h2{color:var(--tinta);font-size:34px}
+.gran .liga{font-weight:900;font-size:21px;margin-top:8px;display:inline-block;background:var(--tinta);color:var(--ac);padding:8px 16px;border-radius:999px;text-decoration:none}
+.gran p{font-weight:700;font-size:13.5px;line-height:1.45;margin-top:8px}
+/* en pantalla: las hojas apiladas, con la barra para bajar el PDF */
+.barra{display:none}
+@media screen{
+  body{padding:74px 0 40px}
+  .hoja{margin:0 auto 22px;box-shadow:0 14px 40px #000c;border-radius:6px}
+  .barra{display:flex;position:fixed;top:0;left:0;right:0;z-index:5;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;padding:10px 14px;background:#1b120ef2;backdrop-filter:blur(8px);border-bottom:1px solid var(--borde);font-size:15px}
+  .barra a{font-weight:800;text-decoration:none;color:var(--tx);border:1px solid var(--borde);background:var(--caja);border-radius:10px;padding:.5em .9em}
+  .barra a.ppal{background:var(--ac);color:var(--tinta);border-color:var(--ac)}
+}
+</style>
+</head>
+<body>
+<div class="barra"><a href="../#brochure">← Guía de estilos</a><a class="ppal" id="pdf" href="../Mina_Brochure.pdf" download>⬇ Descargar el PDF</a><a href="/">Jugar Mina</a></div>
+
+<!-- 1 · portada -->
+<section class="hoja portada">
+  <div class="arriba"><img src="../kit/03-logotipo/mina-palabra.png" alt="MINA"><div class="lema">Excava con tus amigos</div></div>
+  <div class="abajo">
+    <div>
+      <p>Un juego de minería <span>infinito y compartido</span>. Bajas, llenas la bodega, vendes, mejoras tu maquinita y bajas más hondo. Con tu gente, en vivo.</p>
+      <div class="chips"><span class="chip">Gratis</span><span class="chip">Sin anuncios</span><span class="chip">Sin registro</span><span class="chip o">mina.capitaltorreon.com</span></div>
+    </div>
+    <div class="qr"><img src="../kit/09-video/qr-mina.png" alt="Código QR de Mina"><small>Escanea y juega</small></div>
+  </div>
+</section>
+
+<!-- 2 · qué es -->
+<section class="hoja">
+  <div class="ceja">Qué es</div>
+  <h2>Un mundo bajo tierra que se abre con una liga</h2>
+  <p class="entrada">Mina se juega en el navegador, en la computadora o en el teléfono. <b>Entras y ya estás jugando</b>: no se descarga nada, no se llena ningún formulario y no hay anuncios. Cada mundo tiene su propia liga; se la mandas a tu gente y entran a excavar contigo, en tiempo real.</p>
+  <div class="cap" style="margin-top:20px;height:396px">
+    <img src="img/superficie.jpg" alt="La superficie de Mina con sus edificios">
+    <span class="n" style="left:9.5%;top:36%">1</span><span class="n" style="left:38%;top:36%">2</span><span class="n" style="left:58.5%;top:36%">3</span><span class="n" style="left:79%;top:36%">4</span><span class="n" style="left:97%;top:36%">5</span><span class="n" style="left:54.5%;top:47%">6</span>
+  </div>
+  <ol class="ley" style="grid-template-columns:1fr 1fr">
+    <li><i>1</i><b>La Pinturería.</b> Pintas tu maquinita de tus colores. Es gratis.</li>
+    <li><i>2</i><b>La Gasolinera.</b> Llenas el tanque antes de bajar: un peso el litro.</li>
+    <li><i>3</i><b>La Báscula.</b> Vendes todo el mineral que traes en la bodega.</li>
+    <li><i>4</i><b>El Taller.</b> Mejoras taladro, casco, motor, tanque, radiador y bodega.</li>
+    <li><i>5</i><b>El Almacén y más.</b> Reparas, compras objetos, y adelante están la Remineralizadora y El Elevador.</li>
+    <li><i>6</i><b>Tu maquinita.</b> Nace con nombre propio y es tuya: entra contigo a cualquier mundo.</li>
+  </ol>
+  <div class="tres" style="margin-top:auto;margin-bottom:22px">
+    <div class="ficha"><h3>Gratis de verdad</h3><p class="p">El juego completo, de la superficie al fondo, sin pagar y sin anuncios.</p></div>
+    <div class="ficha"><h3>Sin registro</h3><p class="p">Jugar nunca pide cuenta. Si quieres guardar tu avance en todos tus equipos, entras con Google.</p></div>
+    <div class="ficha"><h3>En cualquier equipo</h3><p class="p">Computadora o teléfono. Se instala como aplicación y sigue funcionando sin internet.</p></div>
+  </div>
+  <div class="pie"><b>MINA</b><span>mina.capitaltorreon.com · 2</span></div>
+</section>
+
+<!-- 3 · cómo se juega -->
+<section class="hoja">
+  <div class="ceja">Cómo se juega</div>
+  <h2>Baja, llena, sube, vende y vuelve a bajar</h2>
+  <div class="cap" style="margin-top:18px;height:396px">
+    <img src="img/excavando.jpg" alt="La maquinita perforando bajo tierra con su equipo">
+    <span class="n" style="left:19%;top:8%">1</span><span class="n" style="left:76.5%;top:9%">2</span><span class="n" style="left:56.5%;top:50%">3</span><span class="n" style="left:23%;top:74%">4</span><span class="n" style="left:88%;top:88%">5</span>
+  </div>
+  <ol class="ley" style="grid-template-columns:1fr 1fr">
+    <li><i>1</i><b>Combustible y casco.</b> Lo que te queda para seguir abajo, la profundidad y tu dinero.</li>
+    <li><i>2</i><b>Tu equipo, en vivo.</b> Quién está jugando, a cuántos metros va y su récord.</li>
+    <li><i>3</i><b>Tu maquinita.</b> Con las flechas: abajo perfora, a los lados camina, arriba vuela.</li>
+    <li><i>4</i><b>Tu viaje.</b> Cuánto llevas, en cuánto se vende y si el combustible alcanza para subir.</li>
+    <li><i>5</i><b>Tus objetos.</b> Reserva, nanobots, dinamita y más, cada uno con su tecla.</li>
+  </ol>
+  <div class="dos" style="margin-top:20px">
+    <div><div class="cap" style="height:160px"><img src="img/bascula.jpg" alt="La Báscula: la venta del mineral"></div>
+      <div class="paso" style="margin-top:12px"><i>A</i><div><h3>Vendes en La Báscula</h3><p class="p">Todo lo que subiste se paga en una pantalla. Bodega llena y cero daño dan un bono de viaje perfecto.</p></div></div></div>
+    <div><div class="cap" style="height:160px"><img src="img/taller.jpg" alt="El Taller: las mejoras" style="object-position:top"></div>
+      <div class="paso" style="margin-top:12px"><i>B</i><div><h3>Mejoras en El Taller</h3><p class="p">Seis piezas con 26 mejoras cada una. Con mejor equipo llegas más hondo, donde está lo que más vale.</p></div></div></div>
+  </div>
+  <div class="pie"><b>MINA</b><span>mina.capitaltorreon.com · 3</span></div>
+</section>
+
+<!-- 4 · con tus amigos -->
+<section class="hoja">
+  <div class="ceja">Con tu gente</div>
+  <h2>Mandas la liga y en un minuto están excavando juntos</h2>
+  <div style="display:grid;grid-template-columns:1fr 236px;gap:22px;margin-top:20px" class="crece">
+    <div style="display:flex;flex-direction:column;min-height:0">
+      <div class="cap" style="height:306px"><img src="img/invitar.jpg" alt="El código QR para invitar a un mundo"></div>
+      <p class="p" style="margin-top:9px"><b>El botón Invitar</b> enseña el código QR del mundo donde estás, la liga para copiar y un mensaje listo para WhatsApp.</p>
+      <ul class="lista grande" style="margin-top:18px">
+        <li><b>Cada quien con su maquinita.</b> Tu amigo entra sin registro y juega en el mismo mundo que tú. Juegan hasta 40 a la vez.</li>
+        <li><b>Ver lo que ve otro.</b> Tocas el nombre de cualquier maquinita y tu cámara se va con ella, en vivo. Le mandas reacciones.</li>
+        <li><b>Chat del mundo.</b> Todo lo dicho queda guardado, cada maquinita con su color.</li>
+        <li><b>Comercio o batalla.</b> La primera vez que se topan bajo tierra eligen cómo se llevan: intercambian dinero y objetos, o se pelean a taladro.</li>
+        <li><b>Mapa en vivo.</b> Los túneles que ha abierto el equipo y dónde anda cada quien.</li>
+        <li><b>Mirar es libre.</b> Quien no juega puede ver, sin límite. Quien creó el mundo decide quién entra a jugar.</li>
+        <li><b>Los mundos son para siempre.</b> Con su liga se vuelve a entrar cuando sea, exactamente donde se dejó.</li>
+      </ul>
+    </div>
+    <div>
+      <div class="tel"><img src="img/celular-excavando.jpg" alt="Mina en el teléfono"></div>
+      <p class="p" style="margin-top:10px;text-align:center"><b>En el teléfono</b> el tablero es otro, pensado para el dedo: lo arrastras y la maquinita va.</p>
+    </div>
+  </div>
+  <div class="pie"><b>MINA</b><span>mina.capitaltorreon.com · 4</span></div>
+</section>
+
+<!-- 5 · el mundo -->
+<section class="hoja">
+  <div class="ceja">El mundo</div>
+  <h2>Diez mil metros hacia abajo y 22 minerales por encontrar</h2>
+  <p class="entrada" style="font-size:14px">Entre más bajas, más vale lo que encuentras y más cambia el paisaje. Hay cuatro lugares grandes por descubrir y once rincones escondidos.</p>
+  <div class="tres" style="margin-top:16px">
+    <div><div class="cap" style="height:156px"><img src="img/acuifero.jpg" alt="El Acuífero"></div><h3 style="margin-top:9px">El Acuífero · 1,040 m</h3><p class="p">Un lago enterrado. Aquí se flota y en el lecho hay perlas.</p></div>
+    <div><div class="cap" style="height:156px"><img src="img/gruta.jpg" alt="La Gruta de Cristal"></div><h3 style="margin-top:9px">La Gruta de Cristal · 2,950 m</h3><p class="p">Una cueva enorme con las paredes forradas de metales preciosos.</p></div>
+    <div><div class="cap" style="height:156px"><img src="img/ciudad.jpg" alt="La Ciudad Perdida"></div><h3 style="margin-top:9px">La Ciudad Perdida · 5,580 m</h3><p class="p">Alguien vivió aquí. Las casas siguen de pie y guardan tesoros.</p></div>
+  </div>
+  <div class="ficha" style="margin-top:18px;padding:14px 16px 12px">
+    <h3>Los 22 minerales, del hierro al osmio</h3>
+    <div class="gemas" id="gemas"></div>
+  </div>
+  <div class="ceja" style="margin:18px 0 8px">Cinco zonas, cada una con su roca y sus minerales</div>
+  <div class="zonas">
+    <div class="ficha"><span class="zona"><u style="background:#a9744f"></u>La Corteza</span><p class="p">Del hierro al diamante y la amazonita.</p></div>
+    <div class="ficha"><span class="zona"><u style="background:#2f7fb0"></u>El Acuífero</span><p class="p">Aguamarina, zafiro y perla negra.</p></div>
+    <div class="ficha"><span class="zona"><u style="background:#8a4fc0"></u>Las Cavernas</span><p class="p">Ónix, topacio y jade imperial.</p></div>
+    <div class="ficha"><span class="zona"><u style="background:#4b4bd6"></u>La Cristalera</span><p class="p">Amatista, tanzanita y alejandrita.</p></div>
+    <div class="ficha"><span class="zona"><u style="background:#3a3a44"></u>Zona de presión</span><p class="p">Paladio, rodio y osmio.</p></div>
+  </div>
+  <div class="dos" style="margin-top:18px">
+    <ul class="lista">
+      <li><b>El Corazón de la Tierra</b> late a 9,780 m. A su alrededor está la veta más rica que existe.</li>
+      <li><b>La colección.</b> 99 medallones enterrados que junta todo el equipo.</li>
+    </ul>
+    <ul class="lista">
+      <li><b>Un final de verdad.</b> El cierre se descubre entre todos y se reparte en partes iguales.</li>
+      <li><b>Top 33 mundial.</b> Las maquinitas que más han ganado en todos los mundos, en vivo.</li>
+    </ul>
+  </div>
+  <div class="pie"><b>MINA</b><span>mina.capitaltorreon.com · 5</span></div>
+</section>
+
+<!-- 6 · hazla tuya y empieza -->
+<section class="hoja cierre">
+  <div class="ceja">Hazla tuya</div>
+  <h2>Tu maquinita, de tus colores</h2>
+  <div style="display:grid;grid-template-columns:384px 1fr;gap:22px;margin-top:18px">
+    <div class="cap" style="height:300px"><img src="img/pintureria.jpg" alt="La Pinturería" style="object-position:top"></div>
+    <div>
+      <p class="p" style="font-size:13.2px;color:var(--tx)">En <b>La Pinturería</b> pintas tu maquinita del color que quieras, gratis para todos. Se guarda al momento y lo ven todos en el mundo.</p>
+      <ul class="lista" style="margin-top:14px">
+        <li><b>Lo único que se vende en Mina</b> está aquí: calcomanías, luces, estelas, claxons, carrocerías, mascotas y sonidos.</li>
+        <li><b>Nada de eso hace falta</b> para bajar, ganar ni terminar. Es solo para que se vea como tú.</li>
+        <li><b>Precios iguales para todos</b> y a la vista. Cualquier nivel se puede regalar a un amigo.</li>
+        <li><b>Pruébate lo que quieras</b> en el escaparate en 3D: probar no cuesta.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="ficha" style="margin-top:20px;padding:12px 14px 10px"><div class="maqs"><img src="../mini/04-maquinita__maquinita-amarilla.webp" alt=""><img src="../mini/04-maquinita__maquinita-roja.webp" alt=""><img src="../mini/04-maquinita__maquinita-azul.webp" alt=""><img src="../mini/04-maquinita__maquinita-verde.webp" alt=""><img src="../mini/04-maquinita__maquinita-rosa.webp" alt=""><img src="../mini/04-maquinita__maquinita-morada.webp" alt=""><img src="../mini/04-maquinita__maquinita-naranja.webp" alt=""><img src="../mini/04-maquinita__maquinita-crema.webp" alt=""><img src="../mini/04-maquinita__carroceria-escarabajo.webp" alt=""><img src="../mini/04-maquinita__carroceria-locomotora.webp" alt=""><img src="../mini/04-maquinita__carroceria-submarino.webp" alt=""><img src="../mini/04-maquinita__carroceria-tanque.webp" alt=""></div><p class="p" style="margin-top:6px;text-align:center">Los modelos con los que nace cada jugador y las cuatro carrocerías de La Pinturería.</p></div>
+  <div class="ceja" style="margin:22px 0 10px">Empieza en tres pasos</div>
+  <div class="tres">
+    <div class="paso"><i>1</i><div><h3>Abre la liga</h3><p class="p">En el navegador de tu teléfono o tu computadora. Ya estás jugando.</p></div></div>
+    <div class="paso"><i>2</i><div><h3>Carga y baja</h3><p class="p">Llena el tanque en la Gasolinera, perfora y sube a vender.</p></div></div>
+    <div class="paso"><i>3</i><div><h3>Invita a tu gente</h3><p class="p">Botón Invitar: mandas el QR o la liga de tu mundo.</p></div></div>
+  </div>
+  <div class="gran" style="margin-top:auto;margin-bottom:34px">
+    <div class="qr"><img src="../kit/09-video/qr-mina.png" alt="Código QR de Mina"></div>
+    <div><h2>Juega ahora, gratis</h2><a class="liga" href="https://mina.capitaltorreon.com">mina.capitaltorreon.com</a>
+      <p>Apunta la cámara al código o escribe la liga. Sin descargar nada, sin registro y sin anuncios.</p></div>
+  </div>
+  <div class="pie"><b>MINA</b><span>Hecho en Torreón, Coahuila, por Ing. Ricardo López Reyero · CapitalTorreon · 6</span></div>
+</section>
+
+<script>
+/* RLR · Ricardo López Reyero — las gemas salen del kit; en pantalla la hoja se ajusta al ancho */
+'use strict';
+const _RLR = 'Ricardo López Reyero', _k = 'EYE', _rev = 181218;
+const G = [['hierro', 'Hierro'], ['cobre', 'Cobre'], ['plata', 'Plata'], ['oro', 'Oro'], ['platino', 'Platino'], ['einstenio', 'Einstenio'], ['esmeralda', 'Esmeralda'], ['rubi', 'Rubí'], ['diamante', 'Diamante'], ['amazonita', 'Amazonita'], ['aguamarina', 'Aguamarina'], ['zafiro', 'Zafiro'], ['perla-negra', 'Perla negra'], ['onix', 'Ónix'], ['topacio', 'Topacio'], ['jade-imperial', 'Jade imperial'], ['amatista', 'Amatista'], ['tanzanita', 'Tanzanita'], ['alejandrita', 'Alejandrita'], ['paladio', 'Paladio'], ['rodio', 'Rodio'], ['osmio', 'Osmio']];
+document.getElementById('gemas').innerHTML = G.map(([a, n], k) => `<div><img src="../mini/12-gemas__gema-${String(k + 1).padStart(2, '0')}-${a}.webp" alt="">${n}</div>`).join('');
+fetch('../kit.json', { cache: 'no-cache' }).then((r) => r.json()).then((K) => { const a = document.getElementById('pdf'); if (K.brochure) { a.href = '../' + K.brochure; a.setAttribute('download', K.brochureNombre || K.brochure); } }).catch(() => {});
+const ajusta = () => { if (matchMedia('screen').matches) document.body.style.zoom = Math.min(1, document.documentElement.clientWidth / 850); };
+addEventListener('resize', ajusta); ajusta(); addEventListener('beforeprint', () => { document.body.style.zoom = 1; }); addEventListener('afterprint', ajusta);
+</script>
+</body>
+</html>

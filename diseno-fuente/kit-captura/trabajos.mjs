@@ -22,5 +22,6 @@ export const trabajos = [
   ['_tierra', m(TIERRA)], ['tierra-v-1080x1920', `__kit.escena(1080, 1920, 12, 20, 40)`], ['tierra-h-1920x1080', `__kit.escena(1920, 1080, 24, 20, 40)`], ['tierra-c-1080x1080', `__kit.escena(1080, 1080, 9, 22, 36)`],
   ...[0, 1, 2, 3, 4, 5, 6, 7].map((k) => [`maq-${k}`, `__kit.maq(${k}, null, 600, '')`]),
   ['maq-0-perfora', `__kit.maq(0, null, 600, 'perfora')`], ['maq-0-vuela', `__kit.maq(0, null, 600, 'vuela')`], ['maq-0-lado', `__kit.maq(0, null, 600, 'lado')`],
+  ...Array.from({ length: 22 }, (_, k) => [`gema-${String(k).padStart(2, '0')}`, `__kit.gemaPng(${k})`]), ['minerales.json', `__kit.minerales()`],
   ...[1, 2, 3, 4].map((k) => [`carro-${k}`, `__kit.maq(0, ${JSON.stringify({ carro: k, c1: COLORES[k - 1][0], c2: COLORES[k - 1][1] })}, 600, '')`]),
 ];

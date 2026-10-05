@@ -82,6 +82,24 @@ table{border-collapse:collapse;width:100%;margin:14px 0;font-size:.92em}th,td{te
 #aviso{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(20px);background:var(--ac);color:var(--tinta);font-weight:800;padding:.6em 1.1em;border-radius:999px;opacity:0;transition:.25s;pointer-events:none;z-index:9}
 #aviso.on{opacity:1;transform:translateX(-50%)}
 footer{padding:40px 0 70px;color:var(--su);font-size:.9em}
+/* el generador de arte y el brochure */
+.boton.grande.claro{background:#1b120ed9;color:var(--ac);border-color:var(--ac);margin-top:8px}
+.gen{display:grid;grid-template-columns:minmax(0,430px) minmax(260px,1fr);gap:26px;align-items:start;background:var(--caja);border:2px solid var(--ac);border-radius:18px;padding:clamp(14px,3vw,26px);margin:18px 0}
+.gen-vista{background:#120b08;border-radius:12px;padding:10px;display:flex;justify-content:center;min-height:300px;align-items:center}
+.gen-vista canvas{max-width:100%;max-height:76vh;width:auto;height:auto;border-radius:8px;display:block;box-shadow:0 8px 22px #000a}
+.gen-mando{display:flex;flex-direction:column;gap:12px}
+.gen-mando .boton.grande{justify-content:center;font-size:1.3em}
+.gen-mando label{display:grid;grid-template-columns:5.2em 1fr;gap:10px;align-items:center;font-weight:700}
+.gen-mando select,.gen-mando input[type=text]{font:inherit;font-weight:700;background:#120b08;color:var(--tx);border:1px solid var(--borde);border-radius:10px;padding:.5em .6em;min-width:0;width:100%}
+.gen-mando label.chk{display:flex;gap:8px;font-weight:700}.gen-mando label.chk input{width:1.2em;height:1.2em;accent-color:var(--ac)}
+.gen-mando button,.gen-mando .boton{justify-content:center}
+.gen-dato{color:var(--su);font-size:.9em;margin:0;min-height:2.8em}
+.gen-mando small{color:var(--su);line-height:1.4}
+.bro{display:grid;grid-template-columns:minmax(0,300px) 1fr;gap:28px;align-items:start;margin:18px 0}
+.bro-img{display:block;border-radius:12px;overflow:hidden;border:1px solid var(--borde);box-shadow:0 10px 26px #000a;line-height:0}
+.bro-img img{width:100%;height:auto;display:block}
+.bro small{display:block;color:var(--su);margin:.5em 0 1em}
+@media(max-width:760px){.gen,.bro{grid-template-columns:1fr}.bro-img{max-width:300px}}
 @media(max-width:640px){header.portada .envuelve{grid-template-columns:1fr}header.portada img{order:-1;width:150px}.rejilla.ancha{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 </style>
@@ -89,7 +107,7 @@ footer{padding:40px 0 70px;color:var(--su);font-size:.9em}
 <body>
 <nav><div class="envuelve">
   <a class="marca" href="#arriba">MINA</a>
-  <a href="#tiktok">Empezar en TikTok</a><a href="#perfil">Foto de perfil</a><a href="#logotipo">Logotipo</a><a href="#icono">Ícono</a><a href="#maquinita">La maquinita</a><a href="#color">Color</a><a href="#tipografia">Tipografía</a><a href="#vertical">Vertical</a><a href="#horizontal">Horizontal</a><a href="#cuadrado">Cuadrado</a><a href="#video">Para video</a><a href="#medidas">Medidas</a>
+  <a href="#tiktok">Empezar en TikTok</a><a href="#arte">Arte con gemas</a><a href="#brochure">Brochure</a><a href="#perfil">Foto de perfil</a><a href="#logotipo">Logotipo</a><a href="#icono">Ícono</a><a href="#maquinita">La maquinita</a><a href="#color">Color</a><a href="#tipografia">Tipografía</a><a href="#vertical">Vertical</a><a href="#horizontal">Horizontal</a><a href="#cuadrado">Cuadrado</a><a href="#video">Para video</a><a href="#medidas">Medidas</a>
   <span class="tam"><button id="menos" title="Letra más chica" aria-label="Letra más chica">A−</button><button id="mas" title="Letra más grande" aria-label="Letra más grande">A+</button></span>
 </div></nav>
 
@@ -98,6 +116,7 @@ footer{padding:40px 0 70px;color:var(--su);font-size:.9em}
     <h1>Guía de estilos</h1>
     <p>Todo lo que se necesita para hablar de Mina, listo para descargar.</p>
     <a class="boton grande" id="zipArriba" href="#" download><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 20h16"/></svg><span>Descargar todo (.zip)</span></a>
+    <a class="boton grande claro" href="#brochure"><span>📕 Brochure (PDF)</span></a> <a class="boton grande claro" href="#arte"><span>💎 Generar arte</span></a>
     <small id="zipDato"></small>
   </div>
   <img src="mini/04-maquinita__maquinita-perforando.webp" alt="La maquinita amarilla de Mina, perforando" width="300" height="368">
@@ -151,6 +170,54 @@ Gratis · sin registro · sin anuncios 👇</div>
   <div class="dos">
     <div class="nota si"><b>Para que el video funcione</b><ul><li>Lo mejor pasa en los primeros dos segundos.</li><li>Entre 15 y 30 segundos; uno solo, bien contado.</li><li>El sonido del juego encendido: el taladro y las campanas hacen la mitad del trabajo.</li><li>Di siempre dónde se juega: <b>mina.capitaltorreon.com</b>.</li></ul></div>
     <div class="nota"><b>Lo importante cabe aquí</b><p style="color:var(--su)">TikTok tapa la parte de arriba, la de abajo y una franja a la derecha. La referencia de <a href="#vertical">zonas seguras</a> lo enseña: el título y la liga van dentro del recuadro verde.</p></div>
+  </div>
+</div></section>
+
+<section id="arte"><div class="envuelve">
+  <h2>Arte con gemas</h2>
+  <p>Las 22 gemas del juego, acomodadas en figuras simétricas con MINA al centro. Sirven de portada, de fondo para un video o de publicación. Aquí van seis para empezar; abajo está la máquina para hacer todas las que hagan falta.</p>
+  <div class="rejilla" data-c="13-arte"></div>
+  <p><a class="boton" id="arteZip" href="#" download><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 20h16"/></svg><span>Bajar las seis en PNG (.zip)</span><small id="arteZipDato"></small></a></p>
+
+  <h3 id="generador">El generador</h3>
+  <p>Toca <b>Generar</b> y sale una imagen nueva, distinta cada vez. Si quieres mandar tú, elige la figura, las gemas, el fondo o el formato: lo que dejes «Al azar» lo decide la máquina.</p>
+  <div class="gen">
+    <div class="gen-vista"><canvas id="genLienzo" width="1080" height="1920" aria-label="La imagen generada"></canvas></div>
+    <div class="gen-mando">
+      <button class="boton grande" id="genYa">🎲 Generar</button>
+      <label>Figura<select id="genEstilo"></select></label>
+      <label>Gemas<select id="genPaleta"></select></label>
+      <label>Fondo<select id="genFondo"></select></label>
+      <label>Formato<select id="genFormato"></select></label>
+      <label>Semilla<input type="text" id="genSemilla" inputmode="numeric" placeholder="Al azar" autocomplete="off"></label>
+      <label class="chk"><input type="checkbox" id="genLiga" checked> Con la liga del juego abajo</label>
+      <p class="gen-dato" id="genTexto">Cargando las gemas…</p>
+      <button id="genBaja">⬇ Descargar esta imagen (PNG)</button>
+      <button id="gen20">Generar 20 y bajarlas juntas (.zip)</button>
+      <small>Las 20 salen todas distintas y respetan lo que hayas elegido arriba. La misma semilla, con la misma figura, gemas y fondo, vuelve a dar la misma imagen.</small>
+    </div>
+  </div>
+
+  <h3>Las 22 gemas, sueltas</h3>
+  <p>Sin fondo, para pegarlas en lo que sea.</p>
+  <div class="rejilla chica" data-c="12-gemas"></div>
+</div></section>
+
+<section id="brochure"><div class="envuelve">
+  <h2>Brochure</h2>
+  <p>Para cuando alguien dice «pásame más información». Seis hojas con capturas del juego: qué es, cómo se juega, cómo se juega con tu gente, el mundo y sus 22 minerales, La Pinturería y cómo empezar.</p>
+  <div class="bro">
+    <a class="bro-img" href="brochure/" title="Ver el brochure en línea"><img loading="lazy" src="mini/14-brochure__portada.webp" alt="Portada del brochure de Mina" width="760" height="984"></a>
+    <div>
+      <a class="boton grande" id="broPdf" href="Mina_Brochure.pdf" download><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 20h16"/></svg><span>Descargar el brochure (PDF)</span></a>
+      <small id="broDato">6 hojas tamaño carta</small>
+      <p><a class="boton" href="brochure/">Verlo en línea</a></p>
+      <h3>Para mandarlo por WhatsApp</h3>
+      <div class="copia" data-copia>Mina es un juego de minería para jugar con tus amigos: gratis, sin anuncios y sin registro. Aquí va toda la información (PDF de 6 hojas):
+https://mina.capitaltorreon.com/guia-estilos/Mina_Brochure.pdf
+
+Y para jugar de una vez: https://mina.capitaltorreon.com</div>
+    </div>
   </div>
 </div></section>
 
@@ -261,6 +328,7 @@ Gratis · sin registro · sin anuncios 👇</div>
 </div></footer>
 <div id="aviso" role="status" aria-live="polite"></div>
 
+<script src="arte.js"></script>
 <script>
 /* RLR · Ricardo López Reyero — la guía arma sus tarjetas con kit.json (lo escribe el generador del kit) */
 'use strict';
@@ -287,14 +355,52 @@ function tarjeta(a) {
   $('#colores').innerHTML = K.colores.map((c) => `<button class="color" data-hex="${c.h}" title="Copiar ${c.h}"><i style="background:${c.h}"></i><span><b>${esc(c.n)}</b><code>${c.h.toUpperCase()}</code><br><small>${esc(c.u)}</small></span></button>`).join('');
   for (const id of ['#zipArriba', '#zipAbajo']) { const a = $(id); a.href = K.zip; a.setAttribute('download', K.zip); }
   $('#zipDato').textContent = `${K.archivos.length} archivos · ${K.zipMb} MB · versión ${K.version.replace('v', '')}`;
+  if (K.arteZip) { const a = $('#arteZip'); a.href = K.arteZip; a.setAttribute('download', K.arteZip); $('#arteZipDato').textContent = K.arteZipMb + ' MB'; } else $('#arteZip').parentElement.hidden = true;
+  if (K.brochure) { $('#broPdf').href = K.brochure; $('#broPdf').setAttribute('download', K.brochureNombre || K.brochure); $('#broDato').textContent = `6 hojas tamaño carta · ${K.brochureMb} MB`; }
   $('#pie').textContent = `Kit ${K.version} · ${K.sello.replace('_', ' ').replace(/(\d\d)(\d\d)$/, '$1:$2')}.`;
 })();
 document.addEventListener('click', (e) => {
   const c = e.target.closest('.color'); if (c) return copiar(c.dataset.hex.toUpperCase(), 'Copiado ' + c.dataset.hex.toUpperCase());
   const b = e.target.closest('[data-copiar]'); if (b) return copiar(b.parentElement.firstChild.textContent.trim(), 'Texto copiado');
-  if (e.target.closest('.baja,.grande')) aviso('Descargando…');
+  if (e.target.closest('.baja,a.grande[download],#arteZip')) aviso('Descargando…');
 });
 for (const d of document.querySelectorAll('[data-copia]')) { const b = document.createElement('button'); b.textContent = 'Copiar'; b.dataset.copiar = '1'; d.appendChild(b); }
+// ── el generador de arte: lo que quede «Al azar» lo decide la semilla ──────────────────────────────────────────────────
+(() => {
+  const A = window.ArteMina, L = $('#genLienzo'); if (!A || !L) return;
+  const llena = (id, cosas, nombre) => { $(id).innerHTML = '<option value="">Al azar</option>' + Object.entries(cosas).map(([k, v]) => `<option value="${k}">${esc(nombre(v))}</option>`).join(''); };
+  llena('#genEstilo', A.ESTILOS, (v) => v.n); llena('#genPaleta', A.PALETAS, (v) => v.n); llena('#genFondo', A.FONDOS, (v) => v.n);
+  $('#genFormato').innerHTML = Object.entries(A.FORMATOS).map(([k, v]) => `<option value="${k}">${esc(v[2])} · ${v[0]} × ${v[1]}</option>`).join('');
+  const nueva = () => 1 + Math.floor(Math.random() * 999999);
+  const op = (semilla) => ({ semilla, estilo: $('#genEstilo').value, paleta: $('#genPaleta').value, fondo: $('#genFondo').value, formato: $('#genFormato').value, liga: $('#genLiga').checked });
+  const bajar = (blob, nombre) => { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nombre; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 30000); };
+  let ultima = null, ocupado = false;
+  async function pinta(semilla) {
+    if (ocupado) return; ocupado = true;
+    try { ultima = await A.pintar(L, op(semilla)); $('#genSemilla').value = ultima.semilla; $('#genTexto').textContent = `${ultima.texto} · ${ultima.gemas} gemas`; }
+    catch { $('#genTexto').textContent = 'No se pudieron cargar las gemas. Recarga la página.'; }
+    ocupado = false;
+  }
+  $('#genYa').onclick = () => pinta(nueva());
+  for (const id of ['#genEstilo', '#genPaleta', '#genFondo', '#genFormato', '#genLiga']) $(id).onchange = () => pinta(ultima ? ultima.semilla : nueva());
+  $('#genSemilla').onchange = () => pinta(parseInt($('#genSemilla').value.replace(/\D/g, ''), 10) || nueva());
+  $('#genSemilla').onkeydown = (e) => { if (e.key === 'Enter') e.target.blur(); };
+  $('#genBaja').onclick = async () => { if (!ultima || ocupado) return; aviso('Descargando…'); bajar(await A.aPng(L), ultima.nombre); };
+  $('#gen20').onclick = async () => {
+    if (ocupado) return; ocupado = true; const b = $('#gen20'), antes = b.textContent, c = document.createElement('canvas'), arch = [], ya = new Set();
+    try {
+      while (arch.length < 20) {
+        const i = await A.pintar(c, op(nueva())); if (ya.has(i.nombre)) continue; ya.add(i.nombre);
+        arch.push({ nombre: i.nombre, datos: new Uint8Array(await (await A.aPng(c)).arrayBuffer()) }); b.textContent = `Haciendo ${arch.length} de 20…`; await new Promise((r) => setTimeout(r, 0));
+      }
+      const d = new Date(), p2 = (n) => String(n).padStart(2, '0');
+      bajar(A.zip(arch), `Mina_Arte_x20_${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}_${p2(d.getHours())}${p2(d.getMinutes())}.zip`); aviso('Listo: 20 imágenes');
+    } catch { aviso('No se pudo. Intenta de nuevo.'); }
+    b.textContent = antes; ocupado = false;
+  };
+  // la primera imagen se pinta cuando la sección se acerca a la pantalla (las gemas pesan 1 MB)
+  if ('IntersectionObserver' in window) { const o = new IntersectionObserver((e) => { if (e.some((x) => x.isIntersecting)) { o.disconnect(); pinta(nueva()); } }, { rootMargin: '700px' }); o.observe(L); } else pinta(nueva());
+})();
 // A− / A+: el tamaño de la letra, recordado en este equipo
 let f = 1; try { f = +localStorage.getItem('mina_guia_f') || 1; } catch {}
 const pon = () => { document.documentElement.style.setProperty('--f', f); try { localStorage.setItem('mina_guia_f', f); } catch {} };
