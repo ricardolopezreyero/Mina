@@ -969,7 +969,7 @@ export class Mundo extends DurableObject {
       for (const o of this.ctx.getWebSockets()) {
         if (o === ws) continue;
         const a = o.deserializeAttachment(); if (!a) continue;
-        if (n && a.i !== undefined) { const r = this.xy.get(a.i); if (r && (Math.abs(r[0] - x) > 40 || Math.abs(r[1] - y) > 28)) continue; }
+        if (n && a.i !== undefined && !(this.jug[a.i] && this.jug[a.i].mira === att.i)) { const r = this.xy.get(a.i); if (r && (Math.abs(r[0] - x) > 40 || Math.abs(r[1] - y) > 28)) continue; }      // a quien me está mirando (metiches) le llegan todas, esté donde esté
         manda(o, s);
       }
       return;

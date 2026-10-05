@@ -3514,8 +3514,10 @@ function dibujar() {
   }
   g.globalAlpha = 1;
   // bajo tierra oscurece poco a poco; la maquinita lleva su luz
-  if (vis.y > 0.5 && oy < h) {
-    const a = Math.min(0.62, 0.14 + (vis.y / 500) * 0.6) * (vis.y >= 165 && lugarDe(Math.floor(vis.x), Math.floor(vis.y)) >= 0 ? 0.5 : 1) * (vis.y > EDEN0 - 8 ? Math.max(0, 1 - edenPct * 1.4) : 1), luz = g.createRadialGradient(mx, my, T * 2, mx, my, T * 11);      // en el jardín, entre más se descubre, más luz
+  // (siguiendo a alguien, la luz y la oscuridad son las suyas: se ve exactamente lo que ve)
+  const sgL = sigo >= 0 ? otros.get(sigo) : null, lxC = sgL && sgL.on && sgL.x !== undefined ? sgL.x : vis.x, lyC = sgL && sgL.on && sgL.y !== undefined ? sgL.y : vis.y, lmx = ox + lxC * T, lmy = oy + lyC * T;
+  if (lyC > 0.5 && oy < h) {
+    const a = Math.min(0.62, 0.14 + (lyC / 500) * 0.6) * (lyC >= 165 && lugarDe(Math.floor(lxC), Math.floor(lyC)) >= 0 ? 0.5 : 1) * (lyC > EDEN0 - 8 ? Math.max(0, 1 - edenPct * 1.4) : 1), luz = g.createRadialGradient(lmx, lmy, T * 2, lmx, lmy, T * 11);      // en el jardín, entre más se descubre, más luz
     luz.addColorStop(0, 'rgba(10,5,3,0)'); luz.addColorStop(1, `rgba(10,5,3,${a})`);
     g.fillStyle = luz; g.fillRect(0, Math.max(0, oy), w, h);
   }
@@ -4508,7 +4510,7 @@ function pintarTabla() {
   const l = [{ n: miNombre, m: miModelo, rec: S.rec, on: 1, yo: 1, me: miMe, y: donde(yo.y) }, ...[...otros.values()].map((o) => ({ ...o, y: o.on && o.y !== undefined ? donde(o.y) : null }))];
   l.sort((a, b) => (b.on || 0) - (a.on || 0) || (b.rec || 0) - (a.rec || 0));        // primero quienes están jugando
   const mas = l.length - 8; if (mas > 0) { const yoJ = l.findIndex((j) => j.yo); l.length = 8; if (yoJ >= 8) l[7] = { n: miNombre, m: miModelo, rec: S.rec, on: 1, yo: 1, y: donde(yo.y) }; }
-  poner($('#tabla'), (sigo >= 0 && otros.get(sigo) ? `<div class="mund cita" data-dejar="1">👁 Viendo lo que ve ${esc(otros.get(sigo).n)} · toca para volver</div>` : '') + (movil ? l.filter((j) => !j.yo && j.on).slice(0, 3) : l).map((j) => `<div class="${j.on ? '' : 'off'}${!j.yo && j.on ? ' ver' : ''}${j.i === sigo ? ' sigo' : ''}" ${!j.yo && j.on ? `data-ver="${j.i}" title="Ver lo que ve ${esc(j.n)}"` : ''}><i style="background:${MODELOS[j.m]?.[0] || '#888'}"></i><b>${j.me ? '✦ ' : ''}${esc(j.n)}${j.yo ? ' (tú)' : ''}</b><span>${j.on && j.y !== null ? j.y + ' · ' : ''}récord ${num(j.rec)} m</span></div>`).join('') + (mas > 0 && !movil ? `<div class="off"><b>y ${mas} más</b></div>` : '') +
+  poner($('#tabla'), (sigo >= 0 && otros.get(sigo) ? `<div class="mund cita" data-dejar="1">👁 Viendo lo que ve ${esc(otros.get(sigo).n)}${otros.get(sigo).y !== undefined ? ' · ' + donde(otros.get(sigo).y) : ''} · toca para volver</div>` : '') + (movil ? l.filter((j) => !j.yo && j.on).slice(0, 3) : l).map((j) => `<div class="${j.on ? '' : 'off'}${!j.yo && j.on ? ' ver' : ''}${j.i === sigo ? ' sigo' : ''}" ${!j.yo && j.on ? `data-ver="${j.i}" title="Ver lo que ve ${esc(j.n)}"` : ''}><i style="background:${MODELOS[j.m]?.[0] || '#888'}"></i><b>${j.me ? '✦ ' : ''}${esc(j.n)}${j.yo ? ' (tú)' : ''}</b><span>${j.on && j.y !== null ? j.y + ' · ' : ''}récord ${num(j.rec)} m</span></div>`).join('') + (mas > 0 && !movil ? `<div class="off"><b>y ${mas} más</b></div>` : '') +
 (soyCreador && publico.sol.length ? `<div class="mund pub" data-pub="1">🙋 ${publico.sol.length === 1 ? '1 quiere jugar' : publico.sol.length + ' quieren jugar'} · <kbd>J</kbd></div>` : '') + (mirones ? `<div class="mund pub" data-pub="1">👁 ${mirones === 1 ? '1 persona te mira' : mirones + ' personas te miran'}</div>` : '') + (cita ? `<div class="mund cita" data-cita="1">🕘 ${horaCitaTx(cita.h).replace(' hora de Torreón', '').replace(/ \(.*\)$/, '')} · ${(cita.voy || []).length === 1 ? '1 va' : (cita.voy || []).length + ' van'} · ${(cita.voy || []).includes(miI) ? 'voy ✓' : '¿vas?'}</div>` : ''));
 }
 
