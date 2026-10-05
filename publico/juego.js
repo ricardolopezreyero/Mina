@@ -3411,14 +3411,14 @@ function dibujar() {
     g.fillStyle = '#6b5a4c'; g.beginPath(); g.moveTo(tx, oy); g.quadraticCurveTo(tx + an * 0.3, oy - al * 1.25, tx + an * 0.55, oy - al); g.quadraticCurveTo(tx + an * 0.8, oy - al * 0.8, tx + an, oy); g.fill();
     g.fillStyle = '#857362'; for (let n = 0; n < 9; n++) { const fx = 0.12 + 0.76 * azar01(n * 3.1), fy = azar01(n * 7.7) * 0.7 * Math.sin(Math.PI * fx); g.beginPath(); g.arc(tx + an * fx, oy - al * fy - T * 0.06, T * (0.06 + 0.05 * azar01(n)), 0, 7); g.fill(); }
     // El nicho de Santa Bárbara, patrona de los mineros, con su veladora
-    const nx = ox + 37.6 * T, u = T / 16;
+    const nx = ox + 37.7 * T, u = T / 8;      // el nicho, al doble de tamaño, en su lugar entre La Pinturería y la Gasolinera
     g.fillStyle = '#e9e2d3'; g.beginPath(); g.roundRect(nx - u * 5, oy - u * 15, u * 10, u * 15, [u * 5, u * 5, 0, 0]); g.fill(); g.fillStyle = '#2f5fb0'; g.beginPath(); g.roundRect(nx - u * 3.4, oy - u * 12.6, u * 6.8, u * 10, [u * 3.4, u * 3.4, 0, 0]); g.fill();
     g.fillStyle = '#f3ead8'; g.beginPath(); g.arc(nx, oy - u * 9, u * 1.3, 0, 7); g.fill(); g.fillStyle = '#b8362b'; g.beginPath(); g.moveTo(nx - u * 2, oy - u * 3); g.lineTo(nx, oy - u * 8); g.lineTo(nx + u * 2, oy - u * 3); g.fill();
     g.fillStyle = '#ffd23f'; g.beginPath(); g.arc(nx, oy - u * 9, u * 2, Math.PI * 1.15, Math.PI * 1.85); g.lineWidth = Math.max(1, u * 0.4); g.strokeStyle = '#ffd23f'; g.stroke();
     g.fillStyle = '#fff6c9'; g.fillRect(nx + u * 2.2, oy - u * 4.5, u * 1.1, u * 2.5); g.fillStyle = '#ffb347'; g.beginPath(); g.ellipse(nx + u * 2.75 + Math.sin(reloj * 9) * u * 0.15, oy - u * 5.3, u * 0.5, u * 0.9, 0, 0, 7); g.fill();
     g.globalCompositeOperation = 'lighter'; g.globalAlpha = 0.35 + 0.1 * Math.sin(reloj * 8); g.drawImage(sprite('res'), nx + u * 2.75 - T * 0.75, oy - u * 5.3 - T * 0.75, T * 1.5, T * 1.5); g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1;
     // su letrerito, para que se entienda qué es
-    letrerito(nx, oy - u * 17.5, '🕯️ Santa Bárbara', '#f3ead8', '#2a1a14');
+    letrerito(nx, oy - u * 18.2, '🕯️ Santa Bárbara', '#f3ead8', '#2a1a14');
   }
   // edificios
   if (oy > -T && oy < h + 80 * T / 16) for (const e of EDIF) {
@@ -4302,7 +4302,7 @@ function queEs() {
   if (!menu && raton.x >= 0 && performance.now() - raton.t < 5000 && camY + raton.y * RES / T < 0 && camY + raton.y * RES / T > -2.6) {
     const wx = camX + raton.x * RES / T;
     if (wx > 30 && wx < 36) txt = `El terrero · aquí se tira el tepetate, la roca sin valor. El equipo lleva ${cavadasMundo.toLocaleString('es-MX')} celdas cavadas`;
-    else if (Math.abs(wx - 37.6) < 0.5) txt = 'Nicho de Santa Bárbara, patrona de los mineros · aquí se encomienda uno antes de bajar';
+    else if (Math.abs(wx - 37.7) < 0.8) txt = 'Nicho de Santa Bárbara, patrona de los mineros · aquí se encomienda uno antes de bajar';
     else { const ph = pozoMasHondo(); if (ph.x >= 0 && Math.abs(wx - ph.x - 0.5) < 0.6) txt = `El pozo más hondo del mundo: por esta columna el equipo ha llegado a ${((ph.y + 1) * 2).toLocaleString('es-MX')} m`; }
   }
   if (!txt && !menu && raton.x >= 0 && performance.now() - raton.t < 5000) {
@@ -4424,7 +4424,7 @@ function cadaTanto() {
   pintarHud(); queEs();
   if (++tTabla % 4 === 0) pintarTabla();
   if (tTabla % 40 === 1) { let n = 0; for (let i = 0; i < dug.length; i++) { let b = dug[i]; while (b) { n += b & 1; b >>= 1; } } cavadasMundo = n; }
-  if (yo.suelo && yo.y < 0 && Math.abs(yo.x - 37.6) < 0.9 && !S.fl.nicho) { S.fl.nicho = 1; sucio = true; son.descubre(); tarjeta('🕯️ Santa Bárbara', 'El nicho de la patrona de los mineros. Aquí se encomienda uno antes de bajar. Que salgas con bien.', 'msj', 9000); }
+  if (yo.suelo && yo.y < 0 && Math.abs(yo.x - 37.7) < 1.1 && !S.fl.nicho) { S.fl.nicho = 1; sucio = true; son.descubre(); tarjeta('🕯️ Santa Bárbara', 'El nicho de la patrona de los mineros. Aquí se encomienda uno antes de bajar. Que salgas con bien.', 'msj', 9000); }
 }
 
 /* ════════ Pantalla: medidores, metas y tabla ════════ */
