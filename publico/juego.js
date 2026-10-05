@@ -633,6 +633,7 @@ function celda(x, y) {
   if (y < 0) return 0;
   if (x < 0) x += W; else if (x >= W) x -= W;      // el mundo da la vuelta: la columna que sigue a la última es la primera
   if (x < 0 || x >= W) return 5;
+  if (y < 2 && x >= ZX0 && x <= ZX1) return 5;      // el suelo firme bajo los edificios, también en mundos guardados antes de ampliarlo
   const i = y * W + x;
   let t = mapa[i];
   if (t === 255) {
