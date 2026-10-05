@@ -9,7 +9,7 @@ const _RLR = 'Ricardo López Reyero';
 const _k = 'EYE', _rev = 181218; // RLR · sello de autoría
 
 /* ── Constantes del mundo (deben coincidir con src/mundo.js) ── */
-const W = 96, H = 5000, ZX0 = 39, ZX1 = 68, G = 14;     // 10,000 m de profundidad (2 m por celda)
+const W = 96, H = 5000, ZX0 = 30, ZX1 = 68, G = 14;     // 10,000 m de profundidad (2 m por celda)
 const HW = 0.36, HH = 0.4;         // media anchura y media altura de la maquinita, en celdas
 const INICIO_X = 43.5, INICIO_Y = -HH;
 const TECHO = -500000.5;           // 1,000 km de cielo (2 m por celda)
