@@ -1414,6 +1414,12 @@ No se pudo ver el movimiento en vivo porque el navegador de pruebas está oculto
 
 **Cómo quedó.** Invitar (botón y tecla I) abre el menú `qr`: QR grande (`.qr.grande`, 360 px) de `ligaInvitacion()` (lleva `?de=`), la liga en texto, «📋 Copiar la liga» (aviso y sonido al copiar), «📲 WhatsApp» y «Más formas de invitar…» (el panel completo con referidos, mensaje y cita). Cabecera con ✕ (`header button.x`, 44 px). Menú → Mundo sigue llevando al panel completo.
 
+### 9.59 Metiches: ver lo que ve otro jugador
+
+**Lo que pidió Ricardo.** Poder seleccionar a otro jugador y ver exactamente lo que él ve, mientras sigo siendo jugador; que los dos entiendan que pueden hacerlo.
+
+**Cómo quedó.** `seguir(i)` / `dejarDeSeguir()` (`sigo`): la cámara toma la posición de la otra maquinita en vez de la mía; mi maquinita se queda quieta; cualquier flecha o toque en el lienzo regresa. Las filas de la tabla de arriba a la derecha son clicables (`data-ver`), la que sigo lleva marco, y arriba una píldora «👁 Viendo lo que ve … · toca para volver». Mensaje `mira {a}` al servidor (uno cada 0.6 s), que se lo pasa solo a quien es mirado: tarjeta «👀 … está viendo lo que tú ves. Tú también puedes…»; al dejar de mirar, aviso. Ayuda en el manual.
+
 ## 10. Revisión de código del 2 de octubre
 
 Se revisó todo el código buscando fallas y se corrigieron estas:

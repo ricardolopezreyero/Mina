@@ -2224,6 +2224,7 @@ function recibir(d) {
       return hola(bautizo);
     }
     case 'pinta': { if (d.i === miI) { miPinta = d.p || {}; miMe = d.me | 0; ponerMotor(miPinta.motor | 0); } else { const o = otros.get(d.i); if (o) { o.p = d.p || {}; o.me = d.me | 0; } } edenE = null; if (menu === 'pin') pintarMenu(); return; }
+    case 'mira': { if (d.a === miI) { son.chat(); tarjeta('👀 ' + nombreDe(d.i) + ' está viendo lo que tú ves', 'Tú también puedes: toca su nombre arriba a la derecha y ves lo que ve. Así es Mina: tú mandas tu maquinita, pero nos vemos todos.', 'msj', 9000); } else if (d.a === -1 && d.fue === miI) aviso(nombreDe(d.i) + ' dejó de verte'); return; }
     case 'bocina': { const o = otros.get(d.i); if (!o || !o.on || o.x === undefined) return; const dist = Math.hypot(o.x - yo.x, o.y - yo.y); if (dist < 40) claxon(d.b | 0, Math.max(0.15, 1 - dist / 40), 'otros'); return; }
     case 'nom': {              // alguien rebautizó su maquinita o le cambió el modelo
       if (d.i === miI) {
@@ -2396,6 +2397,15 @@ function iniciarMundo(d, local) {
 const lienzo = $('#c'), g = lienzo.getContext('2d', { alpha: false });
 let DPR = 1, RES = 1, T = 40, cols = 32, filas = 20, camX = 0, camY = -12, reloj = 0, lupa = Math.max(0.6, Math.min(2.2, +op.lupa || 1));
 let panX = 0, panY = 0, vistaLibre = false;       // vista libre con la rueda o el trackpad
+// Metiches: un clic al nombre de otra maquinita y tu cámara se va con ella (ves exactamente lo que ve). Tu maquinita se queda
+// quieta donde estaba; cualquier tecla o toque te regresa. A quien miras le avisamos, y le decimos que puede hacer lo mismo.
+let sigo = -1, sigoT = 0;
+function seguir(i) {
+  const o = otros.get(i); if (!o || !o.on || o.x === undefined || i === miI) { aviso('Ahora no está jugando.'); return; }
+  sigo = i; sigoT = Date.now(); vistaLibre = false; panX = panY = 0; for (const k in teclas) teclas[k] = false;
+  if (conectado) enviar({ t: 'mira', a: i }); son.clic(); aviso('Viendo lo que ve ' + o.n + '. Cualquier tecla o toque te regresa.'); pintarTabla();
+}
+function dejarDeSeguir() { if (sigo < 0) return; sigo = -1; if (conectado) enviar({ t: 'mira', a: -1 }); pintarTabla(); }
 const vis = { x: INICIO_X, y: INICIO_Y };         // dónde se dibuja mi maquinita (entre dos pasos de física)
 const tiles = new Map(), casas = new Map();
 // ── Bloques. El terreno casi nunca cambia, así que no se arma en cada cuadro: se compone una vez en bloques de 4 × 4 celdas
@@ -4203,7 +4213,8 @@ function animar(d) {
     const rec = soloVer ? (otros.get(veo)?.rec || 0) : S.rec, alt = soloVer ? 1e9 : Math.max(S.alt, 40);
     maxY = Math.min(maxY, Math.max(vis.y, rec / 2 - HH) - filas * 0.5); minY = Math.max(minY, Math.min(vis.y, -alt / 2 - HH) - filas * 0.5);
   }
-  let cx = vis.x - cols / 2 + panX, cy = vis.y - filas * 0.5 + panY;
+  const sg = sigo >= 0 ? otros.get(sigo) : null; if (sigo >= 0 && (!sg || !sg.on || sg.x === undefined)) dejarDeSeguir();
+  let cx = (sg && sg.on && sg.x !== undefined ? sg.x : vis.x) - cols / 2 + panX, cy = (sg && sg.on && sg.y !== undefined ? sg.y : vis.y) - filas * 0.5 + panY;
   if (cols >= W) cx = (W - cols) / 2; else if (cx < minX) { panX += minX - cx; cx = minX; } else if (cx > maxX) { panX += maxX - cx; cx = maxX; }
   if (cy < minY) { panY += minY - cy; cy = minY; } else if (cy > maxY) { panY += maxY - cy; cy = maxY; }
   const s = 1 - Math.pow(0.00004, d);
@@ -4437,7 +4448,7 @@ function pintarTabla() {
   const l = [{ n: miNombre, m: miModelo, rec: S.rec, on: 1, yo: 1, me: miMe, y: donde(yo.y) }, ...[...otros.values()].map((o) => ({ ...o, y: o.on && o.y !== undefined ? donde(o.y) : null }))];
   l.sort((a, b) => (b.on || 0) - (a.on || 0) || (b.rec || 0) - (a.rec || 0));        // primero quienes están jugando
   const mas = l.length - 8; if (mas > 0) { const yoJ = l.findIndex((j) => j.yo); l.length = 8; if (yoJ >= 8) l[7] = { n: miNombre, m: miModelo, rec: S.rec, on: 1, yo: 1, y: donde(yo.y) }; }
-  poner($('#tabla'), (movil ? l.filter((j) => !j.yo && j.on).slice(0, 3) : l).map((j) => `<div class="${j.on ? '' : 'off'}"><i style="background:${MODELOS[j.m]?.[0] || '#888'}"></i><b>${j.me ? '✦ ' : ''}${esc(j.n)}${j.yo ? ' (tú)' : ''}</b><span>${j.on && j.y !== null ? j.y + ' · ' : ''}récord ${num(j.rec)} m</span></div>`).join('') + (mas > 0 && !movil ? `<div class="off"><b>y ${mas} más</b></div>` : '') +
+  poner($('#tabla'), (sigo >= 0 && otros.get(sigo) ? `<div class="mund cita" data-dejar="1">👁 Viendo lo que ve ${esc(otros.get(sigo).n)} · toca para volver</div>` : '') + (movil ? l.filter((j) => !j.yo && j.on).slice(0, 3) : l).map((j) => `<div class="${j.on ? '' : 'off'}${!j.yo && j.on ? ' ver' : ''}${j.i === sigo ? ' sigo' : ''}" ${!j.yo && j.on ? `data-ver="${j.i}" title="Ver lo que ve ${esc(j.n)}"` : ''}><i style="background:${MODELOS[j.m]?.[0] || '#888'}"></i><b>${j.me ? '✦ ' : ''}${esc(j.n)}${j.yo ? ' (tú)' : ''}</b><span>${j.on && j.y !== null ? j.y + ' · ' : ''}récord ${num(j.rec)} m</span></div>`).join('') + (mas > 0 && !movil ? `<div class="off"><b>y ${mas} más</b></div>` : '') +
 (soyCreador && publico.sol.length ? `<div class="mund pub" data-pub="1">🙋 ${publico.sol.length === 1 ? '1 quiere jugar' : publico.sol.length + ' quieren jugar'} · <kbd>J</kbd></div>` : '') + (mirones ? `<div class="mund pub" data-pub="1">👁 ${mirones === 1 ? '1 persona te mira' : mirones + ' personas te miran'}</div>` : '') + (cita ? `<div class="mund cita" data-cita="1">🕘 ${horaCitaTx(cita.h).replace(' hora de Torreón', '').replace(/ \(.*\)$/, '')} · ${(cita.voy || []).length === 1 ? '1 va' : (cita.voy || []).length + ' van'} · ${(cita.voy || []).includes(miI) ? 'voy ✓' : '¿vas?'}</div>` : ''));
 }
 
@@ -5096,7 +5107,7 @@ $('#reglaVia').addEventListener('click', (e) => {          // un clic en la regl
 });
 $('#verQuien').addEventListener('click', (e) => { const b = e.target.closest('[data-veo]'); if (b) { audio(); veo = +b.dataset.veo; tkVisto = -1; pintarVer(); } });
 $('#verPedir').addEventListener('click', () => { audio(); pedirJugar(); });
-$('#tabla').addEventListener('click', (e) => { if (e.target.closest('[data-pub]') && listo && !menu && !soloVer) { audio(); abrir('pub'); } if (e.target.closest('[data-cita]') && listo && !soloVer && cita && conectado) { audio(); const voy = (cita.voy || []).includes(miI); enviar({ t: 'voy', si: voy ? 0 : 1 }); aviso(voy ? 'Ya no vas a la cita' : 'Vas a la cita: ' + horaCitaTx(cita.h)); } });
+$('#tabla').addEventListener('click', (e) => { const v = e.target.closest('[data-ver]'); if (v && listo && !menu && !soloVer) { audio(); if (+v.dataset.ver === sigo) dejarDeSeguir(); else seguir(+v.dataset.ver); return; } if (e.target.closest('[data-dejar]')) { audio(); dejarDeSeguir(); return; } if (e.target.closest('[data-pub]') && listo && !menu && !soloVer) { audio(); abrir('pub'); } if (e.target.closest('[data-cita]') && listo && !soloVer && cita && conectado) { audio(); const voy = (cita.voy || []).includes(miI); enviar({ t: 'voy', si: voy ? 0 : 1 }); aviso(voy ? 'Ya no vas a la cita' : 'Vas a la cita: ' + horaCitaTx(cita.h)); } });
 $('#verChat').addEventListener('click', () => { audio(); if (chat.abierto) cerrarChat(); else abrirChat(); });
 $('#verTop').addEventListener('click', () => { audio(); abrir('top'); });
 $('#bGrua').addEventListener('click', (e) => { audio(); e.currentTarget.blur(); if (listo && !menu && !pausa) grua(); });
@@ -5227,6 +5238,7 @@ function menuPrincipal() {
       <p><b>Sin internet y como aplicación:</b> Mina se puede instalar (Menú → Opciones) y abre aunque no haya señal. Lo que caves y ganes sin internet se queda en tu equipo y se manda al mundo cuando la señal vuelve. En pantallas táctiles, arrastra el dedo para moverte y da un toque frente a un edificio para entrar.</p>
       <p><b>Tu nombre y tus ligas:</b> la maquinita nace bautizada para que empieces a jugar sin llenar nada; el nombre y el modelo se cambian en Menú → Mundo. Hay dos ligas: la del mundo (invita a excavar) y la tuya (presume tu maquinita); cada una lleva su imagen al mandarla por WhatsApp.</p>
       <p><b>Con puro teclado:</b> <b>C</b> abre el chat; escribes y <b>Enter</b> manda; <b>Enter</b> con la caja vacía, o <b>Esc</b>, lo cierra; <b>Tab</b> te regresa al juego dejándolo a la vista y las flechas ↑ ↓ recorren la conversación. En los edificios, <b>Enter</b> hace lo principal (cargar, vender, comprar la siguiente mejora, reparar), <b>← →</b> cambian de pestaña o de cantidad, <b>↑ ↓</b> recorren y en El Almacén la letra de cada objeto lo compra. <b>I</b> abre Invitar.</p>
+      <p><b>Ver lo que ve otro (metiches):</b> toca el nombre de cualquier maquinita que esté jugando, arriba a la derecha, y tu cámara se va con ella: ves exactamente lo que ve, en vivo. Tu maquinita se queda quieta donde estaba. Cualquier tecla o toque te regresa. A quien miras le avisamos, y puede hacer lo mismo contigo.</p>
       <p><b>El chat:</b> pulsa <b>C</b> (o el botón 💬 Chat) y escribe. Se abre de izquierda a derecha con todo lo que se ha dicho en este mundo, que queda guardado. Con el chat cerrado, lo que alguien escriba sale abajo un momento. Enter con la caja vacía te regresa al juego con el chat a la vista; Esc lo cierra. Cada maquinita tiene su color, de los cien que hay, según el orden en que entró. El texto se puede seleccionar y copiar, y las ligas se abren con un clic.</p>
       <p><b>Jugar o mirar:</b> con la liga para mirar entra quien sea, sin pedir nada, y elige con un clic a qué maquinita seguir; ve lo que ella ve y las teclas que va apretando. Para entrar a jugar desde ahí se pulsa <b>J</b> (Pedir jugar aquí) y quien creó el mundo decide. A él le llegan los avisos; con <b>J</b> abre el panel del público, donde acepta, rechaza o saca a alguien en un clic. Juegan hasta 40 a la vez; mirando, sin límite.</p>
       <p><b>Top 33 y público:</b> Menú → Top 33 enseña las 33 maquinitas que más han ganado en todos los mundos y cuánto tiempo lleva jugando cada una, en vivo. A la que esté jugando se le puede ir a ver: quien mira entra con una liga propia, no puede jugar ni conoce la liga del mundo. Tu liga para que te vean está en Menú → Mundo, y ahí mismo quien creó el mundo puede cerrarlo al público.</p>
@@ -5287,7 +5299,7 @@ addEventListener('keydown', (e) => {
     e.preventDefault();
     if (MAPA[k] === 'aba' && !e.repeat && pistaDe && pistaDe.id && yo.suelo && yo.y < 0) return abrir(pistaDe.id);
     if (MAPA[k] === 'arr' && !e.repeat) { const t = performance.now(); if (t - tArr < 330 && !crucero) subirSola(); tArr = t; }      // dos toques seguidos a ↑: se queda subiendo sola
-    teclas[MAPA[k]] = true; vistaLibre = false; return;
+    teclas[MAPA[k]] = true; vistaLibre = false; dejarDeSeguir(); return;
   }
   const i = 'rndpqt'.indexOf(k);                  // Reserva, Nanobots, Dinamita, Plástico, cuántiQo, Transmisor
   if (i >= 0) return usar(i);
@@ -5338,6 +5350,7 @@ let pinza = null, lupaT = 0;
 addEventListener('pointerdown', () => nacer(), true);
 function soltarPalanca() { dedo.id = -1; dedo.eje = ''; pal.classList.remove('on'); teclas.izq = teclas.der = teclas.arr = teclas.aba = false; vigilarAmarre(); }
 lienzo.addEventListener('pointerdown', (e) => {
+  if (sigo >= 0 && Date.now() - sigoT > 400) dejarDeSeguir();
   if (e.pointerType !== 'touch') return;
   if (!tactil) { tactil = true; aplicarOp(); } audio();
   if (!listo || menu) return;

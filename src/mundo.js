@@ -1081,6 +1081,13 @@ export class Mundo extends DurableObject {
         this.difundir({ t: "pinta", i, p: r.p, me: r.me });
         break;
       }
+      case "mira": {             // metiches: le avisa a quien está mirando (a = -1: dejó de mirar)
+        const ahora = Date.now(); if (ahora - (yo.miraT || 0) < 600) return; yo.miraT = ahora;
+        const a = entero(d.a, -1, MAX_MAQUINITAS - 1, -1);
+        if (a >= 0) { const s = this.socketDe(a); if (s && s !== ws) manda(s, { t: "mira", i, a }); yo.mira = a; }
+        else if (yo.mira >= 0) { const s = this.socketDe(yo.mira); if (s) manda(s, { t: "mira", i, a: -1, fue: yo.mira }); yo.mira = -1; }
+        break;
+      }
       case "bocina": {           // el claxon: lo oyen los demás, a lo mucho uno por segundo
         const ahora = Date.now(); if (ahora - (yo.bocT || 0) < 900) return; yo.bocT = ahora;
         this.difundir({ t: "bocina", i, b: entero(d.b, 0, 5, 0) }, ws);
