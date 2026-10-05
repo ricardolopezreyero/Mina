@@ -3431,7 +3431,7 @@ function dibujar() {
     if (pistaDe === e) { g.strokeStyle = '#ffd23f'; g.lineWidth = Math.max(2, u * 0.9); g.setLineDash([u * 2, u * 1.5]); g.lineDashOffset = -reloj * u * 8; g.strokeRect(bx + 2 * u, by + 2 * u, c.width - 4 * u, c.height - 3 * u); g.setLineDash([]); }
   }
   // la señal del pozo más hondo: un poste con flecha sobre la columna donde el equipo ha llegado más abajo en línea recta (delante de los edificios)
-  if (oy > -T && oy < h + 6 * T) { const ph = pozoMasHondo(), u = T / 16; if (ph.x >= 0) { const sx = ox + (ph.x + 0.5) * T; g.fillStyle = '#5b3d17'; g.fillRect(sx - u * 0.8, oy - u * 22, u * 1.6, u * 22); letrerito(sx, oy - u * 23.5, '↓ El pozo más hondo · ' + ((ph.y + 1) * 2).toLocaleString('es-MX') + ' m', '#ffd23f', '#2a1a14'); } }
+  if (oy > -T && oy < h + 6 * T) { const ph = pozoMasHondo(), u = T / 16; if (ph.x >= 0) { const sx = ox + (ph.x + 0.5) * T; g.fillStyle = '#5b3d17'; g.fillRect(sx - u * 0.8, oy - u * 22, u * 1.6, u * 22); letrerito(sx, oy - u * 23.5, '↓ El pozo más hondo', '#ffd23f', '#2a1a14'); } }
   // señales
   for (const s of senales) {
     const px = ox + s.x * T, py = oy + s.y * T, r = T * (0.6 + (reloj * 2 % 1) * 0.6);
