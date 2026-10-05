@@ -1,8 +1,8 @@
 // RLR · Mina — la app instalada: guarda el juego completo en el equipo para que abra aunque no haya internet.
 // Con señal siempre se pide lo más nuevo (así llega cada versión); sin señal, o si tarda, sale lo guardado.
 // Ricardo López Reyero
-const VERSION = 'mina-32';
-const ARCHIVOS = ['/', '/juego.js', '/manifest.webmanifest', '/iconos/icono-32.png', '/iconos/icono-180.png', '/iconos/icono-192.png', '/iconos/icono-512.png', '/iconos/icono-mascara-512.png', '/mina.jpg'];
+const VERSION = 'mina-33';
+const ARCHIVOS = ['/', '/juego.js', '/three.min.js', '/escaparate.js', '/manifest.webmanifest', '/iconos/icono-32.png', '/iconos/icono-180.png', '/iconos/icono-192.png', '/iconos/icono-512.png', '/iconos/icono-mascara-512.png', '/mina.jpg'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(VERSION).then((c) => c.addAll(ARCHIVOS)).then(() => self.skipWaiting()));

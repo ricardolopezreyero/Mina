@@ -1420,6 +1420,12 @@ No se pudo ver el movimiento en vivo porque el navegador de pruebas está oculto
 
 **Cómo quedó.** `seguir(i)` / `dejarDeSeguir()` (`sigo`): la cámara toma la posición de la otra maquinita en vez de la mía; mi maquinita se queda quieta; cualquier flecha o toque en el lienzo regresa. Las filas de la tabla de arriba a la derecha son clicables (`data-ver`), la que sigo lleva marco, y arriba una píldora «👁 Viendo lo que ve … · toca para volver». Mensaje `mira {a}` al servidor (uno cada 0.6 s), que se lo pasa solo a quien es mirado: tarjeta «👀 … está viendo lo que tú ves. Tú también puedes…»; al dejar de mirar, aviso. Ayuda en el manual.
 
+### 9.60 El escaparate en 3D de verdad
+
+**Lo que pidió Ricardo.** Que el escaparate de La Pinturería fuera un 3D correcto, con lógica de minería: botones para prender el taladro y las hélices y ver lo que la maquinita sabe hacer.
+
+**Cómo quedó.** `publico/escaparate.js` sobre Three.js r158 (`publico/three.min.js`, servido desde el propio sitio y en la caché del service worker: funciona sin internet). Se carga la primera vez que se abre la tienda (`cargarEscaparate`); si no hay WebGL, queda el escaparate 2D. La maquinita en volumen: carrocería según `carro` (de fábrica, Escarabajo, Locomotora, Submarino, Tanque) con laca (`MeshPhysicalMaterial` con clearcoat cuando está pintada), cabina de vidrio con piloto, orugas de verdad (banda hueca en forma de estadio, ruedas y rodillos dentro, tacos que recorren el perímetro), taladro al frente con rosca, dos mástiles con rotores, faro con luz de verdad (`SpotLight` + luz de piso del color elegido), calcomanía troquelada, el letrero del nombre con su placa dibujado por el mismo `dibMaq` del juego (como sprite), la mascota como sprite animado con `dibMascota`, y la estela como partículas al volar. Tarima con aro de latón, sombras suaves, luz cálida. Gira sola y se arrastra con el dedo o el ratón. Botones **⛏️ Taladro** (la broca gira, salen chispas, las orugas avanzan, el taladro baja) y **🚁 Hélices** (los mástiles se extienden, los rotores giran, la maquinita se eleva y se mece, levanta polvo y deja estela).
+
 ## 10. Revisión de código del 2 de octubre
 
 Se revisó todo el código buscando fallas y se corrigieron estas:

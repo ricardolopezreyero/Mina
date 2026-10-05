@@ -3899,6 +3899,15 @@ function temporadasDeHoy() { const md = horaTorreon().md; let k = TC.CALCAS.leng
 const NIVEL_CLAVE = { c1: 1, c2: 2, c3: 2, calca: 3, luz: 4, estela: 5, bocina: 6, placa: 6, titulo: 6, carro: 7, mascota: 8 };
 const GRATIS = 2;      // los colores (niveles 1 y 2) son de todos
 let miPinta = {}, miMe = 0, miDe = -1, edenPiedras = [], tiendaAnimT = 0, tBocina = 0, estelaN = 0;
+// El escaparate 3D: sus dos interruptores (taladro y hélices) y la carga, una sola vez, de la librería y el módulo.
+const escEstado = { taladro: 0, helices: 0 }; let escCarga = null;
+function cargarEscaparate() {
+  if (window.Escaparate) return Promise.resolve(true);
+  if (escCarga) return escCarga;
+  const script = (src) => new Promise((ok, no) => { const e = document.createElement('script'); e.src = src; e.onload = ok; e.onerror = no; document.head.appendChild(e); });
+  escCarga = script('/three.min.js').then(() => script('/escaparate.js')).then(() => !!window.Escaparate).catch(() => false);
+  return escCarga;
+}
 let tienda = { niveles: [], piezas: { motor: [], cancion: [] }, pruebaCancion: 0, pruebaMotor: 0, mio: { nivel: 0, piezas: [], mecenas: 0, pinta: {} }, fondo: 0, pagos: 0, cargada: 0, cargando: 0, nivelVista: 0, prueba: null, regaloA: -1, mecenasMonto: 99, fondoN: 3, mecenasMin: 99, gratitudMin: 33, gratitudHora: '15:33', fondoPrecio: 19, tope: 5000, error: '', momento: null, cumple: '', gratitud: 0, gracias: 0, referidoPremio: 333, usarSaldo: 1 };
 // El ánimo con el que estás jugando, para el momento del precio: cuánto cavaste en los últimos tres minutos y cuántos golpes
 // fuertes (explosiones, pleitos) en los últimos diez. 0 = tranquilo … 1 = a tope. Solo sirve para bajar el precio y para el tono.
@@ -3937,7 +3946,7 @@ function htmlTienda() {
   if (tienda.mio.saldo > 0) h += `<div class="promesa" style="border-color:#ffd23f88">💛 <b>Tienes ${pesos(tienda.mio.saldo)} de saldo</b> por tus referidos. Paga niveles con él, para ti o de regalo.${!cuenta ? ' Entra con tu cuenta para usarlo.' : ''} <a href="#" data-a="menu" data-v="inv">Ver mis referidos</a>.</div>`;
   const nv = tienda.nivelVista || nivelPorRango(); tienda.nivelVista = nv; const N = L[nv - 1], tuyo = nv <= mio;
   h += `<div class="escalera">${L.map((x) => `<button data-a="tNivel" data-v="${x.n}" class="${x.n === nv ? 'on' : ''}${x.n <= mio ? ' mio' : ''}" title="${esc(x.nombre)}"><b>${x.n}</b><small>${x.precio ? pesos(x.precio) : 'Gratis'}</small></button>`).join('')}</div>`;
-  h += `<div class="carpeta"><div><div class="vista"><canvas id="pintaMaq" width="420" height="400"></canvas><small>${esc(miNombre)}</small></div>${tuyo ? '<p class="nota">Lo que cambies aquí se guarda al momento y lo ven todos.</p>' : '<p class="nota">Lo que cambies aquí se ve, pero no se guarda hasta que el nivel sea tuyo.</p>'}</div><div>`;
+  h += `<div class="carpeta"><div><div class="vista"><div id="esc3d"><canvas id="pintaMaq" width="420" height="400"></canvas></div><div class="chips esc"><button class="s${escEstado.taladro ? ' on' : ''}" data-a="esc" data-v="taladro" title="Prende el taladro">⛏️ Taladro</button><button class="s${escEstado.helices ? ' on' : ''}" data-a="esc" data-v="helices" title="Abre las hélices y vuela">🚁 Hélices</button><small class="nota">Arrastra para girarla</small></div><small>${esc(miNombre)}</small></div>${tuyo ? '<p class="nota">Lo que cambies aquí se guarda al momento y lo ven todos.</p>' : '<p class="nota">Lo que cambies aquí se ve, pero no se guarda hasta que el nivel sea tuyo.</p>'}</div><div>`;
   h += `<h4>Nivel ${N.n} · ${esc(N.nombre)} · ${N.precio ? pesos(N.precio) : 'Gratis'}${tuyo ? ' · <span style="color:var(--ok)">' + (N.precio ? 'tuyo' : 'de todos') + '</span>' : ''}</h4><p class="nota">${esc(N.que)}${N.n > GRATIS + 1 ? ' Incluye todo lo de los niveles anteriores.' : ''}</p>`;
   h += editorNivel(nv) + (tuyo ? '' : htmlPago(nv)) + '</div></div>' + htmlSonidos();
   const cerca = cumpleCerca(tienda.cumple), hoyCumple = cerca === 0, gracias = tienda.gracias || cerca !== 9;
@@ -4649,7 +4658,7 @@ function abrir(id) {
   if (id === 'gas' && S.fuel >= tanque() - 0.001) evento('comb');   // llegar con el tanque lleno también cuenta
   pintarMenu(); ultPos = ''; enviarPos();
 }
-function cerrar() { if (menu === 'inicio') return; if (menu === 'pin') { tienda.prueba = null; if (tienda.pruebaCancion) { clearTimeout(cancionPruebaT); tienda.pruebaCancion = 0; musica.t = 0; musica.z = ''; volumenes(); } } menu = null; $('#velo').classList.remove('on'); document.activeElement?.blur?.(); arrancar(); ultPos = ''; enviarPos(); if (sucio) enviarEst(); }
+function cerrar() { if (menu === 'inicio') return; if (menu === 'pin') { tienda.prueba = null; if (window.Escaparate) Escaparate.destruir(); if (tienda.pruebaCancion) { clearTimeout(cancionPruebaT); tienda.pruebaCancion = 0; musica.t = 0; musica.z = ''; volumenes(); } } menu = null; $('#velo').classList.remove('on'); document.activeElement?.blur?.(); arrancar(); ultPos = ''; enviarPos(); if (sucio) enviarEst(); }
 const cab = (t, sinX) => `<header><h2>${t}</h2><span class="d">${S && !soloVer ? fmt(S.d) : ''}</span>${sinX ? '' : '<button class="s" data-a="cerrar">Cerrar' + (tactil ? '' : ' (Esc)') + '</button>'}</header>`;
 function pintarMenu() {
   const c = $('#caja'); let h = '';
@@ -4753,9 +4762,10 @@ function pintarMenu() {
   const cm = $('#miMaq'); if (cm) dibMaq(cm.getContext('2d'), 80, 86, 132, miModelo, 1, false, 0, '', '', 0.6, miPinta);
   const gb = $('#gBoton'); if (gb) botonGoogle(gb);
   const lc = $('#caja [data-login-ct]'); if (lc && window.LoginCT) LoginCT.montar(lc);
-  const pm = $('#pintaMaq'); if (pm) {                 // la maquinita, en vivo, con lo que se esté probando
-    // El escaparate: la maquinita sobre una tarima que gira despacio (se ve de un lado, de frente, del otro lado), con su sombra
-    // y una luz de aparador. El giro usa su propio reloj: no toca el del juego, para que nada parpadee afuera.
+  const pm = $('#pintaMaq'), esc3d = $('#esc3d'); if (esc3d && pm) {                 // la maquinita, en vivo, con lo que se esté probando
+    // El escaparate en 3D (escaparate.js + three.min.js, servidos desde aquí): se carga la primera vez que se abre la tienda.
+    // Si no hay WebGL o no cargó, queda el escaparate dibujado en 2D de abajo.
+    cargarEscaparate().then((ok) => { if (!ok || menu !== 'pin' || !esc3d.isConnected) return; if (Escaparate.montar(esc3d)) { Escaparate.set('taladro', escEstado.taladro); Escaparate.set('helices', escEstado.helices); Escaparate.actualizar(pintaVista(), miModelo, miNombre, MODELOS, TC); clearInterval(tiendaAnimT); } });
     let relT = 0, ult = performance.now();
     const dib = () => {
       const q = pm.getContext('2d'), Wc = pm.width, Hc = pm.height, t = Wc * 0.5, cx = Wc / 2, cy = Hc * 0.66;
@@ -5078,6 +5088,7 @@ const acciones = {
   tEntrar() { irAlLogin('?tienda=' + tienda.nivelVista); return 'no'; },
   tPagar(v) { pagar({ tipo: 'nivel', nivel: +v, saldo: tienda.usarSaldo && (tienda.mio.saldo || 0) > 0 ? 1 : 0, ...(tienda.regaloA >= 0 ? { paraI: tienda.regaloA } : {}) }); return 'no'; },
   tSaldo(v, el) { tienda.usarSaldo = el.checked ? 1 : 0; },
+  esc(v, el) { escEstado[v] = escEstado[v] ? 0 : 1; if (window.Escaparate) Escaparate.set(v, escEstado[v]); el.classList.toggle('on', !!escEstado[v]); son.clic(); if (v === 'taladro' && escEstado[v]) son.muerde(false); return 'no'; },
   tOir(v) { const [tipo, i] = v.split(':'); if (tipo === 'motor') oirMotor(+i); else oirCancion(+i); return 'no'; },
   tUsar(v) { const [tipo, i] = v.split(':'); const id = tipo + ':' + i; if (+i && !(tienda.mio.piezas || []).includes(id)) return 'no'; usarPieza(tipo, +i); return 'no'; },
   tComprar(v) { if (!precioPieza(v)) return 'no'; pagar({ tipo: 'pieza', pieza: v, saldo: tienda.usarSaldo && (tienda.mio.saldo || 0) > 0 ? 1 : 0 }); return 'no'; },
