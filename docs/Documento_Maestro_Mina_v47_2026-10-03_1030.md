@@ -1408,6 +1408,12 @@ No se pudo ver el movimiento en vivo porque el navegador de pruebas está oculto
 - Cliente: `armarMotor(tipo)` (siete voces: fábrica + seis), `ponerMotor` (la anterior se apaga suave y se desconecta), `oirMotor` (acelerón de 3 s con el canal del motor encendido aunque esté apagado en opciones), `sonarLazos` llama `lazo.motor.ajustar(...)`. `CANC` (cinco definiciones), `componerCancion`, `cancionActiva`, `oirCancion` (10 s de prueba), `componer` usa la canción si hay. Sección «🔊 Sonidos · piezas sueltas» en la tienda (`htmlSonidos`), acciones `tOir`/`tUsar`/`tComprar`, `usarPieza` (guarda en la pintura y enciende el canal del motor).
 - Placa: marco de acero cepillado (bisel, borde del color, tornillos con ranura, nombre grabado), corona con banda, perlas y destellos, dorada con contorno café y laca, neón con halo doble y parpadeo.
 
+### 9.58 El QR a un clic
+
+**Lo que pidió Ricardo.** Que el botón de compartir esté lo más a la mano posible: un clic y sale el modal con el código QR del mundo donde estás y la liga para copiar; copiar solo con el botón (nunca en automático, para no pisar lo que la persona traiga copiado), con aviso de «copiada», y la ✕ arriba a la derecha.
+
+**Cómo quedó.** Invitar (botón y tecla I) abre el menú `qr`: QR grande (`.qr.grande`, 360 px) de `ligaInvitacion()` (lleva `?de=`), la liga en texto, «📋 Copiar la liga» (aviso y sonido al copiar), «📲 WhatsApp» y «Más formas de invitar…» (el panel completo con referidos, mensaje y cita). Cabecera con ✕ (`header button.x`, 44 px). Menú → Mundo sigue llevando al panel completo.
+
 ## 10. Revisión de código del 2 de octubre
 
 Se revisó todo el código buscando fallas y se corrigieron estas:

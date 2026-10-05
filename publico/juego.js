@@ -4687,6 +4687,13 @@ function pintarMenu() {
       <p class="grande">${fmt(c)}</p>
       <p class="nota">Cuesta el <b>5 % de todo lo que has ganado</b> (llevas ${fmt(S.tot)}). Entre más ganes, más cuesta.${S.d < c ? ' Te faltan ' + fmt(c - S.d) + '.' : ''}</p>
       <button data-a="remin" ${!puedo || S.d < c || cuentaFin ? 'disabled' : ''}>${puedo ? 'Remineralizar el tablero' : 'Solo quien creó el mundo puede hacerlo'}</button></div>`;
+  } else if (menu === 'qr') {
+    const liga = ligaInvitacion();
+    h = `<header><h2>👥 Entra a este mundo</h2><button class="s x" data-a="cerrar" title="Cerrar${tactil ? '' : ' (Esc)'}">✕</button></header><div class="cuerpo" style="text-align:center">
+      <p class="nota">Que tu amigo apunte la cámara del teléfono al código: entra a <b>${esc(cfg.nombre || 'este mundo')}</b> con su propia maquinita y en un minuto están excavando juntos. Sin registro, sin descargar nada.</p>
+      <a href="${esc(liga)}" target="_blank" rel="noopener" title="Abrir la liga"><canvas id="qrLienzo" class="qr grande" data-t="${esc(liga)}"></canvas></a>
+      <p><code>${esc(liga)}</code></p>
+      <p><button data-a="invitar">📋 Copiar la liga</button> <button class="s" data-a="wa">📲 WhatsApp</button> <button class="s" data-a="menu" data-v="inv">Más formas de invitar…</button></p></div>`;
   } else if (menu === 'inv') {
     const liga = location.origin + '/' + mundoId;
     const T = horaTorreon(), aLas = (dias, H) => Date.UTC(T.y, T.mes - 1, T.dia + dias, H + 6), chipsCita = [[aLas(0, 20), 'Hoy 8 pm'], [aLas(0, 21), 'Hoy 9 pm'], [aLas(1, 20), 'Mañana 8 pm'], [aLas(1, 21), 'Mañana 9 pm']].filter(([h]) => h > Date.now());
@@ -5007,7 +5014,7 @@ const acciones = {
   invitar(v, el) {
     subirFotos(true);
     const liga = ligaInvitacion();
-    const hecho = () => { el.textContent = '¡Liga copiada!'; }, aMano = () => window.prompt('Copia la liga de tu mundo:', liga);
+    const hecho = () => { el.textContent = '✓ Copiada'; aviso('Liga copiada. Pégala donde quieras.'); son.clic(); }, aMano = () => window.prompt('Copia la liga de tu mundo:', liga);
     if (navigator.clipboard?.writeText) navigator.clipboard.writeText(liga).then(hecho, aMano); else aMano();
     return 'no';
   },
@@ -5099,7 +5106,7 @@ $('#vjDatos').addEventListener('click', (e) => {
 });
 $('#bSube').addEventListener('click', (e) => { audio(); e.currentTarget.blur(); if (!listo || menu) return; if (crucero) crucero = false; else subirSola(); pintarHud(true); });
 
-$('#bInv').addEventListener('click', (e) => { audio(); e.currentTarget.blur(); if (listo && !menu) abrir('inv'); });
+$('#bInv').addEventListener('click', (e) => { audio(); e.currentTarget.blur(); if (listo && !menu) abrir('qr'); });
 $('#bMenu').addEventListener('click', (e) => { audio(); e.currentTarget.blur(); if (listo && !menu) abrir('menu'); });
 
 function sel(k, ops, quien = 'regla') {
@@ -5288,7 +5295,7 @@ addEventListener('keydown', (e) => {
   if (k === 'g') grua();                            // Grúa
   if (k === 'b') tocarClaxon();                     // Bocina (claxon)
   if (k === 'f') tomarFoto();                       // Foto: captura de lo que estás viendo
-  if (k === 'i') abrir('inv');                      // Invitar
+  if (k === 'i') abrir('qr');                       // Invitar: primero el QR
   if (k === 'j') abrir('pub');                      // Jugadores y público: solicitudes, quién mira, sacar
   if (k === 'v' && edenVivo && yo.y > EDEN0 - 6) verJardin();      // Ver el jardín entero
   if (k === ' ') { e.preventDefault(); if (crucero) crucero = false; else subirSola(); }
