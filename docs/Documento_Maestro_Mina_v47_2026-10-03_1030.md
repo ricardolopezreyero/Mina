@@ -1426,6 +1426,12 @@ No se pudo ver el movimiento en vivo porque el navegador de pruebas está oculto
 
 **Cómo quedó.** `publico/escaparate.js` sobre Three.js r158 (`publico/three.min.js`, servido desde el propio sitio y en la caché del service worker: funciona sin internet). Se carga la primera vez que se abre la tienda (`cargarEscaparate`); si no hay WebGL, queda el escaparate 2D. La maquinita en volumen: carrocería según `carro` (de fábrica, Escarabajo, Locomotora, Submarino, Tanque) con laca (`MeshPhysicalMaterial` con clearcoat cuando está pintada), cabina de vidrio con piloto, orugas de verdad (banda hueca en forma de estadio, ruedas y rodillos dentro, tacos que recorren el perímetro), taladro al frente con rosca, dos mástiles con rotores, faro con luz de verdad (`SpotLight` + luz de piso del color elegido), calcomanía troquelada, el letrero del nombre con su placa dibujado por el mismo `dibMaq` del juego (como sprite), la mascota como sprite animado con `dibMascota`, y la estela como partículas al volar. Tarima con aro de latón, sombras suaves, luz cálida. Gira sola y se arrastra con el dedo o el ratón. Botones **⛏️ Taladro** (la broca gira, salen chispas, las orugas avanzan, el taladro baja) y **🚁 Hélices** (los mástiles se extienden, los rotores giran, la maquinita se eleva y se mece, levanta polvo y deja estela).
 
+### 9.61 Comercio o batalla
+
+**Lo que pidió Ricardo.** Antes del primer pleito, un menú: ¿comercial o batalla? Comercial = darse dinero y objetos; batalla = pelear. Lo que elijan se queda, y se puede cambiar después.
+
+**Cómo quedó.** Por pareja de maquinitas y por mundo: `m.rel["a|b"]` en la meta del mundo (mensaje `rel {a, modo}`, lo manda cualquiera de los dos; se difunde a todos y viaja en `mundo`). El servidor no pasa ningún `golpe` si la pareja no está en batalla, y el cliente también lo ignora. En el contacto bajo tierra: sin modo → se abre el menú «¿Cómo se llevan?» (una vez cada 3 s); con comercio → se abre el intercambio (una vez cada 4 s); con batalla → el pleito de siempre. Intercambio: `dar {a, d, o}` (solo con comercio acordado; el servidor valida y se lo entrega al otro; quien da descuenta en el momento; queda nota en el chat). Panel J: botones 🤝 / ⚔️ para elegir o cambiar, y «🤝 Dar» cuando hay comercio. Tarjeta al otro cuando alguien elige o cambia.
+
 ## 10. Revisión de código del 2 de octubre
 
 Se revisó todo el código buscando fallas y se corrigieron estas:

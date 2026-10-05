@@ -23,6 +23,7 @@ Este juego está hecho con todo el cariño con el que se puede hacer un juego. N
 - La rueda o el trackpad mueven la vista; cualquier flecha la regresa.
 - El mundo baja hasta los **10,000 m**, con cuatro lugares por descubrir. **El Elevador** (último edificio) te regresa a ellos y al punto donde te recogió la grúa.
 - Los explosivos (**D** y **P**) se usan donde sea, también volando.
+- **Comercio o batalla**: la primera vez que te topas con alguien bajo tierra, eliges cómo se llevan en ese mundo. Con **comercio**, al juntarse se abre el intercambio (dinero del juego y objetos del Almacén) y nunca se lastiman; con **batalla**, pelean. El otro se entera y cualquiera lo cambia en el panel de la gente (J), donde también está «🤝 Dar». Mientras no elijan, nadie se hace daño.
 - **Pleitos**: en el aire las maquinitas rebotan; bajo tierra se pelean a taladro contra casco, con las dos vidas a la vista. Todo el mundo se entera de que empezó (en el mapa van con ⚔️) y quien mira tiene un botón para irse a verlo. La que pierde vuelve arriba sin perder nada.
 - **Mapa y archivo**: Menú → Mapa muestra los túneles abiertos; Menú → Mundo guarda el mundo en un archivo que se puede volver a abrir.
 - **La colección**: 99 medallones enterrados (33 objetos, tres de cada uno). Los junta todo el equipo y se encienden en Menú → Colección.

@@ -1873,6 +1873,10 @@ function fisica(dt) {
     } else if (cfg.pleitos !== 0 && yo.suelo && yo.y > 0.5 && !yo.perf) {
       const lado = Math.abs(dy) < 0.6 && Math.abs(dx) < 1.1 && ((izq && dx < 0) || (der && dx > 0)), abajo = aba && Math.abs(dx) < 0.6 && dy > 0 && dy < 1.15;
       if (!lado && !abajo) continue;
+      // La primera vez que te topas con alguien, se pregunta: ¿comercio o batalla? Con comercio, el contacto abre el intercambio.
+      const modo = relCon(o.i);
+      if (!modo) { if (!menu && tiempo - tRelPregunta > 3) { tRelPregunta = tiempo; relCon_i = o.i; abrir('rel'); } continue; }
+      if (modo === 'comercio') { if (!menu && tiempo - tComercio > 4) { tComercio = tiempo; comercioCon = o.i; abrir('comercio'); } continue; }
       yo.ataca = abajo ? 2 : s; yo.pelea = tiempo;
       if (lado) { yo.vx = 0; if (Math.abs(dx) < 0.74) yo.x = o.x - s * 0.74; }  // no se enciman: quedan taladro contra casco
       const cx = yo.x + (lado ? s * 0.55 : 0), cy = yo.y + (abajo ? 0.55 : 0.1);
@@ -2136,6 +2140,12 @@ function hola(extra) { enviar({ t: 'hola', k: miK, ...(extra || {}), ...(vengoDe
 /* ════════ Compartir: el ADN de invitar ════════ RLR */
 // La liga del mundo lleva quién la manda (?de=): quien llega ve quién lo invitó, y quien invitó se entera de que llegó.
 let cita = null, tCompartirCard = 0, bienvenidaDe = 0;
+// Cómo se llevan dos maquinitas en este mundo: 'comercio' (se dan dinero y objetos, nunca se lastiman) o 'batalla'. Lo decide el
+// primero que se topa con el otro; el otro se entera y cualquiera lo cambia después en el panel de la gente (J).
+let rel = {}, relCon_i = -1, tRelPregunta = -9, tComercio = -9, comercioCon = -1;
+const parDe = (a, b) => Math.min(a, b) + '|' + Math.max(a, b);
+const relCon = (i) => rel[parDe(miI, i)] || '';
+function elegirRel(i, modo) { if (!conectado) return; enviar({ t: 'rel', a: i, modo }); rel[parDe(miI, i)] = modo; son.clic(); }
 const ligaInvitacion = () => location.origin + '/' + mundoId + (miI >= 0 ? '?de=' + miI : '');
 const horaCitaTx = (h) => { const t = new Date(h), T = horaTorreon(), p = {}; for (const x of new Intl.DateTimeFormat('en-US', { timeZone: 'America/Monterrey', hour12: false, month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).formatToParts(t)) p[x.type] = x.value; const H = +p.hour % 24, M = +p.minute, hoy = p.month + '-' + p.day === T.md; const man = (() => { const d = new Date(Date.UTC(T.y, T.mes - 1, T.dia + 1)); return String(d.getUTCMonth() + 1).padStart(2, '0') + '-' + String(d.getUTCDate()).padStart(2, '0') === p.month + '-' + p.day; })(); const hl = t.getHours(), ml = t.getMinutes(), local = hl !== H || ml !== M ? ` (${hl % 12 || 12}${ml ? ':' + String(ml).padStart(2, '0') : ''} ${hl < 12 ? 'am' : 'pm'} en tu reloj)` : ''; return (hoy ? 'hoy' : man ? 'mañana' : 'el ' + +p.day + ' de ' + MESES[+p.month - 1]) + ' a las ' + (H % 12 || 12) + (M ? ':' + String(M).padStart(2, '0') : '') + (H < 12 ? ' am' : ' pm') + ' hora de Torreón' + local; };
 // El panel de referidos: cuántos abrieron tu liga, cuántos entraron, cuántos abrieron cuenta, y tu saldo.
@@ -2283,6 +2293,8 @@ function recibir(d) {
       son.entra(); ultPos = ''; enviarPos(); return pintarTabla();   // que el recién llegado me vea aunque yo esté quieto
     case 'sale': { const o = otros.get(d.i); if (o) { o.on = 0; o.x = undefined; o.b = []; aviso(o.n + (d.sacada ? ' fue sacada del mundo' : ' salió')); notaChat(o.n + (d.sacada ? ' fue sacada del mundo' : ' salió')); pintarChatQuien(); } return pintarTabla(); }
     case 'j': { const o = otros.get(d.i); if (o) { o.rec = d.rec; o.tot = d.tot; } return pintarTabla(); }
+    case 'rel': { rel[d.par] = d.modo; const [a, b] = d.par.split('|').map(Number); const otro = a === miI ? b : b === miI ? a : -1; if (otro >= 0 && d.de !== miI) { son.chat(); tarjeta(d.modo === 'comercio' ? '🤝 ' + nombreDe(otro) + ' eligió comercio contigo' : '⚔️ ' + nombreDe(otro) + ' eligió batalla contigo', d.modo === 'comercio' ? 'Al juntarse se abre el intercambio: se dan dinero y objetos, y nunca se lastiman. Lo cambias en el panel de la gente (J).' : 'Al juntarse bajo tierra, taladro contra casco. Quien pierde sube con todo lo suyo. Lo cambias en el panel de la gente (J).', 'msj', 10000); } if (menu === 'pub') pintarMenu(); return; }
+    case 'dar': { if (!S) return; S.d += d.d || 0; S.tot += d.d || 0; const cosas = []; for (const k of Object.keys(d.o || {})) { S.obj[+k] = (S.obj[+k] || 0) + d.o[k]; cosas.push(d.o[k] + ' × ' + OBJ[+k].ic + ' ' + OBJ[+k].n); } sucio = true; son.logro(); pintarHud(true); tarjeta('🤝 ' + (d.n || nombreDe(d.de)) + ' te dio ' + [d.d ? fmt(d.d) : '', ...cosas].filter(Boolean).join(', '), 'Ya está en tu maquinita.', 'msj', 10000); notaChat((d.n || nombreDe(d.de)) + ' le dio a ' + miNombre + ' ' + [d.d ? fmt(d.d) : '', ...cosas].filter(Boolean).join(', ')); return; }
     case 'cita': { const antes = cita; cita = d.cita; if (cita && (!antes || antes.h !== cita.h)) { notaChat(nombreDe(cita.i) + ' propuso juntarse ' + horaCitaTx(cita.h)); if (cita.i !== miI) tarjeta('🕘 Nos vemos ' + horaCitaTx(cita.h), nombreDe(cita.i) + ' propone la hora. Arriba a la derecha dices si vas.', 'msj', 10000); } else if (!cita && antes) notaChat('se quitó la cita'); pintarTabla(); if (menu === 'inv') pintarMenu(); return; }
     case 'ref': { son.logro(); if (tienda.cargada) { tienda.mio.saldo = d.saldo; tienda.mio.ref.cuentas = d.cuentas; } tarjeta('💛 ' + d.n + ' abrió su cuenta: +' + pesos(d.premio), `Ya tienes ${pesos(d.saldo)} de saldo en La Pinturería. ${d.cuentas} ${d.cuentas === 1 ? 'persona ha abierto' : 'personas han abierto'} cuenta con tu liga.`, 'msj', 14000, false, { t: '🎨 Ir a La Pinturería', f: () => { tienda.cargada = 0; abrir('pin'); } }); if (menu === 'inv' || menu === 'pin') { tienda.cargada = 0; cargarTienda(); } return; }
     case 'pleito': return empezarPleito(d);
@@ -2291,6 +2303,7 @@ function recibir(d) {
     case 'col': if (d.k >= 0 && d.k < NCOL) { hallados[d.k] = 1; dugCambios++; mapa.fill(255); bloques.clear(); pintarHud(true); if (menu === 'menu') pintarMenu(); } return;
     case 'golpe': {            // otra maquinita me alcanzó con su taladro: pega según su taladro y la clase de golpe; lo que aguanto es mi casco
       if (!S) return;
+      if (!d.v && relCon(d.i) !== 'batalla') return;
       if (d.v) {               // …o me avisa que le gané
         S.st.pleitos = (S.st.pleitos || 0) + 1; sucio = true; son.rango(); temblar(6);
         for (const c of ['#ffd23f', '#6ec3ff', '#ff6b5a', '#6fdc7a']) chispas(yo.x, yo.y - 0.3, c, 14, 9);
@@ -2397,7 +2410,7 @@ function iniciarMundo(d, local) {
   document.body.classList.add('jugando');
   surtirContratos(); pintarHud(true); pintarTabla(); if (!local) ponerChat(d.chat); arrancar();
   { const f = new Date(), hoy = f.getDate() + '/' + (f.getMonth() + 1); if (primera && hoy === '11/7') tarjeta('⛏️ ¡Feliz Día del Minero!', 'Hoy, 11 de julio, México celebra a su gente de mina. Buen turno.', 'msj', 10000); if (primera && hoy === '4/12') tarjeta('🕯️ Día de Santa Bárbara', 'Hoy, 4 de diciembre, las minas festejan a su patrona.', 'msj', 10000); }
-  if (primera) { tInicioMundo = Date.now(); cita = d.cita || null; }
+  if (primera) { tInicioMundo = Date.now(); cita = d.cita || null; } if (d.rel) rel = d.rel;
   if (!local && vengoDe >= 0 && vengoDe !== miI && !bienvenidaDe && otros.get(vengoDe)) { bienvenidaDe = 1; const q = otros.get(vengoDe); setTimeout(() => tarjeta('🚜 ' + q.n + ' te invitó a este mundo', (q.on ? 'Está jugando ahora mismo' + (q.y !== undefined ? ', a ' + num(Math.max(0, Math.round(q.y))) + ' m' : '') : 'Ahora no está, pero el mundo sigue tal cual') + '. Cada quien baja con su maquinita; se ven en el mapa (M) y se hablan por el chat (C).' + (cuenta ? '' : ` Si abres tu cuenta (Google), a ${q.n} le dan ${pesos(tienda.referidoPremio)} de saldo para pintar su maquinita; a ti, tu maquinita guardada en cualquier equipo.`), 'msj', 18000, false, cuenta ? null : { t: '💾 Abrir mi cuenta', f: () => irAlLogin() }), 1200); }
   if (primera && !d.est) tarjeta('⛏️ Tu maquinita se llama ' + miNombre, (tactil ? 'Pon el dedo donde sea y arrástralo: abajo perfora, a los lados camina, arriba vuela. Dos empujones seguidos hacia arriba o hacia abajo y sigue sola. Las caídas no te lastiman. Con dos dedos acercas la vista.' : 'Usa las flechas para moverte.') + ' Primero: carga combustible en la Gasolinera (' + (tactil ? 'un toque' : '↓') + ' para entrar). El nombre se cambia en Menú → Mundo.', 'msj', 11000);
   if (primera) { const n = leer('mina_nota', ''); if (n) { try { localStorage.removeItem('mina_nota'); } catch {} aviso(n); } }
@@ -3823,7 +3836,7 @@ function htmlPublico() {
   let h = soyCreador ? '<p class="nota">Mirar es libre: cualquiera con la liga para mirar entra sin pedir nada, y aquí solo se te avisa. Para <b>jugar</b> hay que pedirlo, y tú decides. Quien entra con la liga del mundo que tú mandas ya viene invitado. Quien ya jugó aquí conserva su permiso para siempre, hasta que tú se lo quites. «Quitar permiso» lo deja mirar y volver a pedirlo; «Sacar» lo saca al instante y no lo deja volver, ni a jugar ni a mirar.</p>'
     : '<p class="nota">Solo quien creó el mundo acepta solicitudes y saca jugadores.</p>';
   h += `<h4>🙋 Quieren jugar (${publico.sol.length})</h4>` + (publico.sol.length ? publico.sol.map((x, k) => fila('🙋', esc(x.n || 'Alguien'), 'Pidió entrar ' + hace(x.h), soyCreador ? `<button data-a="acepto" data-v="${x.sid}">${k === 0 ? '<kbd>Enter</kbd>' : ''}Aceptar</button><button class="s" data-a="rechazo" data-v="${x.sid}">Rechazar</button>` : '')).join('') : '<p class="nota">Nadie por ahora. Cuando alguien que está mirando pida jugar, te llega un aviso.</p>');
-  h += `<h4>⛏️ Jugando ahora (${jugando.length + 1})</h4>` + fila('⭐', esc(miNombre) + ' (tú)', 'Quien creó el mundo', '') + jugando.map((o) => fila('⛏️', `<span style="color:${colorTx(o.i)}">${esc(o.n)}</span>`, o.y !== undefined ? donde(o.y) : 'conectada', `<button class="s" data-a="regalar" data-v="${o.i}" title="Regalarle un nivel de La Pinturería">🎁</button>` + (soyCreador ? `<button class="s" data-a="quitarP" data-v="${o.i}">Quitar permiso</button><button class="s mal" data-a="sacarJ" data-v="${o.i}">Sacar</button>` : ''))).join('');
+  h += `<h4>⛏️ Jugando ahora (${jugando.length + 1})</h4>` + fila('⭐', esc(miNombre) + ' (tú)', 'Quien creó el mundo', '') + jugando.map((o) => fila('⛏️', `<span style="color:${colorTx(o.i)}">${esc(o.n)}</span>`, o.y !== undefined ? donde(o.y) : 'conectada', `<button class="s" data-a="regalar" data-v="${o.i}" title="Regalarle un nivel de La Pinturería">🎁</button>` + (relCon(o.i) === 'comercio' ? `<button class="s" data-a="relDar" data-v="${o.i}" title="Darle dinero u objetos">🤝 Dar</button><button class="s" data-a="relCambiar" data-v="${o.i}:batalla" title="Cambiar a batalla">⚔️</button>` : relCon(o.i) === 'batalla' ? `<button class="s" data-a="relCambiar" data-v="${o.i}:comercio" title="Cambiar a comercio">🤝</button><span class="nota" style="margin:0">⚔️ batalla</span>` : `<button class="s" data-a="relCambiar" data-v="${o.i}:comercio">🤝</button><button class="s" data-a="relCambiar" data-v="${o.i}:batalla">⚔️</button>`) + (soyCreador ? `<button class="s" data-a="quitarP" data-v="${o.i}">Quitar permiso</button><button class="s mal" data-a="sacarJ" data-v="${o.i}">Sacar</button>` : ''))).join('');
   h += `<h4>👁 Mirando (${publico.nm || mirones})</h4>` + (publico.mira.length ? publico.mira.map((x) => fila('👁', esc(x.n || 'Alguien'), x.n ? 'Tiene maquinita' : 'Sin maquinita', soyCreador ? `<button class="s mal" data-a="sacarM" data-v="${x.sid}">Sacar</button>` : '')).join('') : `<p class="nota">${mirones ? mirones + ' mirando.' : 'Nadie está mirando ahora.'}</p>`);
   // Quién trajo a quién: el árbol de invitaciones de este mundo (lo que hace que un mundo crezca).
   const todos = [{ i: miI, n: miNombre, de: miDe }, ...[...otros.values()]], conDe = todos.filter((o) => o.de >= 0), trajo = (i) => conDe.filter((o) => o.de === i).length;
@@ -4733,6 +4746,18 @@ function pintarMenu() {
       <p class="grande">${fmt(c)}</p>
       <p class="nota">Cuesta el <b>5 % de todo lo que has ganado</b> (llevas ${fmt(S.tot)}). Entre más ganes, más cuesta.${S.d < c ? ' Te faltan ' + fmt(c - S.d) + '.' : ''}</p>
       <button data-a="remin" ${!puedo || S.d < c || cuentaFin ? 'disabled' : ''}>${puedo ? 'Remineralizar el tablero' : 'Solo quien creó el mundo puede hacerlo'}</button></div>`;
+  } else if (menu === 'rel') {
+    const o = otros.get(relCon_i) || { n: 'Alguien' };
+    h = cab('🤝 ¿Cómo se llevan?', true) + `<div class="cuerpo"><p>Te topaste con <b>${esc(o.n)}</b>. Elige cómo se van a llevar en este mundo; ${esc(o.n)} se entera y cualquiera de los dos lo puede cambiar después en el panel de la gente (tecla J).</p>
+      <div class="fila"><div class="ic">🤝</div><div class="t"><b>Comercio</b><small>Al juntarse se abre el intercambio: se dan dinero del juego y objetos (reserva, nanobots, dinamita, plástico, cuántico, transmisor). Nunca se lastiman.</small></div><button data-a="relElegir" data-v="comercio">Comercio</button></div>
+      <div class="fila"><div class="ic">⚔️</div><div class="t"><b>Batalla</b><small>Bajo tierra, taladro contra casco, con las dos vidas a la vista. Quien pierde sube a la superficie con todo lo suyo: no se pierde nada.</small></div><button class="s" data-a="relElegir" data-v="batalla">Batalla</button></div>
+      <p class="nota">Mientras no elijan, nadie se hace daño.</p></div>`;
+  } else if (menu === 'comercio') {
+    const o = otros.get(comercioCon) || { n: 'Alguien' };
+    h = cab('🤝 Intercambio con ' + esc(o.n)) + `<div class="cuerpo"><p class="nota">Lo que des sale de tu maquinita en el momento y llega a la de ${esc(o.n)}. Es un regalo: no hay vuelta atrás. Se van juntos aquí: están en modo comercio, nunca se lastiman.</p>
+      <h4>💵 Dinero</h4><div class="fila"><div class="t"><label class="op"><span>Cantidad (tienes ${fmt(S.d)})</span><input id="darD" type="number" min="1" step="1" inputmode="numeric" placeholder="0"></label></div><button data-a="darDinero">Dar</button></div>
+      <h4>🎒 Objetos</h4>${OBJ.map((x, k) => S.obj[k] > 0 ? `<div class="fila"><div class="ic">${x.ic}</div><div class="t"><b>${esc(x.n)}</b><small>Tienes ${S.obj[k]}</small></div><input id="darO${k}" type="number" min="1" max="${S.obj[k]}" step="1" value="1" inputmode="numeric" style="width:64px"><button class="s" data-a="darObj" data-v="${k}">Dar</button></div>` : '').join('') || '<p class="nota">No traes objetos ahora. Se compran en El Almacén.</p>'}
+      <p class="nota">Para pelear con ${esc(o.n)} hay que cambiar a batalla en el panel de la gente (J). <button class="s" data-a="menu" data-v="pub">Abrir el panel</button></p></div>`;
   } else if (menu === 'qr') {
     const liga = ligaInvitacion();
     h = `<header><h2>👥 Entra a este mundo</h2><button class="s x" data-a="cerrar" title="Cerrar${tactil ? '' : ' (Esc)'}">✕</button></header><div class="cuerpo" style="text-align:center">
@@ -5129,6 +5154,11 @@ const acciones = {
   capEntrar() { irAlLogin(''); return 'no'; },
   capBorrar(v, el) { if (!confirm('¿Borrar esta captura? No se puede recuperar.')) return 'no'; fetch('/api/capturas/borrar', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ses: cuenta.ses, id: v, mundo: el.dataset.m }) }).then(() => { capturas.lista = capturas.lista.filter((c) => c.id !== v); capturas.grande = null; if (menu === 'menu') pintarMenu(); }); return 'no'; },
   salirCuenta() { salirCuenta(); return 'no'; },
+  relElegir(v) { elegirRel(relCon_i, v); cerrar(); tarjeta(v === 'comercio' ? '🤝 Comercio' : '⚔️ Batalla', v === 'comercio' ? 'Al juntarse se abre el intercambio.' : 'Al juntarse bajo tierra, a darle.', 'msj', 5000); return 'no'; },
+  relCambiar(v) { const [i, modo] = v.split(':'); elegirRel(+i, modo); return; },
+  relDar(v) { comercioCon = +v; menu = 'comercio'; },
+  darDinero() { const d = Math.floor(+($('#darD')?.value || 0)); if (!(d >= 1) || d > S.d) { aviso('Pon una cantidad que tengas.'); return 'no'; } if (!confirm(`¿Darle ${fmt(d)} a ${nombreDe(comercioCon)}? No hay vuelta atrás.`)) return 'no'; S.d -= d; sucio = true; enviar({ t: 'dar', a: comercioCon, d }); son.venta(); pintarHud(true); notaChat(miNombre + ' le dio ' + fmt(d) + ' a ' + nombreDe(comercioCon)); return; },
+  darObj(v) { const k = +v, n = Math.floor(+($('#darO' + k)?.value || 0)); if (!(n >= 1) || n > S.obj[k]) { aviso('Pon una cantidad que tengas.'); return 'no'; } S.obj[k] -= n; sucio = true; enviar({ t: 'dar', a: comercioCon, o: { [k]: n } }); son.venta(); pintarHud(true); notaChat(miNombre + ' le dio ' + n + ' × ' + OBJ[k].n + ' a ' + nombreDe(comercioCon)); return; },
   quitarP(v) { enviar({ t: 'quitar', i: +v }); const o = otros.get(+v); if (o) aviso('Le quitaste el permiso a ' + o.n + ': puede mirar y volver a pedirlo'); },
   devolverP(v) { enviar({ t: 'devolver', i: +v }); const o = otros.get(+v); if (o) aviso(o.n + ' vuelve a tener permiso'); },
   desechar() { desechar(mundoId, soyCreador); },

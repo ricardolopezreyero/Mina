@@ -1015,9 +1015,26 @@ export class Mundo extends DurableObject {
         this.avisarTabla(i, true);
         break;
       }
+      case "rel": {              // cómo se llevan dos maquinitas: comercio (se dan cosas, nunca se lastiman) o batalla. Lo elige el primero que se topa; se cambia cuando sea.
+        const a = entero(d.a, 0, MAX_MAQUINITAS - 1, -1), modo = d.modo === "batalla" ? "batalla" : "comercio";
+        if (a < 0 || a === i || !this.jug[a]) return;
+        m.rel = m.rel || {}; const par = Math.min(i, a) + "|" + Math.max(i, a); m.rel[par] = modo; this.sucio.meta = true;
+        this.difundir({ t: "rel", par, modo, de: i });
+        break;
+      }
+      case "dar": {              // comercio: le doy dinero del juego y objetos a otra maquinita (ella los recibe; yo ya los descuento)
+        const a = entero(d.a, 0, MAX_MAQUINITAS - 1, -1), otro = this.socketDe(a);
+        if (a < 0 || a === i || !otro || ((m.rel || {})[Math.min(i, a) + "|" + Math.max(i, a)] !== "comercio")) return;
+        const dinero = Number.isFinite(d.d) && d.d > 0 ? Math.min(1e15, Math.floor(d.d)) : 0, obj = {};
+        if (d.o && typeof d.o === "object") for (const k of Object.keys(d.o)) { const n = entero(d.o[k], 1, 999, 0), idx = entero(k, 0, 5, -1); if (n && idx >= 0) obj[idx] = n; }
+        if (!dinero && !Object.keys(obj).length) return;
+        manda(otro, { t: "dar", de: i, n: yo.n, d: dinero, o: obj });
+        break;
+      }
       case "golpe": {            // un pleito: se le avisa a la maquinita alcanzada; ella calcula su daño
         if (m.cfg.pleitos === 0) return;
         const a = entero(d.a, 0, MAX_MAQUINITAS, -1), otro = this.socketDe(a);
+        if (!d.v && ((m.rel || {})[Math.min(i, a) + "|" + Math.max(i, a)] !== "batalla")) return;      // sin batalla acordada, no hay golpes
         if (!otro || otro === ws || !this.jug[a]) return;
         manda(otro, { t: "golpe", i, q: entero(d.q, 1, 1000, 20), k: entero(d.k, 0, 3, 0), v: d.v ? 1 : 0 });
         // El pleito como tal: al primer golpe entre dos, todo el mundo (también quien mira) se entera; al ganar, también.
@@ -1238,7 +1255,7 @@ export class Mundo extends DurableObject {
       t: "mundo", i, seed: m.seed, remin: m.remin, cfg: m.cfg, creador: i === this.creador() ? 1 : 0,
       est: this.jug[i].est, cuenta: m.reminAt ? Math.max(0, Math.ceil((m.reminAt - Date.now()) / 1000)) : 0,
       jug: this.jug.map((j, x) => (j ? this.publico(x, on.has(x)) : null)).filter(Boolean),
-      dug: btoa(b), col: m.col || [], chat: this.chatUltimos(60), fin: m.fin || null, sinMineral: m.sinMineral ?? -1, mapa: this.mapaDe(m), pid: yo.pid, ver: m.cfg.mirar === 0 ? "" : m.ver, obs: this.ctx.getWebSockets("mira").length, regalo: r.regalo ? 1 : 0, piedras: m.piedras || [], cita: this.citaViva(m),
+      dug: btoa(b), col: m.col || [], chat: this.chatUltimos(60), fin: m.fin || null, sinMineral: m.sinMineral ?? -1, mapa: this.mapaDe(m), pid: yo.pid, ver: m.cfg.mirar === 0 ? "" : m.ver, obs: this.ctx.getWebSockets("mira").length, regalo: r.regalo ? 1 : 0, piedras: m.piedras || [], cita: this.citaViva(m), rel: m.rel || {},
     });
     for (const [x, s] of this.pos) if (x !== i && on.has(x)) manda(ws, s);
     this.avisarTabla(i, true, true);
