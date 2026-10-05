@@ -5,6 +5,7 @@
    sintetiza aquí. El terreno de cada mundo se fabrica una vez con su semilla y queda guardado.
    ════════════════════════════════════════════════════════════════════════════ */
 'use strict';
+if (window.__noEsElJuego) throw new Error('Esta dirección es de la guía de estilos: se está recargando.');
 const _RLR = 'Ricardo López Reyero';
 const _k = 'EYE', _rev = 181218; // RLR · sello de autoría
 

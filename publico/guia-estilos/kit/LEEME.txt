@@ -1,0 +1,31 @@
+MINA · Kit de marca v1 · 2026-10-05 1045
+Guía de estilos en línea: https://mina.capitaltorreon.com/guia-estilos
+Hecho por Ing. Ricardo López Reyero · CapitalTorreon
+
+QUÉ HAY AQUÍ
+  01-icono/  Ícono (5 archivos)
+  02-favicon/  Favicon (6 archivos)
+  03-logotipo/  Logotipo (7 archivos)
+  04-maquinita/  La maquinita (16 archivos)
+  05-perfil/  Foto de perfil (el círculo) (18 archivos)
+  06-vertical/  Vertical 9:16 (6 archivos)
+  07-horizontal/  Horizontal (10 archivos)
+  08-cuadrado/  Cuadrado y 4:5 (6 archivos)
+  09-video/  Para video (5 archivos)
+  10-tipografia/  Tipografía (8 archivos)
+  11-color/  Color (2 archivos)
+
+PARA EMPEZAR EN TIKTOK
+  1. Foto de perfil: 05-perfil/perfil-atardecer.png
+  2. Portada de cada video: 06-vertical/portada-vertical-1080x1920.jpg
+  3. Encima de lo grabado: 06-vertical/marco-vertical-1080x1920.png (es transparente)
+  4. Última pantalla: 06-vertical/cierre-vertical-1080x1920.jpg
+  5. Texto en el editor: Inter Black para títulos (10-tipografia), amarillo #FFD23F con contorno café #2A1A14
+  6. Liga en la biografía: https://mina.capitaltorreon.com
+
+TRES REGLAS
+  · El logo no se deforma, no se recolorea y no se le quita el contorno café.
+  · Mina es gratis, sin anuncios y sin registro: se dice tal cual, sin exagerar ni prometer premios.
+  · Siempre se dice dónde se juega: mina.capitaltorreon.com
+
+Tipografía Inter: SIL Open Font License (ver 10-tipografia/Inter-LICENCIA-OFL.txt).

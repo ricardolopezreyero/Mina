@@ -1,0 +1,18 @@
+Mina · paleta de color
+
+#FFD23F  Amarillo Mina — La marca: títulos, botones y acentos.
+#2A1A14  Café tinta — Contornos y texto sobre amarillo.
+#1B120E  Tierra oscura — El fondo de todo.
+#2A1C16  Caja — Tarjetas y menús.
+#5A3D2C  Borde — Líneas y marcos.
+#F3E6D8  Crema — Texto sobre oscuro.
+#C9B29C  Arena — Texto secundario.
+#A9744F  Tierra — La tierra del mundo.
+#7CC24E  Pasto — La superficie.
+#22407A  Cielo alto — Arriba del atardecer.
+#F0A868  Atardecer — El horizonte.
+#FF7AC8  Rosa Pinturería — La Pinturería.
+#FF6B5A  Rojo — Peligro y Gasolinera.
+#6EC3FF  Azul — El Taller y los vidrios.
+#6FDC7A  Verde — Éxito y El Almacén.
+#C05CFF  Morado — La Remineralizadora.

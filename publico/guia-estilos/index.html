@@ -1,0 +1,304 @@
+<!doctype html>
+<!-- Mina · Guía de estilos · Ricardo López Reyero (RLR) · mina.capitaltorreon.com/guia-estilos -->
+<html lang="es" data-k="eye" data-rev="181218">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Mina · Guía de estilos</title>
+<meta name="description" content="Todo lo que se necesita para publicar sobre Mina: ícono, logotipo, foto de perfil, portadas para TikTok y redes, marcos para video, colores y tipografía. Cada imagen se descarga con un clic.">
+<meta name="author" content="Ricardo López Reyero">
+<meta property="og:type" content="website"><meta property="og:site_name" content="Mina"><meta property="og:locale" content="es_MX">
+<meta property="og:url" content="https://mina.capitaltorreon.com/guia-estilos/">
+<meta property="og:title" content="Mina · Guía de estilos">
+<meta property="og:description" content="Ícono, logotipo, foto de perfil, portadas, marcos para video, colores y tipografía. Todo se descarga con un clic.">
+<meta property="og:image" content="https://mina.capitaltorreon.com/guia-estilos/kit/07-horizontal/portada-horizontal-1920x1080.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#1b120e"><meta name="build" content="eye"><meta name="rev" content="181218">
+<link rel="icon" type="image/png" sizes="32x32" href="/iconos/icono-32.png"><link rel="apple-touch-icon" href="/iconos/icono-180.png">
+<style>
+/* RLR · una sola hoja: la guía se ve con los colores y la letra de Mina */
+@font-face{font-family:Inter;font-weight:900;font-display:swap;src:url(kit/10-tipografia/Inter-Black.ttf) format("truetype")}
+@font-face{font-family:Inter;font-weight:700 800;font-display:swap;src:url(kit/10-tipografia/Inter-Bold.ttf) format("truetype")}
+:root{--f:1;--bg:#1b120e;--caja:#2a1c16;--borde:#5a3d2c;--tx:#f3e6d8;--su:#c9b29c;--ac:#ffd23f;--tinta:#2a1a14;--ok:#6fdc7a}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:70px}
+body{margin:0;background:var(--bg);color:var(--tx);font:calc(17px*var(--f))/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+a{color:var(--ac)}
+h1,h2,h3{font-family:Inter,system-ui,sans-serif;line-height:1.1;margin:0}
+h1{font-weight:900;font-size:clamp(2.2em,7vw,4.2em);color:var(--ac);-webkit-text-stroke:.05em var(--tinta);paint-order:stroke fill;text-shadow:0 .06em 0 var(--tinta)}
+h2{font-weight:900;font-size:clamp(1.6em,4.4vw,2.5em);color:var(--ac);margin-bottom:.35em}
+h3{font-weight:800;font-size:1.2em;color:var(--tx);margin:1.6em 0 .5em}
+p{margin:.5em 0;max-width:68ch}
+.envuelve{max-width:1240px;margin:0 auto;padding:0 clamp(16px,4vw,36px)}
+nav{position:sticky;top:0;z-index:5;background:#1b120ef2;backdrop-filter:blur(8px);border-bottom:1px solid var(--borde)}
+nav .envuelve{display:flex;gap:6px;align-items:center;overflow-x:auto;padding-top:8px;padding-bottom:8px;scrollbar-width:none}
+nav a{white-space:nowrap;text-decoration:none;color:var(--su);font-weight:700;font-size:.86em;padding:.45em .8em;border-radius:999px}
+nav a:hover{background:var(--caja);color:var(--tx)}
+nav .marca{color:var(--ac);font-family:Inter,system-ui;font-weight:900;font-size:1.1em;padding-left:0}
+nav .tam{margin-left:auto;display:flex;gap:4px;flex:none;position:sticky;right:0;background:#1b120e;padding-left:10px;box-shadow:-12px 0 12px #1b120e}
+button,.boton{font:inherit;font-weight:800;cursor:pointer;border:1px solid var(--borde);background:var(--caja);color:var(--tx);border-radius:10px;padding:.45em .8em;text-decoration:none;display:inline-flex;align-items:center;gap:.5em}
+button:hover,.boton:hover{border-color:var(--ac)}
+.boton.grande{background:var(--ac);color:var(--tinta);border-color:var(--ac);font-size:1.12em;padding:.8em 1.3em;border-radius:14px}
+.boton.grande:hover{filter:brightness(1.08)}
+.boton svg{width:1.15em;height:1.15em;flex:none}
+header.portada{background:linear-gradient(#22407a,#5f83bd 38%,#f0a868 74%,#fbd590 82%,#7cc24e 82%,#7cc24e 84%,#a9744f 84%,#7a4c31);padding:clamp(40px,8vw,90px) 0 clamp(50px,9vw,110px);border-bottom:6px solid var(--tinta)}
+header.portada .envuelve{display:grid;grid-template-columns:1fr auto;gap:30px;align-items:center}
+header.portada img{width:min(300px,34vw);height:auto;filter:drop-shadow(0 14px 18px #0007)}
+header.portada p{font-family:Inter,system-ui;font-weight:800;font-size:clamp(1.1em,2.6vw,1.6em);color:#fff;-webkit-text-stroke:.14em var(--tinta);paint-order:stroke fill;margin:.5em 0 1em}
+header.portada small{display:block;margin-top:.8em;color:#fff;font-weight:700;text-shadow:0 1px 3px #000a}
+section{padding:clamp(40px,7vw,80px) 0;border-bottom:1px solid var(--borde)}
+.rejilla{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px;margin:18px 0}
+.rejilla.ancha{grid-template-columns:repeat(auto-fill,minmax(360px,1fr))}
+.rejilla.chica{grid-template-columns:repeat(auto-fill,minmax(155px,1fr))}
+.tarjeta{background:var(--caja);border:1px solid var(--borde);border-radius:14px;overflow:hidden;display:flex;flex-direction:column}
+.tarjeta .vista{display:flex;align-items:center;justify-content:center;height:230px;padding:18px;position:relative}
+.rejilla.chica .vista{height:200px}
+.tarjeta .vista img{max-width:100%;max-height:100%;height:auto;width:auto;display:block;object-fit:contain}
+.vista.cuadros{background:repeating-conic-gradient(#3a2a22 0 25%,#2f211a 0 50%) 0 0/22px 22px}
+.vista.oscuro{background:#120b08}.vista.claro{background:#f3e6d8}
+.tarjeta .vista.foto,.tarjeta .vista.marco{padding:10px;height:360px;background-color:#120b08}.rejilla.ancha .vista.foto,.rejilla.ancha .vista.marco{height:260px}
+.tarjeta .vista.marco{background-origin:content-box;background-clip:content-box;background-position:center;background-size:contain;background-repeat:no-repeat}
+.vista.archivo{font-size:3.4em;background:#120b08}
+.tarjeta .dato{padding:12px 14px 14px;display:flex;flex-direction:column;gap:6px;flex:1}
+.tarjeta b{font-family:Inter,system-ui;font-weight:800}
+.tarjeta .uso{color:var(--su);font-size:.86em;line-height:1.4;flex:1}
+.tarjeta .baja{margin-top:6px;justify-content:center;background:#120b08;flex-wrap:wrap;row-gap:0}
+.tarjeta .baja small{color:var(--su);font-weight:600;font-size:.74em;flex-basis:100%;text-align:center}
+.colores{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px;margin:18px 0}
+.color{border:1px solid var(--borde);border-radius:12px;overflow:hidden;background:var(--caja);cursor:pointer;text-align:left;padding:0;display:block;font-weight:400}
+.color i{display:block;height:84px}.color span{display:block;padding:8px 10px 10px;font-size:.85em;line-height:1.35}.color b{display:block}.color code{color:var(--ac);font-weight:700}.color small{color:var(--su)}
+.dos{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px;margin:18px 0}
+.nota{background:var(--caja);border:1px solid var(--borde);border-radius:14px;padding:16px 18px}
+.nota.si{border-left:6px solid var(--ok)}.nota.no{border-left:6px solid #ff6b5a}
+.nota ul{margin:.4em 0 0;padding-left:1.2em}.nota li{margin:.25em 0}
+.copia{position:relative;background:#120b08;border:1px dashed var(--borde);border-radius:12px;padding:14px 16px 46px;white-space:pre-wrap;margin:10px 0;font-size:.95em}
+.copia button{position:absolute;right:10px;bottom:8px;font-size:.82em}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:.92em}th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--borde)}th{color:var(--ac);font-family:Inter,system-ui}
+.tabla{overflow-x:auto}
+.tipo p{margin:.1em 0;max-width:none;font-family:Inter,system-ui}
+.pasos{counter-reset:p;display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;margin:18px 0;padding:0;list-style:none}
+.pasos li{counter-increment:p;background:var(--caja);border:1px solid var(--borde);border-radius:14px;padding:14px 16px 16px 58px;position:relative}
+.pasos li::before{content:counter(p);position:absolute;left:14px;top:12px;width:32px;height:32px;border-radius:50%;background:var(--ac);color:var(--tinta);font:900 1.05em/32px Inter,system-ui;text-align:center}
+#aviso{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(20px);background:var(--ac);color:var(--tinta);font-weight:800;padding:.6em 1.1em;border-radius:999px;opacity:0;transition:.25s;pointer-events:none;z-index:9}
+#aviso.on{opacity:1;transform:translateX(-50%)}
+footer{padding:40px 0 70px;color:var(--su);font-size:.9em}
+@media(max-width:640px){header.portada .envuelve{grid-template-columns:1fr}header.portada img{order:-1;width:150px}.rejilla.ancha{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<nav><div class="envuelve">
+  <a class="marca" href="#arriba">MINA</a>
+  <a href="#tiktok">Empezar en TikTok</a><a href="#perfil">Foto de perfil</a><a href="#logotipo">Logotipo</a><a href="#icono">Ícono</a><a href="#maquinita">La maquinita</a><a href="#color">Color</a><a href="#tipografia">Tipografía</a><a href="#vertical">Vertical</a><a href="#horizontal">Horizontal</a><a href="#cuadrado">Cuadrado</a><a href="#video">Para video</a><a href="#medidas">Medidas</a>
+  <span class="tam"><button id="menos" title="Letra más chica" aria-label="Letra más chica">A−</button><button id="mas" title="Letra más grande" aria-label="Letra más grande">A+</button></span>
+</div></nav>
+
+<header class="portada" id="arriba"><div class="envuelve">
+  <div>
+    <h1>Guía de estilos</h1>
+    <p>Todo lo que se necesita para hablar de Mina, listo para descargar.</p>
+    <a class="boton grande" id="zipArriba" href="#" download><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 20h16"/></svg><span>Descargar todo (.zip)</span></a>
+    <small id="zipDato"></small>
+  </div>
+  <img src="mini/04-maquinita__maquinita-perforando.webp" alt="La maquinita amarilla de Mina, perforando" width="300" height="368">
+</div></header>
+
+<main>
+<section id="esencia"><div class="envuelve">
+  <h2>Mina, en una línea</h2>
+  <p style="font-size:1.25em;color:#fff"><b>Un juego de minería para jugar con tus amigos en el mismo mundo: entras y ya estás jugando.</b></p>
+  <p>Es gratis, no pide registro, no tiene anuncios y se juega en el celular o en la computadora. Cada quien baja con su maquinita, pero el mundo es de todos: se ven, se hablan, se regalan cosas y nada se pierde cuando cierran la ventana.</p>
+  <div class="dos">
+    <div class="nota si"><b>Así suena Mina</b><ul><li>Cálida y directa, como se le habla a un amigo.</li><li>En español de México, sin palabras rebuscadas.</li><li>Con calma: aquí nadie tiene prisa.</li><li>Dice la verdad: gratis es gratis.</li></ul></div>
+    <div class="nota no"><b>Así no</b><ul><li>Nada de «gana dinero» ni premios que no existen.</li><li>Nada de urgencias inventadas («solo hoy»).</li><li>Nada de gritar en mayúsculas ni rellenar con emojis.</li><li>Nunca burlarse de quien juega.</li></ul></div>
+  </div>
+</div></section>
+
+<section id="tiktok"><div class="envuelve">
+  <h2>Para empezar en TikTok</h2>
+  <p>Cinco pasos y la cuenta queda lista. Las mismas piezas sirven para Reels de Instagram y Shorts de YouTube.</p>
+  <ol class="pasos">
+    <li><b>Foto de perfil</b><br>Sube <a href="#perfil">el círculo de atardecer</a>.</li>
+    <li><b>Nombre y biografía</b><br>Copia la biografía de abajo y pon la liga del juego.</li>
+    <li><b>Graba la pantalla</b><br>En vertical, con el sonido del juego encendido.</li>
+    <li><b>Ponle el marco</b><br><a href="#vertical">El marco vertical</a> va encima del video: logo arriba y liga abajo.</li>
+    <li><b>Cierra con la liga</b><br>Los últimos dos segundos, <a href="#vertical">el cierre vertical</a>.</li>
+  </ol>
+  <div class="dos">
+    <div>
+      <h3>Biografía</h3>
+      <div class="copia" data-copia>⛏️ Excava con tus amigos en el mismo mundo.
+Gratis · sin registro · sin anuncios 👇</div>
+      <h3>La liga</h3>
+      <div class="copia" data-copia>https://mina.capitaltorreon.com</div>
+      <p class="uso" style="color:var(--su)">Si quieres que cuenten tus referidos, usa la liga que te da el botón <b>Invitar</b> dentro del juego: lleva tu nombre, y por cada persona nueva que entre con ella y abra su cuenta te caen $333 de saldo en La Pinturería.</p>
+      <h3>Etiquetas</h3>
+      <div class="copia" data-copia>#Mina #juegosgratis #juegosconamigos #juegosweb #juegosindie #minería #hechoenméxico</div>
+    </div>
+    <div>
+      <h3>Textos para acompañar el video</h3>
+      <div class="copia" data-copia>Entras y ya estás jugando. Sin descargar nada, sin registro y sin anuncios. Mándale la liga a un amigo y bajen juntos ⛏️</div>
+      <div class="copia" data-copia>Dejé la ventana abierta dos horas, volví y mi maquinita seguía exactamente donde la dejé. Así sí.</div>
+      <div class="copia" data-copia>Diez kilómetros hacia abajo y al fondo hay algo esperándote. ¿Con quién bajas?</div>
+      <div class="copia" data-copia>Le piqué al nombre de mi amigo y ahora veo todo lo que hace en su pantalla. Metiches nivel máximo 👀</div>
+    </div>
+  </div>
+  <h3>Diez ideas de video</h3>
+  <div class="dos">
+    <div class="nota"><ul><li>Los primeros 30 segundos de alguien que nunca ha jugado.</li><li>«Le mandé la liga a mi amigo y esto pasó»: los dos en el mismo mundo.</li><li>El primer diamante, con el sonido del juego.</li><li>Pintar la maquinita en La Pinturería (los colores son gratis).</li><li>Volar hasta el espacio sin soltar la tecla.</li></ul></div>
+    <div class="nota"><ul><li>Un pleito de taladros bajo tierra, con las dos vidas a la vista.</li><li>Regalarle un millón a un amigo y ver llover las monedas.</li><li>Seguir a otro jugador y ver su pantalla en vivo.</li><li>El pozo más hondo del mundo: quién llegó más abajo.</li><li>El final del juego, sin contar qué es: solo la reacción.</li></ul></div>
+  </div>
+  <div class="dos">
+    <div class="nota si"><b>Para que el video funcione</b><ul><li>Lo mejor pasa en los primeros dos segundos.</li><li>Entre 15 y 30 segundos; uno solo, bien contado.</li><li>El sonido del juego encendido: el taladro y las campanas hacen la mitad del trabajo.</li><li>Di siempre dónde se juega: <b>mina.capitaltorreon.com</b>.</li></ul></div>
+    <div class="nota"><b>Lo importante cabe aquí</b><p style="color:var(--su)">TikTok tapa la parte de arriba, la de abajo y una franja a la derecha. La referencia de <a href="#vertical">zonas seguras</a> lo enseña: el título y la liga van dentro del recuadro verde.</p></div>
+  </div>
+</div></section>
+
+<section id="perfil"><div class="envuelve">
+  <h2>Foto de perfil: el círculo</h2>
+  <p>Todas las redes recortan la foto en círculo, así que la maquinita va al centro y nada importante toca la orilla. El <b>atardecer</b> es el principal. Para la <b>comunidad de WhatsApp</b> están los círculos sobrios: negro, blanco, café o tierra, con el ícono en gris.</p>
+  <h3>En círculo, con fondo transparente</h3>
+  <div class="rejilla chica" data-c="05-perfil" data-inc="-circulo"></div>
+  <h3>Cuadradas, para subir a cada red</h3>
+  <div class="rejilla chica" data-c="05-perfil" data-exc="-circulo"></div>
+  <div class="tabla"><table><tr><th>Dónde</th><th>Cuál</th></tr>
+    <tr><td>TikTok, Instagram, YouTube, Facebook, X</td><td>Atardecer</td></tr>
+    <tr><td>Grupo de WhatsApp</td><td>Atardecer o Tierra</td></tr>
+    <tr><td>Comunidad de WhatsApp</td><td>Negro, Blanco, Café o Tierra, con ícono gris</td></tr></table></div>
+</div></section>
+
+<section id="logotipo"><div class="envuelve">
+  <h2>Logotipo</h2>
+  <p>La palabra <b>MINA</b> en Inter Black, amarilla, con contorno café y un escalón café abajo, junto a la maquinita con el taladro hacia abajo. Como trae su propio contorno, se lee igual sobre cielo, tierra, negro o blanco.</p>
+  <div class="rejilla ancha" data-c="03-logotipo"></div>
+  <div class="dos">
+    <div class="nota si"><b>Sí</b><ul><li>Dejarle aire alrededor: al menos el alto de la letra «I» por cada lado.</li><li>Usarlo completo y derecho.</li><li>La versión de una tinta para marca de agua.</li></ul></div>
+    <div class="nota no"><b>No</b><ul><li>Estirarlo, inclinarlo o girarlo.</li><li>Cambiarle el color o quitarle el contorno.</li><li>Ponerlo sobre un fondo tan cargado que no se lea: mejor el cintillo.</li></ul></div>
+  </div>
+</div></section>
+
+<section id="icono"><div class="envuelve">
+  <h2>Ícono y favicon</h2>
+  <p>La maquinita perforando al atardecer. Es el ícono de la app y la pestaña del navegador.</p>
+  <div class="rejilla chica" data-c="01-icono"></div>
+  <h3>Favicon</h3>
+  <div class="rejilla chica" data-c="02-favicon"></div>
+</div></section>
+
+<section id="maquinita"><div class="envuelve">
+  <h2>La maquinita</h2>
+  <p>Es el personaje. La amarilla es la de la marca; las demás son los modelos con los que nace cada jugador y las carrocerías de La Pinturería. Todas con fondo transparente, listas para pegar en un video.</p>
+  <div class="rejilla chica" data-c="04-maquinita"></div>
+</div></section>
+
+<section id="color"><div class="envuelve">
+  <h2>Color</h2>
+  <p>Amarillo sobre tierra oscura: eso es Mina. Toca un color para copiar su código.</p>
+  <div class="colores" id="colores"></div>
+  <div class="rejilla" data-c="11-color"></div>
+</div></section>
+
+<section id="tipografia"><div class="envuelve">
+  <h2>Tipografía</h2>
+  <p>La letra de la marca es <b>Inter</b>, una tipografía libre que se puede usar y repartir gratis. Dentro del juego se usa la letra del propio equipo para que abra al instante; Inter es su equivalente en todos lados, y es la que traen todas las imágenes de esta guía.</p>
+  <div class="nota tipo">
+    <p style="font-weight:900;font-size:2.4em;color:var(--ac)">Excava con tus amigos</p>
+    <p style="font-weight:800;font-size:1.5em">Entras y ya estás jugando — Inter ExtraBold</p>
+    <p style="font-weight:700;font-size:1.1em;color:var(--su)">Gratis · sin registro · sin anuncios — Inter Bold</p>
+  </div>
+  <div class="dos">
+    <div class="nota"><b>Títulos en video</b><p style="color:var(--su)">Inter Black, amarillo <code>#FFD23F</code>, con contorno café <code>#2A1A14</code>. Cortos: tres o cuatro palabras.</p></div>
+    <div class="nota"><b>Texto de apoyo</b><p style="color:var(--su)">Inter ExtraBold o Bold, blanco con contorno café. Si el editor no deja importar letras, sirve cualquier letra sin patines, gruesa.</p></div>
+  </div>
+  <div class="rejilla chica" data-c="10-tipografia"></div>
+  <p style="color:var(--su);font-size:.9em">Inter es de Rasmus Andersson y se publica con la licencia SIL Open Font License. Sitio: <a href="https://rsms.me/inter/" target="_blank" rel="noopener">rsms.me/inter</a> · también en <a href="https://fonts.google.com/specimen/Inter" target="_blank" rel="noopener">Google Fonts</a>.</p>
+</div></section>
+
+<section id="vertical"><div class="envuelve">
+  <h2>Vertical · 9:16</h2>
+  <p>1080 × 1920. Para TikTok, Reels, Shorts e historias. El título de la portada queda donde no lo tapan los botones ni se corta en la cuadrícula del perfil.</p>
+  <div class="rejilla" data-c="06-vertical"></div>
+</div></section>
+
+<section id="horizontal"><div class="envuelve">
+  <h2>Horizontal</h2>
+  <p>Para YouTube, presentaciones, encabezados y la imagen que aparece al pegar la liga.</p>
+  <div class="rejilla ancha" data-c="07-horizontal"></div>
+</div></section>
+
+<section id="cuadrado"><div class="envuelve">
+  <h2>Cuadrado y 4:5</h2>
+  <p>Para publicaciones de Instagram y Facebook, y para estados.</p>
+  <div class="rejilla" data-c="08-cuadrado"></div>
+</div></section>
+
+<section id="video"><div class="envuelve">
+  <h2>Piezas para video</h2>
+  <p>Transparentes, para ponerlas encima de lo grabado.</p>
+  <div class="rejilla ancha" data-c="09-video"></div>
+</div></section>
+
+<section id="medidas"><div class="envuelve">
+  <h2>Medidas por red</h2>
+  <div class="tabla"><table>
+    <tr><th>Red</th><th>Pieza</th><th>Medida</th><th>Archivo</th></tr>
+    <tr><td>TikTok · Reels · Shorts</td><td>Video y portada</td><td>1080 × 1920</td><td>portada-vertical</td></tr>
+    <tr><td>Instagram</td><td>Publicación</td><td>1080 × 1350 o 1080 × 1080</td><td>publicacion-4x5 · publicacion</td></tr>
+    <tr><td>YouTube</td><td>Miniatura</td><td>1280 × 720</td><td>miniatura-youtube</td></tr>
+    <tr><td>YouTube</td><td>Banner del canal</td><td>2560 × 1440</td><td>banner-youtube</td></tr>
+    <tr><td>Facebook</td><td>Portada</td><td>1640 × 624</td><td>portada-facebook</td></tr>
+    <tr><td>X · LinkedIn</td><td>Encabezado</td><td>1500 × 500</td><td>encabezado-x</td></tr>
+    <tr><td>WhatsApp · iMessage</td><td>Vista previa de la liga</td><td>1200 × 630</td><td>liga</td></tr>
+    <tr><td>Todas</td><td>Foto de perfil</td><td>1080 × 1080</td><td>perfil-…</td></tr>
+  </table></div>
+  <p style="margin-top:26px"><a class="boton grande" id="zipAbajo" href="#" download><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 20h16"/></svg><span>Descargar todo (.zip)</span></a></p>
+</div></section>
+</main>
+
+<footer><div class="envuelve">
+  <p><b>Mina</b> · <a href="/">mina.capitaltorreon.com</a> · CapitalTorreon</p>
+  <p>Hecha con cariño por Ing. <a href="https://ricardolopezreyero.com" target="_blank" rel="noopener">Ricardo López Reyero</a>, en Torreón, Coahuila. <span id="pie"></span></p>
+</div></footer>
+<div id="aviso" role="status" aria-live="polite"></div>
+
+<script>
+/* RLR · Ricardo López Reyero — la guía arma sus tarjetas con kit.json (lo escribe el generador del kit) */
+'use strict';
+const _RLR = 'Ricardo López Reyero', _k = 'EYE', _rev = 181218;
+const $ = (s) => document.querySelector(s), esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const FLECHA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0l-5-5m5 5l5-5M4 20h16"/></svg>';
+let avisoT = 0;
+function aviso(t) { const a = $('#aviso'); a.textContent = t; a.classList.add('on'); clearTimeout(avisoT); avisoT = setTimeout(() => a.classList.remove('on'), 1900); }
+async function copiar(t, dicho) { try { await navigator.clipboard.writeText(t); aviso(dicho || 'Copiado'); } catch { window.prompt('Copia:', t); } }
+const peso = (kb) => (kb >= 1000 ? (kb / 1024).toFixed(1) + ' MB' : kb + ' KB');
+function tarjeta(a) {
+  const ruta = `kit/${a.c}/${a.f}`, ext = a.f.split('.').pop().toUpperCase(), marco = a.fondo.startsWith('foto-marco');
+  const fondo = marco ? 'marco' : a.fondo, estilo = marco ? ` style="background-image:url(mini/${a.fondo.endsWith('v') ? '06-vertical__fondo-vertical-escena-1080x1920' : '07-horizontal__fondo-horizontal-escena-1920x1080'}.webp)"` : '';
+  const vista = a.mini ? `<img loading="lazy" src="mini/${esc(a.mini)}" alt="${esc(a.t)}">` : `<span aria-hidden="true">${a.ic || '📄'}</span>`;
+  return `<article class="tarjeta"><div class="vista ${fondo}"${estilo}>${vista}</div><div class="dato"><b>${esc(a.t)}</b><span class="uso">${esc(a.u)}</span>
+    <a class="boton baja" href="${esc(ruta)}" download="${esc(a.f)}" title="Descargar ${esc(a.f)}">${FLECHA}<span>Descargar</span><small>${ext}${a.w ? ' · ' + a.w + ' × ' + a.h : ''} · ${peso(a.kb)}</small></a></div></article>`;
+}
+(async () => {
+  let K; try { K = await (await fetch('kit.json', { cache: 'no-cache' })).json(); } catch { aviso('No se pudo cargar el kit. Recarga la página.'); return; }
+  for (const r of document.querySelectorAll('.rejilla[data-c]')) {
+    const inc = r.dataset.inc, exc = r.dataset.exc;
+    r.innerHTML = K.archivos.filter((a) => a.c === r.dataset.c && (!inc || a.f.includes(inc)) && (!exc || !a.f.includes(exc))).map(tarjeta).join('');
+  }
+  $('#colores').innerHTML = K.colores.map((c) => `<button class="color" data-hex="${c.h}" title="Copiar ${c.h}"><i style="background:${c.h}"></i><span><b>${esc(c.n)}</b><code>${c.h.toUpperCase()}</code><br><small>${esc(c.u)}</small></span></button>`).join('');
+  for (const id of ['#zipArriba', '#zipAbajo']) { const a = $(id); a.href = K.zip; a.setAttribute('download', K.zip); }
+  $('#zipDato').textContent = `${K.archivos.length} archivos · ${K.zipMb} MB · versión ${K.version.replace('v', '')}`;
+  $('#pie').textContent = `Kit ${K.version} · ${K.sello.replace('_', ' ').replace(/(\d\d)(\d\d)$/, '$1:$2')}.`;
+})();
+document.addEventListener('click', (e) => {
+  const c = e.target.closest('.color'); if (c) return copiar(c.dataset.hex.toUpperCase(), 'Copiado ' + c.dataset.hex.toUpperCase());
+  const b = e.target.closest('[data-copiar]'); if (b) return copiar(b.parentElement.firstChild.textContent.trim(), 'Texto copiado');
+  if (e.target.closest('.baja,.grande')) aviso('Descargando…');
+});
+for (const d of document.querySelectorAll('[data-copia]')) { const b = document.createElement('button'); b.textContent = 'Copiar'; b.dataset.copiar = '1'; d.appendChild(b); }
+// A− / A+: el tamaño de la letra, recordado en este equipo
+let f = 1; try { f = +localStorage.getItem('mina_guia_f') || 1; } catch {}
+const pon = () => { document.documentElement.style.setProperty('--f', f); try { localStorage.setItem('mina_guia_f', f); } catch {} };
+$('#menos').onclick = () => { f = Math.max(0.85, +(f - 0.1).toFixed(2)); pon(); }; $('#mas').onclick = () => { f = Math.min(1.5, +(f + 0.1).toFixed(2)); pon(); }; pon();
+</script>
+</body>
+</html>

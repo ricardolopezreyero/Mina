@@ -6,6 +6,8 @@ Juego de minería para navegador, infinito y compartido. Bajas con tu maquinita,
 
 Gratis y sin registro: entras y ya estás jugando, sin llenar nada. Se puede instalar como aplicación y sigue funcionando sin internet.
 
+**Guía de estilos y kit de marca:** [mina.capitaltorreon.com/guia-estilos](https://mina.capitaltorreon.com/guia-estilos/) — ícono, favicon, logotipo, la maquinita, foto de perfil (el círculo), portadas y fondos para TikTok y redes, marcos y cierres para video, QR, color y tipografía (Inter). Cada pieza se descarga con un clic y todo junto en un zip.
+
 ## Manifiesto
 
 Este juego está hecho con todo el cariño con el que se puede hacer un juego. Nació de *Motherload*, que jugué de niño durante decenas de horas: me quedé con lo bueno, lo multipliqué, y le di mucho más sentido y una historia. Se lee completo dentro del juego, en Menú → Manifiesto.
@@ -61,6 +63,14 @@ Este juego está hecho con todo el cariño con el que se puede hacer un juego. N
 | `docs/Documento_Maestro_Mina_v47_2026-10-03_1030.md` | Qué está construido, con qué números y qué falta |
 | `Prompt_Maestro_Mina_v4_2026-10-01_2336.md` | El diseño completo |
 | `sonidos-fuente/` | El pedido exacto de sonidos y música para ElevenLabs (aún sin generar) |
+
+## La guía de estilos
+
+- La página vive en `publico/guia-estilos/` (`index.html`, `kit.json`, `kit/<carpeta>/…`, `mini/` y el zip). También responde en `/guía-estilos`, `/guia-de-estilos`, `/marca` y `/kit`.
+- **Se regenera en dos pasos**, con el juego corriendo en local (`npx wrangler dev`):
+  1. `node diseno-fuente/kit-captura/cdp.mjs` — abre Chrome sin ventana en el modo `?foto` y saca el arte crudo del propio juego (escenas por formato y maquinitas sin fondo) a `kit-captura/raw/`. Las puestas en escena están en `trabajos.mjs`.
+  2. `python3 diseno-fuente/Kit_de_Marca_Mina_v1_2026-10-05_1045.py <raw> <carpeta con Inter-*.ttf>` — arma las 89 piezas, sus miniaturas, `kit.json` y el zip.
+- El service worker del juego no toca esas rutas, y el juego no arranca en ellas.
 
 ## Probar y publicar
 

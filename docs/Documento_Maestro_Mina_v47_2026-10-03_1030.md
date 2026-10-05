@@ -1449,6 +1449,17 @@ No se pudo ver el movimiento en vivo porque el navegador de pruebas está oculto
 
 **Cómo quedó.** Quien es mirado (`miradoPor` > 0) transmite `ui`: el HTML de `#caja` cada vez que cambia (un `MutationObserver`, con tope de uno cada 1.2 s y 150 KB), `clic {a, v, n}` antes de ejecutar cada acción de un botón `[data-a]`, y `cierra` cuando el velo se apaga. El servidor lo reparte solo a quienes lo miran. El que sigue lo reproduce en `#veloEspejo` / `#espejo` (misma caja, sin eventos de puntero, con la banda «👁 X está aquí»): el HTML se sanea (fuera scripts, iframes, atributos on*, ids y ligas), y una cola lo reproduce en orden: un `clic` resalta el botón (`.espClic`) y detiene la cola 1.25 s. Si abro mi propio menú, el espejo se oculta; al cambiar de maquinita o dejar de seguir, se limpia. El chat vive fuera de `#caja`, así que nunca viaja.
 
+### 9.64 La guía de estilos y el kit de marca
+
+**Lo que pidió Ricardo.** Todos los elementos para que un amigo empiece a publicar videos en TikTok: el círculo (foto de perfil), ícono, favicon, logotipo, tipografía, imágenes para redes verticales y horizontales, para el grupo y la comunidad de WhatsApp (círculo negro o blanco con el ícono gris, o en tierra/café), en una guía de estilos en `mina.capitaltorreon.com/guía-estilos`, con un botón de descarga bajo cada imagen y todo en un zip. «Piensa más allá».
+
+**Cómo quedó.** `publico/guia-estilos/`: página propia (colores y letra de Mina, A−/A+, sin dependencias) que arma sus tarjetas con `kit.json`; 89 piezas en 11 carpetas y `Mina_Kit_de_Marca_v1_2026-10-05_1045.zip` (13.4 MB).
+- **Decisión de marca:** la tipografía es **Inter** (libre, SIL OFL; se reparte en el kit). El juego sigue con la letra del sistema; Inter es su equivalente en todos lados y con ella están hechas todas las piezas. El logotipo: MINA en Inter Black, amarillo `#FFD23F`, contorno café `#2A1A14` y un escalón café abajo, junto a la maquinita con el taladro hacia abajo.
+- **Las piezas:** ícono (1024/512/192, cuadrado y enmascarable), favicon (ico + 16–180), logotipo (horizontal, vertical, con lema, palabra, una tinta), la maquinita (poses, gris, 8 modelos, 4 carrocerías), **perfil** (9 fondos × cuadrado y círculo: atardecer, tierra, café, negro, blanco, a color y en gris), vertical 9:16 (portada, fondos, cierre, marco transparente, zonas seguras), horizontal (portada, miniatura y banner de YouTube, X, Facebook, liga), cuadrado y 4:5, video (cintillos, marca de agua, QR), tipografía y color.
+- **Para TikTok:** cinco pasos, biografía, liga, etiquetas, textos e ideas de video listos para copiar; el tono (lo que Mina dice y lo que no).
+- **De dónde sale el arte:** del propio juego. `diseno-fuente/kit-captura/cdp.mjs` maneja Chrome sin ventana por su protocolo de depuración, abre `?foto`, monta una escena por formato (`trabajos.mjs`: tiro, túneles, cuatro maquinitas, dónde cae el título) y exporta el lienzo; `Kit_de_Marca_Mina_v1_….py` (PIL) compone títulos, perfiles, cierres, marcos, QR, paleta, miniaturas y el zip.
+- **Convivencia con el juego:** el service worker deja pasar `/guia-estilos` (y sus alias) directo a la red; si un equipo con la copia vieja guardada recibe el juego en esa dirección, la página suelta el service worker y se recarga sola, y `juego.js` no arranca ahí. El Worker redirige `/guía-estilos`, `/guia-de-estilos`, `/guia`, `/marca` y `/kit`.
+
 ## 10. Revisión de código del 2 de octubre
 
 Se revisó todo el código buscando fallas y se corrigieron estas:
