@@ -855,16 +855,18 @@ function ponerMotor(tipo) {
 }
 // Oír un motor desde la tienda: tres segundos de acelerón con la voz elegida, aunque el motor venga apagado en las opciones.
 let motorPrueba = null;
+// Mientras se escucha una pieza, todo lo demás se calla (música, ambiente, taladro…): solo queda el canal que se prueba.
+function soloCanal(id) { if (!AC) return; const t = AC.currentTime; for (const [b, , niv] of TIPOS) bus[b].gain.setTargetAtTime(b === id ? niv : 0, t, 0.05); }
 function oirMotor(i) {
   if (!audio()) return; if (op.mudo) { aviso('Enciende el sonido para oírlo.'); return; }
   const antes = motorPrueba ? motorPrueba.antes : (lazo.motor ? lazo.motor.tipo : 0);
   if (motorPrueba) clearInterval(motorPrueba.id);
-  ponerMotor(i); bus.motor.gain.setTargetAtTime(0.7, AC.currentTime, 0.05);
+  ponerMotor(i); soloCanal('motor'); tienda.pruebaMotor = i; tienda.pruebaCancion = 0; clearTimeout(cancionPruebaT); if (menu === 'pin') pintarMenu();
   const t0 = performance.now(), prueba = { antes, i: 0 };
   prueba.id = setInterval(() => {
     const x = (performance.now() - t0) / 1000, vel = x < 1.4 ? x / 1.4 * 15 : x < 2.2 ? 15 : Math.max(0, 15 - (x - 2.2) * 15);
     if (lazo.motor && lazo.motor.tipo === i) lazo.motor.ajustar(30 + vel * 3.2, vel, x > 1.4 && x < 2.3, null, ponParam);
-    if (x > 3.3) { clearInterval(prueba.id); motorPrueba = null; if (lazo.motor) lazo.motor.g.gain.setTargetAtTime(0, AC.currentTime, 0.08); setTimeout(() => { ponerMotor(miPinta.motor | 0); volumenes(); }, 400); }
+    if (x > 3.3) { clearInterval(prueba.id); motorPrueba = null; tienda.pruebaMotor = 0; if (lazo.motor) lazo.motor.g.gain.setTargetAtTime(0, AC.currentTime, 0.08); setTimeout(() => { ponerMotor(miPinta.motor | 0); volumenes(); if (menu === 'pin') pintarMenu(); }, 400); }
   }, 50);
   motorPrueba = prueba;
 }
@@ -993,8 +995,8 @@ function componerCancion(def, ahora, adelante) {
 let cancionPruebaT = 0;
 function oirCancion(i) {
   if (!audio()) return; if (op.mudo || !op.son.musica) { aviso('Enciende el sonido (y la música) para oírla.'); return; }
-  clearTimeout(cancionPruebaT); tienda.pruebaCancion = i; musica.t = 0; musica.n = 0; musica.z = ''; componer(0.8);
-  cancionPruebaT = setTimeout(() => { tienda.pruebaCancion = 0; musica.t = 0; musica.n = 0; musica.z = ''; if (menu === 'pin') pintarMenu(); }, 10000);
+  clearTimeout(cancionPruebaT); tienda.pruebaCancion = i; tienda.pruebaMotor = 0; musica.t = 0; musica.n = 0; musica.z = ''; soloCanal('musica'); componer(0.8);
+  cancionPruebaT = setTimeout(() => { tienda.pruebaCancion = 0; musica.t = 0; musica.n = 0; musica.z = ''; volumenes(); if (menu === 'pin') pintarMenu(); }, 10000);
   if (menu === 'pin') pintarMenu();
 }
 // El acorde que está sonando en este momento (o el primero de la zona, si la música está callada).
@@ -3897,7 +3899,7 @@ function temporadasDeHoy() { const md = horaTorreon().md; let k = TC.CALCAS.leng
 const NIVEL_CLAVE = { c1: 1, c2: 2, c3: 2, calca: 3, luz: 4, estela: 5, bocina: 6, placa: 6, titulo: 6, carro: 7, mascota: 8 };
 const GRATIS = 2;      // los colores (niveles 1 y 2) son de todos
 let miPinta = {}, miMe = 0, miDe = -1, edenPiedras = [], tiendaAnimT = 0, tBocina = 0, estelaN = 0;
-let tienda = { niveles: [], piezas: { motor: [], cancion: [] }, pruebaCancion: 0, mio: { nivel: 0, piezas: [], mecenas: 0, pinta: {} }, fondo: 0, pagos: 0, cargada: 0, cargando: 0, nivelVista: 0, prueba: null, regaloA: -1, mecenasMonto: 99, fondoN: 3, mecenasMin: 99, gratitudMin: 33, gratitudHora: '15:33', fondoPrecio: 19, tope: 5000, error: '', momento: null, cumple: '', gratitud: 0, gracias: 0, referidoPremio: 333, usarSaldo: 1 };
+let tienda = { niveles: [], piezas: { motor: [], cancion: [] }, pruebaCancion: 0, pruebaMotor: 0, mio: { nivel: 0, piezas: [], mecenas: 0, pinta: {} }, fondo: 0, pagos: 0, cargada: 0, cargando: 0, nivelVista: 0, prueba: null, regaloA: -1, mecenasMonto: 99, fondoN: 3, mecenasMin: 99, gratitudMin: 33, gratitudHora: '15:33', fondoPrecio: 19, tope: 5000, error: '', momento: null, cumple: '', gratitud: 0, gracias: 0, referidoPremio: 333, usarSaldo: 1 };
 // El ánimo con el que estás jugando, para el momento del precio: cuánto cavaste en los últimos tres minutos y cuántos golpes
 // fuertes (explosiones, pleitos) en los últimos diez. 0 = tranquilo … 1 = a tope. Solo sirve para bajar el precio y para el tono.
 const ritmo = [], ritmoFuerte = [];
@@ -3953,9 +3955,9 @@ function htmlTienda() {
 // Las piezas de sonido: se coleccionan una por una, cada una con su precio. Se oyen antes de comprar.
 function htmlSonidos() {
   const PZ = tienda.piezas || { motor: [], cancion: [] }, mias = tienda.mio.piezas || [], P = pintaVista();
-  const tarjeta = (tipo, x) => { const id = tipo + ':' + x.i, mia = mias.includes(id), enUso = (P[tipo] | 0) === x.i, probando = tipo === 'cancion' && tienda.pruebaCancion === x.i;
-    return `<div class="${enUso ? 'on' : ''}"><b>${esc(x.n)}</b>${mia ? ' <span style="color:var(--ok)">· tuya</span>' : ` <span style="color:var(--ac)">· ${pesos(x.precio)}</span>`}<small>${esc(x.d)}</small>
-      <div class="fila"><button class="s" data-a="tOir" data-v="${id}">${probando ? '🔊 Sonando…' : '▶ Oír'}</button>${mia ? (enUso ? '<span class="nota">En uso</span>' : `<button class="s" data-a="tUsar" data-v="${id}">Usar</button>`) : `<button data-a="tComprar" data-v="${id}">Comprar ${pesos(x.precio)}</button>`}</div></div>`; };
+  const tarjeta = (tipo, x) => { const id = tipo + ':' + x.i, mia = mias.includes(id), enUso = (P[tipo] | 0) === x.i, probando = (tipo === 'cancion' && tienda.pruebaCancion === x.i) || (tipo === 'motor' && tienda.pruebaMotor === x.i);
+    return `<div class="${enUso ? 'on' : ''}${probando ? ' sonando' : ''}"><b>${esc(x.n)}</b>${mia ? ' <span style="color:var(--ok)">· tuya</span>' : ` <span style="color:var(--ac)">· ${pesos(x.precio)}</span>`}<small>${esc(x.d)}</small>
+      <div class="fila"><button class="${probando ? '' : 's'}" data-a="tOir" data-v="${id}">${probando ? '🔊 Sonando… ' + (tipo === 'motor' ? '3 s' : '10 s') : '▶ Oír'}</button>${mia ? (enUso ? '<span class="nota">En uso</span>' : `<button class="s" data-a="tUsar" data-v="${id}">Usar</button>`) : `<button data-a="tComprar" data-v="${id}">Comprar ${pesos(x.precio)}</button>`}</div></div>`; };
   return `<div class="aparte sonidos"><h4>🔊 Sonidos · piezas sueltas</h4><p class="nota">Se coleccionan una por una, cada una con su precio; son tuyas para siempre y las cambias cuando quieras. El motor viene apagado en las opciones de sonido: al usar un motor comprado, se enciende. La canción de fondo la oyes tú.${tienda.mio.saldo ? ' Tu saldo de referidos también las paga.' : ''}</p>
     <h4 style="margin-top:10px">🚜 La voz del motor</h4><div class="pz">${PZ.motor.map((x) => tarjeta('motor', x)).join('')}</div>${(P.motor | 0) ? '<p><button class="s" data-a="tUsar" data-v="motor:0">Volver al motor de fábrica</button></p>' : ''}
     <h4 style="margin-top:10px">🎵 La canción de fondo</h4><div class="pz">${PZ.cancion.map((x) => tarjeta('cancion', x)).join('')}</div>${(P.cancion | 0) ? '<p><button class="s" data-a="tUsar" data-v="cancion:0">Volver a la música del mundo</button></p>' : '<p class="nota">Sin canción, suena la música del mundo: cambia según dónde andes (superficie, mina, fondo, cielo, espacio).</p>'}</div>`;
@@ -4647,7 +4649,7 @@ function abrir(id) {
   if (id === 'gas' && S.fuel >= tanque() - 0.001) evento('comb');   // llegar con el tanque lleno también cuenta
   pintarMenu(); ultPos = ''; enviarPos();
 }
-function cerrar() { if (menu === 'inicio') return; if (menu === 'pin') tienda.prueba = null; menu = null; $('#velo').classList.remove('on'); document.activeElement?.blur?.(); arrancar(); ultPos = ''; enviarPos(); if (sucio) enviarEst(); }
+function cerrar() { if (menu === 'inicio') return; if (menu === 'pin') { tienda.prueba = null; if (tienda.pruebaCancion) { clearTimeout(cancionPruebaT); tienda.pruebaCancion = 0; musica.t = 0; musica.z = ''; volumenes(); } } menu = null; $('#velo').classList.remove('on'); document.activeElement?.blur?.(); arrancar(); ultPos = ''; enviarPos(); if (sucio) enviarEst(); }
 const cab = (t, sinX) => `<header><h2>${t}</h2><span class="d">${S && !soloVer ? fmt(S.d) : ''}</span>${sinX ? '' : '<button class="s" data-a="cerrar">Cerrar' + (tactil ? '' : ' (Esc)') + '</button>'}</header>`;
 function pintarMenu() {
   const c = $('#caja'); let h = '';
