@@ -1020,6 +1020,14 @@ export class Mundo extends DurableObject {
         for (const o of this.ctx.getWebSockets()) { const a = o.deserializeAttachment(); if (a && a.i !== undefined && this.jug[a.i] && this.jug[a.i].mira === i) manda(o, f); }
         break;
       }
+      case "ui": {               // el espejo: lo que hago en los menús (qué abro, dónde pico, qué cambia) viaja solo a quienes me miran
+        const f = { t: "ui", i };
+        if (typeof d.html === "string") { if (d.html.length > 150000) return; f.html = d.html; }
+        else if (d.clic && typeof d.clic === "object") f.clic = { a: limpio(d.clic.a, 30), v: limpio(String(d.clic.v ?? ""), 60), n: entero(d.clic.n, 0, 2000, 0) };
+        else if (d.cierra) f.cierra = 1; else return;
+        for (const o of this.ctx.getWebSockets()) { const a = o.deserializeAttachment(); if (a && a.i !== undefined && this.jug[a.i] && this.jug[a.i].mira === i) manda(o, f); }
+        break;
+      }
       case "rx": {               // una reacción (👋 👍 ❤️ 🔥 😂 🎉) de quien mira para quien es mirado; la ven todos sobre su maquinita
         const a = entero(d.a, 0, MAX_MAQUINITAS - 1, -1), e = ["👋", "👍", "❤️", "🔥", "😂", "🎉"].includes(d.e) ? d.e : "";
         if (a < 0 || !e || !this.jug[a]) return;

@@ -305,6 +305,14 @@ body.movil #pleito .lado{width:38vw}
 #cuenta{left:50%;top:14%;transform:translateX(-50%);font-size:2em;font-weight:900;color:var(--ac);display:none;text-align:center}
 #velo{position:fixed;inset:0;background:#000b;display:flex;align-items:center;justify-content:center;padding:12px;z-index:5;visibility:hidden;opacity:0;transition:opacity .18s,visibility 0s .18s}
 #velo.on{visibility:visible;opacity:1;transition:opacity .18s}
+#veloEspejo{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:12px;z-index:4;visibility:hidden;opacity:0;transition:opacity .18s,visibility 0s .18s;pointer-events:none;background:#0007}
+#veloEspejo.on{visibility:visible;opacity:1;transition:opacity .18s}
+#veloEspejo .caja{outline:2px solid #ffd23f88;outline-offset:3px;max-height:84vh;transform:scale(.96)}
+#veloEspejo .caja .cuerpo{overflow:auto}
+#espejoQuien{position:absolute;top:10px;left:50%;transform:translateX(-50%);background:#ffd23f;color:#2a1a14;font-weight:800;padding:5px 12px;border-radius:999px;font-size:.9em}
+.espClic{outline:3px solid #ffd23f !important;outline-offset:2px;box-shadow:0 0 0 6px #ffd23f55,0 0 18px #ffd23f !important;animation:espClic .5s ease-in-out 2}
+@keyframes espClic{50%{box-shadow:0 0 0 10px #ffd23f22,0 0 26px #ffd23f}}
+body:has(#velo.on) #veloEspejo{visibility:hidden;opacity:0}
 .caja{transition:transform .22s cubic-bezier(.2,.8,.2,1)}
 #velo:not(.on) .caja{transform:translateY(10px)}
 .cuerpo.entra{animation:cuerpoEntra .2s ease-out}
@@ -547,6 +555,7 @@ body.movil #verTeclado{display:none!important}
 <div id="verTeclado"><div><kbd data-b="5">R</kbd><kbd data-b="6">N</kbd><kbd data-b="7">D</kbd><kbd data-b="8">P</kbd><kbd data-b="9">Q</kbd><kbd data-b="10">T</kbd></div><div><kbd data-b="11">C</kbd><kbd data-b="12">S</kbd><kbd data-b="13">A</kbd><kbd data-b="14">G</kbd><kbd data-b="15">M</kbd><kbd data-b="4" class="esp">espacio</kbd></div><div class="fl"><kbd data-b="2">↑</kbd><br><kbd data-b="0">←</kbd><kbd data-b="3">↓</kbd><kbd data-b="1">→</kbd></div></div>
 
 <div id="velo"><div class="caja" id="caja"></div></div>
+<div id="veloEspejo"><div class="caja" id="espejo"></div><div id="espejoQuien"></div></div>
 
 <script src="/juego.js" defer></script>
 <script src="https://login.capitaltorreon.com/login.js" data-prefs="mina_op" defer></script>      <!-- RLR · el login único de la casa: reconoce, renueva y abre el menú de servicios -->

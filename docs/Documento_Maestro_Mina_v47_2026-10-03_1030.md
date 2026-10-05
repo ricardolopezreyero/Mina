@@ -1443,6 +1443,12 @@ No se pudo ver el movimiento en vivo porque el navegador de pruebas está oculto
 - **Reacciones:** 👋 👍 ❤️ 🔥 😂 🎉 (`rx {a, e}`, una cada 0.7 s): flotan sobre la maquinita mirada con el nombre de quien las manda, con chispas; quien las recibe oye un aviso.
 - **Tab** pasa a la siguiente maquinita conectada; **V** sigue a la más cercana (o deja de seguir); si quien sigues sale del mundo, vuelves a tu maquinita con aviso.
 
+### 9.63 El espejo: ver los menús de quien sigues
+
+**Lo que pidió Ricardo.** Al seguir a alguien, ver también lo que hace en el sistema: los modales, la configuración, a quién saca o mete, qué compra; todo menos su chat. Y ver exactamente dónde pica, con un retardo de 1.25 s para seguir el flujo.
+
+**Cómo quedó.** Quien es mirado (`miradoPor` > 0) transmite `ui`: el HTML de `#caja` cada vez que cambia (un `MutationObserver`, con tope de uno cada 1.2 s y 150 KB), `clic {a, v, n}` antes de ejecutar cada acción de un botón `[data-a]`, y `cierra` cuando el velo se apaga. El servidor lo reparte solo a quienes lo miran. El que sigue lo reproduce en `#veloEspejo` / `#espejo` (misma caja, sin eventos de puntero, con la banda «👁 X está aquí»): el HTML se sanea (fuera scripts, iframes, atributos on*, ids y ligas), y una cola lo reproduce en orden: un `clic` resalta el botón (`.espClic`) y detiene la cola 1.25 s. Si abro mi propio menú, el espejo se oculta; al cambiar de maquinita o dejar de seguir, se limpia. El chat vive fuera de `#caja`, así que nunca viaja.
+
 ## 10. Revisión de código del 2 de octubre
 
 Se revisó todo el código buscando fallas y se corrigieron estas:

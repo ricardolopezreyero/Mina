@@ -2163,6 +2163,44 @@ const miradoPor = new Set();
 function mandarMiPanel() { if (!conectado || !S || !miradoPor.size) return; enviar({ t: 'yo', d: Math.floor(S.d), f: Math.round(S.fuel), fm: Math.round(tanque()), v: Math.round(S.vida), vm: Math.round(vidaMax()), c: nCarga(), cm: bodega(), z: donde(yo.y) }); }
 // Mientras sigo a alguien: su panel abajo (combustible, casco, carga, dinero), sus teclas y las reacciones que le puedo mandar.
 const REACCIONES = ['👋', '👍', '❤️', '🔥', '😂', '🎉'];
+// ── El espejo (metiches, segunda parte): mientras me miran, transmito lo que hago en los menús; quien me sigue ve una copia
+// del modal, con el botón que piqué resaltado 1.25 s antes de pasar a lo que sigue. El chat no viaja: es solo mío.
+let espejoUltimo = '', espejoT = 0, espejoTimer = 0;
+function transmitirUI(que, extra) {
+  if (!conectado || !miradoPor.size) return;
+  if (que === 'clic') { enviar({ t: 'ui', clic: extra }); return; }
+  if (que === 'cierra') { espejoUltimo = ''; enviar({ t: 'ui', cierra: 1 }); return; }
+  clearTimeout(espejoTimer);
+  espejoTimer = setTimeout(() => { if (!$('#velo').classList.contains('on')) return; const h = $('#caja').innerHTML; if (h === espejoUltimo || h.length > 150000) return; espejoUltimo = h; espejoT = Date.now(); enviar({ t: 'ui', html: h }); }, Date.now() - espejoT > 1200 ? 120 : 1200 - (Date.now() - espejoT));
+}
+new MutationObserver(() => transmitirUI('html')).observe($('#caja'), { childList: true, subtree: true, characterData: true, attributes: true });
+new MutationObserver(() => { if ($('#velo').classList.contains('on')) transmitirUI('html'); else transmitirUI('cierra'); }).observe($('#velo'), { attributes: true, attributeFilter: ['class'] });
+// Lo que llega de quien sigo: una cola que se reproduce en orden; un clic detiene la cola 1.25 s con el botón encendido.
+const espejo = { cola: [], ocupado: false, html: '' };
+function limpiarHTML(h) {
+  const t = document.createElement('template'); t.innerHTML = h;
+  t.content.querySelectorAll('script,iframe,object,embed,link,style,meta,form,base').forEach((e) => e.remove());
+  t.content.querySelectorAll('*').forEach((e) => { for (const a of [...e.attributes]) { const n = a.name.toLowerCase(); if (n.startsWith('on') || ((n === 'href' || n === 'src' || n === 'action') && /^\s*(javascript|data):/i.test(a.value))) e.removeAttribute(a.name); } if (e.tagName === 'A') e.removeAttribute('href'); if (e.id) e.removeAttribute('id'); });
+  return t.innerHTML;
+}
+function recibirUI(d) {
+  if (sigo < 0 || d.i !== sigo) return;
+  espejo.cola.push(d); if (espejo.cola.length > 30) espejo.cola.shift();
+  reproducirEspejo();
+}
+function reproducirEspejo() {
+  if (espejo.ocupado || !espejo.cola.length) return;
+  const d = espejo.cola.shift(), v = $('#veloEspejo'), c = $('#espejo');
+  if (d.cierra) { espejo.html = ''; v.classList.remove('on'); return reproducirEspejo(); }
+  if (d.html !== undefined) { espejo.html = limpiarHTML(d.html); c.innerHTML = espejo.html; v.classList.add('on'); pintarEspejoQuien(); return reproducirEspejo(); }
+  if (d.clic) {
+    const el = c.querySelectorAll('[data-a]')[d.clic.n] || [...c.querySelectorAll('[data-a]')].find((e) => e.dataset.a === d.clic.a && String(e.dataset.v ?? '') === d.clic.v);
+    if (el) { el.classList.add('espClic'); try { el.scrollIntoView({ block: 'nearest' }); } catch {} espejo.ocupado = true; setTimeout(() => { el.classList.remove('espClic'); espejo.ocupado = false; reproducirEspejo(); }, 1250); return; }
+  }
+  reproducirEspejo();
+}
+function pintarEspejoQuien() { const q = $('#espejoQuien'); if (q) q.textContent = '👁 ' + nombreDe(sigo) + ' está aquí · lo ves como lo ve'; }
+function cerrarEspejo() { espejo.cola.length = 0; espejo.ocupado = false; espejo.html = ''; $('#veloEspejo').classList.remove('on'); }
 function pintarSigo() {
   const el = $('#sigoHud'); if (!el) return;
   const o = sigo >= 0 ? otros.get(sigo) : null;
@@ -2282,9 +2320,10 @@ function recibir(d) {
       return hola(bautizo);
     }
     case 'pinta': { if (d.i === miI) { miPinta = d.p || {}; miMe = d.me | 0; ponerMotor(miPinta.motor | 0); } else { const o = otros.get(d.i); if (o) { o.p = d.p || {}; o.me = d.me | 0; } } edenE = null; if (menu === 'pin') pintarMenu(); return; }
+    case 'ui': return recibirUI(d);
     case 'yoDe': { const o = otros.get(d.i); if (o) { o.ficha = d; if (d.i === sigo) pintarSigo(); } return; }
     case 'rx': { const o = d.a === miI ? null : otros.get(d.a), x = o ? o.x : yo.x, y = o ? o.y : yo.y; if (x === undefined) return; flota(x, y - 1.6, d.e + ' ' + nombreDe(d.de), '#fff'); if (d.a === miI) { son.chat(); aviso(nombreDe(d.de) + ' te manda ' + d.e); } chispas(x, y - 1.2, '#ffd23f', 6, 4); return; }
-    case 'mira': { if (d.a === miI) { miradoPor.add(d.i); mandarMiPanel(); ultPos = ''; enviarPos(); son.chat(); tarjeta('👀 ' + nombreDe(d.i) + ' está viendo lo que tú ves', 'Tú también puedes: toca su nombre arriba a la derecha y ves lo que ve. Así es Mina: tú mandas tu maquinita, pero nos vemos todos.', 'msj', 9000); } else if (d.a === -1 && d.fue === miI) { miradoPor.delete(d.i); aviso(nombreDe(d.i) + ' dejó de verte'); } return; }
+    case 'mira': { if (d.a === miI) { miradoPor.add(d.i); mandarMiPanel(); ultPos = ''; enviarPos(); espejoUltimo = ''; transmitirUI('html'); son.chat(); tarjeta('👀 ' + nombreDe(d.i) + ' está viendo lo que tú ves', 'Tú también puedes: toca su nombre arriba a la derecha y ves lo que ve. Así es Mina: tú mandas tu maquinita, pero nos vemos todos.', 'msj', 9000); } else if (d.a === -1 && d.fue === miI) { miradoPor.delete(d.i); aviso(nombreDe(d.i) + ' dejó de verte'); } return; }
     case 'bocina': { const o = otros.get(d.i); if (!o || !o.on || o.x === undefined) return; const dist = Math.hypot(o.x - yo.x, o.y - yo.y); if (dist < 40) claxon(d.b | 0, Math.max(0.15, 1 - dist / 40), 'otros'); return; }
     case 'nom': {              // alguien rebautizó su maquinita o le cambió el modelo
       if (d.i === miI) {
@@ -2465,10 +2504,10 @@ let panX = 0, panY = 0, vistaLibre = false;       // vista libre con la rueda o 
 let sigo = -1, sigoT = 0;
 function seguir(i) {
   const o = otros.get(i); if (!o || !o.on || o.x === undefined || i === miI) { aviso('Ahora no está jugando.'); return; }
-  sigo = i; sigoT = Date.now(); vistaLibre = false; panX = panY = 0; for (const k in teclas) teclas[k] = false; o.ficha = null;
+  if (sigo >= 0 && sigo !== i) cerrarEspejo(); sigo = i; sigoT = Date.now(); vistaLibre = false; panX = panY = 0; for (const k in teclas) teclas[k] = false; o.ficha = null;
   if (conectado) enviar({ t: 'mira', a: i }); son.clic(); aviso('Viendo lo que ve ' + o.n + '. ' + (tactil ? 'Un toque te regresa.' : 'Tab pasa a la siguiente; cualquier tecla te regresa.')); pintarTabla(); pintarSigo();
 }
-function dejarDeSeguir(porque) { if (sigo < 0) return; const n = nombreDe(sigo); sigo = -1; if (conectado) enviar({ t: 'mira', a: -1 }); pintarTabla(); pintarSigo(); if (porque) aviso(n + ' ' + porque + '. Vuelves a tu maquinita.'); }
+function dejarDeSeguir(porque) { if (sigo < 0) return; const n = nombreDe(sigo); sigo = -1; cerrarEspejo(); if (conectado) enviar({ t: 'mira', a: -1 }); pintarTabla(); pintarSigo(); if (porque) aviso(n + ' ' + porque + '. Vuelves a tu maquinita.'); }
 const vis = { x: INICIO_X, y: INICIO_Y };         // dónde se dibuja mi maquinita (entre dos pasos de física)
 const tiles = new Map(), casas = new Map();
 // ── Bloques. El terreno casi nunca cambia, así que no se arma en cada cuadro: se compone una vez en bloques de 4 × 4 celdas
@@ -5207,6 +5246,7 @@ const acciones = {
 $('#velo').addEventListener('click', (e) => { if (e.target === e.currentTarget && movil && menu && menu !== 'inicio') { audio(); cerrar(); } });
 $('#caja').addEventListener('click', (e) => {
   const el = e.target.closest('[data-a]'); if (!el || el.disabled || el.tagName === 'SELECT' || el.tagName === 'INPUT') return;
+  if (miradoPor.size) transmitirUI('clic', { a: el.dataset.a, v: el.dataset.v ?? '', n: [...$('#caja').querySelectorAll('[data-a]')].indexOf(el) });
   const r = acciones[el.dataset.a]?.(el.dataset.v, el);
   sucio = true; if (r !== 'no' && r !== true && menu && menu !== 'inicio') pintarMenu(); pintarHud(true);
 });
