@@ -644,6 +644,15 @@ function celda(x, y) {
   return t;
 }
 const hueca = (x, y) => { const t = celda(x, y); return t === 0 || t === 6; };
+let pozoHondo = { x: -1, y: 0, v: -1, t: 0 };
+function pozoMasHondo() {
+  if (pozoHondo.v === dugCambios || performance.now() - pozoHondo.t < 3000) return pozoHondo;
+  pozoHondo.v = dugCambios; pozoHondo.t = performance.now();
+  // la línea recta más larga desde la superficie: por cada columna, cuántas celdas seguidas hay cavadas desde la fila 2
+  let mejor = -1, mx = -1;
+  for (let x = 0; x < W; x++) { let y = 2; while (y < H) { const i = y * W + x; if (!(dug[i >> 3] & (1 << (i & 7)))) break; y++; } if (y - 1 > mejor) { mejor = y - 1; mx = x; } }
+  pozoHondo.x = mejor >= 10 ? mx : -1; pozoHondo.y = mejor; return pozoHondo;
+}
 function ponerCavada(i) {
   dugCambios++; dug[i >> 3] |= 1 << (i & 7);
   const x = i % W, y = (i - x) / W; mapa[i] = vacia(y);
@@ -3395,6 +3404,8 @@ function dibujar() {
     g.fillStyle = '#ffd23f'; g.beginPath(); g.arc(nx, oy - u * 9, u * 2, Math.PI * 1.15, Math.PI * 1.85); g.lineWidth = Math.max(1, u * 0.4); g.strokeStyle = '#ffd23f'; g.stroke();
     g.fillStyle = '#fff6c9'; g.fillRect(nx + u * 2.2, oy - u * 4.5, u * 1.1, u * 2.5); g.fillStyle = '#ffb347'; g.beginPath(); g.ellipse(nx + u * 2.75 + Math.sin(reloj * 9) * u * 0.15, oy - u * 5.3, u * 0.5, u * 0.9, 0, 0, 7); g.fill();
     g.globalCompositeOperation = 'lighter'; g.globalAlpha = 0.35 + 0.1 * Math.sin(reloj * 8); g.drawImage(sprite('res'), nx + u * 2.75 - T * 0.75, oy - u * 5.3 - T * 0.75, T * 1.5, T * 1.5); g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1;
+    // su letrerito, para que se entienda qué es
+    letrerito(nx, oy - u * 17.5, '🕯️ Santa Bárbara', '#f3ead8', '#2a1a14');
   }
   // edificios
   if (oy > -T && oy < h + 80 * T / 16) for (const e of EDIF) {
@@ -3406,6 +3417,8 @@ function dibujar() {
     { const k = Math.floor(reloj * 3) % 11; g.fillStyle = '#fff'; g.beginPath(); g.arc(bx + 7 * u + k * 6.4 * u, by + 1.5 * u, u * 0.9, 0, 7); g.fill(); }      // un foco que recorre el letrero
     if (pistaDe === e) { g.strokeStyle = '#ffd23f'; g.lineWidth = Math.max(2, u * 0.9); g.setLineDash([u * 2, u * 1.5]); g.lineDashOffset = -reloj * u * 8; g.strokeRect(bx + 2 * u, by + 2 * u, c.width - 4 * u, c.height - 3 * u); g.setLineDash([]); }
   }
+  // la señal del pozo más hondo: un poste con flecha sobre la columna donde el equipo ha llegado más abajo en línea recta (delante de los edificios)
+  if (oy > -T && oy < h + 6 * T) { const ph = pozoMasHondo(), u = T / 16; if (ph.x >= 0) { const sx = ox + (ph.x + 0.5) * T; g.fillStyle = '#5b3d17'; g.fillRect(sx - u * 0.8, oy - u * 22, u * 1.6, u * 22); letrerito(sx, oy - u * 23.5, '↓ El pozo más hondo · ' + ((ph.y + 1) * 2).toLocaleString('es-MX') + ' m', '#ffd23f', '#2a1a14'); } }
   // señales
   for (const s of senales) {
     const px = ox + s.x * T, py = oy + s.y * T, r = T * (0.6 + (reloj * 2 % 1) * 0.6);
@@ -4263,12 +4276,21 @@ function detener() { corriendo = false; for (const k in teclas) teclas[k] = fals
 
 const raton = { x: -1, y: -1, t: 0 };
 addEventListener('mousemove', (e) => { raton.x = e.clientX; raton.y = e.clientY; raton.t = performance.now(); });
+// Un letrero chico de madera con texto, clavado en el suelo de la superficie (se mantiene legible en cualquier zoom).
+function letrerito(x, y, txt, fondo, tinta) {
+  const tam = Math.max(9 * RES, T * 0.2); g.font = `700 ${tam}px system-ui`; g.textAlign = 'center'; g.textBaseline = 'middle';
+  const an = g.measureText(txt).width + tam * 1.2, al = tam * 1.7;
+  g.fillStyle = 'rgba(0,0,0,.25)'; g.beginPath(); g.roundRect(x - an / 2 + tam * 0.12, y - al / 2 + tam * 0.14, an, al, tam * 0.35); g.fill();
+  g.fillStyle = fondo; g.beginPath(); g.roundRect(x - an / 2, y - al / 2, an, al, tam * 0.35); g.fill(); g.strokeStyle = tinta; g.lineWidth = Math.max(1, tam * 0.08); g.stroke();
+  g.fillStyle = tinta; g.fillText(txt, x, y + tam * 0.05);
+}
 function queEs() {
   const o = $('#ojo'); let txt = '';
   if (!menu && raton.x >= 0 && performance.now() - raton.t < 5000 && camY + raton.y * RES / T < 0 && camY + raton.y * RES / T > -2.6) {
     const wx = camX + raton.x * RES / T;
     if (wx > 30 && wx < 36) txt = `El terrero · aquí se tira el tepetate, la roca sin valor. El equipo lleva ${cavadasMundo.toLocaleString('es-MX')} celdas cavadas`;
-    else if (Math.abs(wx - 37.6) < 0.5) txt = 'Nicho de Santa Bárbara, patrona de los mineros';
+    else if (Math.abs(wx - 37.6) < 0.5) txt = 'Nicho de Santa Bárbara, patrona de los mineros · aquí se encomienda uno antes de bajar';
+    else { const ph = pozoMasHondo(); if (ph.x >= 0 && Math.abs(wx - ph.x - 0.5) < 0.6) txt = `El pozo más hondo del mundo: por esta columna el equipo ha llegado a ${((ph.y + 1) * 2).toLocaleString('es-MX')} m`; }
   }
   if (!txt && !menu && raton.x >= 0 && performance.now() - raton.t < 5000) {
     const t = celda(Math.floor(camX + raton.x * RES / T), Math.floor(camY + raton.y * RES / T));
