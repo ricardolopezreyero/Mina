@@ -1573,6 +1573,21 @@ A Ricardo le gustaron las imágenes de gemas y pidió dos cosas: otras seis, y q
 - **Detalles:** la corona ya no dice «Corona de las 22 · Las 22»; el contador usa separador de miles; botón «↑ Arriba» al bajar mucho; «Jugar gratis» siempre a la vista en la barra.
 - **Se quitaron** los tres GIF de muestra de la guía (10 MB): la galería los reemplaza con ventaja.
 
+### 9.73 Galería: 33 fijas y, después, piezas que no se repiten nunca
+
+**Lo que dijo Ricardo.** Las primeras 33 fijas; todas las demás siempre diferentes: si entra en un mes, en un año, si entra otra persona o si sigue bajando. «Que nunca puedas ver algo que ya había existido, más que las primeras 33.» Pidió revisar las semillas.
+
+**Lo que se encontró al revisar.** Las piezas de después de las cien salían de un número entre 1 y 999,999 y de unas 60 combinaciones de figura, gemas y fondo. Con suficientes visitas se habrían repetido: bastaban unos cuantos miles de piezas vistas entre todos para que alguna coincidiera.
+
+**Cómo quedó.**
+- **33 fijas:** 17 imágenes y 16 GIF de las cien escogidas (`galeria-lista.js`). Son las mismas y en el mismo orden para todos.
+- **La semilla lleva el reloj.** Cada pieza única nace con una semilla hecha del instante exacto (milisegundos desde el 1 de enero de 2026) y, pegados, 12 bits al azar. Como el tiempo no regresa, una semilla que ya salió no puede volver a salir, ni mañana ni en un año. Los 12 bits cubren el caso de dos personas en el mismo milisegundo. Dentro de una misma visita el contador siempre avanza.
+- **Más que una semilla distinta: una pieza distinta.** Para que la diferencia se vea y no sea solo un número, el generador tiene un modo «única» (semillas de 4,294,967,296 en adelante, con un azar de 64 bits): de la semilla salen la figura, una **mezcla propia de 3 a 6 gemas** de entre las 22 (dos vistosas seguro y a lo mucho una barra), un **fondo de cualquier tono** del círculo de color, el **tamaño de las gemas**, cuántos lados tiene la figura (de 5 a 14), si apunta con pico o con valle y el movimiento. La figura de sol queda fuera de las únicas porque con mezclas al azar sale vacía.
+- **Se pueden recuperar.** La pieza es su semilla: quien la anote y la escriba en el generador de la guía (con todo en «Al azar») la vuelve a ver idéntica. Lo que no pasa es que la galería la vuelva a sacar sola.
+- **Lo de antes no cambió.** Las semillas chicas dan exactamente lo de siempre; comprobado con las doce del kit, pixel por pixel.
+- **Probado:** dos visitas seguidas: las 33 primeras idénticas, y de ahí en adelante ninguna semilla en común.
+- **Los límites, dichos con honestidad:** si un equipo tiene el reloj muy mal puesto, su semilla podría caer en un instante pasado; aun así tendría que coincidir también en los 12 bits. Y dos piezas únicas pueden parecerse (misma figura, tonos cercanos), pero no ser la misma.
+
 ## 10. Revisión de código del 2 de octubre
 
 Se revisó todo el código buscando fallas y se corrigieron estas:

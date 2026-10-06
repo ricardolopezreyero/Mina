@@ -30,6 +30,27 @@
   const TAU = Math.PI * 2;
   function azar(s) { let a = (s >>> 0) || 1; return () => { a |= 0; a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
   const de = (r, l) => l[Math.floor(r() * l.length)];
+  // Las semillas de hasta 4,294,967,295 son las de siempre y dan lo de siempre. De ahí para arriba (hasta 2^53) la pieza es «única»:
+  // su azar tiene 64 bits de arranque y, además de la figura, salen de la semilla una mezcla propia de gemas, un fondo de un tono
+  // cualquiera del círculo de color y el tamaño de las gemas. Así hay muchísimas más piezas posibles que las que nadie alcanzará a ver.
+  const GRANDE = 4294967296;
+  function azarGrande(s) { let a = (s % GRANDE) | 0, b = Math.floor(s / GRANDE) | 0, c = 0x9e3779b9 | 0, d = 1; const r = () => { const t = (((a + b) | 0) + d) | 0; d = (d + 1) | 0; a = b ^ (b >>> 9); b = (c + (c << 3)) | 0; c = (c << 21) | (c >>> 11); c = (c + t) | 0; return (t >>> 0) / GRANDE; }; for (let k = 0; k < 15; k++) r(); return r; }
+  const FIGURAS_UNICAS = ['mandala', 'mandala', 'mandala', 'corona', 'corona', 'espiral', 'espiral', 'panal', 'panal', 'flor', 'flor', 'rombo', 'rombo', 'caleidoscopio', 'caleidoscopio'];      // el sol queda fuera: con mezclas al azar sale muy vacío
+  const VISTOSAS = [3, 5, 6, 7, 8, 9, 10, 11, 14, 15, 16, 17, 18], BARRAS = [4, 19, 20, 21];
+  function mezclaUnica(rnd) {                 // de 3 a 6 gemas: dos vistosas seguro, y a lo mucho una barra
+    const n = de(rnd, [3, 4, 4, 5, 5, 6]), m = []; let barra = false;
+    while (m.length < 2) { const g = de(rnd, VISTOSAS); if (!m.includes(g)) m.push(g); }
+    while (m.length < n) { const g = Math.floor(rnd() * 22); if (m.includes(g) || (BARRAS.includes(g) && barra)) continue; if (BARRAS.includes(g)) barra = true; m.push(g); }
+    for (let k = m.length - 1; k > 0; k--) { const j = Math.floor(rnd() * (k + 1)); [m[k], m[j]] = [m[j], m[k]]; }
+    return m;
+  }
+  const hsl = (h, s2, l) => `hsl(${(((h % 360) + 360) % 360).toFixed(1)},${s2.toFixed(1)}%,${l.toFixed(1)}%)`;
+  function rgbDe(h, s2, l) { s2 /= 100; l /= 100; const k = (n) => (n + h / 30) % 12, a = s2 * Math.min(l, 1 - l), f = (n) => Math.round(255 * (l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1))))); return `${f(0)},${f(8)},${f(4)}`; }
+  const TONOS = [[20, 'rojo'], [45, 'naranja'], [70, 'ámbar'], [100, 'lima'], [160, 'verde'], [200, 'turquesa'], [245, 'azul'], [275, 'índigo'], [310, 'violeta'], [340, 'magenta'], [360, 'rojo']];
+  function fondoUnico(rnd) {                  // tres tonos del mismo color, de claro a casi negro, como los fondos de siempre
+    const h = rnd() * 360, sat = 46 + rnd() * 30, giro = rnd() * 36 - 18, luz = 30 + rnd() * 10;
+    return { n: 'Fondo ' + TONOS.find((t) => h < t[0])[1], c: [hsl(h, sat, luz), hsl(h + giro * 0.5, sat + 6, luz * 0.52), hsl(h + giro, sat + 4, 4 + rnd() * 3)], rayo: rgbDe(h, 85, 86) };
+  }
 
   // ── las figuras: cada una devuelve la lista de gemas {i, x, y, s, rot} y los radios de sus anillos ──────────────────────
   const ESTILOS = {
@@ -117,16 +138,29 @@
 
   // ── de la semilla a la escena: todo lo que se decide al azar, siempre en el mismo orden (así cada semilla da lo mismo) ──
   async function derivar(op = {}) {
-    const P = await cargar(op.base || ''), semilla = (op.semilla >>> 0) || (1 + Math.floor(Math.random() * 999999)), rnd = azar(semilla * 2654435761);
-    const estilo = ESTILOS[op.estilo] ? op.estilo : de(rnd, Object.keys(ESTILOS)), E = ESTILOS[estilo];
-    const fondo = FONDOS[op.fondo] ? op.fondo : de(rnd, Object.keys(FONDOS)), F = FONDOS[fondo];
-    let paleta = PALETAS[op.paleta] ? op.paleta : de(rnd, Object.keys(PALETAS)); if (E.todas) paleta = 'todas';
-    const pal = PALETAS[paleta].g.slice(); if (paleta !== 'todas' && paleta !== 'corteza') for (let k = pal.length - 1; k > 0; k--) { const j = Math.floor(rnd() * (k + 1)); [pal[k], pal[j]] = [pal[j], pal[k]]; }
+    const P = await cargar(op.base || ''), s0 = Math.floor(+op.semilla || 0), semilla = s0 >= 1 && s0 <= Number.MAX_SAFE_INTEGER ? s0 : 1 + Math.floor(Math.random() * 999999);
+    const unica = semilla >= GRANDE, rnd = unica ? azarGrande(semilla) : azar(semilla * 2654435761);
+    let estilo, E, fondo, F, paleta, pal, palN;
+    if (!unica) {
+      estilo = ESTILOS[op.estilo] ? op.estilo : de(rnd, Object.keys(ESTILOS)); E = ESTILOS[estilo];
+      fondo = FONDOS[op.fondo] ? op.fondo : de(rnd, Object.keys(FONDOS)); F = FONDOS[fondo];
+      paleta = PALETAS[op.paleta] ? op.paleta : de(rnd, Object.keys(PALETAS)); if (E.todas) paleta = 'todas';
+      pal = PALETAS[paleta].g.slice(); if (paleta !== 'todas' && paleta !== 'corteza') for (let k = pal.length - 1; k > 0; k--) { const j = Math.floor(rnd() * (k + 1)); [pal[k], pal[j]] = [pal[j], pal[k]]; }
+      palN = PALETAS[paleta].n;
+    } else {
+      estilo = ESTILOS[op.estilo] ? op.estilo : de(rnd, FIGURAS_UNICAS); E = ESTILOS[estilo];
+      if (FONDOS[op.fondo]) { fondo = op.fondo; F = FONDOS[fondo]; } else { fondo = 'unico'; F = fondoUnico(rnd); }
+      if (E.todas) { paleta = 'todas'; pal = PALETAS.todas.g.slice(); palN = PALETAS.todas.n; }
+      else if (PALETAS[op.paleta]) { paleta = op.paleta; pal = PALETAS[paleta].g.slice(); for (let k = pal.length - 1; k > 0; k--) { const j = Math.floor(rnd() * (k + 1)); [pal[k], pal[j]] = [pal[j], pal[k]]; } palN = PALETAS[paleta].n; }
+      else { paleta = 'unica'; pal = mezclaUnica(rnd); palN = pal.length + ' gemas'; }
+    }
     const [W0, H0] = FORMATOS[op.formato] || FORMATOS.vertical, esc = Math.min(1, Math.max(0.15, +op.escala || 1)), w = esc === 1 ? W0 : Math.round(W0 * esc / 2) * 2, h = esc === 1 ? H0 : Math.round(H0 * esc / 2) * 2;
     const cx = w / 2, cy = h / 2, U = Math.min(w, h) / 1080, RM = Math.hypot(w, h) / 2, Wm = 600 * U, r0 = Wm * 0.66;
-    const e = { w, h, cx, cy, U, RM, r0, pal, rnd, N: de(rnd, [6, 8, 10, 12]), rot: -Math.PI / 2 }, fig = E.f(e), N = fig.N || e.N, rot = fig.rot !== undefined ? fig.rot : e.rot;
+    const e = { w, h, cx, cy, U, RM, r0, pal, rnd, N: de(rnd, unica ? [5, 6, 7, 8, 9, 10, 12, 14] : [6, 8, 10, 12]), rot: -Math.PI / 2 };
+    if (unica) { e.U = U * (0.86 + rnd() * 0.3); if ((estilo === 'mandala' || estilo === 'caleidoscopio') && rnd() < 0.5) e.rot += Math.PI / e.N; }      // gemas más chicas o más grandes, y la figura con un pico o con un valle hacia arriba
+    const fig = E.f(e), N = fig.N || e.N, rot = fig.rot !== undefined ? fig.rot : e.rot;
     const chispas = []; for (let t = 0; t < 16; t++) chispas.push({ th: rnd() * Math.PI / N, r: r0 * 0.7 + rnd() * RM, ta: (4 + rnd() * 9) * U, alfa: 0.3 + rnd() * 0.55 });
-    return { P, semilla, estilo, E, fondo, F, paleta, w, h, cx, cy, U, RM, Wm, r0, fig, N, rot, chispas, liga: op.liga !== false, rx: Wm * 0.58, ry: Wm * 0.25 };
+    return { P, semilla, unica, estilo, E, fondo, F, paleta, palN, w, h, cx, cy, U, RM, Wm, r0, fig, N, rot, chispas, liga: op.liga !== false, rx: Wm * 0.58, ry: Wm * 0.25 };
   }
   // el fondo: tres tonos desde el centro y rayos tenues, con la misma simetría de la figura
   function fondoEn(q, D) {
@@ -154,7 +188,7 @@
     const ph = Wm * P.palabra.height / P.palabra.width; q.drawImage(P.palabra, cx - Wm / 2, cy - ph / 2, Wm, ph);
     if (D.liga) { const cw = (w > h ? 0.36 : 0.6) * w, ch = cw * P.cintillo.height / P.cintillo.width, y = h > w * 1.5 ? h * 0.75 - ch - 20 * U : h - ch - 26 * U; q.drawImage(P.cintillo, cx - cw / 2, y, cw, ch); }
   }
-  const datos = (D, n, mov) => ({ semilla: D.semilla, estilo: D.estilo, fondo: D.fondo, paleta: D.paleta, gemas: n, movimiento: mov || '', texto: `${D.E.n} · ${PALETAS[D.paleta].n} · ${D.F.n}${mov ? ' · ' + MOVIMIENTOS[mov] : ''} · semilla ${D.semilla}`, nombre: `mina-arte-${D.estilo}-${D.semilla}.${mov ? 'gif' : 'png'}` });
+  const datos = (D, n, mov) => ({ semilla: D.semilla, unica: D.unica, estilo: D.estilo, fondo: D.fondo, paleta: D.paleta, gemas: n, movimiento: mov || '', nombres: { figura: D.E.n, gemas: D.palN, fondo: D.F.n, movimiento: mov ? MOVIMIENTOS[mov] : '' }, texto: `${D.E.n} · ${D.palN} · ${D.F.n}${mov ? ' · ' + MOVIMIENTOS[mov] : ''} · semilla ${D.semilla}`, nombre: `mina-arte-${D.estilo}-${D.semilla}.${mov ? 'gif' : 'png'}` });
 
   // ── la imagen quieta ───────────────────────────────────────────────────────────────────────────────────────────────────
   async function pintar(canvas, op = {}) {
