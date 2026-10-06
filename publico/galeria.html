@@ -46,7 +46,7 @@ button:hover,.boton:hover{border-color:var(--ac)}
 main{padding:16px 0 30px}
 .rejilla{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(8px,1.4vw,18px)}
 @media(max-width:1100px){.rejilla{grid-template-columns:repeat(3,minmax(0,1fr))}}
-@media(max-width:700px){.rejilla{grid-template-columns:repeat(2,minmax(0,1fr))}.barra small,.barra .marca{display:none}.barra .envuelve{flex-wrap:wrap;row-gap:6px}.barra .tam{order:1;margin-left:auto}.barra .cine,.barra .jugar{order:2;margin-left:0;font-size:.86em;padding:.32em .7em}header .lado{margin-left:0}.filtro button{padding:.4em .75em}.barra .tam button{padding:.5em .65em}}
+@media(max-width:700px){.rejilla{grid-template-columns:repeat(2,minmax(0,1fr))}.barra small,.barra .marca,.barra .jugar span{display:none}.barra .envuelve{flex-wrap:wrap;row-gap:6px}.barra .tam{order:1;margin-left:auto}.barra .cine,.barra .jugar{order:2;margin-left:0;font-size:.86em;padding:.32em .7em}header .lado{margin-left:0}.filtro button{padding:.4em .75em}.barra .tam button{padding:.5em .65em}}
 .pieza{background:var(--caja);border:1px solid var(--borde);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;min-width:0}
 .pieza .vista{position:relative;aspect-ratio:9/16;cursor:zoom-in;background:#120b08 radial-gradient(#3a2a22,#120b08 70%);line-height:0}
 .pieza .vista img,.pieza .vista canvas{position:absolute;inset:0;width:100%;height:100%;display:block;object-fit:cover}
@@ -77,6 +77,16 @@ body[data-ver="todo"] .corte:not([data-de="todo"]),body[data-ver="img"] .corte:n
 #fin{padding:26px 0 60px;text-align:center;color:var(--su);font-weight:700}
 #aviso{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(20px);background:var(--ac);color:var(--tinta);font-weight:800;padding:.6em 1.1em;border-radius:999px;opacity:0;transition:.25s;pointer-events:none;z-index:9}
 #aviso.on{opacity:1;transform:translateX(-50%)}
+/* modo limpio: solo las piezas, sin letreros ni botones, para grabar la pantalla. Se sale con Esc, con doble clic o por la esquina de arriba a la derecha */
+html.limpio header,html.limpio .barra,html.limpio #arriba,html.limpio .corte,html.limpio .pieza .pie,html.limpio .pieza .tipo{display:none!important}
+html.limpio #fin{visibility:hidden}
+html.limpio body{background:#0d0806}
+html.limpio .pieza{border:0;background:none}
+html.limpio .pieza .vista{cursor:default}
+html.limpio.quieto,html.limpio.quieto *{cursor:none!important}
+#salir{display:none;position:fixed;right:0;top:0;z-index:8;width:64px;height:64px;border:0;border-radius:0 0 0 18px;background:#1b120ee6;color:#fff;font-size:1.4em;justify-content:center;padding:0;opacity:0;transition:opacity .2s}
+html.limpio #salir{display:flex}
+#salir:hover,#salir:focus-visible{opacity:1}
 </style>
 </head>
 <body data-ver="todo">
@@ -89,6 +99,7 @@ body[data-ver="todo"] .corte:not([data-de="todo"]),body[data-ver="img"] .corte:n
   <a class="marca" href="/" title="mina.capitaltorreon.com">MINA</a>
   <div class="filtro" role="tablist" aria-label="Qué ver"><button data-ver="todo" class="on">Todo</button><button data-ver="img">Imágenes</button><button data-ver="gif">GIF</button></div>
   <a class="boton cine" href="/gameplay" title="Tomas de seis segundos del juego">🎬<span> Gameplay</span></a><a class="boton cine" href="/ritmo" title="Gameplays con música, en video">🎵<span> Ritmo</span></a>
+  <button class="cine" id="limpio" title="Modo limpio: solo las imágenes, sin botones ni letreros, para grabar la pantalla">👁<span> Limpio</span></button>
   <small id="cuenta"></small>
   <a class="boton jugar" href="/" title="Jugar Mina gratis">⛏️<span> Jugar gratis</span></a>
   <span class="tam"><button id="menos" title="Letra más chica" aria-label="Letra más chica">A−</button><button id="mas" title="Letra más grande" aria-label="Letra más grande">A+</button></span>
@@ -96,6 +107,7 @@ body[data-ver="todo"] .corte:not([data-de="todo"]),body[data-ver="img"] .corte:n
 <main><div class="envuelve"><div class="rejilla" id="rejilla"></div></div></main>
 <div id="fin">Haciendo más… <a href="/">mina.capitaltorreon.com</a></div>
 <button id="arriba" hidden title="Volver al principio">↑ Arriba</button>
+<button id="salir" title="Salir del modo limpio (Esc)" aria-label="Salir del modo limpio">👁</button>
 <div id="visor" hidden role="dialog" aria-modal="true" aria-label="Vista en grande">
   <button class="cerrar" title="Cerrar (Esc)" aria-label="Cerrar">✕</button>
   <button class="flecha ant" title="Anterior (←)" aria-label="Anterior">‹</button>
@@ -163,7 +175,7 @@ function agrega(r, tipo) {
   const el = document.createElement('article'); el.className = 'pieza ' + tipo;
   el.innerHTML = `<div class="vista"><span class="tipo">${tipo === 'gif' ? 'GIF' : 'IMAGEN'}</span></div><div class="pie"><b>${titulo(r)}<small>${r.u ? 'semilla ' + r.u : esc(A.FONDOS[r.f].n)}</small></b><button class="baja" title="Descargar">⬇ ${tipo === 'gif' ? 'GIF' : 'PNG'}</button></div>`;
   R.appendChild(el); const P = { el, r, tipo }; piezas.set(el, P); cerca.observe(el); lejos.observe(el); if (tipo === 'gif') aLaVista.observe(el);
-  el.querySelector('.baja').onclick = () => baja(P, el.querySelector('.baja')); el.querySelector('.vista').onclick = () => abre(P);
+  el.querySelector('.baja').onclick = () => baja(P, el.querySelector('.baja')); el.querySelector('.vista').onclick = () => { if (!limpio) abre(P); };
 }
 const bajar = (blob, nombre) => { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nombre; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 30000); };
 async function baja(P, b) {
@@ -224,6 +236,21 @@ addEventListener('keydown', (e) => { if (V.hidden) return; if (e.key === 'Escape
 // ── volver arriba, cuando ya se bajó mucho ──
 $('#arriba').onclick = () => scrollTo({ top: 0, behavior: 'smooth' });
 addEventListener('scroll', () => { $('#arriba').hidden = scrollY < 2400; }, { passive: true });
+// ── modo limpio: solo las piezas. Entra con el ojo (o abriendo /galeria?limpio); sale con Esc, doble clic o la esquina de arriba a la derecha ──
+let limpio = false, quietoT = 0;
+function limpia(si) {
+  if (si === limpio) return; if (si && !V.hidden) cierra();
+  // la pieza que está arriba en la pantalla se queda donde está, aunque desaparezcan el encabezado y la barra
+  const ancla = [...R.querySelectorAll('.pieza')].find((el) => el.offsetParent && el.getBoundingClientRect().bottom > 80), antes = ancla ? ancla.getBoundingClientRect().top : 0;
+  limpio = si; document.documentElement.classList.toggle('limpio', si); document.documentElement.classList.remove('quieto');
+  if (ancla) scrollBy(0, ancla.getBoundingClientRect().top - antes);
+  aviso(si ? 'Modo limpio · para salir: Esc o doble clic' : 'Listo: ya se ven los botones');
+}
+$('#limpio').onclick = () => limpia(true); $('#salir').onclick = () => limpia(false);
+addEventListener('keydown', (e) => { if (e.key === 'Escape' && limpio && V.hidden) limpia(false); });
+addEventListener('dblclick', () => { if (limpio) limpia(false); });
+addEventListener('mousemove', () => { if (!limpio) return; document.documentElement.classList.remove('quieto'); clearTimeout(quietoT); quietoT = setTimeout(() => { if (limpio) document.documentElement.classList.add('quieto'); }, 1800); });      // el puntero se esconde si no se mueve
+if (/[?&]limpio\b/.test(location.search)) limpia(true);
 // A− / A+: el tamaño de la letra, recordado en este equipo
 let f = 1; try { f = +localStorage.getItem('mina_guia_f') || 1; } catch {}
 const pon = () => { document.documentElement.style.setProperty('--f', f); try { localStorage.setItem('mina_guia_f', f); } catch {} };

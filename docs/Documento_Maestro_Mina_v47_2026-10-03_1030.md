@@ -1606,6 +1606,12 @@ A Ricardo le gustaron las imágenes de gemas y pidió dos cosas: otras seis, y q
 - **Ligas:** Galería y Gameplay se enlazan entre sí en la barra; además están en la guía de estilos (menú, atajos, franja y pie) y en el juego (Menú → Arte y Ayuda).
 - **Qué falta:** el GIF pesa 10 MB porque la cámara se mueve y cambia toda la imagen en cada cuadro; el video (MP4) pesaría veinte veces menos y es lo que piden TikTok y Reels. El piloto casi siempre baja derecho: se le pueden enseñar más jugadas (volar, usar dinamita, entrar a un edificio).
 
+### 9.76 Galería: modo limpio (5-oct-2026)
+
+**Qué pidió Ricardo:** un ojito para dejar la galería limpia —solo las imágenes y los GIF, sin botones de descargar ni letreros— y poder grabar la pantalla haciendo scroll.
+
+**Cómo quedó:** el botón **👁 Limpio** de la barra (o abrir `/galeria?limpio`) esconde el encabezado, la barra, los pies de cada pieza, las etiquetas IMAGEN/GIF, el aviso de «únicas» y el botón de subir; quedan solo las piezas sobre fondo oscuro. El filtro escogido (Todo, Imágenes o GIF) se respeta, la pieza que estaba arriba se queda en su lugar, el scroll sin fin sigue, un clic ya no abre la vista en grande y el puntero se esconde si no se mueve. Se sale con **Esc**, con **doble clic** o por la esquina de arriba a la derecha (un ojo que solo aparece al pasar el puntero). Pantalla completa quedó para después.
+
 ### 9.75 Ritmo: gameplays con música (5-oct-2026)
 
 **Qué pidió Ricardo:** gameplays con sonido y con ritmo, «como una canción clásica, alegre»; unas tres canciones; sincronizar el sonido con la maquinita, con el movimiento y con el mineral; escenas completas de 8 a 12 segundos; con su propia categoría y su propio creador. Es un anuncio: nadie juega así de parejo y está bien. Son la primera pieza del «video del día» (1. un ritmo · 2. un GIF · 3. una foto · 4. cierre).
