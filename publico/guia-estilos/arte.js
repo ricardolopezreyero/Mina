@@ -186,17 +186,32 @@
     const capa = (dibuja) => { const c = document.createElement('canvas'); c.width = D.w; c.height = D.h; dibuja(c.getContext('2d')); return c; };
     return { D, lista, mov, jMax, fases: D.chispas.map(() => r2()), fondoC: capa((q) => { fondoEn(q, D); anillosEn(q, D); }), encimaC: capa((q) => encimaEn(q, D)), info: datos(D, lista.length, mov) };
   }
+  // El bucle dura lo que se pida. El movimiento principal se repite cada 3 segundos (k veces por bucle) y, de 4 segundos en adelante,
+  // se le suma un «acento» que pasa una sola vez por bucle: así un bucle de 6 o de 12 segundos no se siente como uno de 3 repetido.
+  const coreografia = (A, seg) => { A.seg = seg; A.k = Math.max(1, Math.round(seg / 3)); A.acento = seg >= 4; return A; };
+  const frac = (x) => ((x % 1) + 1) % 1;
   function cuadro(q, A, t) {
-    const { D, mov, jMax } = A, { cx, cy, w, h } = D, T = TAU * t;
+    const { D, mov, jMax, k, acento } = A, { cx, cy, w, h } = D, tp = t * k, T = TAU * tp, Tl = TAU * t, tg = acento ? tp + 0.1 * Math.sin(Tl) : tp;      // tg: el giro toma vuelo y se frena una vez por bucle
     q.drawImage(A.fondoC, 0, 0); chispasEn(q, D, t, A.fases);
     for (const p of A.lista) {
-      const f = (p.j || 0) / jMax;                     // 0 en el anillo de adentro, 1 en el de afuera
+      const f = (p.j || 0) / jMax, pq = p.q || 1;      // f: 0 en el anillo de adentro, 1 en el de afuera
       let a = p.a0, r = p.rr, s = p.s, rot = p.rot || 0;
-      if (mov === 'giro') { a += p.w * t; rot += p.w * t; s *= 1 + 0.045 * Math.sin(T * 2 - f * 5); }
-      else if (mov === 'latido') { const x = (((t - f * 0.42) % 1) + 1) % 1; s *= 1 + 0.2 * (golpe(x, 0, 0.2) + 0.55 * golpe(x, 0.24, 0.2)); }
-      else if (mov === 'ola') { r *= 1 + 0.05 * Math.sin(T - f * 7); s *= 1 + 0.1 * Math.sin(T - f * 7 + 1.3); rot += (p.q || 1) * 0.1 * Math.sin(T - f * 7); }
-      else if (mov === 'cascada') { const x = (((t - p.cima * 0.8 - f * 0.18) % 1) + 1) % 1, g = golpe(x, 0, 0.3); s *= 1 + 0.3 * g; rot += (p.q || 1) * 0.22 * g; }
-      else { rot += (p.q || 1) * 0.42 * Math.sin(T - f * 4.5); s *= 1 + 0.05 * Math.sin(T * 2 - f * 4.5); }
+      if (mov === 'giro') {
+        a += p.w * tg; rot += p.w * tg; s *= 1 + 0.045 * Math.sin(T * 2 - f * 5);
+        if (acento) s *= 1 + 0.2 * golpe(frac(t - f * 0.45), 0, 0.2);                                   // un latido que sale del centro
+      } else if (mov === 'latido') {
+        const x = frac(tp - f * 0.42); s *= 1 + 0.2 * (golpe(x, 0, 0.2) + 0.55 * golpe(x, 0.24, 0.2));
+        if (acento) { const g = golpe(frac(t - 0.5 - p.cima * 0.5 - f * 0.1), 0, 0.16); s *= 1 + 0.22 * g; rot += pq * 0.25 * g; }      // entre latido y latido, un brillo que baja por los dos lados
+      } else if (mov === 'ola') {
+        r *= 1 + 0.05 * Math.sin(T - f * 7); s *= 1 + 0.1 * Math.sin(T - f * 7 + 1.3); rot += pq * 0.1 * Math.sin(T - f * 7);
+        if (acento) { const g = golpe(frac(t - p.cima * 0.8 - f * 0.18), 0, 0.2); s *= 1 + 0.24 * g; }  // un brillo que baja por los dos lados
+      } else if (mov === 'cascada') {
+        const g = golpe(frac(tp - p.cima * 0.8 - f * 0.18), 0, 0.3); s *= 1 + 0.3 * g; rot += pq * 0.22 * g;
+        if (acento) r *= 1 + 0.035 * Math.sin(Tl - f * 5);                                              // y los anillos respiran
+      } else {
+        rot += pq * 0.42 * Math.sin(T - f * 4.5); s *= 1 + 0.05 * Math.sin(T * 2 - f * 4.5);
+        if (acento) s *= 1 + 0.2 * golpe(frac(t - f * 0.45), 0, 0.2);                                   // un latido que sale del centro
+      }
       const x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r;
       if (x > -s && x < w + s && y > -s && y < h + s) gemaEn(q, D, p.i, x, y, s, rot, p.fx);
     }
@@ -204,7 +219,7 @@
   }
   // La vista en vivo: pinta el bucle en el lienzo hasta que se llama a parar().
   async function animar(canvas, op = {}) {
-    const A = await preparar({ escala: 0.5, ...op }), seg = Math.max(1, +op.segundos || 3), q = canvas.getContext('2d'); canvas.width = A.D.w; canvas.height = A.D.h;
+    const seg = Math.max(1, +op.segundos || 6), A = coreografia(await preparar({ escala: 0.5, ...op }), seg), q = canvas.getContext('2d'); canvas.width = A.D.w; canvas.height = A.D.h;
     let vivo = true, t0 = performance.now(), ult = 0; const cada = op.fps ? 1000 / op.fps - 2 : 0;      // fps: para pintar menos seguido cuando hay muchas a la vez (la galería)
     const paso = (ahora) => { if (!vivo) return; if (canvas.isConnected !== false && ahora - ult >= cada) { ult = ahora; cuadro(q, A, (((ahora - t0) / (seg * 1000)) % 1 + 1) % 1); } requestAnimationFrame(paso); };
     cuadro(q, A, 0); requestAnimationFrame(paso);
@@ -247,9 +262,9 @@
     if (nb) { sal.push(nb); for (let k = 0; k < nb; k++) sal.push(blo[k]); }
     sal.push(0);
   }
-  // Devuelve el GIF listo (Blob). ajustes: segundos (duración del bucle), fps (10 a 25), alAvance(0 a 1).
+  // Devuelve el GIF listo (Blob). ajustes: segundos (duración del bucle), fps (si no se dice: 20 hasta 4 s, 16.7 hasta 8 s y 12.5 de ahí en adelante, para que no pese de más), alAvance(0 a 1).
   async function gif(op = {}, ajustes = {}) {
-    const A = await preparar({ escala: 0.5, ...op }), { w, h } = A.D, espera = Math.max(4, Math.min(10, Math.round(100 / (+ajustes.fps || 20)))), cuadros = Math.max(8, Math.round((+ajustes.segundos || 3) * 100 / espera));
+    const seg = Math.max(1, +ajustes.segundos || 6), fps = +ajustes.fps || (seg <= 4 ? 20 : seg <= 8 ? 16.7 : 12.5), A = coreografia(await preparar({ escala: 0.5, ...op }), seg), { w, h } = A.D, espera = Math.max(4, Math.min(10, Math.round(100 / fps))), cuadros = Math.max(8, Math.round(seg * 100 / espera));
     const c = document.createElement('canvas'); c.width = w; c.height = h; const q = c.getContext('2d', { willReadFrequently: true });
     const respiro = () => new Promise((r) => setTimeout(r, 0)), clave = (d, i) => ((d[i] >> 2) << 12) | ((d[i + 1] >> 2) << 6) | (d[i + 2] >> 2);
     // la paleta sale de seis cuadros repartidos por todo el bucle

@@ -8,6 +8,7 @@
 <meta name="description" content="Arte con las gemas de Mina: imágenes y GIF en bucle, todos para descargar. Sigue bajando: la galería no se acaba.">
 <meta name="author" content="Ricardo López Reyero">
 <meta property="og:type" content="website"><meta property="og:site_name" content="Mina"><meta property="og:locale" content="es_MX">
+<link rel="canonical" href="https://mina.capitaltorreon.com/galeria">
 <meta property="og:url" content="https://mina.capitaltorreon.com/galeria">
 <meta property="og:title" content="Mina · Galería">
 <meta property="og:description" content="Imágenes y GIF hechos con las gemas de Mina. Todos se descargan. La galería no se acaba.">
@@ -17,8 +18,8 @@
 <link rel="icon" type="image/png" sizes="32x32" href="/iconos/icono-32.png"><link rel="apple-touch-icon" href="/iconos/icono-180.png">
 <style>
 /* RLR · la galería: todo vertical, todo hacia abajo, y no se acaba */
-@font-face{font-family:Inter;font-weight:900;font-display:swap;src:url(../kit/10-tipografia/Inter-Black.ttf) format("truetype")}
-@font-face{font-family:Inter;font-weight:700 800;font-display:swap;src:url(../kit/10-tipografia/Inter-Bold.ttf) format("truetype")}
+@font-face{font-family:Inter;font-weight:900;font-display:swap;src:url(/guia-estilos/kit/10-tipografia/Inter-Black.ttf) format("truetype")}
+@font-face{font-family:Inter;font-weight:700 800;font-display:swap;src:url(/guia-estilos/kit/10-tipografia/Inter-Bold.ttf) format("truetype")}
 :root{--f:1;--bg:#1b120e;--caja:#2a1c16;--borde:#5a3d2c;--tx:#f3e6d8;--su:#c9b29c;--ac:#ffd23f;--tinta:#2a1a14}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--tx);font:calc(16px*var(--f))/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
@@ -41,13 +42,13 @@ button:hover,.boton:hover{border-color:var(--ac)}
 .filtro button{border:0;background:none;border-radius:999px;color:var(--su);padding:.4em .95em}
 .filtro button.on{background:var(--ac);color:var(--tinta)}
 .barra small{color:var(--su);font-weight:700;margin-left:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.barra .tam{margin-left:auto;display:flex;gap:4px;flex:none}
+.barra .jugar{margin-left:auto}.barra .tam{display:flex;gap:4px;flex:none}
 main{padding:16px 0 30px}
 .rejilla{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(8px,1.4vw,18px)}
 @media(max-width:1100px){.rejilla{grid-template-columns:repeat(3,minmax(0,1fr))}}
-@media(max-width:700px){.rejilla{grid-template-columns:repeat(2,minmax(0,1fr))}.barra small,.barra .marca{display:none}header .lado{margin-left:0}.filtro button{padding:.4em .75em}.barra .tam button{padding:.5em .65em}}
+@media(max-width:700px){.rejilla{grid-template-columns:repeat(2,minmax(0,1fr))}.barra small,.barra .marca,.barra .jugar span{display:none}header .lado{margin-left:0}.filtro button{padding:.4em .75em}.barra .tam button{padding:.5em .65em}}
 .pieza{background:var(--caja);border:1px solid var(--borde);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;min-width:0}
-.pieza .vista{position:relative;aspect-ratio:9/16;background:#120b08 radial-gradient(#3a2a22,#120b08 70%);line-height:0}
+.pieza .vista{position:relative;aspect-ratio:9/16;cursor:zoom-in;background:#120b08 radial-gradient(#3a2a22,#120b08 70%);line-height:0}
 .pieza .vista img,.pieza .vista canvas{position:absolute;inset:0;width:100%;height:100%;display:block;object-fit:cover}
 .pieza .tipo{position:absolute;left:8px;top:8px;z-index:2;font:900 .72em/1 Inter,system-ui;letter-spacing:.06em;background:var(--ac);color:var(--tinta);border:2px solid var(--tinta);border-radius:999px;padding:.35em .7em}
 .pieza.img .tipo{background:#1b120ed9;color:#fff;border-color:#ffffff59}
@@ -60,6 +61,18 @@ body[data-ver="img"] .pieza.gif,body[data-ver="gif"] .pieza.img{display:none}
 body[data-ver="todo"] .corte:not([data-de="todo"]),body[data-ver="img"] .corte:not([data-de="img"]),body[data-ver="gif"] .corte:not([data-de="gif"]){display:none}
 .corte{grid-column:1/-1;background:var(--ac);color:var(--tinta);border-radius:14px;border:3px solid var(--tinta);padding:14px 18px;font-weight:800}
 .corte b{font:900 1.3em/1.15 Inter,system-ui;display:block}
+#arriba{position:fixed;right:16px;bottom:16px;z-index:6;border-radius:999px;background:var(--ac);color:var(--tinta);border:2px solid var(--tinta);box-shadow:0 3px 0 var(--tinta);padding:.6em 1em}
+#arriba[hidden]{display:none}
+.barra .jugar{background:var(--ac);color:var(--tinta);border-color:var(--tinta);white-space:nowrap;flex:none}
+#visor{position:fixed;inset:0;z-index:20;background:#0d0806f2;display:grid;grid-template-columns:auto minmax(0,auto) auto;grid-template-rows:minmax(0,1fr) auto;gap:10px 8px;align-items:center;justify-content:center;padding:14px}
+#visor[hidden]{display:none}
+#visor .marco{grid-column:2;grid-row:1;height:100%;min-height:0;display:flex;align-items:center;justify-content:center}
+#visor canvas{max-height:100%;max-width:100%;width:auto;height:auto;display:block;border-radius:12px;box-shadow:0 12px 40px #000}
+#visor .flecha{grid-row:1;font-size:1.6em;border-radius:50%;width:2em;height:2em;justify-content:center;padding:0;background:#2a1c16e6}
+#visor .cerrar{position:absolute;right:14px;top:14px;border-radius:50%;width:2.4em;height:2.4em;justify-content:center;padding:0;font-size:1.1em;z-index:2}
+#visor .datos{grid-column:1/-1;grid-row:2;display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;text-align:center}
+#visor .datos b{font:800 1em/1.3 Inter,system-ui}#visor .datos b small{display:block;font-weight:600;color:var(--su)}
+#visor .datos .baja{background:var(--ac);color:var(--tinta);border-color:var(--tinta);font-size:1.05em;padding:.55em 1.1em}
 #fin{padding:26px 0 60px;text-align:center;color:var(--su);font-weight:700}
 #aviso{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(20px);background:var(--ac);color:var(--tinta);font-weight:800;padding:.6em 1.1em;border-radius:999px;opacity:0;transition:.25s;pointer-events:none;z-index:9}
 #aviso.on{opacity:1;transform:translateX(-50%)}
@@ -67,22 +80,31 @@ body[data-ver="todo"] .corte:not([data-de="todo"]),body[data-ver="img"] .corte:n
 </head>
 <body data-ver="todo">
 <header><div class="envuelve">
-  <a href="/" title="Jugar Mina"><img src="../kit/03-logotipo/mina-palabra.png" alt="MINA" width="250" height="76"></a>
-  <div><h1>Galería</h1><p>Arte hecho con las gemas del juego. Todo se descarga, y entre más bajas, más sale.</p></div>
-  <div class="lado"><a class="boton ppal" href="/">⛏️ Jugar Mina gratis</a><a class="boton osc" href="../#generador">🎲 Hacer la mía</a></div>
+  <a href="/" title="Jugar Mina"><img src="/guia-estilos/kit/03-logotipo/mina-palabra.png" alt="MINA" width="250" height="76"></a>
+  <div><h1>Galería</h1><p>Arte hecho con las gemas del juego. Toca cualquiera para verla en grande. Todo se descarga, y entre más bajas, más sale.</p></div>
+  <div class="lado"><a class="boton ppal" href="/">⛏️ Jugar Mina gratis</a><a class="boton osc" href="/guia-estilos/#generador">🎲 Hacer la mía</a></div>
 </div></header>
 <div class="barra"><div class="envuelve">
   <a class="marca" href="/" title="mina.capitaltorreon.com">MINA</a>
   <div class="filtro" role="tablist" aria-label="Qué ver"><button data-ver="todo" class="on">Todo</button><button data-ver="img">Imágenes</button><button data-ver="gif">GIF</button></div>
   <small id="cuenta"></small>
+  <a class="boton jugar" href="/" title="Jugar Mina gratis">⛏️<span> Jugar gratis</span></a>
   <span class="tam"><button id="menos" title="Letra más chica" aria-label="Letra más chica">A−</button><button id="mas" title="Letra más grande" aria-label="Letra más grande">A+</button></span>
 </div></div>
 <main><div class="envuelve"><div class="rejilla" id="rejilla"></div></div></main>
 <div id="fin">Haciendo más… <a href="/">mina.capitaltorreon.com</a></div>
+<button id="arriba" hidden title="Volver al principio">↑ Arriba</button>
+<div id="visor" hidden role="dialog" aria-modal="true" aria-label="Vista en grande">
+  <button class="cerrar" title="Cerrar (Esc)" aria-label="Cerrar">✕</button>
+  <button class="flecha ant" title="Anterior (←)" aria-label="Anterior">‹</button>
+  <div class="marco"><canvas></canvas></div>
+  <button class="flecha sig" title="Siguiente (→)" aria-label="Siguiente">›</button>
+  <div class="datos"><b></b><button class="baja"></button></div>
+</div>
 <div id="aviso" role="status" aria-live="polite"></div>
 
-<script src="../arte.js"></script>
-<script src="lista.js"></script>
+<script src="/guia-estilos/arte.js"></script>
+<script src="/galeria-lista.js"></script>
 <script>
 /* RLR · Ricardo López Reyero — la galería pinta cada pieza en el momento con el generador (arte.js): por eso no pesa y no se acaba.
    Las imágenes se pintan una vez y se quedan como foto; los GIF se mueven solo mientras están a la vista. */
@@ -93,18 +115,21 @@ G.gif = G.gif.slice(3).concat(G.gif.slice(0, 3));      // las dos listas empieza
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 let avisoT = 0; const aviso = (t) => { const a = $('#aviso'); a.textContent = t; a.classList.add('on'); clearTimeout(avisoT); avisoT = setTimeout(() => a.classList.remove('on'), 1900); };
 const de = (l) => l[Math.floor(Math.random() * l.length)];
-const receta = (r) => ({ base: '../', estilo: r.e, paleta: r.p, fondo: r.f, semilla: r.s, movimiento: r.m || '', formato: 'vertical' });      // base: las gemas viven una carpeta arriba
+const receta = (r) => ({ base: '/guia-estilos/', estilo: r.e, paleta: r.p, fondo: r.f, semilla: r.s, movimiento: r.m || '', formato: 'vertical' });      // base: las gemas viven con la guía de estilos
 const alAzar = (tipo) => { const e = de(G.figuras), [p, f] = de(G.pares[e]); return { e, p, f, s: 1 + Math.floor(Math.random() * 999999), m: tipo === 'gif' ? de(['giro', 'giro', 'latido', 'ola', 'vaiven', 'cascada']) : '' }; };
 
 // ── la fila de trabajo: una foto a la vez, para que el scroll no se trabe ──
 const cola = []; let ocupada = false; const lienzo = document.createElement('canvas');
+// Qué tan grande se pinta cada pieza: lo que mide en pantalla por los puntos reales de esa pantalla (hasta 2), en pasos de 5 %.
+const nitidez = (el, tope) => Math.min(tope, Math.max(0.3, Math.ceil(el.clientWidth * Math.min(devicePixelRatio || 1, 2) / 1080 * 20) / 20));
 async function trabaja() {
   if (ocupada) return; ocupada = true;
   while (cola.length) {
-    const P = cola.shift(); if (P.foto || !P.el.isConnected) continue;
+    const P = cola.shift(); if (P.foto || !P.cerca || !P.el.isConnected) continue;
     try {
-      const info = await A.pintar(lienzo, { ...receta(P.r), escala: 0.4 }); P.info = info;
+      const info = await A.pintar(lienzo, { ...receta(P.r), escala: nitidez(P.el, 1) }); P.info = P.info || info;
       const blob = await new Promise((si) => lienzo.toBlob(si, 'image/jpeg', 0.86)); P.foto = URL.createObjectURL(blob);
+      if (!P.cerca) { URL.revokeObjectURL(P.foto); P.foto = null; continue; }
       P.el.querySelector('.vista').insertAdjacentHTML('afterbegin', `<img src="${P.foto}" alt="${esc(info.texto)}" decoding="async">`);
       if (!P.r.m) pinta(P, info);
     } catch { P.el.querySelector('.pie b').textContent = 'No cargó. Recarga la página.'; }
@@ -112,32 +137,35 @@ async function trabaja() {
   }
   ocupada = false;
 }
-const nombres = (i) => `${esc(A.ESTILOS[i.estilo].n)} · ${esc(A.PALETAS[i.paleta].n)}<small>${esc(A.FONDOS[i.fondo].n)}${i.movimiento ? ' · ' + esc(A.MOVIMIENTOS[i.movimiento]) : ''} · semilla ${i.semilla}</small>`;
+const titulo = (e, p) => esc(A.ESTILOS[e].n) + (e === 'corona' ? '' : ' · ' + esc(A.PALETAS[p].n));      // la corona siempre lleva las 22: no hace falta repetirlo
+const nombres = (i) => `${titulo(i.estilo, i.paleta)}<small>${esc(A.FONDOS[i.fondo].n)}${i.movimiento ? ' · ' + esc(A.MOVIMIENTOS[i.movimiento]) : ''} · semilla ${i.semilla}</small>`;
 const pinta = (P, i) => { P.el.querySelector('.pie b').innerHTML = nombres(i); };
 
 // ── cada pieza: se pinta al acercarse; el GIF se mueve mientras está a la vista ──
 const piezas = new Map();
-const cerca = new IntersectionObserver((es) => { for (const e of es) if (e.isIntersecting) { const P = piezas.get(e.target); cerca.unobserve(e.target); if (P && !P.foto) { cola.push(P); trabaja(); } } }, { rootMargin: '900px 0px' });
+const cerca = new IntersectionObserver((es) => { for (const e of es) { const P = piezas.get(e.target); if (!P || !e.isIntersecting || P.cerca) continue; P.cerca = true; if (!P.foto) { cola.push(P); trabaja(); } } }, { rootMargin: '1000px 0px' });
+// Las que quedan muy lejos sueltan su foto para no llenar la memoria; al volver se pintan otra vez (la receta es la misma, sale idéntica).
+const lejos = new IntersectionObserver((es) => { for (const e of es) { const P = piezas.get(e.target); if (!P || e.isIntersecting || !P.cerca) continue; P.cerca = false; if (P.foto) { URL.revokeObjectURL(P.foto); P.foto = null; const i = P.el.querySelector('.vista img'); if (i) i.remove(); } } }, { rootMargin: '5000px 0px' });
 const aLaVista = new IntersectionObserver((es) => { for (const e of es) { const P = piezas.get(e.target); if (!P) continue; if (e.isIntersecting) prende(P); else apaga(P); } }, { rootMargin: '60px 0px' });
 async function prende(P) {
   if (P.vivo || P.prendiendo || document.body.dataset.ver === 'img') return; P.prendiendo = true;
   const c = document.createElement('canvas');
-  try { const v = await A.animar(c, { ...receta(P.r), escala: 0.3, segundos: 3, fps: 24 }); if (!P.prendiendo) { v.parar(); return; } P.vivo = v; P.lienzo = c; P.info = v.info; P.el.querySelector('.vista').appendChild(c); pinta(P, v.info); }
+  try { const v = await A.animar(c, { ...receta(P.r), escala: nitidez(P.el, 0.6), segundos: 6, fps: 24 }); if (!P.prendiendo) { v.parar(); return; } P.vivo = v; P.lienzo = c; P.info = v.info; P.el.querySelector('.vista').appendChild(c); pinta(P, v.info); }
   catch {} P.prendiendo = false;
 }
 function apaga(P) { P.prendiendo = false; if (P.vivo) { P.vivo.parar(); P.vivo = null; } if (P.lienzo) { P.lienzo.remove(); P.lienzo.width = P.lienzo.height = 0; P.lienzo = null; } }
 function agrega(r, tipo) {
   const el = document.createElement('article'); el.className = 'pieza ' + tipo;
-  el.innerHTML = `<div class="vista"><span class="tipo">${tipo === 'gif' ? 'GIF' : 'IMAGEN'}</span></div><div class="pie"><b>${esc(A.ESTILOS[r.e].n)} · ${esc(A.PALETAS[r.p].n)}<small>${esc(A.FONDOS[r.f].n)}</small></b><button class="baja" title="Descargar">⬇ ${tipo === 'gif' ? 'GIF' : 'PNG'}</button></div>`;
-  R.appendChild(el); const P = { el, r, tipo }; piezas.set(el, P); cerca.observe(el); if (tipo === 'gif') aLaVista.observe(el);
-  el.querySelector('.baja').onclick = () => baja(P);
+  el.innerHTML = `<div class="vista"><span class="tipo">${tipo === 'gif' ? 'GIF' : 'IMAGEN'}</span></div><div class="pie"><b>${titulo(r.e, r.p)}<small>${esc(A.FONDOS[r.f].n)}</small></b><button class="baja" title="Descargar">⬇ ${tipo === 'gif' ? 'GIF' : 'PNG'}</button></div>`;
+  R.appendChild(el); const P = { el, r, tipo }; piezas.set(el, P); cerca.observe(el); lejos.observe(el); if (tipo === 'gif') aLaVista.observe(el);
+  el.querySelector('.baja').onclick = () => baja(P, el.querySelector('.baja')); el.querySelector('.vista').onclick = () => abre(P);
 }
 const bajar = (blob, nombre) => { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nombre; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 30000); };
-async function baja(P) {
-  const b = P.el.querySelector('.baja'); if (b.disabled) return; b.disabled = true; const antes = b.textContent;
+async function baja(P, b) {
+  if (b.disabled) return; b.disabled = true; const antes = b.textContent;
   try {
     if (P.tipo === 'gif') {
-      const g = await A.gif({ ...receta(P.r), movimiento: (P.info && P.info.movimiento) || P.r.m, escala: 0.4 }, { segundos: 3, fps: 20, alAvance: (x) => { b.textContent = Math.round(x * 100) + ' %'; } });
+      const g = await A.gif({ ...receta(P.r), movimiento: (P.info && P.info.movimiento) || P.r.m, escala: 0.4 }, { segundos: 6, alAvance: (x) => { b.textContent = Math.round(x * 100) + ' %'; } });
       bajar(g, g.info.nombre); aviso(`GIF listo · ${(g.size / 1048576).toFixed(1)} MB`);
     } else {
       b.textContent = '…'; const c = document.createElement('canvas'), i = await A.pintar(c, receta(P.r));
@@ -152,13 +180,13 @@ let hechas = { img: 0, gif: 0 }, turno = 0; const cortes = {};
 function mas(n) {
   const ver = document.body.dataset.ver;
   for (let k = 0; k < n; k++) {
-    const tipo = ver === 'todo' ? (turno++ % 2 ? 'gif' : 'img') : ver, i = hechas[tipo]++;
+    const tipo = ver === 'todo' ? 'iggigiig'[turno++ % 8] === 'g' ? 'gif' : 'img' : ver, i = hechas[tipo]++;      // i g g i / g i i g: con 2, 3 o 4 columnas ninguna queda de un solo tipo
     if (i === G[tipo].length && !cortes[ver]) { cortes[ver] = 1; R.insertAdjacentHTML('beforeend', '<div class="corte" data-de="' + ver + '"><b>De aquí en adelante, recién hechas</b>Estas se están haciendo en este momento, solo para ti: nadie más las ha visto. Si una te gusta, bájala, porque al recargar salen otras.</div>'); }
     agrega(i < G[tipo].length ? G[tipo][i] : alAzar(tipo), tipo);
   }
   cuenta();
 }
-const cuenta = () => { const n = (t) => R.querySelectorAll('.pieza.' + t).length; $('#cuenta').textContent = `${n('img')} imágenes · ${n('gif')} GIF · sigue bajando`; };
+const cuenta = () => { const n = (t) => R.querySelectorAll('.pieza.' + t).length.toLocaleString('es-MX'); $('#cuenta').textContent = `${n('img')} imágenes · ${n('gif')} GIF · sigue bajando`; };
 new IntersectionObserver((es) => { if (es[0].isIntersecting) mas(12); }, { rootMargin: '1400px 0px' }).observe($('#fin'));
 let rueda = 0; addEventListener('scroll', () => { const ahora = Date.now(); if (ahora - rueda > 250 && document.documentElement.scrollHeight - scrollY - innerHeight < 1200) { rueda = ahora; mas(12); } }, { passive: true });      // por si el aviso de arriba no alcanza a dispararse
 for (const b of document.querySelectorAll('.filtro button')) b.onclick = () => {
@@ -168,6 +196,29 @@ for (const b of document.querySelectorAll('.filtro button')) b.onclick = () => {
   scrollTo({ top: Math.min(scrollY, $('.barra').offsetTop) });
 };
 mas(16);
+
+// ── verla en grande: un toque en la pieza; flechas para pasar, Esc para cerrar ──
+const V = $('#visor'); let viendo = null, vivoV = null, turnoV = 0;
+const enVista = () => [...R.querySelectorAll('.pieza')].filter((e) => e.offsetParent !== null);
+async function abre(P) {
+  if (!P) return; viendo = P; const mio = ++turnoV; V.hidden = false; document.body.style.overflow = 'hidden';
+  if (vivoV) { vivoV.parar(); vivoV = null; }
+  const c = V.querySelector('canvas'), b = V.querySelector('.baja'), alto = Math.max(320, innerHeight - 120), esc2 = Math.min(1, Math.max(0.3, alto * Math.min(devicePixelRatio || 1, 2) / 1920));
+  V.querySelector('.datos b').innerHTML = P.info ? nombres(P.info) : titulo(P.r.e, P.r.p); b.textContent = '⬇ Descargar ' + (P.tipo === 'gif' ? 'GIF' : 'PNG'); b.onclick = () => baja(P, b);
+  try {
+    if (P.tipo === 'gif') { const v = await A.animar(c, { ...receta(P.r), escala: Math.min(0.75, esc2), segundos: 6, fps: 30 }); if (mio !== turnoV) return v.parar(); vivoV = v; P.info = v.info; }
+    else { const i = await A.pintar(c, { ...receta(P.r), escala: esc2 }); if (mio !== turnoV) return; P.info = P.info || i; }
+    V.querySelector('.datos b').innerHTML = nombres(P.info);
+  } catch { aviso('No se pudo abrir. Intenta otra vez.'); }
+}
+function cierra() { turnoV++; V.hidden = true; document.body.style.overflow = ''; viendo = null; if (vivoV) { vivoV.parar(); vivoV = null; } }
+function pasa(d) { if (!viendo) return; const l = enVista(), k = l.indexOf(viendo.el); if (k < 0) return; if (k + d >= l.length - 2) mas(12); const sig = l[k + d]; if (sig) { sig.scrollIntoView({ block: 'center' }); abre(piezas.get(sig)); } }
+V.querySelector('.cerrar').onclick = cierra; V.querySelector('.ant').onclick = () => pasa(-1); V.querySelector('.sig').onclick = () => pasa(1);
+V.onclick = (e) => { if (e.target === V || e.target.classList.contains('marco')) cierra(); };
+addEventListener('keydown', (e) => { if (V.hidden) return; if (e.key === 'Escape') cierra(); else if (e.key === 'ArrowRight') pasa(1); else if (e.key === 'ArrowLeft') pasa(-1); });
+// ── volver arriba, cuando ya se bajó mucho ──
+$('#arriba').onclick = () => scrollTo({ top: 0, behavior: 'smooth' });
+addEventListener('scroll', () => { $('#arriba').hidden = scrollY < 2400; }, { passive: true });
 // A− / A+: el tamaño de la letra, recordado en este equipo
 let f = 1; try { f = +localStorage.getItem('mina_guia_f') || 1; } catch {}
 const pon = () => { document.documentElement.style.setProperty('--f', f); try { localStorage.setItem('mina_guia_f', f); } catch {} };

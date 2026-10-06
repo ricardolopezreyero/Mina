@@ -1558,6 +1558,21 @@ A Ricardo le gustaron las imágenes de gemas y pidió dos cosas: otras seis, y q
 - **El nombre en el escaparate 3D** salía cortado por abajo: el letrero se dibujaba en un lienzo de 220 de alto y el nombre caía justo en la orilla. Ahora mide 272 y la cámara deja más aire arriba. Probado con «Ricardo» y con «La Valenciana».
 - **Qué quedó viejo:** la captura de la superficie del brochure, las escenas del kit de marca donde sale la camioneta junto al tiro, y el orden que dice la veta 6 de la guía del creador. Muestran la calle anterior.
 
+### 9.72 La galería en /galeria, GIF más largos y una pasada de mejoras
+
+**Lo que dijo Ricardo.** Le encantó la galería y el scroll sin fin. Pidió: quitar «guia-estilos» de la dirección y dejarla en `/galeria`, ligas a la galería desde varios lados, que el GIF dure más («lo siento muy corto»), y mejoras de claridad, calidad y estructura a partir de una captura.
+
+- **La dirección:** `mina.capitaltorreon.com/galeria`, a secas. La página pasó a `publico/galeria.html` y sus recetas a `publico/galeria-lista.js`. Las direcciones de antes, con acento, con diagonal o con mayúsculas redirigen ahí (301).
+- **Ligas a la galería:** en la guía de estilos (primera liga del menú, atajo de arriba, una franja amarilla en Arte con gemas, el texto del generador y el pie), en el brochure y la guía del creador en línea, y en el juego (Menú → 💎 Arte y Menú → Ayuda).
+- **GIF más largos.** De inicio duran 6 segundos (antes 3); en el generador se elige 3, 6, 9 o 12. Para que un bucle largo no sea uno corto repetido, el movimiento principal se repite cada 3 segundos y se le suma un **acento** que pasa una sola vez por bucle: al giro, un latido desde el centro y un vaivén de velocidad; al latido, un brillo que baja por los dos lados; a la ola, ese mismo brillo; a la cascada, anillos que respiran; al vaivén, un latido. Sigue cerrando sin corte: todo son ciclos enteros.
+- **Peso de los GIF largos:** de 3 a 9.5 MB a 6 segundos en tamaño Normal (el giro es el más pesado). Para contenerlo, los cuadros por segundo bajan con la duración: 20 hasta 4 s, 16.7 hasta 8 s y 12.5 después. Se probó un acercamiento suave de toda la figura y se quitó: cambiaba todos los pixeles en cada cuadro y duplicaba el peso.
+- **Más nitidez en la galería.** Cada pieza se pinta al tamaño real que ocupa en la pantalla de quien mira, contando pantallas de doble densidad (antes siempre a 432 de ancho: en una pantalla grande se veía suave). Las imágenes llegan hasta 1080 de ancho y los GIF en vivo hasta 648.
+- **Verla en grande.** Un toque en cualquier pieza la abre a pantalla completa, con su botón de descarga, flechas para pasar a la siguiente (también con ← →) y Esc para cerrar.
+- **Mejor orden.** Imagen y GIF ya no alternan de uno en uno (con cuatro columnas quedaban columnas enteras de un solo tipo); ahora van en un patrón de ocho que mezcla en 2, 3 y 4 columnas.
+- **Memoria.** Ricardo llegó a más de dos mil piezas en una visita. Ahora las que quedan a más de cinco pantallas sueltan su foto y se repintan al volver (misma receta, misma imagen). Probado con 280 piezas: 10 MB.
+- **Detalles:** la corona ya no dice «Corona de las 22 · Las 22»; el contador usa separador de miles; botón «↑ Arriba» al bajar mucho; «Jugar gratis» siempre a la vista en la barra.
+- **Se quitaron** los tres GIF de muestra de la guía (10 MB): la galería los reemplaza con ventaja.
+
 ## 10. Revisión de código del 2 de octubre
 
 Se revisó todo el código buscando fallas y se corrigieron estas:

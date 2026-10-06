@@ -3994,16 +3994,16 @@ async function arteNueva(misma) {            // misma: la que ya está, solo que
   try {
     await arteCargar(); const c = document.createElement('canvas'), op = { base: '/guia-estilos/', formato: arte.formato, semilla: misma ? arte.info.semilla : 0 };
     if (arte.vivo) { arte.vivo.parar(); arte.vivo = null; }
-    if (arte.mov) { arte.vivo = await ArteMina.animar(c, { ...op, escala: 0.4, segundos: 3 }); arte.info = arte.vivo.info; } else arte.info = await ArteMina.pintar(c, op);
+    if (arte.mov) { arte.vivo = await ArteMina.animar(c, { ...op, escala: 0.4, segundos: 6 }); arte.info = arte.vivo.info; } else arte.info = await ArteMina.pintar(c, op);
     arte.lienzo = c;
   } catch { arte.error = 'No se pudieron traer las gemas. Hace falta internet la primera vez: revisa la señal y vuelve a intentar.'; }
   arte.cargando = 0; arteRepinta();
 }
-// La imagen lista para bajar o compartir: PNG si está quieta; si se mueve, el GIF de 3 segundos (se arma en ese momento y avisa cómo va).
+// La imagen lista para bajar o compartir: PNG si está quieta; si se mueve, el GIF de 6 segundos (se arma en ese momento y avisa cómo va).
 async function arteBlob() {
   if (!arte.mov) return new Promise((r) => arte.lienzo.toBlob(r, 'image/png'));
   const pon = (x) => { arte.gif = x; const b = $('#arteAvance'); if (b) b.textContent = x; };
-  try { return await ArteMina.gif({ base: '/guia-estilos/', formato: arte.formato, semilla: arte.info.semilla, movimiento: arte.info.movimiento, escala: 0.4 }, { segundos: 3, fps: 20, alAvance: (x) => pon('Armando el GIF… ' + Math.round(x * 100) + ' %') }); }
+  try { return await ArteMina.gif({ base: '/guia-estilos/', formato: arte.formato, semilla: arte.info.semilla, movimiento: arte.info.movimiento, escala: 0.4 }, { segundos: 6, alAvance: (x) => pon('Armando el GIF… ' + Math.round(x * 100) + ' %') }); }
   finally { pon(''); }
 }
 function htmlArte() {
@@ -4017,7 +4017,7 @@ function htmlArte() {
       ${navigator.canShare ? `<button class="s" data-a="arteComparte" ${listo ? '' : 'disabled'}>📤 Compartir</button>` : ''}
       <div class="arteForma">${ARTE_FORMATOS.map((f) => `<button class="s${f[0] === arte.formato ? ' on' : ''}" data-a="arteFormato" data-v="${f[0]}">${f[1]}</button>`).join('')}</div>
       <button class="s artePalanca${arte.mov ? ' on' : ''}" data-a="arteMov" role="switch" aria-checked="${arte.mov ? 'true' : 'false'}"><i></i><span>Con movimiento (GIF)</span></button>
-      <small>${F[1]}: ${F[2]}.${listo ? '<br>' + esc(arte.info.texto) : ''}${arte.mov ? '<br>El GIF dura 3 segundos y se repite sin corte.' : ''}<b id="arteAvance" style="display:block;color:var(--ac)">${esc(arte.gif)}</b></small>
+      <small>${F[1]}: ${F[2]}.${listo ? '<br>' + esc(arte.info.texto) : ''}${arte.mov ? '<br>El GIF dura 6 segundos y se repite sin corte.' : ''}<b id="arteAvance" style="display:block;color:var(--ac)">${esc(arte.gif)}</b></small>
       <a class="boton s" href="/galeria" target="_blank" rel="noopener" style="text-align:center">🖼 Ver la galería</a>
     </div></div>`;
 }
@@ -5451,6 +5451,7 @@ function menuPrincipal() {
       <p><b>Las teclas son la inicial de lo que hacen:</b> <b>R</b> Reserva · <b>N</b> Nanobots · <b>D</b> Dinamita · <b>P</b> Plástico · <b>Q</b> Cuántico · <b>T</b> Transmisor · <b>C</b> Chat · <b>S</b> Señal · <b>A</b> Ayudar · <b>G</b> Grúa · <b>F</b> Foto (captura) · <b>M</b> Mapa · <b>Esc</b> Menú.</p>
       <p><b>El mapa (M):</b> se abre de un lado, como el chat (y encima de él si está abierto). Solo enseña lo que ya descubrió el equipo; lo demás queda oscuro. Arriba dice quién está jugando y a qué profundidad, y un clic en un nombre lleva el mapa hasta esa maquinita; a la izquierda, una tira con el mundo entero y la marca de cada quien. La rueda del ratón recorre el mapa.</p>
       <p><b>Objetos:</b> R tanque de reserva · N nanobots · D dinamita · P explosivo plástico · Q teletransportador cuántico · T transmisor. En El Almacén se compran de a 1, 5, 10, 50 o 100.</p>
+      <p><b>Arte y galería:</b> en Menú → 💎 Arte haces imágenes y GIF con las gemas del juego, para descargar. Y hay una <a href="/galeria" target="_blank" rel="noopener">galería</a> con cientos ya hechos, que no se acaba.</p>
       <p><b>El Taller:</b> cada pieza tiene veintiséis mejoras, de $750 a $25 billones ($25 T). Siempre ves las que ya compraste y las diez que siguen.</p>
       <p><b>Acompañado:</b> S deja una señal que todos ven · A ayuda a la maquinita que tengas junto: le pasa 5 litros · C abre el chat. Para descansar, abre el menú (Esc): con el menú abierto tu maquinita no gasta.</p>
       <p><b>Tu viaje:</b> abajo a la izquierda ves cuánto llevas, en cuánto se vende y si el combustible te alcanza para subir. Ahí mismo está la <b>grúa</b> (tecla G): te deja en la Gasolinera y cobra según lo lejos que estés y lo que peses.</p>
