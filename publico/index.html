@@ -24,7 +24,7 @@
 <link rel="apple-touch-icon" href="/iconos/icono-180.png">
 <link rel="manifest" href="/manifest.webmanifest">
 <script>/* RLR · la guía de estilos no es el juego: si una copia vieja guardada en el equipo sirvió el juego en esa dirección, se suelta y se vuelve a pedir */
-if(/^\/(guia-estilos|guia-de-estilos|gu(i|%C3%AD|í)a(-de)?(-estilos)?|marca|kit)(\/|$)/i.test(location.pathname)){window.__noEsElJuego=1;if('serviceWorker'in navigator)navigator.serviceWorker.getRegistrations().then(function(r){return Promise.all(r.map(function(x){return x.unregister()}))}).then(function(){try{if(!sessionStorage.getItem('mina_guia_r')){sessionStorage.setItem('mina_guia_r','1');location.reload()}}catch(e){}})}
+if(/^\/(guia-estilos|guia-de-estilos|gu(i|%C3%AD|í)a(-de)?(-estilos)?|marca|kit|galer(i|%C3%AD|í)a)(\/|$)/i.test(location.pathname)){window.__noEsElJuego=1;if('serviceWorker'in navigator)navigator.serviceWorker.getRegistrations().then(function(r){return Promise.all(r.map(function(x){return x.unregister()}))}).then(function(){try{if(!sessionStorage.getItem('mina_guia_r')){sessionStorage.setItem('mina_guia_r','1');location.reload()}}catch(e){}})}
 </script>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">

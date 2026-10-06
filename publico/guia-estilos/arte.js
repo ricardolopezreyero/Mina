@@ -205,8 +205,8 @@
   // La vista en vivo: pinta el bucle en el lienzo hasta que se llama a parar().
   async function animar(canvas, op = {}) {
     const A = await preparar({ escala: 0.5, ...op }), seg = Math.max(1, +op.segundos || 3), q = canvas.getContext('2d'); canvas.width = A.D.w; canvas.height = A.D.h;
-    let vivo = true, t0 = performance.now();
-    const paso = (ahora) => { if (!vivo) return; if (canvas.isConnected !== false) cuadro(q, A, (((ahora - t0) / (seg * 1000)) % 1 + 1) % 1); requestAnimationFrame(paso); };
+    let vivo = true, t0 = performance.now(), ult = 0; const cada = op.fps ? 1000 / op.fps - 2 : 0;      // fps: para pintar menos seguido cuando hay muchas a la vez (la galería)
+    const paso = (ahora) => { if (!vivo) return; if (canvas.isConnected !== false && ahora - ult >= cada) { ult = ahora; cuadro(q, A, (((ahora - t0) / (seg * 1000)) % 1 + 1) % 1); } requestAnimationFrame(paso); };
     cuadro(q, A, 0); requestAnimationFrame(paso);
     return { info: A.info, parar() { vivo = false; } };
   }

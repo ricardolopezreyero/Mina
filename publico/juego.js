@@ -4018,6 +4018,7 @@ function htmlArte() {
       <div class="arteForma">${ARTE_FORMATOS.map((f) => `<button class="s${f[0] === arte.formato ? ' on' : ''}" data-a="arteFormato" data-v="${f[0]}">${f[1]}</button>`).join('')}</div>
       <button class="s artePalanca${arte.mov ? ' on' : ''}" data-a="arteMov" role="switch" aria-checked="${arte.mov ? 'true' : 'false'}"><i></i><span>Con movimiento (GIF)</span></button>
       <small>${F[1]}: ${F[2]}.${listo ? '<br>' + esc(arte.info.texto) : ''}${arte.mov ? '<br>El GIF dura 3 segundos y se repite sin corte.' : ''}<b id="arteAvance" style="display:block;color:var(--ac)">${esc(arte.gif)}</b></small>
+      <a class="boton s" href="/galeria" target="_blank" rel="noopener" style="text-align:center">🖼 Ver la galería</a>
     </div></div>`;
 }
 function htmlCapturas() {

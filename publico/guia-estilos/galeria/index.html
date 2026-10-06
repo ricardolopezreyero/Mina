@@ -1,0 +1,177 @@
+<!doctype html>
+<!-- Mina · Galería · Ricardo López Reyero (RLR) · mina.capitaltorreon.com/galeria -->
+<html lang="es" data-k="eye" data-rev="181218">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Mina · Galería</title>
+<meta name="description" content="Arte con las gemas de Mina: imágenes y GIF en bucle, todos para descargar. Sigue bajando: la galería no se acaba.">
+<meta name="author" content="Ricardo López Reyero">
+<meta property="og:type" content="website"><meta property="og:site_name" content="Mina"><meta property="og:locale" content="es_MX">
+<meta property="og:url" content="https://mina.capitaltorreon.com/galeria">
+<meta property="og:title" content="Mina · Galería">
+<meta property="og:description" content="Imágenes y GIF hechos con las gemas de Mina. Todos se descargan. La galería no se acaba.">
+<meta property="og:image" content="https://mina.capitaltorreon.com/guia-estilos/kit/07-horizontal/portada-horizontal-1920x1080.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#1b120e"><meta name="build" content="eye"><meta name="rev" content="181218">
+<link rel="icon" type="image/png" sizes="32x32" href="/iconos/icono-32.png"><link rel="apple-touch-icon" href="/iconos/icono-180.png">
+<style>
+/* RLR · la galería: todo vertical, todo hacia abajo, y no se acaba */
+@font-face{font-family:Inter;font-weight:900;font-display:swap;src:url(../kit/10-tipografia/Inter-Black.ttf) format("truetype")}
+@font-face{font-family:Inter;font-weight:700 800;font-display:swap;src:url(../kit/10-tipografia/Inter-Bold.ttf) format("truetype")}
+:root{--f:1;--bg:#1b120e;--caja:#2a1c16;--borde:#5a3d2c;--tx:#f3e6d8;--su:#c9b29c;--ac:#ffd23f;--tinta:#2a1a14}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:calc(16px*var(--f))/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+a{color:var(--ac)}
+.envuelve{max-width:1500px;margin:0 auto;padding:0 clamp(12px,3vw,32px)}
+header{padding:clamp(22px,4vw,44px) 0 clamp(14px,2vw,22px);background:linear-gradient(#22407a,#5f83bd 45%,#f0a868 88%,#fbd590);border-bottom:6px solid var(--tinta)}
+header .envuelve{display:flex;gap:18px 28px;align-items:center;flex-wrap:wrap}
+header img{width:min(250px,46vw);height:auto;filter:drop-shadow(0 8px 10px #0006)}
+h1{font:900 clamp(2em,6vw,3.6em)/1 Inter,system-ui,sans-serif;margin:0;color:#fff;-webkit-text-stroke:.11em var(--tinta);paint-order:stroke fill}
+header p{margin:.35em 0 0;font-weight:800;color:#fff;text-shadow:0 1px 3px #000c;max-width:46ch}
+header .lado{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+button,.boton{font:inherit;font-weight:800;cursor:pointer;border:1px solid var(--borde);background:var(--caja);color:var(--tx);border-radius:10px;padding:.5em .9em;text-decoration:none;display:inline-flex;align-items:center;gap:.45em}
+button:hover,.boton:hover{border-color:var(--ac)}
+.boton.ppal{background:var(--ac);color:var(--tinta);border-color:var(--tinta);font-size:1.08em;padding:.6em 1.1em;box-shadow:0 3px 0 var(--tinta)}
+.boton.osc{background:#1b120eeb;color:#fff;border-color:#ffffff66}
+.barra{position:sticky;top:0;z-index:5;background:#1b120ef2;backdrop-filter:blur(8px);border-bottom:1px solid var(--borde)}
+.barra .envuelve{display:flex;gap:8px;align-items:center;padding-top:9px;padding-bottom:9px}
+.barra .marca{font:900 1.15em Inter,system-ui;color:var(--ac);text-decoration:none;margin-right:6px}
+.filtro{display:flex;gap:4px;background:#120b08;border:1px solid var(--borde);border-radius:999px;padding:3px}
+.filtro button{border:0;background:none;border-radius:999px;color:var(--su);padding:.4em .95em}
+.filtro button.on{background:var(--ac);color:var(--tinta)}
+.barra small{color:var(--su);font-weight:700;margin-left:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.barra .tam{margin-left:auto;display:flex;gap:4px;flex:none}
+main{padding:16px 0 30px}
+.rejilla{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(8px,1.4vw,18px)}
+@media(max-width:1100px){.rejilla{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:700px){.rejilla{grid-template-columns:repeat(2,minmax(0,1fr))}.barra small,.barra .marca{display:none}header .lado{margin-left:0}.filtro button{padding:.4em .75em}.barra .tam button{padding:.5em .65em}}
+.pieza{background:var(--caja);border:1px solid var(--borde);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;min-width:0}
+.pieza .vista{position:relative;aspect-ratio:9/16;background:#120b08 radial-gradient(#3a2a22,#120b08 70%);line-height:0}
+.pieza .vista img,.pieza .vista canvas{position:absolute;inset:0;width:100%;height:100%;display:block;object-fit:cover}
+.pieza .tipo{position:absolute;left:8px;top:8px;z-index:2;font:900 .72em/1 Inter,system-ui;letter-spacing:.06em;background:var(--ac);color:var(--tinta);border:2px solid var(--tinta);border-radius:999px;padding:.35em .7em}
+.pieza.img .tipo{background:#1b120ed9;color:#fff;border-color:#ffffff59}
+.pieza .pie{display:flex;gap:8px;align-items:center;padding:8px 10px}
+.pieza .pie b{flex:1;min-width:0;font:800 .84em/1.25 Inter,system-ui;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pieza .pie b small{display:block;font-weight:600;color:var(--su);overflow:hidden;text-overflow:ellipsis}
+.pieza .baja{flex:none;font-size:.84em;background:#120b08;padding:.5em .75em}
+.pieza .baja:disabled{opacity:.7;cursor:progress}
+body[data-ver="img"] .pieza.gif,body[data-ver="gif"] .pieza.img{display:none}
+body[data-ver="todo"] .corte:not([data-de="todo"]),body[data-ver="img"] .corte:not([data-de="img"]),body[data-ver="gif"] .corte:not([data-de="gif"]){display:none}
+.corte{grid-column:1/-1;background:var(--ac);color:var(--tinta);border-radius:14px;border:3px solid var(--tinta);padding:14px 18px;font-weight:800}
+.corte b{font:900 1.3em/1.15 Inter,system-ui;display:block}
+#fin{padding:26px 0 60px;text-align:center;color:var(--su);font-weight:700}
+#aviso{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(20px);background:var(--ac);color:var(--tinta);font-weight:800;padding:.6em 1.1em;border-radius:999px;opacity:0;transition:.25s;pointer-events:none;z-index:9}
+#aviso.on{opacity:1;transform:translateX(-50%)}
+</style>
+</head>
+<body data-ver="todo">
+<header><div class="envuelve">
+  <a href="/" title="Jugar Mina"><img src="../kit/03-logotipo/mina-palabra.png" alt="MINA" width="250" height="76"></a>
+  <div><h1>Galería</h1><p>Arte hecho con las gemas del juego. Todo se descarga, y entre más bajas, más sale.</p></div>
+  <div class="lado"><a class="boton ppal" href="/">⛏️ Jugar Mina gratis</a><a class="boton osc" href="../#generador">🎲 Hacer la mía</a></div>
+</div></header>
+<div class="barra"><div class="envuelve">
+  <a class="marca" href="/" title="mina.capitaltorreon.com">MINA</a>
+  <div class="filtro" role="tablist" aria-label="Qué ver"><button data-ver="todo" class="on">Todo</button><button data-ver="img">Imágenes</button><button data-ver="gif">GIF</button></div>
+  <small id="cuenta"></small>
+  <span class="tam"><button id="menos" title="Letra más chica" aria-label="Letra más chica">A−</button><button id="mas" title="Letra más grande" aria-label="Letra más grande">A+</button></span>
+</div></div>
+<main><div class="envuelve"><div class="rejilla" id="rejilla"></div></div></main>
+<div id="fin">Haciendo más… <a href="/">mina.capitaltorreon.com</a></div>
+<div id="aviso" role="status" aria-live="polite"></div>
+
+<script src="../arte.js"></script>
+<script src="lista.js"></script>
+<script>
+/* RLR · Ricardo López Reyero — la galería pinta cada pieza en el momento con el generador (arte.js): por eso no pesa y no se acaba.
+   Las imágenes se pintan una vez y se quedan como foto; los GIF se mueven solo mientras están a la vista. */
+'use strict';
+const _RLR = 'Ricardo López Reyero', _k = 'EYE', _rev = 181218;
+const $ = (s) => document.querySelector(s), A = window.ArteMina, G = window.GALERIA, R = $('#rejilla');
+G.gif = G.gif.slice(3).concat(G.gif.slice(0, 3));      // las dos listas empiezan por la misma figura: se recorre una para que no queden juntas
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+let avisoT = 0; const aviso = (t) => { const a = $('#aviso'); a.textContent = t; a.classList.add('on'); clearTimeout(avisoT); avisoT = setTimeout(() => a.classList.remove('on'), 1900); };
+const de = (l) => l[Math.floor(Math.random() * l.length)];
+const receta = (r) => ({ base: '../', estilo: r.e, paleta: r.p, fondo: r.f, semilla: r.s, movimiento: r.m || '', formato: 'vertical' });      // base: las gemas viven una carpeta arriba
+const alAzar = (tipo) => { const e = de(G.figuras), [p, f] = de(G.pares[e]); return { e, p, f, s: 1 + Math.floor(Math.random() * 999999), m: tipo === 'gif' ? de(['giro', 'giro', 'latido', 'ola', 'vaiven', 'cascada']) : '' }; };
+
+// ── la fila de trabajo: una foto a la vez, para que el scroll no se trabe ──
+const cola = []; let ocupada = false; const lienzo = document.createElement('canvas');
+async function trabaja() {
+  if (ocupada) return; ocupada = true;
+  while (cola.length) {
+    const P = cola.shift(); if (P.foto || !P.el.isConnected) continue;
+    try {
+      const info = await A.pintar(lienzo, { ...receta(P.r), escala: 0.4 }); P.info = info;
+      const blob = await new Promise((si) => lienzo.toBlob(si, 'image/jpeg', 0.86)); P.foto = URL.createObjectURL(blob);
+      P.el.querySelector('.vista').insertAdjacentHTML('afterbegin', `<img src="${P.foto}" alt="${esc(info.texto)}" decoding="async">`);
+      if (!P.r.m) pinta(P, info);
+    } catch { P.el.querySelector('.pie b').textContent = 'No cargó. Recarga la página.'; }
+    await new Promise((si) => setTimeout(si, 0));
+  }
+  ocupada = false;
+}
+const nombres = (i) => `${esc(A.ESTILOS[i.estilo].n)} · ${esc(A.PALETAS[i.paleta].n)}<small>${esc(A.FONDOS[i.fondo].n)}${i.movimiento ? ' · ' + esc(A.MOVIMIENTOS[i.movimiento]) : ''} · semilla ${i.semilla}</small>`;
+const pinta = (P, i) => { P.el.querySelector('.pie b').innerHTML = nombres(i); };
+
+// ── cada pieza: se pinta al acercarse; el GIF se mueve mientras está a la vista ──
+const piezas = new Map();
+const cerca = new IntersectionObserver((es) => { for (const e of es) if (e.isIntersecting) { const P = piezas.get(e.target); cerca.unobserve(e.target); if (P && !P.foto) { cola.push(P); trabaja(); } } }, { rootMargin: '900px 0px' });
+const aLaVista = new IntersectionObserver((es) => { for (const e of es) { const P = piezas.get(e.target); if (!P) continue; if (e.isIntersecting) prende(P); else apaga(P); } }, { rootMargin: '60px 0px' });
+async function prende(P) {
+  if (P.vivo || P.prendiendo || document.body.dataset.ver === 'img') return; P.prendiendo = true;
+  const c = document.createElement('canvas');
+  try { const v = await A.animar(c, { ...receta(P.r), escala: 0.3, segundos: 3, fps: 24 }); if (!P.prendiendo) { v.parar(); return; } P.vivo = v; P.lienzo = c; P.info = v.info; P.el.querySelector('.vista').appendChild(c); pinta(P, v.info); }
+  catch {} P.prendiendo = false;
+}
+function apaga(P) { P.prendiendo = false; if (P.vivo) { P.vivo.parar(); P.vivo = null; } if (P.lienzo) { P.lienzo.remove(); P.lienzo.width = P.lienzo.height = 0; P.lienzo = null; } }
+function agrega(r, tipo) {
+  const el = document.createElement('article'); el.className = 'pieza ' + tipo;
+  el.innerHTML = `<div class="vista"><span class="tipo">${tipo === 'gif' ? 'GIF' : 'IMAGEN'}</span></div><div class="pie"><b>${esc(A.ESTILOS[r.e].n)} · ${esc(A.PALETAS[r.p].n)}<small>${esc(A.FONDOS[r.f].n)}</small></b><button class="baja" title="Descargar">⬇ ${tipo === 'gif' ? 'GIF' : 'PNG'}</button></div>`;
+  R.appendChild(el); const P = { el, r, tipo }; piezas.set(el, P); cerca.observe(el); if (tipo === 'gif') aLaVista.observe(el);
+  el.querySelector('.baja').onclick = () => baja(P);
+}
+const bajar = (blob, nombre) => { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nombre; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 30000); };
+async function baja(P) {
+  const b = P.el.querySelector('.baja'); if (b.disabled) return; b.disabled = true; const antes = b.textContent;
+  try {
+    if (P.tipo === 'gif') {
+      const g = await A.gif({ ...receta(P.r), movimiento: (P.info && P.info.movimiento) || P.r.m, escala: 0.4 }, { segundos: 3, fps: 20, alAvance: (x) => { b.textContent = Math.round(x * 100) + ' %'; } });
+      bajar(g, g.info.nombre); aviso(`GIF listo · ${(g.size / 1048576).toFixed(1)} MB`);
+    } else {
+      b.textContent = '…'; const c = document.createElement('canvas'), i = await A.pintar(c, receta(P.r));
+      bajar(await A.aPng(c), i.nombre); c.width = c.height = 0; aviso('Imagen descargada · 1080 × 1920');
+    }
+  } catch { aviso('No se pudo. Intenta otra vez.'); }
+  b.textContent = antes; b.disabled = false;
+}
+
+// ── primero las cien escogidas, revueltas imagen y GIF; después, las que se hacen solas, sin fin ──
+let hechas = { img: 0, gif: 0 }, turno = 0; const cortes = {};
+function mas(n) {
+  const ver = document.body.dataset.ver;
+  for (let k = 0; k < n; k++) {
+    const tipo = ver === 'todo' ? (turno++ % 2 ? 'gif' : 'img') : ver, i = hechas[tipo]++;
+    if (i === G[tipo].length && !cortes[ver]) { cortes[ver] = 1; R.insertAdjacentHTML('beforeend', '<div class="corte" data-de="' + ver + '"><b>De aquí en adelante, recién hechas</b>Estas se están haciendo en este momento, solo para ti: nadie más las ha visto. Si una te gusta, bájala, porque al recargar salen otras.</div>'); }
+    agrega(i < G[tipo].length ? G[tipo][i] : alAzar(tipo), tipo);
+  }
+  cuenta();
+}
+const cuenta = () => { const n = (t) => R.querySelectorAll('.pieza.' + t).length; $('#cuenta').textContent = `${n('img')} imágenes · ${n('gif')} GIF · sigue bajando`; };
+new IntersectionObserver((es) => { if (es[0].isIntersecting) mas(12); }, { rootMargin: '1400px 0px' }).observe($('#fin'));
+let rueda = 0; addEventListener('scroll', () => { const ahora = Date.now(); if (ahora - rueda > 250 && document.documentElement.scrollHeight - scrollY - innerHeight < 1200) { rueda = ahora; mas(12); } }, { passive: true });      // por si el aviso de arriba no alcanza a dispararse
+for (const b of document.querySelectorAll('.filtro button')) b.onclick = () => {
+  document.body.dataset.ver = b.dataset.ver; for (const x of document.querySelectorAll('.filtro button')) x.classList.toggle('on', x === b);
+  if (b.dataset.ver === 'img') for (const P of piezas.values()) apaga(P);
+  const visibles = R.querySelectorAll(b.dataset.ver === 'todo' ? '.pieza' : '.pieza.' + b.dataset.ver).length; if (visibles < 16) mas(16 - visibles);
+  scrollTo({ top: Math.min(scrollY, $('.barra').offsetTop) });
+};
+mas(16);
+// A− / A+: el tamaño de la letra, recordado en este equipo
+let f = 1; try { f = +localStorage.getItem('mina_guia_f') || 1; } catch {}
+const pon = () => { document.documentElement.style.setProperty('--f', f); try { localStorage.setItem('mina_guia_f', f); } catch {} };
+$('#menos').onclick = () => { f = Math.max(0.85, +(f - 0.1).toFixed(2)); pon(); }; $('#mas').onclick = () => { f = Math.min(1.5, +(f + 0.1).toFixed(2)); pon(); }; pon();
+</script>
+</body>
+</html>

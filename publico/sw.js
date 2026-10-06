@@ -1,7 +1,7 @@
 // RLR · Mina — la app instalada: guarda el juego completo en el equipo para que abra aunque no haya internet.
 // Con señal siempre se pide lo más nuevo (así llega cada versión); sin señal, o si tarda, sale lo guardado.
 // Ricardo López Reyero
-const VERSION = 'mina-45';
+const VERSION = 'mina-46';
 const ARCHIVOS = ['/', '/juego.js', '/three.min.js', '/escaparate.js', '/manifest.webmanifest', '/iconos/icono-32.png', '/iconos/icono-180.png', '/iconos/icono-192.png', '/iconos/icono-512.png', '/iconos/icono-mascara-512.png', '/mina.jpg'];
 
 self.addEventListener('install', (e) => {
@@ -31,7 +31,7 @@ self.addEventListener('fetch', (e) => {
     })());
     return;
   }
-  if (/^\/(guia-estilos|guia-de-estilos|gu(i|%C3%AD|í)a(-de)?(-estilos)?|marca|kit)(\/|$)/i.test(u.pathname)) return;      // la guía de estilos no es el juego: va directo a la red
+  if (/^\/(guia-estilos|guia-de-estilos|gu(i|%C3%AD|í)a(-de)?(-estilos)?|marca|kit|galer(i|%C3%AD|í)a)(\/|$)/i.test(u.pathname)) return;      // la guía de estilos no es el juego: va directo a la red
   // Cualquier página del juego (el inicio o la liga de un mundo) es la misma: se guarda una sola.
   const pagina = e.request.mode === 'navigate', llave = pagina ? '/' : u.pathname;
   if (!pagina && !ARCHIVOS.includes(u.pathname)) return;

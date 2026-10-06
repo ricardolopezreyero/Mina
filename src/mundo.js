@@ -1353,7 +1353,8 @@ export default {
     const u = new URL(request.url);
     // La guía de estilos vive en /guia-estilos/ (archivos de publico/guia-estilos). Con acento, con «de» o por su apodo, llega igual.
     { let ruta = u.pathname; try { ruta = decodeURIComponent(ruta); } catch {} ruta = ruta.toLowerCase().replace(/\/+$/, "");
-      if (["/guía-estilos", "/guia-de-estilos", "/guía-de-estilos", "/guia", "/guía", "/marca", "/kit"].includes(ruta)) return Response.redirect(u.origin + "/guia-estilos/", 301); }
+      if (["/guía-estilos", "/guia-de-estilos", "/guía-de-estilos", "/guia", "/guía", "/marca", "/kit"].includes(ruta)) return Response.redirect(u.origin + "/guia-estilos/", 301);
+      if (["/galeria", "/galería"].includes(ruta)) return Response.redirect(u.origin + "/guia-estilos/galeria/", 302); }      // la galería de arte con gemas: liga corta
     // Solo en pruebas locales: disparar el correo de cumpleaños a mano.
     if (u.pathname === "/api/tienda/cron" && env.MINA_PRUEBA === "1" && ["::1", "127.0.0.1"].includes(request.headers.get("CF-Connecting-IP"))) return json(await correosDeCumple(env));
 

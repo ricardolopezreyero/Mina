@@ -1532,6 +1532,22 @@ A Ricardo le gustaron las imágenes de gemas y pidió dos cosas: otras seis, y q
 - **DeepSeek:** Ricardo pidió usarlo. No se usó: es un modelo de texto y no dibuja, y su llave vive en la bóveda, donde solo la lee un Worker. Queda como decisión abierta si se quiere una caja «descríbelo con palabras» que elija figura, gemas, fondo y movimiento.
 - **Qué falta:** bajar el mismo bucle como video (MP4) para TikTok y Reels.
 
+### 9.70 La galería
+
+**Lo que pidió Ricardo.** Una página «Galería» con unas 50 imágenes y unos 50 GIF hechos con el generador, todo vertical, en unas cuatro columnas hacia abajo, con scroll prácticamente infinito, filtro de todo / imágenes / GIF, descarga en cada pieza y siempre con MINA y la liga del juego.
+
+**Cómo quedó.** `mina.capitaltorreon.com/galeria` (también `/galería`; la página vive en `publico/guia-estilos/galeria/`).
+- **Las cien escogidas:** 50 imágenes y 50 GIF. Se generaron 150 candidatas con parejas de gemas y fondo que se llevan bien, se revisaron en hojas de contacto y se quitaron las vacías y las repetidas. Hay de las ocho figuras y de los cinco movimientos.
+- **No hay archivos guardados.** Cada pieza es una receta en `lista.js` (figura, gemas, fondo, semilla, movimiento) y se pinta en el momento con el mismo `arte.js` del generador. Cien PNG y cien GIF de verdad pesarían unos 300 MB en el repositorio y en cada publicación; así la página pesa unos cuantos KB y las piezas no se pueden desactualizar respecto al generador.
+- **No se acaba.** Después de las cien, la página sigue haciendo piezas nuevas con semillas al azar mientras se baja, y avisa: «De aquí en adelante, recién hechas». Esas son distintas en cada visita.
+- **Cuidado con el equipo de quien la ve:** las imágenes se pintan una sola vez, de una en una, y se quedan como foto ligera; los GIF solo se mueven mientras están a la vista (24 cuadros por segundo) y al salir se apagan y sueltan su memoria. Probada con 220 piezas: unos 50 MB de memoria.
+- **Descargar:** cada pieza tiene su botón. La imagen baja en PNG de 1080 × 1920; el GIF se arma en ese instante (432 × 768, 3 segundos) y enseña el avance.
+- **Publicidad siempre:** cada pieza lleva MINA y la liga; el encabezado tiene «Jugar Mina gratis» y «Hacer la mía», que lleva al generador.
+- **Dónde se enlaza:** primera liga del menú de la guía de estilos, un atajo arriba, el texto del generador y Menú → 💎 Arte del juego.
+- **Rutas:** el Worker redirige `/galeria` y `/galería`; el service worker (`mina-46`) y la guardia de `index.html` ya dejan pasar esa dirección.
+- **DeepSeek:** se volvió a pedir. Sigue sin aplicar: no dibuja, y la galería sale del generador.
+- **Qué falta:** si se quieren las cien como archivos (para mandar un zip, por ejemplo), se sacan con `arte.mjs` y `gif.mjs` a partir de `lista.js`.
+
 ## 10. Revisión de código del 2 de octubre
 
 Se revisó todo el código buscando fallas y se corrigieron estas:
