@@ -5,7 +5,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Mina · Ritmo</title>
-<meta name="description" content="Gameplays de Mina con música: la maquinita perfora al compás y cada gema es una nota. Tres canciones clásicas, diez segundos cada una, listas para descargar en video con sonido.">
+<meta name="description" content="Gameplays de Mina con música: la maquinita perfora al compás y cada gema es una nota. Nueve canciones clásicas, de nueve a doce segundos cada una, listas para descargar en video con sonido.">
 <meta name="author" content="Ricardo López Reyero">
 <link rel="canonical" href="https://mina.capitaltorreon.com/ritmo">
 <meta property="og:type" content="website"><meta property="og:site_name" content="Mina"><meta property="og:locale" content="es_MX">
@@ -121,12 +121,12 @@ section{margin-top:clamp(30px,5vw,56px)}
     </div>
   </div>
   <section>
-    <h2>Listas para publicar</h2><p class="sub">Las tres canciones en cuatro lugares de la mina. Toca una y se pone arriba, sonando; de ahí la bajas en video.</p>
+    <h2>Listas para publicar</h2><p class="sub">Las nueve canciones, en distintos lugares de la mina. Toca una y se pone arriba, sonando; de ahí la bajas en video.</p>
     <div class="rejilla" id="rejilla"></div>
   </section>
   <section class="como">
     <b>¿Cómo está hecho?</b>
-    <p class="nota" style="margin-top:.4em">Son tres melodías clásicas de dominio público —el <i>Himno a la alegría</i> de Beethoven, el <i>Can-can</i> de Offenbach y la <i>Pequeña serenata nocturna</i> de Mozart— tocadas aquí mismo por un sintetizador hecho a mano; no se descarga ningún audio. Cada nota es una celda con su gema (do rubí, re topacio, mi oro, fa esmeralda, sol aguamarina, la zafiro, si amatista) y la maquinita perfora cada celda en el tiempo exacto que falta para su nota. Es el juego de verdad, con su misma física y su mismo dibujo; lo único que no es de verdad es la puntería: nadie juega así de parejo, y está bien, porque es un anuncio.</p>
+    <p class="nota" style="margin-top:.4em">Son nueve melodías clásicas de dominio público —de Beethoven, Offenbach, Mozart, Rossini, Vivaldi, Bach y Grieg— tocadas aquí mismo por un sintetizador hecho a mano; no se descarga ningún audio. Cada nota es una celda con su gema (do rubí, re topacio, mi oro, fa esmeralda, sol aguamarina, la zafiro, si amatista) y la maquinita perfora cada celda en el tiempo exacto que falta para su nota. Es el juego de verdad, con su misma física y su mismo dibujo; lo único que no es de verdad es la puntería: nadie juega así de parejo, y está bien, porque es un anuncio.</p>
   </section>
 </div></main>
 <div id="aviso" role="status" aria-live="polite"></div>
@@ -146,12 +146,13 @@ const CLAVES = Object.keys(RM.CANCIONES), W = 720, H = 1280;
 // Las versiones nuevas: su semilla es el instante en que nacen (no regresa) y 12 bits al azar. Las de la lista de abajo son fijas.
 const EPOCA = Date.UTC(2026, 0, 1); let ultimoMs = 0;
 function semillaUnica() { ultimoMs = Math.max(Date.now() - EPOCA, 2e9, ultimoMs + 1); const a = new Uint16Array(1); try { crypto.getRandomValues(a); } catch { a[0] = Math.random() * 65536; } return ultimoMs * 4096 + (a[0] & 4095); }
-const FIJAS = []; for (const l of [0, 2, 3, 4]) for (const c of CLAVES) FIJAS.push({ c, l, s: 20261005 + FIJAS.length * 7919 });
+const FIJAS = []; for (const l of [0, 2, 3, 4]) for (const c of CLAVES.slice(0, 3)) FIJAS.push({ c, l, s: 20261005 + FIJAS.length * 7919 });
+for (const c of CLAVES.slice(3)) FIJAS.push({ c, l: RM.CANCIONES[c].lugar, s: 20261005 + FIJAS.length * 7919 });      // las canciones nuevas traen una toma cada una, en su lugar
 
 // lo escogido: canción, lugar y semilla (también va en la liga, para poder mandarla)
 const E = { c: 'alegria', l: 0, s: FIJAS[0].s, K: null };
 { const m = /^#(\w+)-(\d)-(\d{6,16})$/.exec(location.hash); if (m && RM.CANCIONES[m[1]] && LUGARES[+m[2]]) { E.c = m[1]; E.l = +m[2]; E.s = +m[3]; } }
-const receta = (c, l, s) => { const K = RM.compilar(c); return { K, r: { s, l: 'ritmo', pasos: K.pasos, ancho: 4, d: LUGARES[l].d, d0: K.d0, titulo: K.n, seg: K.dura } }; };
+const receta = (c, l, s) => { const K = RM.compilar(c); return { K, r: { s, l: 'ritmo', pasos: K.pasos, ancho: K.ancho || 4, d: LUGARES[l].d, d0: K.d0, titulo: K.n, seg: K.dura } }; };
 
 // ── el sonido ──
 let ctx = null, salida = null, sonando = null, t0 = null, unaVez = false;

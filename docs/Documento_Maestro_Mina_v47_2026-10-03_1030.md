@@ -1619,6 +1619,14 @@ A Ricardo le gustaron las imágenes de gemas y pidió dos cosas: otras seis, y q
 | Himno a la alegría | Beethoven | 192 | 11.75 s | 31 | La Corteza, 300 m |
 | Can-can (el tema y, de remate, sus últimos cuatro compases una octava arriba) | Offenbach | 176 | 10.6 s | 49 | Las Cavernas, 2,600 m |
 | Pequeña serenata nocturna (los dos últimos compases son un remate nuestro) | Mozart | 144 | 11.75 s | 45 | La Cristalera, 4,600 m |
+| Marcha turca (la primera frase) | Mozart | 132 | 9.0 s | 41 | La Cristalera, 4,600 m |
+| Guillermo Tell (el galope del final) | Rossini | 152 | 8.5 s | 43 | Las Cavernas, 2,600 m |
+| La primavera (los dos temas del principio) | Vivaldi | 126 | 11.5 s | 46 | La Corteza, 300 m |
+| Minueto en sol (compases 1 a 4 y 13 a 16) | Bach (Petzold) | 152 | 10.8 s | 43 | El Acuífero, 1,400 m |
+| En la gruta del rey de la montaña (dos vueltas; la segunda, una octava arriba y cerrando en si) | Grieg | 192 | 11.75 s | 61 | La Zona de presión, 8,600 m |
+| Jesús, alegría de los hombres (la última nota baja a sol para cerrar) | Bach | 240 | 9.5 s | 30 | La Cristalera, 4,600 m |
+
+**Las seis últimas** se agregaron el mismo día en una segunda vuelta (commit #107), cada una con una sola toma fija. Para ellas el acompañamiento aprendió acordes menores, compás de tres y anacrusa (`ana`), y el camino puede ser de 3 celdas de ancho (`ancho`). En las canciones en menor las gemas se cuentan desde su relativo mayor; las notas fuera de la escala son diamantes. Agregar una canción es un renglón en `CANCIONES`.
 
 **Cómo se sincroniza.** `RitmoMina.compilar(clave)` saca de la misma partitura dos cosas con los mismos tiempos: lo que suena y los `pasos` que sigue la maquinita (`{ t: segundo exacto, g: gema o −1 }`). Cada nota es una celda con su gema, según su grado en la escala: do rubí, re topacio, mi oro, fa esmeralda, sol aguamarina, la zafiro, si amatista. Lo que una nota dura de más, y los silencios, son celdas de tierra: el taladro no para. En el juego, `cineRitmo` limpia una caja de tierra y traza el camino en serpiente (4 celdas de ancho: tres de lado y una hacia abajo), y `cineDirector` perfora cada celda **en el tiempo que falta para su nota** (`yo.perf.dur = nota − ahora`). Por eso llega siempre a tiempo y no acumula desfase. Con la última gema cae la última nota: chispas, onda, lo ganado en grande y «Juega gratis · mina.capitaltorreon.com».
 
@@ -1626,7 +1634,7 @@ A Ricardo le gustaron las imágenes de gemas y pidió dos cosas: otras seis, y q
 
 **El video.** `MediaRecorder` sobre `lienzo.captureStream(30)` + la misma mezcla que se oye. MP4 (H.264 + AAC) de 720 × 1280 y unos 10 MB en Chrome y Safari; WebM en Firefox. Se graba en tiempo real: tarda lo que dura la canción.
 
-**Lo que se midió.** Llegada a cada celda contra su nota, dentro del juego: 8 milésimas como máximo (un paso de física). Las 98 notas de las tres canciones, afinadas (se comprobó el tono de cada una en el audio ya armado). En el archivo grabado: la imagen queda a entre −15 y +6 milésimas del sonido en promedio; volumen pico 0.92, medio 0.15–0.17. Celular de 390 px: sin desbordes.
+**Lo que se midió.** Llegada a cada celda contra su nota, dentro del juego: 8 milésimas como máximo (un paso de física). Las 332 notas de las nueve canciones, afinadas (se comprobó el tono de cada una en el audio ya armado). En el archivo grabado: la imagen queda a entre −15 y +6 milésimas del sonido en promedio; volumen pico 0.92, medio 0.15–0.17. Celular de 390 px: sin desbordes.
 
 **Lo que no se pudo probar:** escucharlo (las pruebas son sin bocinas: se midió, no se oyó) y grabar en Safari de iPhone.
 

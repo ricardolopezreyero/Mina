@@ -1,5 +1,5 @@
 /* RLR · Ricardo López Reyero — Ritmo de Mina: las canciones y su sonido · mina.capitaltorreon.com/ritmo
-   Tres melodías clásicas, de dominio público (sus autores murieron hace más de cien años), tocadas aquí mismo con un sintetizador hecho
+   Nueve melodías clásicas, de dominio público (sus autores murieron hace más de cien años), tocadas aquí mismo con un sintetizador hecho
    a mano: marimba para la melodía, campanitas en cada gema, bajo, acordes y una batería sencilla. No se descarga ningún audio.
    De cada canción salen dos cosas con los mismos tiempos: lo que suena (programa) y la partitura que sigue la maquinita (pasos):
    cada nota es una celda con su gema, y trae la hora exacta en que el taladro debe llegar a ella. */
@@ -7,7 +7,8 @@
   'use strict';
   const _RLR = 'Ricardo López Reyero', _k = 'EYE', _rev = 181218;
   const N = null;
-  // notas: [nota MIDI o silencio, cuántos tiempos dura] · armonia: [desde qué tiempo, nota grave del acorde, 'M' mayor | '7' séptima]
+  // notas: [nota MIDI o silencio, cuántos tiempos dura] · armonia: [desde qué tiempo, nota grave del acorde, 'M' mayor | 'm' menor | '7' séptima]
+  // Para agregar una canción basta un renglón aquí: la página, la partitura de la maquinita y el video salen solos.
   const CANCIONES = {
     alegria: { n: 'Himno a la alegría', de: 'Beethoven', bpm: 192, tonica: 0, rej: 1, compas: 4, zona: 300,
       notas: [[76, 1], [76, 1], [77, 1], [79, 1], [79, 1], [77, 1], [76, 1], [74, 1], [72, 1], [72, 1], [74, 1], [76, 1], [76, 1.5], [74, 0.5], [74, 2],
@@ -22,6 +23,33 @@
         [72, 1], [N, 0.5], [69, 0.5], [72, 1], [N, 0.5], [69, 0.5], [72, 0.5], [69, 0.5], [66, 0.5], [69, 0.5], [62, 1], [N, 1],
         [67, 0.5], [71, 0.5], [74, 0.5], [79, 0.5], [83, 0.5], [79, 0.5], [74, 0.5], [71, 0.5], [79, 1], [74, 1], [79, 2]],      // los dos últimos compases son un remate nuestro: el arpegio de sol
       armonia: [[0, 43, 'M'], [8, 38, '7'], [16, 43, 'M'], [20, 43, 'M']] },
+    // ── las seis que siguen: ana = tiempos de anacrusa (lo que suena antes del primer tiempo fuerte) · ancho = celdas por renglón · lugar = en cuál lugar sale su toma fija
+    turca: { n: 'Marcha turca', de: 'Mozart', bpm: 132, tonica: 0, rej: 0.5, compas: 2, ana: 1, lugar: 3,      // en la menor: las gemas se cuentan desde do, su relativo mayor
+      notas: [[71, 0.25], [69, 0.25], [68, 0.25], [69, 0.25], [72, 0.5], [N, 0.5], [74, 0.25], [72, 0.25], [71, 0.25], [72, 0.25], [76, 0.5], [N, 0.5], [77, 0.25], [76, 0.25], [75, 0.25], [76, 0.25],
+        [83, 0.25], [81, 0.25], [80, 0.25], [81, 0.25], [83, 0.25], [81, 0.25], [80, 0.25], [81, 0.25], [84, 1], [81, 0.5], [84, 0.5],
+        [83, 0.5], [81, 0.5], [79, 0.5], [81, 0.5], [83, 0.5], [81, 0.5], [79, 0.5], [81, 0.5], [83, 0.5], [81, 0.5], [79, 0.5], [78, 0.5], [76, 1]],
+      armonia: [[0, 45, 'm'], [9, 52, 'm'], [13, 47, '7'], [15, 52, 'm']] },
+    tell: { n: 'Guillermo Tell', de: 'Rossini', bpm: 152, tonica: 0, rej: 0.5, compas: 2, ana: 0.5, lugar: 2,
+      notas: ((a, b) => [...a, ...b, ...a, [72, 0.25], [76, 0.25], [79, 1], [77, 0.5], [76, 0.5], [74, 0.5], [72, 0.5], [76, 0.5], [72, 1]])(
+        [[67, 0.25], [67, 0.25], [67, 0.5], [67, 0.25], [67, 0.25], [67, 0.5], [67, 0.25], [67, 0.25], [72, 0.5], [74, 0.5], [76, 0.5]],
+        [[67, 0.25], [67, 0.25], [67, 0.5], [67, 0.25], [67, 0.25], [72, 0.5], [76, 0.25], [76, 0.25], [74, 0.5], [71, 0.5], [67, 0.5]]),
+      armonia: [[0, 48, 'M'], [6.5, 43, 'M'], [8, 48, 'M'], [13.5, 43, '7'], [15, 48, 'M']] },
+    primavera: { n: 'La primavera', de: 'Vivaldi', bpm: 126, tonica: 4, rej: 0.5, compas: 4, ana: 0.5, lugar: 0,
+      notas: ((a) => [[76, 0.5], ...a, ...a, [80, 0.5], [81, 0.25], [83, 0.25], [81, 0.5], [80, 0.5], [78, 0.5], [75, 0.5], [71, 0.5], [76, 0.5],
+        [83, 0.5], [81, 0.25], [80, 0.25], [81, 0.5], [83, 0.5], [85, 1], [83, 0.5], [76, 0.5], [81, 0.5], [80, 0.5], [78, 0.5], [76, 0.5], [78, 1], [76, 1]])(
+        [[80, 0.5], [80, 0.5], [80, 0.5], [78, 0.25], [76, 0.25], [83, 1.5], [83, 0.25], [81, 0.25]]),
+      armonia: [[0, 52, 'M'], [11, 47, 'M'], [12, 52, 'M'], [14.5, 45, 'M'], [15.5, 52, 'M'], [16.5, 45, 'M'], [18.5, 47, '7'], [19.5, 52, 'M']] },
+    minueto: { n: 'Minueto en sol', de: 'Bach (Petzold)', bpm: 152, tonica: 7, rej: 0.5, compas: 3, ancho: 3, lugar: 1,      // compases 1 a 4 y 13 a 16: la primera frase y el cierre de la segunda
+      notas: [[74, 1], [67, 0.5], [69, 0.5], [71, 0.5], [72, 0.5], [74, 1], [67, 1], [67, 1], [76, 1], [72, 0.5], [74, 0.5], [76, 0.5], [78, 0.5], [79, 1], [67, 1], [67, 1],
+        [72, 1], [74, 0.5], [72, 0.5], [71, 0.5], [69, 0.5], [71, 1], [72, 0.5], [71, 0.5], [69, 0.5], [67, 0.5], [69, 1], [71, 0.5], [69, 0.5], [67, 0.5], [66, 0.5], [67, 2]],
+      armonia: [[0, 43, 'M'], [6, 48, 'M'], [9, 43, 'M'], [12, 45, 'm'], [15, 43, 'M'], [18, 50, '7'], [21, 43, 'M']] },
+    gruta: { n: 'En la gruta del rey de la montaña', de: 'Grieg', bpm: 192, tonica: 2, rej: 0.5, compas: 4, lugar: 4,      // en si menor (gemas desde re); dos vueltas, la segunda una octava arriba y cerrando en si
+      notas: ((v) => [...v, [69, 2], ...v.map(([m, d]) => [m + 12, d]), [83, 2]])([[59, 0.5], [61, 0.5], [62, 0.5], [64, 0.5], [66, 0.5], [62, 0.5], [66, 1], [65, 0.5], [61, 0.5], [65, 1], [64, 0.5], [60, 0.5], [64, 1],
+        [59, 0.5], [61, 0.5], [62, 0.5], [64, 0.5], [66, 0.5], [62, 0.5], [66, 0.5], [71, 0.5], [69, 0.5], [66, 0.5], [62, 0.5], [66, 0.5]]),
+      armonia: [[0, 47, 'm'], [4, 54, 'M'], [6, 48, 'M'], [8, 47, 'm'], [12, 50, 'M'], [16, 47, 'm'], [20, 54, 'M'], [22, 48, 'M'], [24, 47, 'm'], [28, 50, 'M'], [30, 47, 'm']] },
+    jesus: { n: 'Jesús, alegría de los hombres', de: 'Bach', bpm: 240, tonica: 7, rej: 1, compas: 3, ana: 2, ancho: 3, lugar: 3,      // cada nota es un tiempo (van de tres en tres); la última baja a sol para cerrar
+      notas: [67, 69, 71, 74, 72, 72, 76, 74, 74, 79, 78, 79, 74, 71, 67, 69, 71, 72, 74, 76, 74, 72, 71, 69, 71, 67, 66, 67, 69].map((m) => [m, 1]).concat([[67, 2]]),
+      armonia: [[0, 43, 'M'], [5, 48, 'M'], [8, 50, 'M'], [11, 43, 'M'], [17, 48, 'M'], [20, 43, 'M'], [23, 50, '7'], [29, 43, 'M']] },
   };
   // qué gema le toca a cada grado de la escala: la misma nota, siempre la misma gema (do rubí, re topacio, mi oro, fa esmeralda, sol aguamarina, la zafiro, si amatista)
   const GEMA = { 0: 7, 2: 14, 4: 3, 5: 6, 7: 10, 9: 11, 11: 16 }, ENTRADA = 0.85, COLA = 0.9;
@@ -44,7 +72,7 @@
   function bombo(ctx, sal, t, vol) { const o = ctx.createOscillator(), g = ctx.createGain(); o.type = 'sine'; o.frequency.setValueAtTime(150, t); o.frequency.exponentialRampToValueAtTime(44, t + 0.11); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.2); o.connect(g); g.connect(sal); o.start(t); o.stop(t + 0.23); }
   // Deja programada la canción completa a partir de t0 (segundos del reloj del audio). sal: a dónde suena.
   function programa(ctx, sal, K, t0) {
-    const mezcla = ctx.createGain(), aprieta = ctx.createDynamicsCompressor(), tope = ctx.createGain(); mezcla.gain.value = 1; tope.gain.value = 1.5;
+    const mezcla = ctx.createGain(), aprieta = ctx.createDynamicsCompressor(), tope = ctx.createGain(); mezcla.gain.value = 1; tope.gain.value = 1.4;
     aprieta.threshold.value = -24; aprieta.knee.value = 12; aprieta.ratio.value = 7; aprieta.attack.value = 0.002; aprieta.release.value = 0.12; mezcla.connect(aprieta); aprieta.connect(tope); tope.connect(sal);      // apretado, para que suene parejo y fuerte en el teléfono sin tronar
     const s = K.seg;
     for (const n of K.notasT) {            // la melodía: marimba (cuerpo y un armónico que se apaga pronto) y una campanita una octava arriba
@@ -52,16 +80,23 @@
       tono(ctx, mezcla, f, t, largo, 'sine', 0.36); tono(ctx, mezcla, f, t, largo * 0.8, 'triangle', 0.13); tono(ctx, mezcla, f * 4, t, 0.11, 'sine', 0.085); tono(ctx, mezcla, f * 2, t, largo * 0.55, 'sine', 0.06);
     }
     const acorde = (b) => { let a = K.armonia[0]; for (const x of K.armonia) if (x[0] <= b + 1e-6) a = x; return a; };
-    for (let b = 0; b < K.tiempos - 1e-6; b += 0.5) {       // el acompañamiento, de medio tiempo en medio tiempo
-      const t = t0 + ENTRADA + b * s, [, raiz, clase] = acorde(b), entero = Math.abs(b - Math.round(b)) < 1e-6, fuerte = entero && Math.round(b) % K.compas === 0, par = entero && Math.round(b) % 2 === 0;
+    const ana = K.ana || 0;
+    for (let b = ana; b < K.tiempos - 1e-6; b += 0.5) {       // el acompañamiento, de medio tiempo en medio tiempo, desde el primer tiempo fuerte
+      const t = t0 + ENTRADA + b * s, [, raiz, clase] = acorde(b), p = b - ana, entero = Math.abs(p - Math.round(p)) < 1e-6, n = Math.round(p), fuerte = entero && n % K.compas === 0, par = entero && n % 2 === 0;
+      const tres = clase === '7' ? [4, 7, 10] : clase === 'm' ? [3, 7, 12] : [4, 7, 12];
+      if (K.compas === 3) {                                  // de tres en tres: bajo en el primero y acordes en los otros dos
+        if (!entero) continue;
+        if (fuerte) { tono(ctx, mezcla, hz(raiz), t, s * 2.2, 'triangle', 0.3, 0.008); bombo(ctx, mezcla, t, 0.36); } else for (const i of tres) tono(ctx, mezcla, hz(raiz + 12 + i), t, s * 0.6, 'triangle', 0.045, 0.006);
+        golpe(ctx, mezcla, t, 0.035, fuerte ? 0.05 : 0.08, 'highpass', 7500); continue;
+      }
       if (entero) { tono(ctx, mezcla, hz(raiz + (par ? 0 : 7) - (K.compas === 2 && !par ? 12 : 0)), t, s * 0.9, 'triangle', 0.3, 0.008); if (fuerte || K.compas === 2 || par) bombo(ctx, mezcla, t, fuerte ? 0.5 : 0.32); }
-      else { for (const i of clase === '7' ? [4, 7, 10] : [4, 7, 12]) tono(ctx, mezcla, hz(raiz + 12 + i), t, s * 0.38, 'triangle', 0.05, 0.006); }      // el «chan» de los acordes, a contratiempo
+      else { for (const i of tres) tono(ctx, mezcla, hz(raiz + 12 + i), t, s * 0.38, 'triangle', 0.05, 0.006); }      // el «chan» de los acordes, a contratiempo
       golpe(ctx, mezcla, t, 0.035, entero ? 0.05 : 0.09, 'highpass', 7500);                       // platillito
-      if (entero && (K.compas === 2 ? !par : Math.round(b) % 4 === 1 || Math.round(b) % 4 === 3)) golpe(ctx, mezcla, t, 0.11, 0.2, 'bandpass', 1900, 0.7);      // palmada
+      if (entero && (K.compas === 2 ? !par : n % 4 === 1 || n % 4 === 3)) golpe(ctx, mezcla, t, 0.11, 0.2, 'bandpass', 1900, 0.7);      // palmada
     }
-    for (const k of [2, 1]) golpe(ctx, mezcla, t0 + ENTRADA - k * s, 0.03, 0.22, 'bandpass', 2600, 3);      // dos baquetazos de entrada
+    for (const k of [2, 1]) golpe(ctx, mezcla, t0 + ENTRADA - k * Math.min(s, 0.36), 0.03, 0.22, 'bandpass', 2600, 3);      // dos baquetazos de entrada
     const tf = t0 + K.fin - (K.notasT[K.notasT.length - 1].d);        // el remate, con la última nota: platillo y acorde
-    golpe(ctx, mezcla, tf, 1.3, 0.16, 'highpass', 5200); for (const i of [0, 4, 7, 12]) tono(ctx, mezcla, hz(K.armonia[0][1] + 12 + i), tf, 1.2, 'triangle', 0.07, 0.01);
+    golpe(ctx, mezcla, tf, 1.3, 0.16, 'highpass', 5200); { const u = K.armonia[K.armonia.length - 1]; for (const i of [0, u[2] === 'm' ? 3 : 4, 7, 12]) tono(ctx, mezcla, hz(u[1] + 12 + i), tf, 1.2, 'triangle', 0.07, 0.01); }
     return { para() { try { tope.disconnect(); } catch {} } };
   }
   window.RitmoMina = { CANCIONES, compilar, programa };
