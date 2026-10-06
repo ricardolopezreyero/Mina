@@ -1548,6 +1548,16 @@ A Ricardo le gustaron las imágenes de gemas y pidió dos cosas: otras seis, y q
 - **DeepSeek:** se volvió a pedir. Sigue sin aplicar: no dibuja, y la galería sale del generador.
 - **Qué falta:** si se quieren las cien como archivos (para mandar un zip, por ejemplo), se sacan con `arte.mjs` y `gif.mjs` a partir de `lista.js`.
 
+### 9.71 La Pinturería, al final de la calle
+
+**Lo que dijo Ricardo.** Con La Pinturería al principio «parece que les queremos vender» antes de dejar jugar. Primero debe ir Santa Bárbara, luego la Gasolinera y lo demás, y La Pinturería hasta el final. Y que su nombre se vea completo en la imagen de la maquinita de La Pinturería.
+
+- **El orden nuevo, de izquierda a derecha:** el terrero, Santa Bárbara, Gasolinera, La Báscula, El Taller, El Almacén, Remineralizadora, El Elevador y La Pinturería (de la columna 33 a la 70).
+- **El suelo firme** se alargó hasta la columna 73 (`ZX1`, en el juego y en el servidor) para que la camioneta quede sobre piso que no se perfora. Vale también en los mundos ya guardados: si alguien había cavado ahí, las dos primeras filas vuelven a ser firmes.
+- **Los avisos** que decían «a la izquierda de la Gasolinera» ahora dicen «al final de la calle».
+- **El nombre en el escaparate 3D** salía cortado por abajo: el letrero se dibujaba en un lienzo de 220 de alto y el nombre caía justo en la orilla. Ahora mide 272 y la cámara deja más aire arriba. Probado con «Ricardo» y con «La Valenciana».
+- **Qué quedó viejo:** la captura de la superficie del brochure, las escenas del kit de marca donde sale la camioneta junto al tiro, y el orden que dice la veta 6 de la guía del creador. Muestran la calle anterior.
+
 ## 10. Revisión de código del 2 de octubre
 
 Se revisó todo el código buscando fallas y se corrigieron estas:

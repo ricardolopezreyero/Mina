@@ -10,7 +10,7 @@ const _RLR = 'Ricardo López Reyero';
 const _k = 'EYE', _rev = 181218; // RLR · sello de autoría
 
 /* ── Constantes del mundo (deben coincidir con src/mundo.js) ── */
-const W = 96, H = 5000, ZX0 = 30, ZX1 = 68, G = 14;     // 10,000 m de profundidad (2 m por celda)
+const W = 96, H = 5000, ZX0 = 30, ZX1 = 73, G = 14;     // 10,000 m de profundidad (2 m por celda)
 const HW = 0.36, HH = 0.4;         // media anchura y media altura de la maquinita, en celdas
 const INICIO_X = 43.5, INICIO_Y = -HH;
 const TECHO = -500000.5;           // 1,000 km de cielo (2 m por celda)
@@ -285,13 +285,13 @@ const OBJ = [
 const CORTO = ['Reserva', 'Nanobots', 'Dinamita', 'Plástico', 'Cuántico', 'Transmisor'];
 
 const EDIF = [
-  { id: 'pin', x: 33, n: 'La Pinturería', h: 'Pinta y personaliza tu maquinita', col: '#ff7ac8', tinta: '#2a1a14' },
   { id: 'gas', x: 40, n: 'Gasolinera', h: 'Rellena tu combustible', col: '#e0483a', tinta: '#fff7e6' },
   { id: 'bas', x: 45, n: 'La Báscula', h: 'Vende tu mineral', col: '#ffd23f', tinta: '#2a1a14' },
   { id: 'tal', x: 50, n: 'El Taller', h: 'Mejora tu maquinita', col: '#6ec3ff', tinta: '#12222e' },
   { id: 'alm', x: 55, n: 'El Almacén', h: 'Repara y compra objetos', col: '#6fdc7a', tinta: '#12261c' },
   { id: 'rem', x: 60, n: 'Remineralizadora', h: 'Vuelve a llenar de mineral el mundo', col: '#c05cff', tinta: '#1e0d2e' },
   { id: 'ele', x: 65, n: 'El Elevador', h: 'Baja a donde ya llegaste', col: '#ff9f40', tinta: '#2a1a14' },
+  { id: 'pin', x: 70, n: 'La Pinturería', h: 'Pinta y personaliza tu maquinita', col: '#ff7ac8', tinta: '#2a1a14' },      // al final de la calle, a propósito: primero se juega; lo que se vende queda hasta el fondo
 ];
 
 /* ── Mensajes y bonos por profundidad (historia propia) ── */
@@ -2458,7 +2458,7 @@ function iniciarMundo(d, local) {
   otros.clear();
   for (const j of d.jug) { if (j.i === miI) { miNombre = j.n; miModelo = j.m; miPinta = j.p || {}; miMe = j.me | 0; miDe = j.de >= 0 ? j.de : -1; ponerMotor(miPinta.motor | 0); } else otros.set(j.i, j); }
   if (d.piedras) edenPiedras = d.piedras;
-  if (d.regalo) setTimeout(() => tarjeta('🎁 Alguien pagó tu primera pintura', 'Hay para todos. Pásate a La Pinturería (la camioneta rosa, a la izquierda de la Gasolinera) y elige tu color.', 'msj', 14000), 2500);
+  if (d.regalo) setTimeout(() => tarjeta('🎁 Alguien pagó tu primera pintura', 'Hay para todos. Pásate a La Pinturería (la camioneta rosa, al final de la calle) y elige tu color.', 'msj', 14000), 2500);
   const primera = !S;
   if (primera) {
     S = sanear(d.est);
@@ -3490,7 +3490,7 @@ function dibujar() {
     g.fillStyle = '#6b5a4c'; g.beginPath(); g.moveTo(tx, oy); g.quadraticCurveTo(tx + an * 0.3, oy - al * 1.25, tx + an * 0.55, oy - al); g.quadraticCurveTo(tx + an * 0.8, oy - al * 0.8, tx + an, oy); g.fill();
     g.fillStyle = '#857362'; for (let n = 0; n < 9; n++) { const fx = 0.12 + 0.76 * azar01(n * 3.1), fy = azar01(n * 7.7) * 0.7 * Math.sin(Math.PI * fx); g.beginPath(); g.arc(tx + an * fx, oy - al * fy - T * 0.06, T * (0.06 + 0.05 * azar01(n)), 0, 7); g.fill(); }
     // El nicho de Santa Bárbara, patrona de los mineros, con su veladora
-    const nx = ox + 37.7 * T, u = T / 8;      // el nicho, al doble de tamaño, en su lugar entre La Pinturería y la Gasolinera
+    const nx = ox + 37.7 * T, u = T / 8;      // el nicho, al doble de tamaño: es lo primero de la calle, antes de la Gasolinera
     g.fillStyle = '#e9e2d3'; g.beginPath(); g.roundRect(nx - u * 5, oy - u * 15, u * 10, u * 15, [u * 5, u * 5, 0, 0]); g.fill(); g.fillStyle = '#2f5fb0'; g.beginPath(); g.roundRect(nx - u * 3.4, oy - u * 12.6, u * 6.8, u * 10, [u * 3.4, u * 3.4, 0, 0]); g.fill();
     g.fillStyle = '#f3ead8'; g.beginPath(); g.arc(nx, oy - u * 9, u * 1.3, 0, 7); g.fill(); g.fillStyle = '#b8362b'; g.beginPath(); g.moveTo(nx - u * 2, oy - u * 3); g.lineTo(nx, oy - u * 8); g.lineTo(nx + u * 2, oy - u * 3); g.fill();
     g.fillStyle = '#ffd23f'; g.beginPath(); g.arc(nx, oy - u * 9, u * 2, Math.PI * 1.15, Math.PI * 1.85); g.lineWidth = Math.max(1, u * 0.4); g.strokeStyle = '#ffd23f'; g.stroke();
@@ -4249,7 +4249,7 @@ function invitarPintureria() {
   const n = op.tiendaInv | 0;
   if (n >= 3 || (S.seg || 0) < [1200, 10800, 36000][n] || Date.now() - (op.tiendaInvT || 0) < 7 * 86400000) return;
   op.tiendaInv = n + 1; op.tiendaInvT = Date.now(); escribir('mina_op', op);
-  tarjeta('🎨 Píntala de tus colores, gratis', 'En La Pinturería (la camioneta rosa, a la izquierda de la Gasolinera) o en Menú → Mundo: cuerpo, cabina y orugas del color que quieras, sin pagar nada. Lo demás es solo para que se vea más tú.', 'msj', 12000);
+  tarjeta('🎨 Píntala de tus colores, gratis', 'En La Pinturería (la camioneta rosa, al final de la calle) o en Menú → Mundo: cuerpo, cabina y orugas del color que quieras, sin pagar nada. Lo demás es solo para que se vea más tú.', 'msj', 12000);
 }
 // La estela: una chispita por cuadro (de dos) detrás de quien vuela con estela.
 function estela(P, x, y, mueve) {

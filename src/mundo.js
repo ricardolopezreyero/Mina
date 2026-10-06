@@ -16,7 +16,7 @@ const _RLR = "Ricardo López Reyero";
 const _k = "EYE", _rev = 181218; // RLR · sello de autoría
 
 const W = 96, H = 5000, BYTES = (W * H) / 8;
-const ZX0 = 30, ZX1 = 68;            // suelo firme bajo los edificios, de La Pinturería al Elevador (filas 0 y 1)
+const ZX0 = 30, ZX1 = 73;            // suelo firme bajo los edificios, del terrero a La Pinturería, que va al final (filas 0 y 1)
 const ALFA = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"; // sin 0/O ni 1/I
 // Cada maquinita tiene su número en el mundo (el orden en que entró) y con él su color en el chat: hay 100 colores, así que
 // caben 100 maquinitas por mundo. A la vez pueden estar conectadas 40.

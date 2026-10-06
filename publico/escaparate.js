@@ -115,9 +115,9 @@
   function mezclaMat(c, k) { return new T.MeshStandardMaterial({ color: mezcla(c, k), metalness: 0.4, roughness: 0.5 }); }
   // el letrero: el nombre con su título y su placa, exactamente como lo dibuja el juego (dibMaq, recortado a la franja de arriba)
   function letrero(nombre, P, modelo) {
-    const c = document.createElement('canvas'); c.width = 720; c.height = 220; const q = c.getContext('2d');
-    if (window.dibMaq) { q.save(); q.beginPath(); q.rect(0, 0, 720, 220); q.clip(); window.dibMaq(q, 360, 420, 300, modelo, 1, false, 0, nombre, '', 0, { ...P, mascota: 0, cu: 0 }); q.restore(); }
-    const tx = new T.CanvasTexture(c); tx.colorSpace = T.SRGBColorSpace; const s = new T.Sprite(new T.SpriteMaterial({ map: tx, transparent: true })); s.scale.set(2.7, 0.83, 1); return s;
+    const c = document.createElement('canvas'); c.width = 720; c.height = 272; const q = c.getContext('2d');      // 272 de alto: con 220 el nombre salía cortado por abajo
+    if (window.dibMaq) { q.save(); q.beginPath(); q.rect(0, 0, 720, 272); q.clip(); window.dibMaq(q, 360, 420, 300, modelo, 1, false, 0, nombre, '', 0, { ...P, mascota: 0, cu: 0 }); q.restore(); }
+    const tx = new T.CanvasTexture(c); tx.colorSpace = T.SRGBColorSpace; const s = new T.Sprite(new T.SpriteMaterial({ map: tx, transparent: true })); s.scale.set(2.7, 1.02, 1); return s;
   }
   // chispas del taladro, polvo de las hélices y la estela
   function particulas(n, color, tam) { const geo = new T.BufferGeometry(); geo.setAttribute('position', new T.BufferAttribute(new Float32Array(n * 3), 3)); const m = new T.PointsMaterial({ color: col(color), size: tam, transparent: true, opacity: 0.9, depthWrite: false }); const p = new T.Points(geo, m); p.userData.v = new Float32Array(n * 3); p.userData.t = new Float32Array(n); return p; }
@@ -134,7 +134,7 @@
     if (!renderer) {
       renderer = new T.WebGLRenderer({ antialias: true, alpha: true }); renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1)); renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFSoftShadowMap; renderer.toneMapping = T.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
       scene = new T.Scene();
-      camera = new T.PerspectiveCamera(30, 1, 0.1, 50); camera.position.set(3.7, 2.2, 4.1); camera.lookAt(0, 1.05, 0);
+      camera = new T.PerspectiveCamera(33, 1, 0.1, 50); camera.position.set(3.7, 2.3, 4.1); camera.lookAt(0, 1.22, 0);      // encuadre con aire arriba: el letrero del nombre sale completo
       scene.add(new T.HemisphereLight(0xdfefff, 0x6b4a33, 0.9));
       const sol = new T.DirectionalLight(0xfff1d6, 1.8); sol.position.set(3, 6, 4); sol.castShadow = true; sol.shadow.mapSize.set(1024, 1024); sol.shadow.camera.near = 1; sol.shadow.camera.far = 20; for (const k of ['left', 'bottom']) sol.shadow.camera[k] = -4; for (const k of ['right', 'top']) sol.shadow.camera[k] = 4; sol.shadow.bias = -0.0005; scene.add(sol);
       const relleno = new T.PointLight(0xffd9a0, 0.6, 12); relleno.position.set(-4, 2, -2); scene.add(relleno);
