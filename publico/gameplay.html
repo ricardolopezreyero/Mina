@@ -47,7 +47,7 @@ button:hover,.boton:hover{border-color:var(--ac)}
 main{padding:16px 0 30px}
 .rejilla{position:relative;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(8px,1.4vw,18px)}
 @media(max-width:1100px){.rejilla{grid-template-columns:repeat(3,minmax(0,1fr))}}
-@media(max-width:700px){.rejilla{grid-template-columns:repeat(2,minmax(0,1fr))}.barra small,.barra .marca,.barra .jugar span{display:none}header .lado{margin-left:0}.filtro a{padding:.4em .75em}.barra .tam button{padding:.5em .65em}}
+@media(max-width:700px){.rejilla{grid-template-columns:repeat(2,minmax(0,1fr))}.barra small,.barra .marca,.barra .jugar{display:none}.barra .tam{margin-left:auto}header .lado{margin-left:0}.filtro a{padding:.4em .7em}.barra .tam button{padding:.5em .65em}}
 .pieza{background:var(--caja);border:1px solid var(--borde);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;min-width:0}
 .pieza .vista{position:relative;aspect-ratio:9/16;background:#120b08 radial-gradient(#3a2a22,#120b08 70%);line-height:0;cursor:zoom-in}
 .pieza .vista img{position:absolute;inset:0;width:100%;height:100%;display:block;object-fit:cover}
@@ -83,11 +83,11 @@ iframe.proy.on{visibility:visible}
 <header><div class="envuelve">
   <a href="/" title="Jugar Mina"><img src="/guia-estilos/kit/03-logotipo/mina-palabra.png" alt="MINA" width="250" height="76"></a>
   <div><h1>Gameplay</h1><p>Seis segundos de juego de verdad, uno tras otro. El propio juego los está jugando ahora mismo en tu pantalla. Las primeras 33 tomas son las de siempre; de ahí en adelante cada una es única. Todas se bajan en GIF.</p></div>
-  <div class="lado"><a class="boton ppal" href="/">⛏️ Jugar Mina gratis</a><a class="boton osc" href="/galeria">🖼 Galería</a></div>
+  <div class="lado"><a class="boton ppal" href="/">⛏️ Jugar Mina gratis</a><a class="boton osc" href="/ritmo">🎵 Ritmo: con música</a><a class="boton osc" href="/galeria">🖼 Galería</a></div>
 </div></header>
 <div class="barra"><div class="envuelve">
   <a class="marca" href="/" title="mina.capitaltorreon.com">MINA</a>
-  <nav class="filtro" aria-label="Secciones"><a href="/galeria">Galería</a><a class="on" href="/gameplay" aria-current="page">Gameplay</a></nav>
+  <nav class="filtro" aria-label="Secciones"><a href="/galeria">Galería</a><a class="on" href="/gameplay" aria-current="page">Gameplay</a><a href="/ritmo">Ritmo</a></nav>
   <small id="cuenta"></small>
   <a class="boton jugar" href="/" title="Jugar Mina gratis">⛏️<span> Jugar gratis</span></a>
   <span class="tam"><button id="menos" title="Letra más chica" aria-label="Letra más chica">A−</button><button id="mas" title="Letra más grande" aria-label="Letra más grande">A+</button></span>

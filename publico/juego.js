@@ -10,9 +10,13 @@ const _RLR = 'Ricardo López Reyero';
 const _k = 'EYE', _rev = 181218; // RLR · sello de autoría
 
 /* ── Constantes del mundo (deben coincidir con src/mundo.js) ── */
-const CINE = /[?&]foto=cine/.test(location.search);      // el juego filmándose solo para /gameplay: no se conecta, no guarda y no toca la cuenta de nadie
+const CINE = /[?&]foto=cine/.test(location.search);      // el juego filmándose solo para /gameplay y /ritmo: no se conecta, no guarda y no toca la cuenta de nadie
+// En el cine, lo que el juego «guarda» se queda en la memoria de ese marco y se pierde al cerrarlo: lee las preferencias de este
+// equipo, pero nada de lo que haga puede cambiar la partida, la maquinita ni la sesión de quien mira.
+if (CINE) { try { const m = new Map(), real = window.localStorage; for (let i = 0; i < real.length; i++) { const k = real.key(i); m.set(k, real.getItem(k)); }
+  Object.defineProperty(window, 'localStorage', { configurable: true, value: { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => { m.set(k, String(v)); }, removeItem: (k) => { m.delete(k); }, clear: () => m.clear(), key: (i) => [...m.keys()][i] ?? null, get length() { return m.size; } } }); } catch {} }
 // Lo del cine se declara aquí arriba porque el arranque (más abajo) ya lo usa.
-const cineE = { w: 432, h: 768, celdas: 9, seg: 6, t: 0, acum: 0, mundo: null, r: null, id: 0, vivo: 0, titulo: '', peso: [1.5, 2, 4], ult: '' };
+const cineE = { w: 432, h: 768, celdas: 9, seg: 6, t: 0, tf: 0, acum: 0, mundo: null, r: null, id: 0, vivo: 0, titulo: '', peso: [1.5, 2, 4], ult: '', camino: null, paso: 0, cx: 0, remate: 0, llegadas: [] };
 const CINE_VALOR = (t) => (t >= 10 && t < 40 ? 3 + (t - 10) : t >= 40 && t < 46 ? 34 : t === 50 ? 46 : t === 2 ? (tiempoPiedra(prof() + 20) ? -3 : -60) : t === 3 ? -9 : t === 4 ? -6 : t === 5 ? -80 : 0);
 let cineAz = 1;
 const cineAzar = () => { cineAz |= 0; cineAz = (cineAz + 0x6d2b79f5) | 0; let t = Math.imul(cineAz ^ (cineAz >>> 15), 1 | cineAz); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
@@ -4030,6 +4034,7 @@ function htmlArte() {
       <small>${F[1]}: ${F[2]}.${listo ? '<br>' + esc(arte.info.texto) : ''}${arte.mov ? '<br>El GIF dura 6 segundos y se repite sin corte.' : ''}<b id="arteAvance" style="display:block;color:var(--ac)">${esc(arte.gif)}</b></small>
       <a class="boton s" href="/galeria" target="_blank" rel="noopener" style="text-align:center">🖼 Ver la galería</a>
       <a class="boton s" href="/gameplay" target="_blank" rel="noopener" style="text-align:center">🎬 Ver gameplay</a>
+      <a class="boton s" href="/ritmo" target="_blank" rel="noopener" style="text-align:center">🎵 Ritmo: con música</a>
     </div></div>`;
 }
 function htmlCapturas() {
@@ -5462,7 +5467,7 @@ function menuPrincipal() {
       <p><b>Las teclas son la inicial de lo que hacen:</b> <b>R</b> Reserva · <b>N</b> Nanobots · <b>D</b> Dinamita · <b>P</b> Plástico · <b>Q</b> Cuántico · <b>T</b> Transmisor · <b>C</b> Chat · <b>S</b> Señal · <b>A</b> Ayudar · <b>G</b> Grúa · <b>F</b> Foto (captura) · <b>M</b> Mapa · <b>Esc</b> Menú.</p>
       <p><b>El mapa (M):</b> se abre de un lado, como el chat (y encima de él si está abierto). Solo enseña lo que ya descubrió el equipo; lo demás queda oscuro. Arriba dice quién está jugando y a qué profundidad, y un clic en un nombre lleva el mapa hasta esa maquinita; a la izquierda, una tira con el mundo entero y la marca de cada quien. La rueda del ratón recorre el mapa.</p>
       <p><b>Objetos:</b> R tanque de reserva · N nanobots · D dinamita · P explosivo plástico · Q teletransportador cuántico · T transmisor. En El Almacén se compran de a 1, 5, 10, 50 o 100.</p>
-      <p><b>Arte y galería:</b> en Menú → 💎 Arte haces imágenes y GIF con las gemas del juego, para descargar. Y hay una <a href="/galeria" target="_blank" rel="noopener">galería</a> con cientos ya hechos, que no se acaba. En <a href=\"/gameplay\" target=\"_blank\" rel=\"noopener\">gameplay</a> hay tomas de seis segundos del juego, para descargar en GIF.</p>
+      <p><b>Arte y galería:</b> en Menú → 💎 Arte haces imágenes y GIF con las gemas del juego, para descargar. Y hay una <a href="/galeria" target="_blank" rel="noopener">galería</a> con cientos ya hechos, que no se acaba. En <a href=\"/gameplay\" target=\"_blank\" rel=\"noopener\">gameplay</a> hay tomas de seis segundos del juego, para descargar en GIF. Y en <a href=\"/ritmo\" target=\"_blank\" rel=\"noopener\">ritmo</a>, tomas con música, para descargar en video.</p>
       <p><b>El Taller:</b> cada pieza tiene veintiséis mejoras, de $750 a $25 billones ($25 T). Siempre ves las que ya compraste y las diez que siguen.</p>
       <p><b>Acompañado:</b> S deja una señal que todos ven · A ayuda a la maquinita que tengas junto: le pasa 5 litros · C abre el chat. Para descansar, abre el menú (Esc): con el menú abierto tu maquinita no gasta.</p>
       <p><b>Tu viaje:</b> abajo a la izquierda ves cuánto llevas, en cuánto se vende y si el combustible te alcanza para subir. Ahí mismo está la <b>grúa</b> (tecla G): te deja en la Gasolinera y cobra según lo lejos que estés y lo que peses.</p>
@@ -6050,6 +6055,7 @@ function modoCine() {
     const di = (x, pasa) => { try { e.source.postMessage(x, '*', pasa || []); } catch {} };
     if (m.a === 'para') { cineE.vivo++; return; }
     if (m.a === 'pon') return cineVivo(m, di);
+    if (m.a === 'sigue') return cineSigue(m, di);
     if (m.a === 'filma') return cineFilma(m, di);
   });
   try { parent.postMessage({ t: 'cine-listo' }, '*'); } catch {}
@@ -6087,8 +6093,9 @@ function cineMontar(r) {
   if (l === 'lugar' && k === undefined) { do k = Math.floor(cineAzar() * LUGARES.length); while (k === 3); }      // el Corazón no: el final no se cuenta
   if ((l === 'veta' || l === 'tesoro') && !d) { const a = cineAzar(); d = Math.round((30 + a * a * 9300) / 10) * 10; }
   if (l === 'franja' && !d) d = cineAzar() < 0.5 ? 3332 : 6666;
-  let x, y, titulo;
-  if (l === 'calle') { x = 24 + Math.floor(cineAzar() * 5); y = -1; titulo = 'La superficie'; d = 0; }
+  let x, y, titulo; E.camino = null; E.paso = 0; E.remate = 0; E.llegadas = []; E.tf = 0;
+  if (l === 'ritmo') { [x, y] = cineRitmo(r); titulo = '♪ ' + (r.titulo || 'Ritmo'); d = y * 2; }
+  else if (l === 'calle') { x = 24 + Math.floor(cineAzar() * 5); y = -1; titulo = 'La superficie'; d = 0; }
   else if (l === 'lugar') {
     const L = LUGARES[k]; titulo = L.n; d = L.m; x = Math.round(L.x); y = Math.round(L.y);
     // el hueco más cercano con piso (o con agua) dentro del lugar
@@ -6102,14 +6109,41 @@ function cineMontar(r) {
     ponerCavada(y * W + x); if (y > 2) ponerCavada((y - 1) * W + x);
     titulo = l === 'franja' ? 'La franja de gemas' : ZONA_N[zonaDe(y * 2)];
   }
-  cineEquipo(Math.max(0, y * 2));
+  cineEquipo(Math.max(0, y * 2)); if (l === 'ritmo') { for (let p = 0; p < 6; p++) S.eq[p] = PZ[p].niv.length - 1; S.fuel = tanque(); S.vida = vidaMax(); }
   yo.x = x + 0.5; yo.y = y + 1 - HH; yo.vx = yo.vy = 0; yo.dir = cineAzar() < 0.5 ? 1 : -1; yo.perf = null; yo.suelo = false; yo.vuela = false; yo.renace = false; yo.agua = false;
   ant.x = vis.x = yo.x; ant.y = vis.y = yo.y; S.x = yo.x; S.y = yo.y; S.rec = Math.max(0, Math.round(y * 2));
   for (const t in teclas) teclas[t] = false; crucero = false; amarreAba = false; vistaLibre = false; panX = panY = 0; temblor = 0;
   miModelo = Math.floor(cineAzar() * MODELOS.length); miPinta = {};
-  E.peso = [0.6 + cineAzar() * 2.6, 1.5 + cineAzar() * 2, 3 + cineAzar() * 3]; E.ult = ''; E.t = 0; E.acum = 0; E.titulo = titulo; E.seg = Math.max(2, +r.seg || E.seg);
+  E.peso = [0.6 + cineAzar() * 2.6, 1.5 + cineAzar() * 2, 3 + cineAzar() * 3]; E.ult = ''; E.t = 0; E.acum = 0; E.titulo = titulo; E.seg = Math.max(2, +r.seg || E.seg); if (l === 'ritmo') yo.dir = 1;
   medirCine(); camX = Math.max(0, Math.min(W - cols, yo.x - cols / 2)); camY = yo.y - filas * 0.5; reloj = 2 + cineAzar() * 40; tiempo = 100;
   return { titulo, metros: Math.max(0, Math.round((y + 1) * 2)), toma: l };
+}
+// ── Ritmo: la toma sigue una partitura. Cada paso es una celda y trae la hora exacta en que hay que llegar a ella (la de su nota);
+// si el paso lleva gema, esa celda la tiene. El camino es una serpiente: se recorre un renglón de lado y se baja al siguiente, que va
+// al revés. Como cada celda se perfora en el tiempo que falta para su nota, la maquinita llega siempre a tiempo y no se desfasa.
+function cineRitmo(r) {
+  const E = cineE, P = r.pasos, ancho = Math.max(2, Math.min(6, r.ancho | 0 || 4)), renglones = Math.ceil(P.length / ancho) + 2;
+  let y0 = Math.max(8, Math.round((r.d || 300) / 2)); const x0 = 20 + Math.floor(cineAzar() * (W - 40 - ancho));
+  const libre = () => { for (let y = y0 - 3; y <= y0 + renglones + 3; y++) { if ((y >= AGUA0 - 2 && y < AGUA1 + 2) || Math.abs(y - 1666) < 4 || Math.abs(y - 3333) < 4 || y >= EDEN0 - 4) return false; for (let x = x0 - 3; x <= x0 + ancho + 2; x += 2) if (lugarDe(x, y, true) >= 0) return false; } return true; };
+  for (let n = 0; n < 300 && !libre(); n++) y0 += 5;
+  for (let y = y0 - 2; y <= y0 + renglones + 1; y++) for (let x = x0 - 2; x <= x0 + ancho + 1; x++) { const i = y * W + x; base[i] = 1; geodas[i >> 3] &= ~(1 << (i & 7)); colec.delete(i); }      // la caja del camino, de pura tierra
+  const camino = []; let x = x0, y = y0, dir = 1;
+  for (let i = 0; i < P.length; i++) { if ((i + 1) % ancho === 0) { y++; dir = -dir; } else x += dir; camino.push([x, y]); base[y * W + x] = P[i].g >= 0 ? 10 + P[i].g : 1; }
+  mapa.fill(255); bloques.clear(); ponerCavada(y0 * W + x0);
+  E.camino = camino; E.cx = x0 + ancho / 2;
+  return [x0, y0];
+}
+function cineDirector() {
+  const E = cineE; if (yo.perf) return;
+  if (E.llegadas.length < E.paso) E.llegadas.push(E.tf);          // a qué hora llegó de verdad a la celda (para comprobar la sincronía)
+  if (E.paso >= E.camino.length) {                                // la última gema cae con la última nota: ahí va el remate
+    if (!E.remate) { E.remate = E.t || 0.001; flot = []; for (const c of ['#ffd23f', '#ffffff', '#ff5a6e', '#5ee0c8', '#8f7bff']) chispas(yo.x, yo.y, c, 26, 10); onda(yo.x, yo.y, 3, '#ffd23f', 0.8); onda(yo.x, yo.y, 1.6, '#ffffff', 0.5); temblar(5); }
+    return;
+  }
+  const p = E.r.pasos[E.paso];
+  if (!E.paso && E.tf < p.t - (E.r.d0 || 0.3) - 1e-6) return;     // la primera espera su entrada; las demás salen en cuanto llega la anterior
+  const [x, y] = E.camino[E.paso]; if (x !== Math.floor(yo.x)) yo.dir = x > yo.x ? 1 : -1;
+  perforar(x, y); if (yo.perf) yo.perf.dur = Math.max(0.02, p.t - E.tf); E.paso++;
 }
 // El piloto: parado y sin perforar, mira hacia abajo y hacia los dos lados y se va por donde hay más valor. No sube: la toma es de bajada.
 function cinePiloto() {
@@ -6133,8 +6167,8 @@ function cinePiloto() {
 // Un cuadro: avanza d segundos de juego, pinta y pone el rótulo.
 function cineCuadro(d) {
   const E = cineE; reloj += d; E.acum += d;
-  while (E.acum >= DT) { cinePiloto(); ant.x = yo.x; ant.y = yo.y; fisica(DT); darVuelta(); tiempo += DT; E.acum -= DT; }
-  vis.x = yo.x; vis.y = yo.y; animar(d); dibujar(); E.t += d; cineRotulo();
+  while (E.acum >= DT) { if (E.camino) cineDirector(); else cinePiloto(); ant.x = yo.x; ant.y = yo.y; fisica(DT); darVuelta(); tiempo += DT; E.tf += DT; E.acum -= DT; }
+  vis.x = yo.x; vis.y = yo.y; animar(d); if (E.camino) camX = Math.max(0, Math.min(W - cols, E.cx - cols / 2)); dibujar(); E.t += d; cineRotulo();
 }
 function cineRotulo() {
   const E = cineE, w = lienzo.width, h = lienzo.height, u = w / 432, letra = (px, peso = 800) => `${peso} ${Math.round(px * u)}px system-ui,-apple-system,"Segoe UI",Roboto,sans-serif`;
@@ -6151,7 +6185,14 @@ function cineRotulo() {
   const gano = Math.round(S.d - 20 + S.carga.reduce((a, n, i) => a + n * MIN[i].v, 0));
   if (gano > 0) pastilla('+ ' + fmt(gano), w - 12 * u, 16 * u, 17, '#ffd23f', 'der');
   // abajo, dónde está y a qué profundidad
-  pastilla(E.titulo + (yo.y > 0 ? ' · ' + prof().toLocaleString('es-MX') + ' m' : ''), w / 2, h - 118 * u, 15, '#f3e6d8', 'centro');
+  pastilla(E.titulo + (yo.y > 0 && !E.camino ? ' · ' + prof().toLocaleString('es-MX') + ' m' : ''), w / 2, h - 118 * u, 15, '#f3e6d8', 'centro');
+  // el remate de las tomas con música: lo ganado, en grande, y la invitación
+  if (E.camino && E.remate) {
+    const a = Math.min(1, (E.t - E.remate) / 0.22), z = 1 + 0.35 * (1 - a) * (1 - a), cy = h * 0.3, txt = '+ ' + fmt(gano);
+    g.globalAlpha = a; g.fillStyle = 'rgba(13,8,6,.45)'; g.fillRect(0, 0, w, h);
+    g.font = letra(58 * z, 900); g.textAlign = 'center'; g.textBaseline = 'middle'; g.strokeStyle = '#2a1a14'; g.lineWidth = 12 * u; g.strokeText(txt, w / 2, cy + 4 * u); g.strokeText(txt, w / 2, cy); g.fillStyle = '#ffd23f'; g.fillText(txt, w / 2, cy);
+    pastilla('Juega gratis · mina.capitaltorreon.com', w / 2, cy + 52 * u, 16, '#fff', 'centro'); g.globalAlpha = 1;
+  }
   // el corte entre el final y el principio se funde a negro un instante
   const f = Math.max(0, 1 - E.t / 0.3, 1 - (E.seg - E.t) / 0.3); if (f > 0) { g.fillStyle = `rgba(13,8,6,${Math.min(1, f)})`; g.fillRect(0, 0, w, h); }
   g.restore();
@@ -6165,6 +6206,21 @@ function cineVivo(m, di) {
     if (turno !== E.vivo) return; requestAnimationFrame(paso);
     const d = Math.min(0.05, (t - ult) / 1000); ult = t; if (!(d > 0)) return;
     if (E.t >= E.seg) cineMontar(E.r);
+    cineCuadro(d);
+  };
+  requestAnimationFrame(paso);
+}
+// Seguir un reloj de fuera: para las tomas con música. La página que carga este marco (mismo sitio) pone parent.__ritmoReloj, que dice
+// en qué segundo va la canción; la toma se pone exactamente en ese segundo. Si el reloj regresa, la toma vuelve a empezar.
+function cineSigue(m, di) {
+  const E = cineE, turno = ++E.vivo; cineTam(m); E.id = m.id; di({ t: 'cine-info', id: m.id, ...cineMontar(m.r) }); cineCuadro(0);
+  const hora = () => { try { const v = parent.__ritmoReloj(); return typeof v === 'number' && isFinite(v) ? v : null; } catch { return null; } };
+  const paso = () => {
+    if (turno !== E.vivo) return; requestAnimationFrame(paso);
+    const t = hora(); if (t === null) return;
+    if (t < E.t - 0.04) { cineMontar(E.r); cineCuadro(0); }
+    let d = Math.min(t, E.seg) - E.t; if (d <= 0.0005) return;
+    while (d > 0.12) { const E2 = cineE; reloj += 0.1; E2.acum += 0.1; while (E2.acum >= DT) { cineDirector(); ant.x = yo.x; ant.y = yo.y; fisica(DT); darVuelta(); tiempo += DT; E2.tf += DT; E2.acum -= DT; } animar(0.1); E2.t += 0.1; d -= 0.1; }      // si se atrasó, se pone al corriente sin pintar
     cineCuadro(d);
   };
   requestAnimationFrame(paso);

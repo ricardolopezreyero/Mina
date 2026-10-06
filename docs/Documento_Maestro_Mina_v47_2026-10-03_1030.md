@@ -1606,6 +1606,30 @@ A Ricardo le gustaron las imágenes de gemas y pidió dos cosas: otras seis, y q
 - **Ligas:** Galería y Gameplay se enlazan entre sí en la barra; además están en la guía de estilos (menú, atajos, franja y pie) y en el juego (Menú → Arte y Ayuda).
 - **Qué falta:** el GIF pesa 10 MB porque la cámara se mueve y cambia toda la imagen en cada cuadro; el video (MP4) pesaría veinte veces menos y es lo que piden TikTok y Reels. El piloto casi siempre baja derecho: se le pueden enseñar más jugadas (volar, usar dinamita, entrar a un edificio).
 
+### 9.75 Ritmo: gameplays con música (5-oct-2026)
+
+**Qué pidió Ricardo:** gameplays con sonido y con ritmo, «como una canción clásica, alegre»; unas tres canciones; sincronizar el sonido con la maquinita, con el movimiento y con el mineral; escenas completas de 8 a 12 segundos; con su propia categoría y su propio creador. Es un anuncio: nadie juega así de parejo y está bien. Son la primera pieza del «video del día» (1. un ritmo · 2. un GIF · 3. una foto · 4. cierre).
+
+**Dónde está:** [mina.capitaltorreon.com/ritmo](https://mina.capitaltorreon.com/ritmo) — `publico/ritmo.html` (la página y el creador) y `publico/ritmo.js` (las canciones y el sonido). En el juego, el modo cine ganó la toma `l: 'ritmo'`.
+
+**Las canciones** (dominio público; tocadas por un sintetizador propio, sin archivos de audio):
+
+| Canción | Autor | Tempo | Dura | Celdas | Lugar de fábrica |
+|---|---|---|---|---|---|
+| Himno a la alegría | Beethoven | 192 | 11.75 s | 31 | La Corteza, 300 m |
+| Can-can (el tema y, de remate, sus últimos cuatro compases una octava arriba) | Offenbach | 176 | 10.6 s | 49 | Las Cavernas, 2,600 m |
+| Pequeña serenata nocturna (los dos últimos compases son un remate nuestro) | Mozart | 144 | 11.75 s | 45 | La Cristalera, 4,600 m |
+
+**Cómo se sincroniza.** `RitmoMina.compilar(clave)` saca de la misma partitura dos cosas con los mismos tiempos: lo que suena y los `pasos` que sigue la maquinita (`{ t: segundo exacto, g: gema o −1 }`). Cada nota es una celda con su gema, según su grado en la escala: do rubí, re topacio, mi oro, fa esmeralda, sol aguamarina, la zafiro, si amatista. Lo que una nota dura de más, y los silencios, son celdas de tierra: el taladro no para. En el juego, `cineRitmo` limpia una caja de tierra y traza el camino en serpiente (4 celdas de ancho: tres de lado y una hacia abajo), y `cineDirector` perfora cada celda **en el tiempo que falta para su nota** (`yo.perf.dur = nota − ahora`). Por eso llega siempre a tiempo y no acumula desfase. Con la última gema cae la última nota: chispas, onda, lo ganado en grande y «Juega gratis · mina.capitaltorreon.com».
+
+**El reloj.** El juego corre en un marco del mismo sitio (`/?foto=cine`; ahí el juego usa un `localStorage` de mentiras, no se conecta y no guarda) y en cada cuadro pregunta `parent.__ritmoReloj()`: en qué segundo va la canción según el reloj del audio. Si se atrasa, se pone al corriente sin pintar; si el reloj regresa, la toma vuelve a empezar.
+
+**El video.** `MediaRecorder` sobre `lienzo.captureStream(30)` + la misma mezcla que se oye. MP4 (H.264 + AAC) de 720 × 1280 y unos 10 MB en Chrome y Safari; WebM en Firefox. Se graba en tiempo real: tarda lo que dura la canción.
+
+**Lo que se midió.** Llegada a cada celda contra su nota, dentro del juego: 8 milésimas como máximo (un paso de física). Las 98 notas de las tres canciones, afinadas (se comprobó el tono de cada una en el audio ya armado). En el archivo grabado: la imagen queda a entre −15 y +6 milésimas del sonido en promedio; volumen pico 0.92, medio 0.15–0.17. Celular de 390 px: sin desbordes.
+
+**Lo que no se pudo probar:** escucharlo (las pruebas son sin bocinas: se midió, no se oyó) y grabar en Safari de iPhone.
+
 ## 10. Revisión de código del 2 de octubre
 
 Se revisó todo el código buscando fallas y se corrigieron estas:

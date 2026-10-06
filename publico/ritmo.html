@@ -1,0 +1,271 @@
+<!doctype html>
+<!-- Mina · Ritmo · Ricardo López Reyero (RLR) · mina.capitaltorreon.com/ritmo -->
+<html lang="es" data-k="eye" data-rev="181218">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Mina · Ritmo</title>
+<meta name="description" content="Gameplays de Mina con música: la maquinita perfora al compás y cada gema es una nota. Tres canciones clásicas, diez segundos cada una, listas para descargar en video con sonido.">
+<meta name="author" content="Ricardo López Reyero">
+<link rel="canonical" href="https://mina.capitaltorreon.com/ritmo">
+<meta property="og:type" content="website"><meta property="og:site_name" content="Mina"><meta property="og:locale" content="es_MX">
+<meta property="og:url" content="https://mina.capitaltorreon.com/ritmo">
+<meta property="og:title" content="Mina · Ritmo">
+<meta property="og:description" content="La maquinita perfora al compás: cada gema es una nota. Video con sonido, listo para reels.">
+<meta property="og:image" content="https://mina.capitaltorreon.com/guia-estilos/kit/07-horizontal/portada-horizontal-1920x1080.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#1b120e"><meta name="build" content="eye"><meta name="rev" content="181218">
+<link rel="icon" type="image/png" sizes="32x32" href="/iconos/icono-32.png"><link rel="apple-touch-icon" href="/iconos/icono-180.png">
+<style>
+/* RLR · ritmo: tomas con música; la maquinita llega a cada gema justo en su nota */
+@font-face{font-family:Inter;font-weight:900;font-display:swap;src:url(/guia-estilos/kit/10-tipografia/Inter-Black.ttf) format("truetype")}
+@font-face{font-family:Inter;font-weight:700 800;font-display:swap;src:url(/guia-estilos/kit/10-tipografia/Inter-Bold.ttf) format("truetype")}
+:root{--f:1;--bg:#1b120e;--caja:#2a1c16;--borde:#5a3d2c;--tx:#f3e6d8;--su:#c9b29c;--ac:#ffd23f;--tinta:#2a1a14}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:calc(16px*var(--f))/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+a{color:var(--ac)}
+.envuelve{max-width:1500px;margin:0 auto;padding:0 clamp(12px,3vw,32px)}
+header{padding:clamp(22px,4vw,44px) 0 clamp(14px,2vw,22px);background:linear-gradient(#22407a,#5f83bd 45%,#f0a868 88%,#fbd590);border-bottom:6px solid var(--tinta)}
+header .envuelve{display:flex;gap:18px 28px;align-items:center;flex-wrap:wrap}
+header img{width:min(250px,46vw);height:auto;filter:drop-shadow(0 8px 10px #0006)}
+h1{font:900 clamp(2em,6vw,3.6em)/1 Inter,system-ui,sans-serif;margin:0;color:#fff;-webkit-text-stroke:.11em var(--tinta);paint-order:stroke fill}
+header p{margin:.35em 0 0;font-weight:800;color:#fff;text-shadow:0 1px 3px #000c;max-width:52ch}
+header .lado{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+button,.boton{font:inherit;font-weight:800;cursor:pointer;border:1px solid var(--borde);background:var(--caja);color:var(--tx);border-radius:10px;padding:.5em .9em;text-decoration:none;display:inline-flex;align-items:center;gap:.45em}
+button:hover,.boton:hover{border-color:var(--ac)}
+button:disabled{opacity:.6;cursor:progress}
+.boton.ppal,button.ppal{background:var(--ac);color:var(--tinta);border-color:var(--tinta);font-size:1.08em;padding:.6em 1.1em;box-shadow:0 3px 0 var(--tinta)}
+.boton.osc{background:#1b120eeb;color:#fff;border-color:#ffffff66}
+.barra{position:sticky;top:0;z-index:5;background:#1b120ef2;backdrop-filter:blur(8px);border-bottom:1px solid var(--borde)}
+.barra .envuelve{display:flex;gap:8px;align-items:center;padding-top:9px;padding-bottom:9px}
+.barra .marca{font:900 1.15em Inter,system-ui;color:var(--ac);text-decoration:none;margin-right:6px}
+.filtro{display:flex;gap:4px;background:#120b08;border:1px solid var(--borde);border-radius:999px;padding:3px}
+.filtro a{border-radius:999px;color:var(--su);padding:.4em .95em;font-weight:800;text-decoration:none;white-space:nowrap}
+.filtro a.on{background:var(--ac);color:var(--tinta)}
+.barra .jugar{margin-left:auto;background:var(--ac);color:var(--tinta);border-color:var(--tinta);white-space:nowrap;flex:none}
+.barra .tam{display:flex;gap:4px;flex:none}
+main{padding:20px 0 50px}
+h2{font:900 clamp(1.35em,3vw,1.9em)/1.15 Inter,system-ui;margin:0 0 .3em}
+.sub{color:var(--su);font-weight:600;margin:0 0 14px;max-width:70ch}
+/* el creador: a la izquierda la toma, a la derecha con qué se arma */
+.creador{scroll-margin-top:76px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:clamp(16px,3vw,36px);align-items:start}
+.escena{position:relative;height:min(78vh,820px);aspect-ratio:9/16;background:#120b08 radial-gradient(#3a2a22,#120b08 70%);border:3px solid var(--tinta);border-radius:18px;overflow:hidden;box-shadow:0 12px 40px #0009;cursor:pointer}
+.escena iframe{position:absolute;inset:0;width:100%;height:100%;border:0;pointer-events:none}
+.escena .toca{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:2;font-size:1.15em;border-radius:999px;background:var(--ac);color:var(--tinta);border:3px solid var(--tinta);box-shadow:0 5px 0 var(--tinta),0 12px 30px #000a;padding:.75em 1.3em;white-space:nowrap}
+.escena.suena .toca{display:none}
+.escena .avance{position:absolute;left:0;bottom:0;height:6px;background:var(--ac);z-index:2;width:0}
+.escena .graba{position:absolute;left:12px;bottom:16px;z-index:2;background:#c8102e;color:#fff;font:900 .8em/1 Inter,system-ui;letter-spacing:.06em;border-radius:999px;padding:.5em .8em;display:none}
+.escena.grabando .graba{display:block}
+.mesa{display:grid;gap:18px;min-width:0}
+.mesa h3{font:900 .82em/1 Inter,system-ui;letter-spacing:.08em;text-transform:uppercase;color:var(--su);margin:0 0 8px}
+.opciones{display:flex;gap:8px;flex-wrap:wrap}
+.opciones button{text-align:left;line-height:1.25;border-radius:12px;padding:.6em .95em;flex-direction:column;align-items:flex-start;gap:0}
+.opciones button small{font-weight:600;color:var(--su)}
+.opciones button.on{background:var(--ac);color:var(--tinta);border-color:var(--tinta)}
+.opciones button.on small{color:#5a3d2c}
+.acciones{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.listo{background:var(--caja);border:2px solid var(--ac);border-radius:14px;padding:12px 14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.listo[hidden]{display:none}
+.listo b{flex:1;min-width:12ch}
+.nota{color:var(--su);font-size:.92em;font-weight:600;margin:0}
+.como{background:var(--caja);border:1px solid var(--borde);border-radius:14px;padding:14px 16px}
+.como ol{margin:.3em 0 0;padding-left:1.3em}.como li{margin:.15em 0}
+section{margin-top:clamp(30px,5vw,56px)}
+.rejilla{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:clamp(8px,1.2vw,16px)}
+@media(max-width:1300px){.rejilla{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.pieza{background:var(--caja);border:1px solid var(--borde);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;min-width:0;cursor:pointer;padding:0;text-align:left;align-items:stretch;gap:0}
+.pieza .vista{position:relative;aspect-ratio:9/16;background:#120b08 radial-gradient(#3a2a22,#120b08 70%);line-height:0}
+.pieza .vista img{position:absolute;inset:0;width:100%;height:100%;display:block;object-fit:cover}
+.pieza .tipo{position:absolute;right:8px;bottom:8px;z-index:1;font:900 .72em/1 Inter,system-ui;letter-spacing:.06em;background:#1b120ed9;color:#fff;border:2px solid #ffffff59;border-radius:999px;padding:.35em .7em}
+.pieza .pie{padding:8px 10px;font:800 .84em/1.25 Inter,system-ui;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pieza .pie small{display:block;font-weight:600;color:var(--su);overflow:hidden;text-overflow:ellipsis}
+#camara{position:fixed;left:-4000px;top:0;width:432px;height:768px;border:0;visibility:hidden;pointer-events:none}
+#aviso{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(20px);background:var(--ac);color:var(--tinta);font-weight:800;padding:.6em 1.1em;border-radius:999px;opacity:0;transition:.25s;pointer-events:none;z-index:30;max-width:92vw;text-align:center}
+#aviso.on{opacity:1;transform:translateX(-50%)}
+@media(max-width:860px){.creador{grid-template-columns:1fr}.escena{height:auto;width:min(100%,430px);margin:0 auto}.rejilla{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:700px){.barra .marca,.barra .jugar{display:none}.barra .tam{margin-left:auto}header .lado{margin-left:0}.filtro a{padding:.4em .7em}.barra .tam button{padding:.5em .6em}.rejilla{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
+</head>
+<body>
+<header><div class="envuelve">
+  <a href="/" title="Jugar Mina"><img src="/guia-estilos/kit/03-logotipo/mina-palabra.png" alt="MINA" width="250" height="76"></a>
+  <div><h1>Ritmo</h1><p>Gameplays con música. La maquinita perfora al compás y cada gema es una nota de la canción. Diez segundos, con sonido, listos para bajar en video y abrir un reel.</p></div>
+  <div class="lado"><a class="boton ppal" href="/">⛏️ Jugar Mina gratis</a><a class="boton osc" href="/gameplay">🎬 Gameplay</a><a class="boton osc" href="/galeria">🖼 Galería</a></div>
+</div></header>
+<div class="barra"><div class="envuelve">
+  <a class="marca" href="/" title="mina.capitaltorreon.com">MINA</a>
+  <nav class="filtro" aria-label="Secciones"><a href="/galeria">Galería</a><a href="/gameplay">Gameplay</a><a class="on" href="/ritmo" aria-current="page">Ritmo</a></nav>
+  <a class="boton jugar" href="/" title="Jugar Mina gratis">⛏️<span> Jugar gratis</span></a>
+  <span class="tam"><button id="menos" title="Letra más chica" aria-label="Letra más chica">A−</button><button id="mas" title="Letra más grande" aria-label="Letra más grande">A+</button></span>
+</div></div>
+<main><div class="envuelve">
+  <div class="creador" id="creador">
+    <div class="escena" id="escena" title="Tocar o pausar">
+      <button class="toca" id="toca">▶ Tocar con sonido</button>
+      <span class="graba">● GRABANDO</span><span class="avance" id="avance"></span>
+    </div>
+    <div class="mesa">
+      <div><h2>Arma tu toma</h2><p class="sub">Escoge la canción y el lugar. El juego la toca y la juega en este momento, en tu pantalla; nada está grabado de antemano.</p></div>
+      <div><h3>Canción</h3><div class="opciones" id="canciones"></div></div>
+      <div><h3>Lugar</h3><div class="opciones" id="lugares"></div></div>
+      <div class="acciones">
+        <button class="ppal" id="video">⬇ Descargar video con sonido</button>
+        <button id="otra" title="Otro mundo, otro rincón y otra maquinita; la canción es la misma">🎲 Otra versión</button>
+        <button id="pausa">⏸ Pausa</button>
+      </div>
+      <div class="listo" id="listo" hidden><b></b><a class="boton ppal" id="bajar" download>⬇ Guardar</a><button id="comparte" hidden>📤 Compartir</button></div>
+      <p class="nota" id="nota">El video se graba mientras suena: tarda lo que dura la canción (unos 12 segundos). Deja esta pestaña a la vista mientras graba. <span id="formato"></span> ¿No se oye en el teléfono? Quítale el modo silencio.</p>
+      <div class="como"><b>El video del día</b>
+        <ol><li>Abre con una toma de <b>Ritmo</b> (esta).</li><li>Sigue un GIF de la <a href="/galeria">Galería</a> o del <a href="/gameplay">Gameplay</a>.</li><li>Luego una foto de la <a href="/galeria">Galería</a>.</li><li>Cierra con la invitación: «Juega gratis · mina.capitaltorreon.com».</li></ol>
+      </div>
+    </div>
+  </div>
+  <section>
+    <h2>Listas para publicar</h2><p class="sub">Las tres canciones en cuatro lugares de la mina. Toca una y se pone arriba, sonando; de ahí la bajas en video.</p>
+    <div class="rejilla" id="rejilla"></div>
+  </section>
+  <section class="como">
+    <b>¿Cómo está hecho?</b>
+    <p class="nota" style="margin-top:.4em">Son tres melodías clásicas de dominio público —el <i>Himno a la alegría</i> de Beethoven, el <i>Can-can</i> de Offenbach y la <i>Pequeña serenata nocturna</i> de Mozart— tocadas aquí mismo por un sintetizador hecho a mano; no se descarga ningún audio. Cada nota es una celda con su gema (do rubí, re topacio, mi oro, fa esmeralda, sol aguamarina, la zafiro, si amatista) y la maquinita perfora cada celda en el tiempo exacto que falta para su nota. Es el juego de verdad, con su misma física y su mismo dibujo; lo único que no es de verdad es la puntería: nadie juega así de parejo, y está bien, porque es un anuncio.</p>
+  </section>
+</div></main>
+<div id="aviso" role="status" aria-live="polite"></div>
+
+<script src="/ritmo.js"></script>
+<script>
+/* RLR · Ricardo López Reyero — Ritmo: gameplays con música. El juego corre en un marco, en su modo cine (/?foto=cine: no se conecta
+   y no guarda), y sigue el reloj del sonido: esta página toca la canción con su sintetizador y le dice al juego en qué segundo va.
+   El video se graba aquí mismo: la imagen sale del lienzo del juego y el sonido de la misma mezcla que se oye. */
+'use strict';
+const _RLR = 'Ricardo López Reyero', _k = 'EYE', _rev = 181218;
+const $ = (s) => document.querySelector(s), RM = window.RitmoMina;
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+let avisoT = 0; const aviso = (t, ms = 2600) => { const a = $('#aviso'); a.textContent = t; a.classList.add('on'); clearTimeout(avisoT); avisoT = setTimeout(() => a.classList.remove('on'), ms); };
+const LUGARES = [{ n: 'La Corteza', d: 300 }, { n: 'El Acuífero', d: 1400 }, { n: 'Las Cavernas', d: 2600 }, { n: 'La Cristalera', d: 4600 }, { n: 'La Zona de presión', d: 8600 }];
+const CLAVES = Object.keys(RM.CANCIONES), W = 720, H = 1280;
+// Las versiones nuevas: su semilla es el instante en que nacen (no regresa) y 12 bits al azar. Las de la lista de abajo son fijas.
+const EPOCA = Date.UTC(2026, 0, 1); let ultimoMs = 0;
+function semillaUnica() { ultimoMs = Math.max(Date.now() - EPOCA, 2e9, ultimoMs + 1); const a = new Uint16Array(1); try { crypto.getRandomValues(a); } catch { a[0] = Math.random() * 65536; } return ultimoMs * 4096 + (a[0] & 4095); }
+const FIJAS = []; for (const l of [0, 2, 3, 4]) for (const c of CLAVES) FIJAS.push({ c, l, s: 20261005 + FIJAS.length * 7919 });
+
+// lo escogido: canción, lugar y semilla (también va en la liga, para poder mandarla)
+const E = { c: 'alegria', l: 0, s: FIJAS[0].s, K: null };
+{ const m = /^#(\w+)-(\d)-(\d{6,16})$/.exec(location.hash); if (m && RM.CANCIONES[m[1]] && LUGARES[+m[2]]) { E.c = m[1]; E.l = +m[2]; E.s = +m[3]; } }
+const receta = (c, l, s) => { const K = RM.compilar(c); return { K, r: { s, l: 'ritmo', pasos: K.pasos, ancho: 4, d: LUGARES[l].d, d0: K.d0, titulo: K.n, seg: K.dura } }; };
+
+// ── el sonido ──
+let ctx = null, salida = null, sonando = null, t0 = null, unaVez = false;
+const QUIETO = 0.62;                                   // parado, la toma se queda en este segundo: ya se ve y todavía no empieza
+function audio() { if (!ctx) { ctx = new (window.AudioContext || window.webkitAudioContext)(); salida = ctx.createGain(); salida.connect(ctx.destination); } return ctx; }
+let grabando = false;
+window.__ritmoReloj = () => {                          // lo lee el juego en cada cuadro: en qué segundo de la canción vamos
+  if (t0 === null) return QUIETO;
+  return Math.max(0, ctx.currentTime - t0 - (grabando ? 0.04 : Math.min(0.12, ctx.outputLatency || ctx.baseLatency || 0)));      // el sonido tarda un instante en salir (y, al grabar, en entrar al video): la imagen lo espera
+};
+function calla() { if (sonando) { sonando.para(); sonando = null; } t0 = null; $('#escena').classList.remove('suena'); $('#avance').style.width = '0'; $('#pausa').textContent = '▶ Tocar'; }
+async function toca(espera = 0.12, una = false) {
+  audio(); try { await ctx.resume(); } catch {}
+  if (sonando) sonando.para();
+  unaVez = una; t0 = ctx.currentTime + espera; sonando = RM.programa(ctx, salida, E.K, t0);
+  $('#escena').classList.add('suena'); $('#pausa').textContent = '⏸ Pausa';
+}
+function tic() {
+  requestAnimationFrame(tic); if (t0 === null) return;
+  const t = ctx.currentTime - t0; $('#avance').style.width = Math.max(0, Math.min(100, t / E.K.dura * 100)) + '%';
+  if (!unaVez && t > E.K.dura + 0.45) toca();          // se acabó: otra vuelta
+}
+requestAnimationFrame(tic);
+
+// ── la toma: el juego en su marco, siguiendo el reloj ──
+const marco = document.createElement('iframe'); marco.title = 'Mina tocando'; marco.setAttribute('aria-hidden', 'true'); marco.tabIndex = -1; marco.src = '/?foto=cine'; $('#escena').prepend(marco);
+let marcoListo = false, tomaId = 0;
+const camara = document.createElement('iframe'); camara.id = 'camara'; camara.setAttribute('sandbox', 'allow-scripts'); camara.setAttribute('aria-hidden', 'true'); camara.tabIndex = -1; camara.src = '/?foto=cine';
+let camLista = null; const camEspera = new Promise((si) => { camLista = si; }); let camOye = null;
+addEventListener('message', (e) => {
+  const d = e.data; if (!d || typeof d.t !== 'string') return;
+  if (e.source === marco.contentWindow) { if (d.t === 'cine-listo') { marcoListo = true; monta(); } return; }
+  if (e.source === camara.contentWindow) { if (d.t === 'cine-listo') camLista(); else if (camOye) camOye(d); }
+});
+function monta() {
+  const o = receta(E.c, E.l, E.s); E.K = o.K;
+  if (marcoListo) marco.contentWindow.postMessage({ t: 'cine', a: 'sigue', id: ++tomaId, r: o.r, w: W, h: H, celdas: 9, seg: o.K.dura }, location.origin);
+  for (const b of $('#canciones').children) b.classList.toggle('on', b.dataset.c === E.c);
+  for (const b of $('#lugares').children) b.classList.toggle('on', +b.dataset.l === E.l);
+  try { history.replaceState(null, '', `#${E.c}-${E.l}-${E.s}`); } catch {}
+}
+function cambia(c, l, s, suena) { if (grabando) return; E.c = c; E.l = l; E.s = s; const iba = t0 !== null; calla(); monta(); if (suena || iba) toca(0.2); }
+
+// ── los controles ──
+$('#canciones').innerHTML = CLAVES.map((c) => `<button data-c="${c}">${esc(RM.CANCIONES[c].n)}<small>${esc(RM.CANCIONES[c].de)}</small></button>`).join('');
+$('#lugares').innerHTML = LUGARES.map((L, i) => `<button data-l="${i}">${esc(L.n)}<small>${L.d.toLocaleString('es-MX')} m</small></button>`).join('');
+$('#canciones').onclick = (e) => { const b = e.target.closest('button'); if (b) cambia(b.dataset.c, E.l, E.s, true); };
+$('#lugares').onclick = (e) => { const b = e.target.closest('button'); if (b) cambia(E.c, +b.dataset.l, E.s, true); };
+$('#otra').onclick = () => cambia(E.c, E.l, semillaUnica(), true);
+const alterna = () => { if (grabando) return; if (t0 === null) toca(); else calla(); };
+$('#escena').onclick = alterna; $('#pausa').onclick = alterna; $('#pausa').textContent = '▶ Tocar';
+
+// ── el video: se graba lo que se ve y lo que se oye, una vuelta completa ──
+const FORMATOS = ['video/mp4;codecs="avc1.640028,mp4a.40.2"', 'video/mp4;codecs="avc1.42E01F,mp4a.40.2"', 'video/mp4', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'];
+const formato = window.MediaRecorder ? FORMATOS.find((f) => { try { return MediaRecorder.isTypeSupported(f); } catch { return false; } }) : null;
+const ext = formato ? (formato.startsWith('video/mp4') ? 'mp4' : 'webm') : '';
+$('#formato').textContent = !formato ? 'Este navegador no puede grabar video; prueba con Chrome o Safari.' : ext === 'mp4' ? 'Sale en MP4, vertical, de 720 × 1280.' : 'En este navegador sale en WebM; en Chrome o Safari sale en MP4.';
+if (!formato) $('#video').disabled = true;
+let ultimo = null;
+async function graba() {
+  if (grabando || !formato || !marcoListo) return;
+  const b = $('#video'), antes = b.textContent; let lienzo;
+  try { lienzo = marco.contentDocument.getElementById('c'); } catch {}
+  if (!lienzo || !lienzo.captureStream) return aviso('Este navegador no puede grabar el video.');
+  calla(); audio(); try { await ctx.resume(); } catch {}
+  grabando = true; b.disabled = true; $('#escena').classList.add('grabando'); $('#listo').hidden = true;
+  const dest = ctx.createMediaStreamDestination(); salida.connect(dest);
+  const imagen = lienzo.captureStream(30), trozos = [];
+  try {
+    const mr = new MediaRecorder(new MediaStream([...imagen.getVideoTracks(), ...dest.stream.getAudioTracks()]), { mimeType: formato, videoBitsPerSecond: 8e6, audioBitsPerSecond: 192000 });
+    mr.ondataavailable = (e) => { if (e.data && e.data.size) trozos.push(e.data); };
+    const fin = new Promise((si, no) => { mr.onstop = si; mr.onerror = (e) => no(e.error || new Error('grabación')); });
+    const K = E.K; await toca(0.3, true); mr.start(250);
+    await new Promise((si) => { const ve = () => { const t = ctx.currentTime - t0; b.textContent = `Grabando… ${Math.max(0, Math.min(100, Math.round(t / K.dura * 100)))} %`; if (t >= K.dura + 0.08) si(); else setTimeout(ve, 60); }; ve(); });
+    mr.stop(); await fin;
+    const blob = new Blob(trozos, { type: formato.split(';')[0] }), nombre = `Mina_Ritmo_${E.c}_${LUGARES[E.l].d}m_${E.s}.${ext}`;
+    if (ultimo) URL.revokeObjectURL(ultimo.url);
+    ultimo = { blob, nombre, url: URL.createObjectURL(blob) };
+    const L = $('#listo'); L.hidden = false; L.querySelector('b').textContent = `Video listo · ${K.n} · ${(blob.size / 1048576).toFixed(1)} MB`;
+    $('#bajar').href = ultimo.url; $('#bajar').download = nombre;
+    let puede = false; try { puede = !!navigator.canShare && navigator.canShare({ files: [new File([blob], nombre, { type: blob.type })] }); } catch {}
+    $('#comparte').hidden = !puede;
+    try { $('#bajar').click(); } catch {}
+    aviso('Video listo. Si no se bajó solo, toca «Guardar».', 4200);
+  } catch (e) { aviso('No se pudo grabar. Intenta otra vez.'); }
+  try { salida.disconnect(dest); } catch {} imagen.getTracks().forEach((t) => t.stop());
+  grabando = false; b.disabled = false; b.textContent = antes; $('#escena').classList.remove('grabando'); calla();
+}
+$('#video').onclick = graba;
+$('#comparte').onclick = async () => { if (!ultimo) return; try { await navigator.share({ files: [new File([ultimo.blob], ultimo.nombre, { type: ultimo.blob.type })], title: 'Mina', text: 'Juega gratis · mina.capitaltorreon.com' }); } catch {} };
+
+// ── las listas para publicar: su foto la saca otro marco, escondido y aislado ──
+const R = $('#rejilla');
+R.innerHTML = FIJAS.map((f, i) => `<button class="pieza" data-i="${i}"><div class="vista"><span class="tipo">♪ ${Math.round(RM.compilar(f.c).dura)} s</span></div><div class="pie">${esc(RM.CANCIONES[f.c].n)}<small>${esc(LUGARES[f.l].n)} · ${LUGARES[f.l].d.toLocaleString('es-MX')} m</small></div></button>`).join('');
+R.onclick = (e) => { const p = e.target.closest('.pieza'); if (!p) return; const f = FIJAS[+p.dataset.i]; cambia(f.c, f.l, f.s, true); $('#creador').scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+async function fotos() {
+  document.body.appendChild(camara); await camEspera;
+  const lz = document.createElement('canvas'); let id = 0;
+  for (let i = 0; i < FIJAS.length; i++) {
+    const f = FIJAS[i], o = receta(f.c, f.l, f.s), miId = ++id;
+    const c = await new Promise((si) => { const t = setTimeout(() => si(null), 20000); camOye = (d) => { if (d.id !== miId) return; if (d.t === 'cine-cuadro') { clearTimeout(t); si(d); } }; camara.contentWindow.postMessage({ t: 'cine', a: 'filma', id: miId, r: o.r, w: 360, h: 640, celdas: 9, seg: o.K.dura, fps: 20, solo: Math.round(o.K.dura * 0.47 * 20) }, '*'); });
+    if (!c) continue;
+    lz.width = c.w; lz.height = c.h; lz.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(c.datos), c.w, c.h), 0, 0);
+    const blob = await new Promise((si) => lz.toBlob(si, 'image/jpeg', 0.85)), v = R.children[i].querySelector('.vista');
+    v.insertAdjacentHTML('afterbegin', `<img src="${URL.createObjectURL(blob)}" alt="${esc(o.K.n)} en ${esc(LUGARES[f.l].n)}" decoding="async">`);
+  }
+  camara.remove();
+}
+setTimeout(fotos, 600);
+monta();
+// A− / A+: el tamaño de la letra, recordado en este equipo
+let f = 1; try { f = +localStorage.getItem('mina_guia_f') || 1; } catch {}
+const pon = () => { document.documentElement.style.setProperty('--f', f); try { localStorage.setItem('mina_guia_f', f); } catch {} };
+$('#menos').onclick = () => { f = Math.max(0.85, +(f - 0.1).toFixed(2)); pon(); }; $('#mas').onclick = () => { f = Math.min(1.5, +(f + 0.1).toFixed(2)); pon(); }; pon();
+</script>
+</body>
+</html>

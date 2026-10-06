@@ -1359,7 +1359,9 @@ export default {
       // Gameplay: tomas de seis segundos que el juego juega solo. Es publico/gameplay.html, en /gameplay.
       if ((["/gameplay", "/gameplays", "/gameplay.html", "/juego", "/jugadas"].includes(ruta) && u.pathname !== "/gameplay")) return Response.redirect(u.origin + "/gameplay", 301);
       // OJO: «gameplay» tiene ocho letras válidas para una liga de mundo. Se sirve aquí, antes de que la regla de los mundos la confunda con uno.
-      if (u.pathname === "/gameplay" && request.method === "GET") return env.ASSETS.fetch(request); }
+      if (u.pathname === "/gameplay" && request.method === "GET") return env.ASSETS.fetch(request);
+      // Ritmo: gameplays con música (publico/ritmo.html), en /ritmo.
+      if ((["/ritmo", "/ritmos", "/ritmo.html", "/musica", "/música", "/reels"].includes(ruta) && u.pathname !== "/ritmo")) return Response.redirect(u.origin + "/ritmo", 301); }
     // Solo en pruebas locales: disparar el correo de cumpleaños a mano.
     if (u.pathname === "/api/tienda/cron" && env.MINA_PRUEBA === "1" && ["::1", "127.0.0.1"].includes(request.headers.get("CF-Connecting-IP"))) return json(await correosDeCumple(env));
 
