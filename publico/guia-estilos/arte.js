@@ -296,34 +296,43 @@
     if (nb) { sal.push(nb); for (let k = 0; k < nb; k++) sal.push(blo[k]); }
     sal.push(0);
   }
+  // El armador de GIF, suelto: sirve para el arte con gemas y para cualquier otra cosa que entregue cuadros (el gameplay).
+  // Uso: muestra(pixeles) con unos cuantos cuadros de todo el clip → cuadro(pixeles) con cada uno, en orden → blob().
+  function armador(w, h, espera) {
+    const H = new Uint32Array(1 << 18), clave = (d, i) => ((d[i] >> 2) << 12) | ((d[i + 1] >> 2) << 6) | (d[i + 2] >> 2);
+    let pal = null, nPal = 0, cerca = null, k = 0; const sal = [], partes = [], u16 = (v) => { sal.push(v & 255, (v >> 8) & 255); };
+    const idx = new Uint8Array(w * h), visto = new Uint8Array(w * h), fuera = new Uint8Array(w * h);
+    const masCerca = (c) => { const r = ((c >> 12) << 2) | 2, g2 = (((c >> 6) & 63) << 2) | 2, b = ((c & 63) << 2) | 2; let m = 0, dm = 1e9; for (let j = 0; j < nPal; j++) { const dr = pal[j * 3] - r, dg = pal[j * 3 + 1] - g2, db = pal[j * 3 + 2] - b, dd = dr * dr * 2 + dg * dg * 4 + db * db * 3; if (dd < dm) { dm = dd; m = j; } } return m; };
+    return {
+      muestra(d) { for (let i = 0; i < d.length; i += 8) H[clave(d, i)]++; },
+      cuadro(d) {
+        if (!pal) {                         // con el primer cuadro se cierra la paleta y se escribe el encabezado
+          ({ pal, n: nPal } = paletaDe(H, 255)); cerca = new Int16Array(1 << 18).fill(-1);
+          for (const ch of 'GIF89a') sal.push(ch.charCodeAt(0));
+          u16(w); u16(h); sal.push(0xf7, 0, 0); for (let j = 0; j < 768; j++) sal.push(pal[j]);
+          sal.push(0x21, 0xff, 0x0b); for (const ch of 'NETSCAPE2.0') sal.push(ch.charCodeAt(0)); sal.push(3, 1, 0, 0, 0);      // se repite para siempre
+        }
+        for (let i = 0, p = 0; p < idx.length; i += 4, p++) { const kk = clave(d, i); let m = cerca[kk]; if (m < 0) m = cerca[kk] = masCerca(kk); idx[p] = m; }
+        // lo que no cambió desde el cuadro anterior va transparente: se comprime mucho mejor
+        if (k === 0) fuera.set(idx); else for (let p = 0; p < idx.length; p++) fuera[p] = idx[p] === visto[p] ? 255 : idx[p];
+        visto.set(idx);
+        sal.push(0x21, 0xf9, 4, k === 0 ? 0x04 : 0x05); u16(espera); sal.push(255, 0, 0x2c); u16(0); u16(0); u16(w); u16(h); sal.push(0, 8);
+        lzw(fuera, sal); k++;
+        if (sal.length > 4e6) partes.push(new Uint8Array(sal.splice(0)));
+      },
+      blob() { sal.push(0x3b); partes.push(new Uint8Array(sal.splice(0))); return new Blob(partes, { type: 'image/gif' }); },
+    };
+  }
   // Devuelve el GIF listo (Blob). ajustes: segundos (duración del bucle), fps (si no se dice: 20 hasta 4 s, 16.7 hasta 8 s y 12.5 de ahí en adelante, para que no pese de más), alAvance(0 a 1).
   async function gif(op = {}, ajustes = {}) {
     const seg = Math.max(1, +ajustes.segundos || 6), fps = +ajustes.fps || (seg <= 4 ? 20 : seg <= 8 ? 16.7 : 12.5), A = coreografia(await preparar({ escala: 0.5, ...op }), seg), { w, h } = A.D, espera = Math.max(4, Math.min(10, Math.round(100 / fps))), cuadros = Math.max(8, Math.round(seg * 100 / espera));
-    const c = document.createElement('canvas'); c.width = w; c.height = h; const q = c.getContext('2d', { willReadFrequently: true });
-    const respiro = () => new Promise((r) => setTimeout(r, 0)), clave = (d, i) => ((d[i] >> 2) << 12) | ((d[i + 1] >> 2) << 6) | (d[i + 2] >> 2);
-    // la paleta sale de seis cuadros repartidos por todo el bucle
-    const H = new Uint32Array(1 << 18);
-    for (let k = 0; k < 6; k++) { cuadro(q, A, k / 6); const d = q.getImageData(0, 0, w, h).data; for (let i = 0; i < d.length; i += 8) H[clave(d, i)]++; }
-    const { pal, n: nPal } = paletaDe(H, 255), cerca = new Int16Array(1 << 18).fill(-1);
-    const masCerca = (k) => { const r = ((k >> 12) << 2) | 2, g2 = (((k >> 6) & 63) << 2) | 2, b = ((k & 63) << 2) | 2; let m = 0, dm = 1e9; for (let j = 0; j < nPal; j++) { const dr = pal[j * 3] - r, dg = pal[j * 3 + 1] - g2, db = pal[j * 3 + 2] - b, dd = dr * dr * 2 + dg * dg * 4 + db * db * 3; if (dd < dm) { dm = dd; m = j; } } return m; };
-    const sal = [], u16 = (v) => { sal.push(v & 255, (v >> 8) & 255); };
-    for (const ch of 'GIF89a') sal.push(ch.charCodeAt(0));
-    u16(w); u16(h); sal.push(0xf7, 0, 0); for (let k = 0; k < 768; k++) sal.push(pal[k]);
-    sal.push(0x21, 0xff, 0x0b); for (const ch of 'NETSCAPE2.0') sal.push(ch.charCodeAt(0)); sal.push(3, 1, 0, 0, 0);      // se repite para siempre
-    const partes = [], idx = new Uint8Array(w * h), visto = new Uint8Array(w * h), fuera = new Uint8Array(w * h);
+    const c = document.createElement('canvas'); c.width = w; c.height = h; const q = c.getContext('2d', { willReadFrequently: true }), G = armador(w, h, espera);
+    for (let k = 0; k < 6; k++) { cuadro(q, A, k / 6); G.muestra(q.getImageData(0, 0, w, h).data); }      // la paleta sale de seis cuadros repartidos por todo el bucle
     for (let k = 0; k < cuadros; k++) {
-      cuadro(q, A, k / cuadros); const d = q.getImageData(0, 0, w, h).data;
-      for (let i = 0, p = 0; p < idx.length; i += 4, p++) { const kk = clave(d, i); let m = cerca[kk]; if (m < 0) m = cerca[kk] = masCerca(kk); idx[p] = m; }
-      // lo que no cambió desde el cuadro anterior va transparente: se comprime mucho mejor
-      if (k === 0) fuera.set(idx); else for (let p = 0; p < idx.length; p++) fuera[p] = idx[p] === visto[p] ? 255 : idx[p];
-      visto.set(idx);
-      sal.push(0x21, 0xf9, 4, k === 0 ? 0x04 : 0x05); u16(espera); sal.push(255, 0, 0x2c); u16(0); u16(0); u16(w); u16(h); sal.push(0, 8);
-      lzw(fuera, sal);
-      if (sal.length > 4e6) partes.push(new Uint8Array(sal.splice(0)));
-      if (ajustes.alAvance) ajustes.alAvance((k + 1) / cuadros); await respiro();
+      cuadro(q, A, k / cuadros); G.cuadro(q.getImageData(0, 0, w, h).data);
+      if (ajustes.alAvance) ajustes.alAvance((k + 1) / cuadros); await new Promise((r) => setTimeout(r, 0));
     }
-    sal.push(0x3b); partes.push(new Uint8Array(sal));
-    return Object.assign(new Blob(partes, { type: 'image/gif' }), { info: { ...A.info, cuadros, segundos: cuadros * espera / 100, ancho: w, alto: h } });
+    return Object.assign(G.blob(), { info: { ...A.info, cuadros, segundos: cuadros * espera / 100, ancho: w, alto: h } });
   }
 
   // ── un zip sin comprimir (los PNG ya vienen comprimidos), para bajar varias imágenes de un jalón ───────────────────────
@@ -342,5 +351,5 @@
     return new Blob([...partes, ...central, fin], { type: 'application/zip' });
   }
   const aPng = (canvas) => new Promise((si) => canvas.toBlob(si, 'image/png'));
-  window.ArteMina = { pintar, animar, gif, zip, aPng, ESTILOS, FONDOS, PALETAS, FORMATOS, MOVIMIENTOS };
+  window.ArteMina = { pintar, animar, gif, armador, zip, aPng, ESTILOS, FONDOS, PALETAS, FORMATOS, MOVIMIENTOS };
 })();

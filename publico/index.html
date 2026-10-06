@@ -24,7 +24,7 @@
 <link rel="apple-touch-icon" href="/iconos/icono-180.png">
 <link rel="manifest" href="/manifest.webmanifest">
 <script>/* RLR · la guía de estilos no es el juego: si una copia vieja guardada en el equipo sirvió el juego en esa dirección, se suelta y se vuelve a pedir */
-if(/^\/(guia-estilos|guia-de-estilos|gu(i|%C3%AD|í)a(-de)?(-estilos)?|marca|kit|galer(i|%C3%AD|í)a)(\/|$)/i.test(location.pathname)){window.__noEsElJuego=1;if('serviceWorker'in navigator)navigator.serviceWorker.getRegistrations().then(function(r){return Promise.all(r.map(function(x){return x.unregister()}))}).then(function(){try{if(!sessionStorage.getItem('mina_guia_r')){sessionStorage.setItem('mina_guia_r','1');location.reload()}}catch(e){}})}
+if(/^\/(guia-estilos|guia-de-estilos|gu(i|%C3%AD|í)a(-de)?(-estilos)?|marca|kit|galer(i|%C3%AD|í)a|gameplay)(\/|$)/i.test(location.pathname)){window.__noEsElJuego=1;if('serviceWorker'in navigator)navigator.serviceWorker.getRegistrations().then(function(r){return Promise.all(r.map(function(x){return x.unregister()}))}).then(function(){try{if(!sessionStorage.getItem('mina_guia_r')){sessionStorage.setItem('mina_guia_r','1');location.reload()}}catch(e){}})}
 </script>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -38,6 +38,8 @@ html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;backgrou
   font:calc(14px*var(--f))/1.35 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-user-select:none;user-select:none}
 body.contraste{--caja:#000;--borde:#fff;--tx:#fff;--su:#fff;--ac:#ffe600}
 canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
+/* RLR · cine: el juego filmándose solo para /gameplay: nada de tablero, solo el lienzo */
+html.cine body>*:not(#c){display:none!important}html.cine,html.cine body{background:#0d0806;overflow:hidden}
 #c{touch-action:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 body{-webkit-touch-callout:none}
 /* La palanca aparece donde se pone el dedo: arrastrar mueve la maquinita, soltar la detiene. */

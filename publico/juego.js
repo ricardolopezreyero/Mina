@@ -10,6 +10,12 @@ const _RLR = 'Ricardo López Reyero';
 const _k = 'EYE', _rev = 181218; // RLR · sello de autoría
 
 /* ── Constantes del mundo (deben coincidir con src/mundo.js) ── */
+const CINE = /[?&]foto=cine/.test(location.search);      // el juego filmándose solo para /gameplay: no se conecta, no guarda y no toca la cuenta de nadie
+// Lo del cine se declara aquí arriba porque el arranque (más abajo) ya lo usa.
+const cineE = { w: 432, h: 768, celdas: 9, seg: 6, t: 0, acum: 0, mundo: null, r: null, id: 0, vivo: 0, titulo: '', peso: [1.5, 2, 4], ult: '' };
+const CINE_VALOR = (t) => (t >= 10 && t < 40 ? 3 + (t - 10) : t >= 40 && t < 46 ? 34 : t === 50 ? 46 : t === 2 ? (tiempoPiedra(prof() + 20) ? -3 : -60) : t === 3 ? -9 : t === 4 ? -6 : t === 5 ? -80 : 0);
+let cineAz = 1;
+const cineAzar = () => { cineAz |= 0; cineAz = (cineAz + 0x6d2b79f5) | 0; let t = Math.imul(cineAz ^ (cineAz >>> 15), 1 | cineAz); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 const W = 96, H = 5000, ZX0 = 30, ZX1 = 73, G = 14;     // 10,000 m de profundidad (2 m por celda)
 const HW = 0.36, HH = 0.4;         // media anchura y media altura de la maquinita, en celdas
 const INICIO_X = 43.5, INICIO_Y = -HH;
@@ -436,7 +442,7 @@ if ((op.sv | 0) < 2) { op.son.motor = 0; op.son.taladro = op.son.helice = 1; op.
 if (![0, 30, 60].includes(op.fps)) op.fps = 0;
 
 function leer(k, def) { try { return JSON.parse(localStorage.getItem(k)) ?? def; } catch { return def; } }
-function escribir(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
+function escribir(k, v) { if (CINE) return; try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
 
 function nuevoEstado() {
   return {
@@ -679,6 +685,10 @@ function nuevaSemilla() { SEM = (seed + remin * 104729) | 0; mapa.fill(255); pes
 // Fabricar el terreno completo con el generador de esta versión. Solo pasa cuando nace un mundo, cuando se remineraliza,
 // o la primera vez que se abre un mundo de antes de que el terreno se guardara.
 function terrenoProcedural() {
+  fabricarTerreno();
+  const u = empacar(); mapaHash = huellaMapa(u); mapaDe = seed + '|' + remin; guardarMapaLocal(mapaHash, u);
+}
+function fabricarTerreno() {          // el terreno y nada más: el cine lo usa sin guardar
   // dónde quedó cada objeto de la colección: tres por franja, a distintas alturas y en distintas columnas, fuera de los lugares
   colec.clear();
   for (let id = 0; id < NCOL; id++) {
@@ -691,7 +701,6 @@ function terrenoProcedural() {
   geodas.fill(0);
   for (let y = 0, i = 0; y < H; y++) for (let x = 0; x < W; x++, i++) { const t = gen(x, y); base[i] = t; if (t === 2 && azar(x, y, 61) < 0.07) geodas[i >> 3] |= 1 << (i & 7); }
   franjas(); mundoGen = GEN; mapa.fill(255); bloques.clear();
-  const u = empacar(); mapaHash = huellaMapa(u); mapaDe = seed + '|' + remin; guardarMapaLocal(mapaHash, u);
 }
 
 /* ════════ Sonido ════════ RLR */
@@ -2588,6 +2597,7 @@ function animarLupa(desde) {
   lupa = de; paso();
 }
 function medir() {
+  if (CINE) return medirCine();
   DPR = Math.min(2.5, window.devicePixelRatio || 1);
   RES = Math.max(0.75, DPR * NITIDEZ[rit.niv]);
   const w = Math.max(1, Math.round(innerWidth * RES)), h = Math.max(1, Math.round(innerHeight * RES));
@@ -4019,6 +4029,7 @@ function htmlArte() {
       <button class="s artePalanca${arte.mov ? ' on' : ''}" data-a="arteMov" role="switch" aria-checked="${arte.mov ? 'true' : 'false'}"><i></i><span>Con movimiento (GIF)</span></button>
       <small>${F[1]}: ${F[2]}.${listo ? '<br>' + esc(arte.info.texto) : ''}${arte.mov ? '<br>El GIF dura 6 segundos y se repite sin corte.' : ''}<b id="arteAvance" style="display:block;color:var(--ac)">${esc(arte.gif)}</b></small>
       <a class="boton s" href="/galeria" target="_blank" rel="noopener" style="text-align:center">🖼 Ver la galería</a>
+      <a class="boton s" href="/gameplay" target="_blank" rel="noopener" style="text-align:center">🎬 Ver gameplay</a>
     </div></div>`;
 }
 function htmlCapturas() {
@@ -5451,7 +5462,7 @@ function menuPrincipal() {
       <p><b>Las teclas son la inicial de lo que hacen:</b> <b>R</b> Reserva · <b>N</b> Nanobots · <b>D</b> Dinamita · <b>P</b> Plástico · <b>Q</b> Cuántico · <b>T</b> Transmisor · <b>C</b> Chat · <b>S</b> Señal · <b>A</b> Ayudar · <b>G</b> Grúa · <b>F</b> Foto (captura) · <b>M</b> Mapa · <b>Esc</b> Menú.</p>
       <p><b>El mapa (M):</b> se abre de un lado, como el chat (y encima de él si está abierto). Solo enseña lo que ya descubrió el equipo; lo demás queda oscuro. Arriba dice quién está jugando y a qué profundidad, y un clic en un nombre lleva el mapa hasta esa maquinita; a la izquierda, una tira con el mundo entero y la marca de cada quien. La rueda del ratón recorre el mapa.</p>
       <p><b>Objetos:</b> R tanque de reserva · N nanobots · D dinamita · P explosivo plástico · Q teletransportador cuántico · T transmisor. En El Almacén se compran de a 1, 5, 10, 50 o 100.</p>
-      <p><b>Arte y galería:</b> en Menú → 💎 Arte haces imágenes y GIF con las gemas del juego, para descargar. Y hay una <a href="/galeria" target="_blank" rel="noopener">galería</a> con cientos ya hechos, que no se acaba.</p>
+      <p><b>Arte y galería:</b> en Menú → 💎 Arte haces imágenes y GIF con las gemas del juego, para descargar. Y hay una <a href="/galeria" target="_blank" rel="noopener">galería</a> con cientos ya hechos, que no se acaba. En <a href=\"/gameplay\" target=\"_blank\" rel=\"noopener\">gameplay</a> hay tomas de seis segundos del juego, para descargar en GIF.</p>
       <p><b>El Taller:</b> cada pieza tiene veintiséis mejoras, de $750 a $25 billones ($25 T). Siempre ves las que ya compraste y las diez que siguen.</p>
       <p><b>Acompañado:</b> S deja una señal que todos ven · A ayuda a la maquinita que tengas junto: le pasa 5 litros · C abre el chat. Para descansar, abre el menú (Esc): con el menú abierto tu maquinita no gasta.</p>
       <p><b>Tu viaje:</b> abajo a la izquierda ves cuánto llevas, en cuánto se vende y si el combustible te alcanza para subir. Ahí mismo está la <b>grúa</b> (tecla G): te deja en la Gasolinera y cobra según lo lejos que estés y lo que peses.</p>
@@ -5722,6 +5733,7 @@ const guardarCuenta = () => escribir('mina_cuenta', cuenta);
 const datosCuenta = () => ({ mundos: mundos.map((m) => ({ id: m.id, nombre: m.nombre, maq: m.maq, modelo: m.modelo, creador: m.creador, ult: m.ult })), duenos, quitar: quitarPend, garaje: garaje.map((g) => g.k) });
 function subirCuentaLuego() { if (!cuenta) return; clearTimeout(subirCuentaT); subirCuentaT = setTimeout(subirCuenta, 2500); }
 async function subirCuenta() {
+  if (CINE) return;
   if (!cuenta) return;
   clearTimeout(subirCuentaT);
   const enviado = Date.now(), q = quitarPend.slice();
@@ -5835,7 +5847,7 @@ let dugCambios = 0, copiaDug = -1, copiaEst = '', tReloj = Date.now(), tEntrada 
 for (const ev of ['keydown', 'pointerdown', 'wheel', 'touchstart']) addEventListener(ev, () => { tEntrada = Date.now(); }, { passive: true, capture: true });
 const ocio = window.requestIdleCallback ? (f) => requestIdleCallback(() => f(), { timeout: 3000 }) : (f) => setTimeout(f, 0);      // lo que no urge se hace entre cuadro y cuadro
 function guardarCopia() {
-  if (!listo || !S || !mundoId || !miK || miI < 0 || !miNombre) return;
+  if (CINE || !listo || !S || !mundoId || !miK || miI < 0 || !miNombre) return;
   if (yo.renace) { S.x = INICIO_X; S.y = INICIO_Y; } else { S.x = yo.x; S.y = yo.perf ? yo.perf.oy : yo.y; }
   S.mu = mundoId;
   const e = JSON.stringify({ k: miK, e: S });
@@ -5972,18 +5984,20 @@ setInterval(() => {                       // lo poco que corre aunque el juego e
 // La liga de una maquinita trae su llave después del #: el navegador nunca la manda al servidor en la dirección.
 const ligaMaquinita = (location.hash.match(/maquinita=([0-9a-zA-Z]{16,64})/) || [])[1] || '';
 if (location.hash) history.replaceState(null, '', location.pathname);
-if (ligaMaquinita) { maqLocal = { k: ligaMaquinita }; escribir('mina_maq', maqLocal); }
+if (CINE) { /* nada: el cine no toca la maquinita ni la cuenta de este equipo */ }
+else if (ligaMaquinita) { maqLocal = { k: ligaMaquinita }; escribir('mina_maq', maqLocal); }
 else if (cuenta && cuenta.k && (!maqLocal || (maqLocal.k !== cuenta.k && !(cuenta.maqs || []).includes(maqLocal.k)))) {      // con cuenta, un equipo sin maquinita del garaje toma la última usada
   maqLocal = { k: cuenta.k, ...(cuenta.n ? { n: cuenta.n, m: cuenta.m | 0 } : {}) }; escribir('mina_maq', maqLocal);
   try { localStorage.removeItem('mina_est'); } catch {}
 }
-if (cuenta) setTimeout(subirCuenta, 2500);
+if (cuenta && !CINE) setTimeout(subirCuenta, 2500);
 aplicarOp(); sonidoUI();
 {
   const r = location.pathname.match(/^\/(?:m\/)?([2-9A-HJ-NP-Z]{8})\/?$/i);      // la liga es el dominio y las 8 letras; la de antes, con /m/, sigue sirviendo
   if (r && location.pathname !== '/' + r[1].toUpperCase()) history.replaceState(null, '', '/' + r[1].toUpperCase() + location.search);
   const v = location.pathname.match(/^\/ver\/([2-9A-HJ-NP-Z]{12})\/?$/i);
-  if (location.search.includes('foto')) escenaDeMuestra();
+  if (CINE) modoCine();
+  else if (location.search.includes('foto')) escenaDeMuestra();
   else if (v) {
     soloVer = true; verFicha = v[1].toUpperCase(); veo = +(location.search.match(/[?&]j=(\d{1,2})/) || [])[1]; if (!(veo >= 0)) veo = -1;
     inicio('<header><h2>👁 Buscando la transmisión…</h2></header><div class="cuerpo"><p class="nota">Vas a ver jugar en vivo. No necesitas nada.</p></div>');
@@ -6010,6 +6024,163 @@ function escenaDeMuestra() {
   d.style.cssText = 'position:fixed;left:3.6%;top:2.6%;font:900 min(13vw,156px)/0.9 system-ui;color:#ffd23f;-webkit-text-stroke:7px #2a1a14;paint-order:stroke fill;text-shadow:0 8px 0 #0006';
   d.innerHTML = 'MINA<div style="font:800 min(3.5vw,42px)/1.22 system-ui;color:#fff;-webkit-text-stroke:6px #2a1a14;paint-order:stroke fill;margin-top:16px;text-shadow:none">Entras y ya estás jugando.<br>Excava con tus amigos.</div>';
   document.body.appendChild(d);
+}
+
+/* ════════ Cine: el juego se filma solo (mina.capitaltorreon.com/gameplay) ════════ RLR · Ricardo López Reyero
+   Con ?foto=cine el juego no se conecta, no guarda nada y no enseña el tablero. Espera recetas por mensaje (la página de gameplay lo
+   carga en un marco aislado), monta un mundo de esa semilla, pone la maquinita en un buen lugar y la deja jugar sola con un piloto
+   que busca mineral. Lo que se ve es el juego de verdad: la misma física, el mismo taladro y el mismo dibujo.
+   Una receta: { s: semilla, l: 'veta' | 'tesoro' | 'lugar' | 'franja' | 'calle', d: metros, k: cuál lugar, m: semilla del mundo }.
+   Si solo trae s, todo lo demás sale de la semilla. */
+function medirCine() {
+  const E = cineE; DPR = 1; RES = 1;
+  if (lienzo.width !== E.w) lienzo.width = E.w; if (lienzo.height !== E.h) lienzo.height = E.h;
+  T = Math.max(8, Math.round(E.w / E.celdas)); cols = E.w / T; filas = E.h / T;
+  tiles.clear(); casas.clear(); sprites.clear(); bloques.clear(); bloquesLibres.length = 0;
+  bloquesTope = (Math.ceil(cols / BL) + 1) * (Math.ceil(filas / BL) + 1) + 6;
+}
+function modoCine() {
+  document.documentElement.classList.add('cine');
+  cfg = { ...cfg, ...MODOS.paseo, modo: 'paseo' };
+  op = { ...op, mudo: 1, part: 2, temblor: 1, nombres: 0, zoom: 0, fps: 0, contraste: 0, dalton: 0 };
+  Math.random = cineAzar;                       // el azar del clip va sembrado: la misma receta da la misma película
+  miNombre = ''; miModelo = 0; mundoId = 'CINE2026'; rit.niv = 0; rit.sonda = false; listo = true;
+  addEventListener('message', (e) => {
+    const m = e.data; if (!m || m.t !== 'cine' || !e.source) return;
+    const di = (x, pasa) => { try { e.source.postMessage(x, '*', pasa || []); } catch {} };
+    if (m.a === 'para') { cineE.vivo++; return; }
+    if (m.a === 'pon') return cineVivo(m, di);
+    if (m.a === 'filma') return cineFilma(m, di);
+  });
+  try { parent.postMessage({ t: 'cine-listo' }, '*'); } catch {}
+}
+// El equipo que le toca a esa profundidad: el menor taladro con el que cada celda tarda dos décimas o menos y la piedra de ahí se deja.
+function cineEquipo(m) {
+  let n = 0;
+  for (; n < PZ[0].niv.length - 1; n++) { S.eq[0] = n; if (0.6 * (20 / pot()) * (1 + 4 * Math.min(m, 1000) / 1000 + Math.max(0, m - 1000) / 1500) <= 0.2 && tiempoPiedra(m + 80)) break; }
+  for (let p = 0; p < 6; p++) S.eq[p] = Math.min(Math.max(n, 3), PZ[p].niv.length - 1);
+  S.fuel = tanque(); S.vida = vidaMax();
+}
+// Dónde empezar para que haya de qué comer: la columna con más valor en las doce filas de abajo.
+function cineBusca(y0, alto, soloTesoro) {
+  let mejor = -1e9, bx = 20, by = y0;
+  for (let y = y0; y < y0 + alto; y += 2) for (let x = 5; x < W - 5; x++) {
+    if (!solida(x, y + 1) || celda(x, y + 1) === 5 || lugarDe(x, y, true) >= 0) continue;
+    let v = 0;
+    for (let k = 1; k <= 12; k++) for (let j = -2; j <= 2; j++) { const t = celda(x + j, y + k); v += (soloTesoro ? (t >= 40 && t !== 46 ? 60 : t >= 10 && t < 40 ? 1 : 0) : Math.max(-4, CINE_VALOR(t))) / (1 + Math.abs(j) + k * 0.15); }
+    v += cineAzar() * 3;
+    if (v > mejor) { mejor = v; bx = x; by = y; }
+  }
+  return [bx, by];
+}
+function cineMontar(r) {
+  // La semilla puede ser grande (hasta 2^53): de sus dos mitades salen, por separado, el azar de la toma y el mundo donde ocurre.
+  const E = cineE, lo = r.s % 4294967296, hi = Math.floor(r.s / 4294967296); E.r = r;
+  cineAz = (hi ? lo ^ Math.imul(hi, 0x9e3779b1) ^ 0x85ebca6b : lo) | 0 || 1; for (let k = 0; k < 8; k++) cineAzar();
+  const sorteo = cineAzar(), mundo = r.m || 1 + (hi ? ((Math.imul(lo ^ 0x27d4eb2f, 0x165667b1) ^ Math.imul(hi ^ 0x51ed270b, 0x2545f491)) >>> 1) % 2147480000 : Math.floor(sorteo * 2147480000));
+  hallados.fill(0); dug.fill(0); colec.clear(); recientes.clear(); otros.clear(); flot = []; parts = []; pozoHondo = { x: -1, y: 0, v: -1, t: 0 };
+  if (E.mundo !== mundo) { seed = mundo; remin = 0; nuevaSemilla(); fabricarTerreno(); E.mundo = mundo; } else { nuevaSemilla(); fabricarTerreno(); }
+  S = sanear(null); S.fl = { piedra: 1, veta: 1, nicho: 1 }; S.st.rec.fill(1);
+  // qué clase de toma: si la receta no lo dice, lo decide la semilla
+  let l = r.l, d = r.d, k = r.k;
+  if (!l) { const a = cineAzar(); l = a < 0.56 ? 'veta' : a < 0.74 ? 'tesoro' : a < 0.93 ? 'lugar' : a < 0.97 ? 'franja' : 'calle'; }
+  if (l === 'lugar' && k === undefined) { do k = Math.floor(cineAzar() * LUGARES.length); while (k === 3); }      // el Corazón no: el final no se cuenta
+  if ((l === 'veta' || l === 'tesoro') && !d) { const a = cineAzar(); d = Math.round((30 + a * a * 9300) / 10) * 10; }
+  if (l === 'franja' && !d) d = cineAzar() < 0.5 ? 3332 : 6666;
+  let x, y, titulo;
+  if (l === 'calle') { x = 24 + Math.floor(cineAzar() * 5); y = -1; titulo = 'La superficie'; d = 0; }
+  else if (l === 'lugar') {
+    const L = LUGARES[k]; titulo = L.n; d = L.m; x = Math.round(L.x); y = Math.round(L.y);
+    // el hueco más cercano con piso (o con agua) dentro del lugar
+    let ok = false; for (let rr = 0; rr < 14 && !ok; rr++) for (let dy = -rr; dy <= rr && !ok; dy++) for (let dx = -rr; dx <= rr && !ok; dx++) { const X = x + dx, Y = y + dy; if (X > 3 && X < W - 3 && hueca(X, Y) && (solida(X, Y + 1) || celda(X, Y) === 6)) { x = X; y = Y; ok = true; } }
+    if (!ok) { ponerCavada(y * W + x); }
+  } else {
+    const y0 = Math.max(4, Math.round(d / 2) - 1 - (l === 'franja' ? 3 : 0));
+    S.x = 20; S.y = y0; yo.y = y0;            // para que el equipo y la piedra se midan a esa profundidad
+    cineEquipo(y0 * 2);
+    [x, y] = l === 'franja' ? [8 + Math.floor(cineAzar() * (W - 16)), y0] : cineBusca(y0, 26, l === 'tesoro');
+    ponerCavada(y * W + x); if (y > 2) ponerCavada((y - 1) * W + x);
+    titulo = l === 'franja' ? 'La franja de gemas' : ZONA_N[zonaDe(y * 2)];
+  }
+  cineEquipo(Math.max(0, y * 2));
+  yo.x = x + 0.5; yo.y = y + 1 - HH; yo.vx = yo.vy = 0; yo.dir = cineAzar() < 0.5 ? 1 : -1; yo.perf = null; yo.suelo = false; yo.vuela = false; yo.renace = false; yo.agua = false;
+  ant.x = vis.x = yo.x; ant.y = vis.y = yo.y; S.x = yo.x; S.y = yo.y; S.rec = Math.max(0, Math.round(y * 2));
+  for (const t in teclas) teclas[t] = false; crucero = false; amarreAba = false; vistaLibre = false; panX = panY = 0; temblor = 0;
+  miModelo = Math.floor(cineAzar() * MODELOS.length); miPinta = {};
+  E.peso = [0.6 + cineAzar() * 2.6, 1.5 + cineAzar() * 2, 3 + cineAzar() * 3]; E.ult = ''; E.t = 0; E.acum = 0; E.titulo = titulo; E.seg = Math.max(2, +r.seg || E.seg);
+  medirCine(); camX = Math.max(0, Math.min(W - cols, yo.x - cols / 2)); camY = yo.y - filas * 0.5; reloj = 2 + cineAzar() * 40; tiempo = 100;
+  return { titulo, metros: Math.max(0, Math.round((y + 1) * 2)), toma: l };
+}
+// El piloto: parado y sin perforar, mira hacia abajo y hacia los dos lados y se va por donde hay más valor. No sube: la toma es de bajada.
+function cinePiloto() {
+  if (yo.perf) return;
+  const E = cineE, cx = Math.floor(yo.x), cy = Math.floor(yo.y);
+  teclas.izq = teclas.der = teclas.arr = false; teclas.aba = false;
+  if (!yo.suelo) { if (yo.agua) teclas.aba = true; return; }
+  const puede = (x, y) => { const t = celda(x, y); return !(t === 5 || t === 46 || (t === 2 && !tiempoPiedra((y + 1) * 2))); };
+  let abajo = puede(cx, cy + 1) ? E.peso[0] : -1e9, lado = [0, 0];
+  for (let k = 1; k <= 7; k++) for (let j = -(k >> 1); j <= (k >> 1); j++) abajo += CINE_VALOR(celda(cx + j, cy + k)) / k;
+  for (const s of [-1, 1]) {
+    let v = puede(cx + s, cy) && cx + s > 3 && cx + s < W - 4 ? 0 : -1e9;
+    for (let k = 1; k <= 7; k++) for (let j = 0; j <= (k >> 1) + 1; j++) v += CINE_VALOR(celda(cx + s * k, cy + j)) / (k + j * 0.5);
+    lado[s < 0 ? 0 : 1] = v;
+  }
+  if (E.ult === 'aba') abajo += E.peso[1]; else if (E.ult === 'izq') { lado[0] += E.peso[1]; lado[1] -= E.peso[2]; } else if (E.ult === 'der') { lado[1] += E.peso[1]; lado[0] -= E.peso[2]; }
+  const cual = abajo >= lado[0] && abajo >= lado[1] ? 'aba' : lado[0] > lado[1] ? 'izq' : 'der';
+  if (Math.max(abajo, lado[0], lado[1]) < -1e8) { teclas.arr = true; E.ult = ''; return; }
+  teclas[cual] = true; E.ult = cual;
+}
+// Un cuadro: avanza d segundos de juego, pinta y pone el rótulo.
+function cineCuadro(d) {
+  const E = cineE; reloj += d; E.acum += d;
+  while (E.acum >= DT) { cinePiloto(); ant.x = yo.x; ant.y = yo.y; fisica(DT); darVuelta(); tiempo += DT; E.acum -= DT; }
+  vis.x = yo.x; vis.y = yo.y; animar(d); dibujar(); E.t += d; cineRotulo();
+}
+function cineRotulo() {
+  const E = cineE, w = lienzo.width, h = lienzo.height, u = w / 432, letra = (px, peso = 800) => `${peso} ${Math.round(px * u)}px system-ui,-apple-system,"Segoe UI",Roboto,sans-serif`;
+  const pastilla = (txt, x, y, px, color, alinea) => {
+    g.font = letra(px); const tw = g.measureText(txt).width, ph = px * u * 1.75, pw = tw + px * u * 1.5, x0 = alinea === 'der' ? x - pw : alinea === 'centro' ? x - pw / 2 : x;
+    g.fillStyle = 'rgba(18,11,8,.82)'; g.beginPath(); g.roundRect(x0, y, pw, ph, ph / 2); g.fill(); g.strokeStyle = 'rgba(255,210,63,.55)'; g.lineWidth = Math.max(1, 1.5 * u); g.stroke();
+    g.fillStyle = color; g.textAlign = 'left'; g.textBaseline = 'middle'; g.fillText(txt, x0 + px * u * 0.75, y + ph / 2 + u); return pw;
+  };
+  g.save(); g.setTransform(1, 0, 0, 1, 0, 0); g.lineJoin = 'round';
+  // arriba a la izquierda, la marca y la liga: siempre
+  g.font = letra(40, 900); g.textAlign = 'left'; g.textBaseline = 'top'; g.strokeStyle = '#2a1a14'; g.lineWidth = 9 * u; g.strokeText('MINA', 14 * u, 14 * u + 3 * u); g.strokeText('MINA', 14 * u, 14 * u); g.fillStyle = '#ffd23f'; g.fillText('MINA', 14 * u, 14 * u);
+  pastilla('mina.capitaltorreon.com', 12 * u, 62 * u, 11.5, '#ffd23f');
+  // arriba a la derecha, lo que lleva ganado en la toma
+  const gano = Math.round(S.d - 20 + S.carga.reduce((a, n, i) => a + n * MIN[i].v, 0));
+  if (gano > 0) pastilla('+ ' + fmt(gano), w - 12 * u, 16 * u, 17, '#ffd23f', 'der');
+  // abajo, dónde está y a qué profundidad
+  pastilla(E.titulo + (yo.y > 0 ? ' · ' + prof().toLocaleString('es-MX') + ' m' : ''), w / 2, h - 118 * u, 15, '#f3e6d8', 'centro');
+  // el corte entre el final y el principio se funde a negro un instante
+  const f = Math.max(0, 1 - E.t / 0.3, 1 - (E.seg - E.t) / 0.3); if (f > 0) { g.fillStyle = `rgba(13,8,6,${Math.min(1, f)})`; g.fillRect(0, 0, w, h); }
+  g.restore();
+}
+function cineTam(m) { const E = cineE; E.w = Math.max(160, Math.min(1080, Math.round(m.w / 2) * 2 || 432)); E.h = Math.max(280, Math.min(1920, Math.round(m.h / 2) * 2 || 768)); E.celdas = Math.max(6, Math.min(16, +m.celdas || 9)); E.seg = Math.max(2, Math.min(20, +m.seg || 6)); }
+// En vivo: la toma corre a su ritmo y, al terminar, vuelve a empezar igualita.
+function cineVivo(m, di) {
+  const E = cineE, turno = ++E.vivo; cineTam(m); E.id = m.id; di({ t: 'cine-info', id: m.id, ...cineMontar(m.r) });
+  let ult = 0;
+  const paso = (t) => {
+    if (turno !== E.vivo) return; requestAnimationFrame(paso);
+    const d = Math.min(0.05, (t - ult) / 1000); ult = t; if (!(d > 0)) return;
+    if (E.t >= E.seg) cineMontar(E.r);
+    cineCuadro(d);
+  };
+  requestAnimationFrame(paso);
+}
+// Filmar: la misma toma, cuadro por cuadro y de un jalón (seis segundos de juego se filman en una o dos décimas; sin pausas, porque
+// los relojes de un marco que no está a la vista van frenados). cada: manda uno de cada tantos; solo: nada más ese cuadro.
+async function cineFilma(m, di) {
+  await 0;
+  const E = cineE, turno = ++E.vivo; cineTam(m); const info = cineMontar(m.r), fps = Math.max(5, Math.min(30, +m.fps || 16.7)), n = Math.round(E.seg * fps), cada = Math.max(1, m.cada | 0);
+  di({ t: 'cine-info', id: m.id, n, ...info });
+  for (let k = 0; k < n; k++) {
+    if (turno !== E.vivo) return;
+    cineCuadro(1 / fps);
+    if (m.solo !== undefined ? k === m.solo : k % cada === 0) { const d = g.getImageData(0, 0, E.w, E.h).data.buffer; di({ t: 'cine-cuadro', id: m.id, k, w: E.w, h: E.h, datos: d }, [d]); if (m.solo !== undefined) break; }      // los pixeles viajan tal cual: sirve en cualquier navegador
+  }
+  di({ t: 'cine-fin', id: m.id, n, gano: Math.round(S.d - 20 + S.carga.reduce((a, c, i) => a + c * MIN[i].v, 0)), ...info });
 }
 // Para pruebas: window.__mina
 window.__mina = { get S() { return S; },

@@ -1355,7 +1355,11 @@ export default {
     { let ruta = u.pathname; try { ruta = decodeURIComponent(ruta); } catch {} ruta = ruta.toLowerCase().replace(/\/+$/, "");
       if (["/guía-estilos", "/guia-de-estilos", "/guía-de-estilos", "/guia", "/guía", "/marca", "/kit"].includes(ruta)) return Response.redirect(u.origin + "/guia-estilos/", 301);
       // La galería de arte con gemas es publico/galeria.html y se sirve en /galeria, a secas. Con acento, con diagonal, con mayúsculas o por su dirección de antes, llega ahí.
-      if ((["/galeria", "/galería", "/guia-estilos/galeria", "/galeria.html"].includes(ruta) && u.pathname !== "/galeria")) return Response.redirect(u.origin + "/galeria", 301); }
+      if ((["/galeria", "/galería", "/guia-estilos/galeria", "/galeria.html"].includes(ruta) && u.pathname !== "/galeria")) return Response.redirect(u.origin + "/galeria", 301);
+      // Gameplay: tomas de seis segundos que el juego juega solo. Es publico/gameplay.html, en /gameplay.
+      if ((["/gameplay", "/gameplays", "/gameplay.html", "/juego", "/jugadas"].includes(ruta) && u.pathname !== "/gameplay")) return Response.redirect(u.origin + "/gameplay", 301);
+      // OJO: «gameplay» tiene ocho letras válidas para una liga de mundo. Se sirve aquí, antes de que la regla de los mundos la confunda con uno.
+      if (u.pathname === "/gameplay" && request.method === "GET") return env.ASSETS.fetch(request); }
     // Solo en pruebas locales: disparar el correo de cumpleaños a mano.
     if (u.pathname === "/api/tienda/cron" && env.MINA_PRUEBA === "1" && ["::1", "127.0.0.1"].includes(request.headers.get("CF-Connecting-IP"))) return json(await correosDeCumple(env));
 

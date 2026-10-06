@@ -1588,6 +1588,24 @@ A Ricardo le gustaron las imágenes de gemas y pidió dos cosas: otras seis, y q
 - **Probado:** dos visitas seguidas: las 33 primeras idénticas, y de ahí en adelante ninguna semilla en común.
 - **Los límites, dichos con honestidad:** si un equipo tiene el reloj muy mal puesto, su semilla podría caer en un instante pasado; aun así tendría que coincidir también en los 12 bits. Y dos piezas únicas pueden parecerse (misma figura, tonos cercanos), pero no ser la misma.
 
+### 9.74 Gameplay: el juego se filma solo
+
+**Lo que pidió Ricardo.** Una categoría después de Galería, «Gameplay»: tomas de 6 segundos de juego que queden como GIF, en distintos lugares, siempre perforando, pasando por distintos elementos, ganando puntos y descubriendo secretos. Unas 33 por lo pronto y, si se puede, por semilla y creadas en el navegador.
+
+**Cómo quedó.** `mina.capitaltorreon.com/gameplay`.
+- **No hay videos.** Lo que se ve es el juego de verdad, corriendo en el navegador de quien mira: la misma física, el mismo taladro y el mismo dibujo. Seis segundos de juego se filman en una o dos décimas de segundo.
+- **El modo cine** (`/?foto=cine`, al final de `juego.js`). El juego recibe una receta por mensaje, monta un mundo de esa semilla, pone la maquinita en un buen punto, le da el equipo que corresponde a esa profundidad (el menor taladro con el que cada celda tarda dos décimas o menos) y la deja jugar con un **piloto**: parado y sin perforar, suma el valor de lo que hay hacia abajo y hacia cada lado, y se va por donde hay más. No sube. La dificultad va en «Paseo» para que nada la mate a media toma.
+- **Cinco clases de toma:** *calle* (los primeros metros, junto al pueblo), *veta* (la columna con más mineral cerca de una profundidad), *tesoro* (igual, pero buscando cofres, huesos y reliquias), *lugar* (los tres grandes y los once rincones; el Corazón no, para no contar el final) y *franja* (las dos filas de gemas escondidas a 3,332 y 6,666 m).
+- **El rótulo, dentro de la imagen:** MINA y la liga arriba a la izquierda, siempre; arriba a la derecha lo ganado en la toma, que va subiendo; abajo, el lugar y los metros. El corte entre el final y el principio se funde a negro tres décimas.
+- **Aislado a propósito.** El juego corre en marcos con `sandbox="allow-scripts"`: sin acceso al almacenamiento ni a la sesión del sitio, y además el modo cine no escribe, no se conecta y no sube nada. Ver gameplay no puede alterar la partida de nadie.
+- **Cámara y proyectores.** Un marco escondido saca las fotos y los GIF; hasta ocho más (cuatro en celular) se ponen encima de las tomas más cercanas al centro de la pantalla y las juegan en vivo. Cada motor usa unos 10 MB.
+- **Las 33 fijas:** se filmaron 40 candidatas y se revisaron. Hay calle, los tres lugares grandes, los once rincones, las dos franjas, cuatro de tesoros y vetas de todas las zonas, de 90 a 9,300 m.
+- **Después, únicas.** La semilla es el instante en que nace la toma más 12 bits al azar; de sus dos mitades salen por separado el azar de la toma y el mundo donde ocurre. No se repiten.
+- **Descarga:** GIF de 432 × 768, 6 segundos, 100 cuadros, unos 10 MB, armado en el navegador en menos de un segundo con el mismo armador de la galería (`ArteMina.armador`).
+- **Un tropiezo que conviene recordar:** «gameplay» son ocho letras válidas para una liga de mundo, así que el Worker y el juego la tomaban por un mundo. El Worker ahora la sirve antes de esa regla, y el service worker y la guardia de `index.html` la dejan pasar.
+- **Ligas:** Galería y Gameplay se enlazan entre sí en la barra; además están en la guía de estilos (menú, atajos, franja y pie) y en el juego (Menú → Arte y Ayuda).
+- **Qué falta:** el GIF pesa 10 MB porque la cámara se mueve y cambia toda la imagen en cada cuadro; el video (MP4) pesaría veinte veces menos y es lo que piden TikTok y Reels. El piloto casi siempre baja derecho: se le pueden enseñar más jugadas (volar, usar dinamita, entrar a un edificio).
+
 ## 10. Revisión de código del 2 de octubre
 
 Se revisó todo el código buscando fallas y se corrigieron estas:
