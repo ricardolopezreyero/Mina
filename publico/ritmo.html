@@ -114,14 +114,14 @@ section{margin-top:clamp(30px,5vw,56px)}
         <button id="pausa">⏸ Pausa</button>
       </div>
       <div class="listo" id="listo" hidden><b></b><a class="boton ppal" id="bajar" download>⬇ Guardar</a><button id="comparte" hidden>📤 Compartir</button></div>
-      <p class="nota" id="nota">El video se graba mientras suena: tarda lo que dura la canción (unos 12 segundos). Deja esta pestaña a la vista mientras graba. <span id="formato"></span> ¿No se oye en el teléfono? Quítale el modo silencio.</p>
+      <p class="nota" id="nota">El video se graba mientras suena: tarda lo que dura la canción (unos 12 segundos; las completas, uno o dos minutos). Deja esta pestaña a la vista mientras graba. <span id="formato"></span> ¿No se oye en el teléfono? Quítale el modo silencio.</p>
       <div class="como"><b>El video del día</b>
         <ol><li>Abre con una toma de <b>Ritmo</b> (esta).</li><li>Sigue un GIF de la <a href="/galeria">Galería</a> o del <a href="/gameplay">Gameplay</a>.</li><li>Luego una foto de la <a href="/galeria">Galería</a>.</li><li>Cierra con la invitación: «Juega gratis · mina.capitaltorreon.com».</li></ol>
       </div>
     </div>
   </div>
   <section>
-    <h2>Listas para publicar</h2><p class="sub">Las nueve canciones, en distintos lugares de la mina. Toca una y se pone arriba, sonando; de ahí la bajas en video.</p>
+    <h2>Listas para publicar</h2><p class="sub">Las nueve canciones, en distintos lugares de la mina, y al final las dos versiones completas. Toca una y se pone arriba, sonando; de ahí la bajas en video.</p>
     <div class="rejilla" id="rejilla"></div>
   </section>
   <section class="como">
@@ -143,6 +143,7 @@ const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
 let avisoT = 0; const aviso = (t, ms = 2600) => { const a = $('#aviso'); a.textContent = t; a.classList.add('on'); clearTimeout(avisoT); avisoT = setTimeout(() => a.classList.remove('on'), ms); };
 const LUGARES = [{ n: 'La Corteza', d: 300 }, { n: 'El Acuífero', d: 1400 }, { n: 'Las Cavernas', d: 2600 }, { n: 'La Cristalera', d: 4600 }, { n: 'La Zona de presión', d: 8600 }];
 const CLAVES = Object.keys(RM.CANCIONES), W = 720, H = 1280;
+const cuanto = (seg) => seg < 60 ? Math.round(seg) + ' s' : Math.floor(seg / 60) + ':' + String(Math.round(seg % 60)).padStart(2, '0');      // lo que dura, para leerse
 // Las versiones nuevas: su semilla es el instante en que nacen (no regresa) y 12 bits al azar. Las de la lista de abajo son fijas.
 const EPOCA = Date.UTC(2026, 0, 1); let ultimoMs = 0;
 function semillaUnica() { ultimoMs = Math.max(Date.now() - EPOCA, 2e9, ultimoMs + 1); const a = new Uint16Array(1); try { crypto.getRandomValues(a); } catch { a[0] = Math.random() * 65536; } return ultimoMs * 4096 + (a[0] & 4095); }
@@ -197,7 +198,7 @@ function monta() {
 function cambia(c, l, s, suena) { if (grabando) return; E.c = c; E.l = l; E.s = s; const iba = t0 !== null; calla(); monta(); if (suena || iba) toca(0.2); }
 
 // ── los controles ──
-$('#canciones').innerHTML = CLAVES.map((c) => `<button data-c="${c}">${esc(RM.CANCIONES[c].n)}<small>${esc(RM.CANCIONES[c].de)}</small></button>`).join('');
+$('#canciones').innerHTML = CLAVES.map((c) => `<button data-c="${c}">${esc(RM.CANCIONES[c].n)}<small>${esc(RM.CANCIONES[c].de)}${RM.CANCIONES[c].completa ? ' · completa · ' + cuanto(RM.compilar(c).dura) : ''}</small></button>`).join('');
 $('#lugares').innerHTML = LUGARES.map((L, i) => `<button data-l="${i}">${esc(L.n)}<small>${L.d.toLocaleString('es-MX')} m</small></button>`).join('');
 $('#canciones').onclick = (e) => { const b = e.target.closest('button'); if (b) cambia(b.dataset.c, E.l, E.s, true); };
 $('#lugares').onclick = (e) => { const b = e.target.closest('button'); if (b) cambia(E.c, +b.dataset.l, E.s, true); };
@@ -222,7 +223,7 @@ async function graba() {
   const dest = ctx.createMediaStreamDestination(); salida.connect(dest);
   const imagen = lienzo.captureStream(30), trozos = [];
   try {
-    const mr = new MediaRecorder(new MediaStream([...imagen.getVideoTracks(), ...dest.stream.getAudioTracks()]), { mimeType: formato, videoBitsPerSecond: 8e6, audioBitsPerSecond: 192000 });
+    const mr = new MediaRecorder(new MediaStream([...imagen.getVideoTracks(), ...dest.stream.getAudioTracks()]), { mimeType: formato, videoBitsPerSecond: E.K.dura > 30 ? 5e6 : 8e6, audioBitsPerSecond: 192000 });
     mr.ondataavailable = (e) => { if (e.data && e.data.size) trozos.push(e.data); };
     const fin = new Promise((si, no) => { mr.onstop = si; mr.onerror = (e) => no(e.error || new Error('grabación')); });
     const K = E.K; await toca(0.3, true); mr.start(250);
@@ -246,14 +247,14 @@ $('#comparte').onclick = async () => { if (!ultimo) return; try { await navigato
 
 // ── las listas para publicar: su foto la saca otro marco, escondido y aislado ──
 const R = $('#rejilla');
-R.innerHTML = FIJAS.map((f, i) => `<button class="pieza" data-i="${i}"><div class="vista"><span class="tipo">♪ ${Math.round(RM.compilar(f.c).dura)} s</span></div><div class="pie">${esc(RM.CANCIONES[f.c].n)}<small>${esc(LUGARES[f.l].n)} · ${LUGARES[f.l].d.toLocaleString('es-MX')} m</small></div></button>`).join('');
+R.innerHTML = FIJAS.map((f, i) => `<button class="pieza" data-i="${i}"><div class="vista"><span class="tipo">♪ ${cuanto(RM.compilar(f.c).dura)}</span></div><div class="pie">${esc(RM.CANCIONES[f.c].n)}<small>${RM.CANCIONES[f.c].completa ? 'Completa · ' : ''}${esc(LUGARES[f.l].n)} · ${LUGARES[f.l].d.toLocaleString('es-MX')} m</small></div></button>`).join('');
 R.onclick = (e) => { const p = e.target.closest('.pieza'); if (!p) return; const f = FIJAS[+p.dataset.i]; cambia(f.c, f.l, f.s, true); $('#creador').scrollIntoView({ behavior: 'smooth', block: 'start' }); };
 async function fotos() {
   document.body.appendChild(camara); await camEspera;
   const lz = document.createElement('canvas'); let id = 0;
   for (let i = 0; i < FIJAS.length; i++) {
     const f = FIJAS[i], o = receta(f.c, f.l, f.s), miId = ++id;
-    const c = await new Promise((si) => { const t = setTimeout(() => si(null), 20000); camOye = (d) => { if (d.id !== miId) return; if (d.t === 'cine-cuadro') { clearTimeout(t); si(d); } }; camara.contentWindow.postMessage({ t: 'cine', a: 'filma', id: miId, r: o.r, w: 360, h: 640, celdas: 9, seg: o.K.dura, fps: 20, solo: Math.round(o.K.dura * 0.47 * 20) }, '*'); });
+    const c = await new Promise((si) => { const t = setTimeout(() => si(null), 20000); camOye = (d) => { if (d.id !== miId) return; if (d.t === 'cine-cuadro') { clearTimeout(t); si(d); } }; camara.contentWindow.postMessage({ t: 'cine', a: 'filma', id: miId, r: o.r, w: 360, h: 640, celdas: 9, seg: o.K.dura, fps: 20, solo: Math.round(Math.min(o.K.dura * 0.47, 5.5) * 20) }, '*'); });
     if (!c) continue;
     lz.width = c.w; lz.height = c.h; lz.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(c.datos), c.w, c.h), 0, 0);
     const blob = await new Promise((si) => lz.toBlob(si, 'image/jpeg', 0.85)), v = R.children[i].querySelector('.vista');

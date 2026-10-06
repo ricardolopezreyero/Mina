@@ -1628,13 +1628,22 @@ A Ricardo le gustaron las imágenes de gemas y pidió dos cosas: otras seis, y q
 
 **Las seis últimas** se agregaron el mismo día en una segunda vuelta (commit #107), cada una con una sola toma fija. Para ellas el acompañamiento aprendió acordes menores, compás de tres y anacrusa (`ana`), y el camino puede ser de 3 celdas de ancho (`ancho`). En las canciones en menor las gemas se cuentan desde su relativo mayor; las notas fuera de la escala son diamantes. Agregar una canción es un renglón en `CANCIONES`.
 
+**Dos versiones completas** (commit #108; Ricardo pidió «toda la canción completa» de las dos que más le gustaron):
+
+| Versión completa | Dura | Celdas | Cómo está armada |
+|---|---|---|---|
+| En la gruta del rey de la montaña | 1:40 | 601 | Como la pieza de Grieg: el tema de 4 compases 18 veces, en tres ciclos (si, si, fa♯, fa♯, si, si); el segundo y el tercero una octava arriba, el tercero con la melodía doblada. Acelera de 138 a 270 y crece: empieza con puro bajo y va sumando bombo, palmadas y volumen. El bajo es de pedal (quintas sin tercera), como el original. **El final es un arreglo nuestro** (golpes, una escala que sube corriendo y el último si). La frase en fa♯ está escrita de memoria. Baja 300 m y junta $700 M. |
+| Jesús, alegría de los hombres | 57 s | 213 | El tema entero de ocho compases, tres veces: como empieza, una octava arriba y de regreso con la octava doblada, frenando al final. **No es el movimiento completo de Bach**: falta el coral, que no se puede escribir de memoria con seguridad. Cabe en un reel de 60 s. |
+
+Para las largas: `bpm` puede ser un mapa `[[tiempo, bpm], …]` (`relojDe` lo integra), `crece` y `doblaDesde`; `programa` va programando los sonidos tres segundos por delante en vez de todos de golpe; en el juego, `cineDirector` pasa a la cuenta lo ganado cuando la bodega se va a llenar (si no, a media canción las gemas ya no se cobrarían); el video baja a 5 Mbps. Medido en los dos videos grabados: imagen y sonido a 17 milésimas, igual al principio que al final (no se desfasa con el tiempo).
+
 **Cómo se sincroniza.** `RitmoMina.compilar(clave)` saca de la misma partitura dos cosas con los mismos tiempos: lo que suena y los `pasos` que sigue la maquinita (`{ t: segundo exacto, g: gema o −1 }`). Cada nota es una celda con su gema, según su grado en la escala: do rubí, re topacio, mi oro, fa esmeralda, sol aguamarina, la zafiro, si amatista. Lo que una nota dura de más, y los silencios, son celdas de tierra: el taladro no para. En el juego, `cineRitmo` limpia una caja de tierra y traza el camino en serpiente (4 celdas de ancho: tres de lado y una hacia abajo), y `cineDirector` perfora cada celda **en el tiempo que falta para su nota** (`yo.perf.dur = nota − ahora`). Por eso llega siempre a tiempo y no acumula desfase. Con la última gema cae la última nota: chispas, onda, lo ganado en grande y «Juega gratis · mina.capitaltorreon.com».
 
 **El reloj.** El juego corre en un marco del mismo sitio (`/?foto=cine`; ahí el juego usa un `localStorage` de mentiras, no se conecta y no guarda) y en cada cuadro pregunta `parent.__ritmoReloj()`: en qué segundo va la canción según el reloj del audio. Si se atrasa, se pone al corriente sin pintar; si el reloj regresa, la toma vuelve a empezar.
 
 **El video.** `MediaRecorder` sobre `lienzo.captureStream(30)` + la misma mezcla que se oye. MP4 (H.264 + AAC) de 720 × 1280 y unos 10 MB en Chrome y Safari; WebM en Firefox. Se graba en tiempo real: tarda lo que dura la canción.
 
-**Lo que se midió.** Llegada a cada celda contra su nota, dentro del juego: 8 milésimas como máximo (un paso de física). Las 332 notas de las nueve canciones, afinadas (se comprobó el tono de cada una en el audio ya armado). En el archivo grabado: la imagen queda a entre −15 y +6 milésimas del sonido en promedio; volumen pico 0.92, medio 0.15–0.17. Celular de 390 px: sin desbordes.
+**Lo que se midió.** Llegada a cada celda contra su nota, dentro del juego: 8 milésimas como máximo (un paso de física). Las 1,007 notas de las once piezas, afinadas (se comprobó el tono de cada una en el audio ya armado). En el archivo grabado: la imagen queda a entre −15 y +6 milésimas del sonido en promedio; volumen pico 0.92, medio 0.15–0.17. Celular de 390 px: sin desbordes.
 
 **Lo que no se pudo probar:** escucharlo (las pruebas son sin bocinas: se midió, no se oyó) y grabar en Safari de iPhone.
 

@@ -6142,6 +6142,7 @@ function cineDirector() {
   }
   const p = E.r.pasos[E.paso];
   if (!E.paso && E.tf < p.t - (E.r.d0 || 0.3) - 1e-6) return;     // la primera espera su entrada; las demás salen en cuanto llega la anterior
+  if (nCarga() >= bodega() - 1) { S.d += S.carga.reduce((v, n, i) => v + n * MIN[i].v, 0); S.carga.fill(0); }      // en las tomas largas la bodega se llenaría: lo ya ganado se pasa a la cuenta y sigue
   const [x, y] = E.camino[E.paso]; if (x !== Math.floor(yo.x)) yo.dir = x > yo.x ? 1 : -1;
   perforar(x, y); if (yo.perf) yo.perf.dur = Math.max(0.02, p.t - E.tf); E.paso++;
 }
