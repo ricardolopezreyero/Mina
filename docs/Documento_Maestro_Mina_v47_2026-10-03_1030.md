@@ -1606,6 +1606,19 @@ A Ricardo le gustaron las imágenes de gemas y pidió dos cosas: otras seis, y q
 - **Ligas:** Galería y Gameplay se enlazan entre sí en la barra; además están en la guía de estilos (menú, atajos, franja y pie) y en el juego (Menú → Arte y Ayuda).
 - **Qué falta:** el GIF pesa 10 MB porque la cámara se mueve y cambia toda la imagen en cada cuadro; el video (MP4) pesaría veinte veces menos y es lo que piden TikTok y Reels. El piloto casi siempre baja derecho: se le pueden enseñar más jugadas (volar, usar dinamita, entrar a un edificio).
 
+### 9.77 Menú: cambiar de mundo desde adentro y la pestaña «Mi maquinita» (7-oct-2026)
+
+**Qué pidió Ricardo:** estando ya en un mundo, poder cambiarse a otro o crear uno nuevo; y que la pestaña «Mundo» no tuviera tantas cosas («simplificar, no quitar: limpia lo que hay y mueve lo que no tenga que ir ahí»).
+
+**Cómo quedó «Mundo»** (ya cabe en una pantalla, sin bajar):
+1. **Mis mundos**, hasta arriba: en cuál estás, el botón **＋ Crear mundo nuevo** y tus otros mundos (los cuatro más recientes) con **Cambiar a este**; si hay más, «Ver todos mis mundos». Antes eso estaba en el último renglón de la pestaña. Cambiar o crear guarda primero el mundo en el que estás.
+2. **Jugar acompañado**: invitar, público y solicitudes, liga para mirar y, plegado, quién más está en el mundo (ahí se regala dinero).
+3. **Ajustes de este mundo**, en tres renglones que se abren y se cierran: **Dificultad** (los ocho ajustes), **Nombre y reglas** (seis) y **Guardar, volver a arrancar o desechar**. Cada renglón dice en chico cómo está (por ejemplo «Puerta abierta · regalos sí · pleitos sí»), para no tener que abrirlo.
+
+**Pestaña nueva «Mi maquinita»** (junto a «Mundo»; ocupa el lugar que dejaron los contratos): la tarjeta de la maquinita con una sola línea de datos, su nombre, los modelos, Pintarla, Mi garaje, y plegados «Todo lo que trae» (combustible, casco, bodega, equipo y objetos) y «Llevarla a otro equipo» (liga y código QR). Al final, **Mi cuenta** (la tarjeta de Google). No se quitó nada: todo lo que salió de «Mundo» está aquí.
+
+**Por dentro:** `plie` guarda qué renglones están abiertos (acción `pliega`); `irMundo` y `nuevoMundo` guardan y navegan; `/?mundos&crear` abre directo la pantalla de crear. Los textos que mandaban a «Menú → Mundo» por el nombre, la pintura o la cuenta ahora dicen «Menú → Mi maquinita».
+
 ### 9.76 Galería: modo limpio (5-oct-2026)
 
 **Qué pidió Ricardo:** un ojito para dejar la galería limpia —solo las imágenes y los GIF, sin botones de descargar ni letreros— y poder grabar la pantalla haciendo scroll.

@@ -2504,7 +2504,7 @@ function iniciarMundo(d, local) {
   { const f = new Date(), hoy = f.getDate() + '/' + (f.getMonth() + 1); if (primera && hoy === '11/7') tarjeta('⛏️ ¡Feliz Día del Minero!', 'Hoy, 11 de julio, México celebra a su gente de mina. Buen turno.', 'msj', 10000); if (primera && hoy === '4/12') tarjeta('🕯️ Día de Santa Bárbara', 'Hoy, 4 de diciembre, las minas festejan a su patrona.', 'msj', 10000); }
   if (primera) { tInicioMundo = Date.now(); cita = d.cita || null; } if (d.rel) rel = d.rel;
   if (!local && vengoDe >= 0 && vengoDe !== miI && !bienvenidaDe && otros.get(vengoDe)) { bienvenidaDe = 1; const q = otros.get(vengoDe); setTimeout(() => tarjeta('🚜 ' + q.n + ' te invitó a este mundo', (q.on ? 'Está jugando ahora mismo' + (q.y !== undefined ? ', a ' + num(Math.max(0, Math.round(q.y))) + ' m' : '') : 'Ahora no está, pero el mundo sigue tal cual') + '. Cada quien baja con su maquinita; se ven en el mapa (M) y se hablan por el chat (C).' + (cuenta ? '' : ` Si abres tu cuenta (Google), a ${q.n} le dan ${pesos(tienda.referidoPremio)} de saldo para pintar su maquinita; a ti, tu maquinita guardada en cualquier equipo.`), 'msj', 18000, false, cuenta ? null : { t: '💾 Abrir mi cuenta', f: () => irAlLogin() }), 1200); }
-  if (primera && !d.est) tarjeta('⛏️ Tu maquinita se llama ' + miNombre, (tactil ? 'Pon el dedo donde sea y arrástralo: abajo perfora, a los lados camina, arriba vuela. Dos empujones seguidos hacia arriba o hacia abajo y sigue sola. Las caídas no te lastiman. Con dos dedos acercas la vista.' : 'Usa las flechas para moverte.') + ' Primero: carga combustible en la Gasolinera (' + (tactil ? 'un toque' : '↓') + ' para entrar). El nombre se cambia en Menú → Mundo.', 'msj', 11000);
+  if (primera && !d.est) tarjeta('⛏️ Tu maquinita se llama ' + miNombre, (tactil ? 'Pon el dedo donde sea y arrástralo: abajo perfora, a los lados camina, arriba vuela. Dos empujones seguidos hacia arriba o hacia abajo y sigue sola. Las caídas no te lastiman. Con dos dedos acercas la vista.' : 'Usa las flechas para moverte.') + ' Primero: carga combustible en la Gasolinera (' + (tactil ? 'un toque' : '↓') + ' para entrar). El nombre se cambia en Menú → Mi maquinita.', 'msj', 11000);
   if (primera) { const n = leer('mina_nota', ''); if (n) { try { localStorage.removeItem('mina_nota'); } catch {} aviso(n); } }
 }
 
@@ -4265,7 +4265,7 @@ function invitarPintureria() {
   const n = op.tiendaInv | 0;
   if (n >= 3 || (S.seg || 0) < [1200, 10800, 36000][n] || Date.now() - (op.tiendaInvT || 0) < 7 * 86400000) return;
   op.tiendaInv = n + 1; op.tiendaInvT = Date.now(); escribir('mina_op', op);
-  tarjeta('🎨 Píntala de tus colores, gratis', 'En La Pinturería (la camioneta rosa, al final de la calle) o en Menú → Mundo: cuerpo, cabina y orugas del color que quieras, sin pagar nada. Lo demás es solo para que se vea más tú.', 'msj', 12000);
+  tarjeta('🎨 Píntala de tus colores, gratis', 'En La Pinturería (la camioneta rosa, al final de la calle) o en Menú → Mi maquinita: cuerpo, cabina y orugas del color que quieras, sin pagar nada. Lo demás es solo para que se vea más tú.', 'msj', 12000);
 }
 // La estela: una chispita por cuadro (de dos) detrás de quien vuela con estela.
 function estela(P, x, y, mueve) {
@@ -4826,6 +4826,7 @@ function pintarQR(lienzoQR, texto, lado = 8) {
 }
 
 /* ════════ Menús ════════ RLR */
+let plie = {};      // qué renglones plegables del menú están abiertos (Mundo y Mi maquinita)
 let mapaMenuT = 0, pestana = 0, pieza = 0, cuantos = 1, eleM = 0, ultVenta = 0, porCobrar = 0;      // porCobrar: lo vendido que todavía va «en camino» a la cartera
 function abrir(id) {
   if (!S || (soloVer && id !== 'top')) return;
@@ -5283,6 +5284,9 @@ const acciones = {
     return 'no';
   },
   mundos() { enviarEst(); guardarCopia(); location.href = '/?mundos'; },
+  irMundo(v) { if (!/^[2-9A-HJ-NP-Z]{8}$/.test(v) || v === mundoId) return 'no'; enviarEst(); guardarCopia(); location.href = '/' + v; },      // cambiar de mundo sin salir del juego: este se queda guardado
+  nuevoMundo() { enviarEst(); guardarCopia(); location.href = '/?mundos&crear'; },
+  pliega(v) { plie[v] = !plie[v]; },
   garaje() { pantallaGaraje('juego'); return 'no'; },
   reiniciar() { pantallaReinicio(); return 'no'; },
   tRango(v) { op.rango = +v; escribir('mina_op', op); tienda.nivelVista = nivelPorRango(); },
@@ -5370,9 +5374,11 @@ function sel(k, ops, quien = 'regla') {
   return `<select data-a="${quien}" data-k="${k}" ${soyCreador ? '' : 'disabled'}>${ops.map(([v, t]) => `<option value="${v}" ${cfg[k] == v ? 'selected' : ''}>${t}</option>`).join('')}</select>`;
 }
 function menuPrincipal() {
-  const P = ['Bodega', 'Colección', 'Mapa', '', 'Logros', 'Catálogo', 'Estadísticas', 'Opciones', 'Mundo', 'Ayuda', '🏆 Top 33', 'Manifiesto', '📸 Capturas', '💎 Arte'];      // la 3 eran los contratos
-  if (pestana === 3) pestana = 0;
-  let h = cab('<span class="hamb"></span>' + esc(cfg.nombre || 'Mina')) + `<div class="pest">${P.map((p, i) => (p ? `<button data-a="pest" data-v="${i}" class="${i === pestana ? 'on' : ''}">${p}</button>` : '')).join('')}</div><div class="cuerpo">`;
+  const P = ['Bodega', 'Colección', 'Mapa', 'Mi maquinita', 'Logros', 'Catálogo', 'Estadísticas', 'Opciones', 'Mundo', 'Ayuda', '🏆 Top 33', 'Manifiesto', '📸 Capturas', '💎 Arte'];
+  const ORDEN = [0, 1, 2, 4, 5, 6, 7, 8, 3, 9, 10, 11, 12, 13];      // Mi maquinita (la 3, donde antes iban los contratos) se enseña junto a Mundo
+  // un renglón que se abre y se cierra: lo que se usa poco no estorba, y no se quita
+  const pliegue = (k, ic, titulo, sub, cuerpo) => `<div class="fila"><div class="ic">${ic}</div><div class="t"><b>${titulo}</b><small>${sub}</small></div><button class="s" data-a="pliega" data-v="${k}" aria-expanded="${!!plie[k]}">${plie[k] ? 'Cerrar ▴' : 'Abrir ▾'}</button></div>${plie[k] ? `<div class="plc">${cuerpo}</div>` : ''}`;
+  let h = cab('<span class="hamb"></span>' + esc(cfg.nombre || 'Mina')) + `<div class="pest">${ORDEN.map((i) => `<button data-a="pest" data-v="${i}" class="${i === pestana ? 'on' : ''}">${P[i]}</button>`).join('')}</div><div class="cuerpo">`;
   if (pestana === 0) {
     h += `<p class="nota">📦 ${nCarga()} de ${bodega()} espacios · ${kgCarga()} kg de carga (tu motor levanta ${Math.round(hp() * 29.5 - 1980)} kg). Tirar piezas libera espacio y peso.</p>` +
       (nCarga() ? S.carga.map((n, i) => n ? `<div class="fila"><div class="t"><b style="color:${MIN[i].col}">${MIN[i].n} × ${n}</b><small>${fmt(MIN[i].v)} · ${MIN[i].kg} kg la pieza</small></div><button class="s" data-a="tirar" data-v="${i}">Tirar una</button></div>` : '').join('') : '<p class="nota">Bodega vacía.</p>') +
@@ -5386,8 +5392,21 @@ function menuPrincipal() {
   } else if (pestana === 2) {
     h += `<p class="nota">El mundo de la superficie a los 10,000 m. Solo se ve lo que ya descubrió el equipo: los túneles en claro, lo que alcanzó a ver la lámpara y los lugares encontrados; lo demás queda oscuro, sin descubrir. Tú eres el punto amarillo y cada maquinita, el de su color, en vivo. El mapa de un lado se abre con <b>M</b>.</p><canvas id="mapa" class="mapa"></canvas>`;
   } else if (pestana === 3) {
-    h += `<p class="nota">${S.con.tut < TUTORIAL.length ? 'Primeros pasos: cumple cada uno y llega el siguiente.' : 'Trabajos de la Compañía. Al cumplir uno se paga solo y llega otro.'}</p>` +
-      S.con.act.map((k) => `<div class="fila"><div class="t"><b>${esc(k.tx)}</b>${k.b > 1 ? `<small>Llevas ${k.pr | 0} de ${k.b}</small>` : ''}</div><div class="v">${fmt(k.pg)}</div></div>`).join('');
+    h += `<div class="maq"><canvas id="miMaq" width="160" height="160"></canvas><div>
+        <b>${esc(miNombre)}</b> · ${RANGOS[S.rango][1]}
+        <small>${fmt(S.d)} · récord ${num(S.rec)} m · ⏱ ${tiempoLargo(S.seg)} jugando</small></div></div>
+      <label class="op"><span>Nombre</span><input data-a="nombreMaq" maxlength="14" value="${esc(miNombre)}" autocomplete="off"></label>
+      <div class="maqs" id="modelos">${MODELOS.map((m, i) => `<button class="${i === miModelo ? 'on' : ''}" data-a="modeloMaq" data-v="${i}" title="Cambiar a este modelo"><canvas width="112" height="112"></canvas></button>`).join('')}</div>
+      <div class="fila"><div class="ic">🎨</div><div class="t"><b>Pintarla</b><small>La Pinturería: colores, calcomanías, luces, estela, claxon, mascota… Se juega completo gratis; esto es solo para que se vea como tú.</small></div><button data-a="menu" data-v="pin">Abrir</button></div>
+      <div class="fila"><div class="ic">🚜</div><div class="t"><b>Mi garaje${garaje.length > 1 ? ' · ' + garaje.length + ' maquinitas' : ''}</b><small>Cambiar de maquinita, crear otra o traer una de otro equipo. Todas entran a cualquier mundo.</small></div><button data-a="garaje">Abrir</button></div>` +
+      pliegue('trae', '🧰', 'Todo lo que trae', `${S.log.length} logros · ${num(S.st.viajes)} viajes · su equipo y sus objetos`,
+        `<p class="nota">Combustible ${S.fuel.toFixed(1)} / ${tanque()} L · casco ${Math.ceil(S.vida)} / ${vidaMax()} · bodega ${nCarga()} / ${bodega()}</p>
+        <p class="nota">${PZ.map((z, i) => z.n + ': <b>' + z.niv[S.eq[i]][0] + '</b>').join(' · ')}</p>
+        <p class="nota">Objetos: ${OBJ.map((o, i) => S.obj[i] ? CORTO[i] + ' ×' + S.obj[i] : '').filter(Boolean).join(' · ') || 'ninguno'}</p>`) +
+      pliegue('otro', '📱', 'Llevarla a otro equipo', 'Su liga y su código QR, para seguir en el teléfono o en otra computadora',
+        `<p class="nota"><b>Tu maquinita es tuya.</b> Entra contigo a cualquier mundo con todo lo que trae, y no se pierde aunque un mundo se borre. Para seguir con ella en otro equipo, entra allá con tu cuenta de Google, o abre su liga o su código QR. <b>No los compartas:</b> quien los abra maneja tu maquinita.</p>
+        <div class="fila"><div class="t"><small>Código: <code>${esc(miK)}</code></small></div><button class="s" data-a="menu" data-v="qrmaq">Ver su código QR</button><button data-a="ligaMaq">Copiar su liga</button></div>`) +
+      '<h4>Mi cuenta</h4>' + htmlCuenta();
   } else if (pestana === 4) {
     h += `<p class="nota">${S.log.length} de ${LOGROS.length} logros · Rango: <b>${RANGOS[S.rango][1]}</b></p><div class="rej">` +
       LOGROS.map((l) => { const ok = S.log.includes(l.id); return `<div class="${ok ? '' : 'no'}"><b>${ok ? '🏅 ' : ''}${ok && l.sec ? l.sec.split(':')[0] : l.n}</b><small>${ok && l.sec ? l.sec.split(': ')[1] : l.d}</small></div>`; }).join('') + '</div>';
@@ -5415,43 +5434,43 @@ function menuPrincipal() {
       <p class="nota">Tu pantalla refresca a <b>${rit.hz} Hz</b> y el juego está mostrando <b>${Math.round(Math.min(rit.fps, rit.hz))} cuadros por segundo</b>, con nitidez al ${Math.round(NITIDEZ[rit.niv] * 100)} %. Señal con el mundo: ${red.rtt ? Math.round(red.rtt) + ' ms' : 'midiendo…'}. El juego se ajusta solo: si tu equipo no alcanza el refresco de su pantalla, baja la nitidez antes que la fluidez.</p>
       <p class="nota">${rit.ult ? `En el último minuto de juego: <b>${rit.ult.lentos} de ${rit.ult.n.toLocaleString('es-MX')}</b> cuadros salieron lentos (${(rit.ult.lentos / Math.max(1, rit.ult.n) * 100).toFixed(2)} %) y el más lento tardó <b>${Math.round(rit.ult.peor)} ms</b> (lo ideal en tu pantalla: ${Math.round(1000 / rit.hz)} ms).` : 'Juega un minuto y aquí sale cuántos cuadros lentos hubo.'} El terreno está compuesto en ${bloques.size} bloques (${((bloques.size + bloquesLibres.length) * BL * BL * T * T * 4 / 1e6 + tiles.size * T * T * 4 / 1e6).toFixed(0)} MB de imágenes).</p>`;
   } else if (pestana === 8) {
-    const o3 = [[0, 'Apagado'], [1, 'Normal'], [2, 'Fuerte']];
-    h += htmlCuenta() + `<div class="fila"><div class="t"><b>Invita a tu gente · ${pesos(tienda.referidoPremio)} por cada referido</b><small>${mundoId ? ligaInvitacion() : 'Tu mundo se está creando…'}${tienda.mio.saldo ? ' · saldo: ' + pesos(tienda.mio.saldo) : ''}</small></div><button data-a="menu" data-v="inv">Invitar y ver mis referidos</button><button class="s" data-a="invitar">Copiar la liga</button></div>
-      <h4>Dificultad del mundo ${soyCreador ? '' : '<small style="color:var(--su)">· solo la cambia quien creó el mundo</small>'}</h4>
-      <label class="op"><span>Modo</span><select data-a="modo" ${soyCreador ? '' : 'disabled'}>${[['paseo', 'Paseo · nada mata'], ['clasico', 'Clásico'], ['rudo', 'Rudo'], ['medida', 'A la medida']].map(([v, t]) => `<option value="${v}" ${cfg.modo === v ? 'selected' : ''} ${v === 'medida' ? 'disabled' : ''}>${t}</option>`).join('')}</select></label>
-      <label class="op"><span>Quedarse sin combustible</span>${sel('comb', [[0, 'Reserva (no explota)'], [1, 'Explota']])}</label>
-      <label class="op"><span>Caídas</span>${sel('caida', o3)}</label>
-      <label class="op"><span>Lava</span>${sel('lava', o3)}</label>
-      <label class="op"><span>Gas</span>${sel('gas', o3)}</label>
-      <label class="op"><span>Ver el gas</span>${sel('verGas', [[1, 'Sí, completo'], [2, 'Se insinúa con burbujas'], [0, 'No']])}</label>
-      <label class="op"><span>Qué se pierde al explotar</span>${sel('pierde', [[0, 'Nada'], [1, 'La carga'], [2, 'La carga y la reparación'], [3, 'Carga, reparación y 10 % del dinero']])}</label>
-      <label class="op"><span>Rescates gratis</span>${sel('rescates', [[0, 'Ninguno'], [3, 'Los 3 primeros'], [-1, 'Sin límite']])}</label>
-      <h4>El mundo</h4>
-      <label class="op"><span>Nombre</span><input data-a="nombreMundo" maxlength="24" value="${esc(cfg.nombre)}" ${soyCreador ? '' : 'disabled'}></label>
-      <label class="op"><span>Cerrar la puerta (no entran maquinitas nuevas)</span>${sel('puerta', [[0, 'Abierta'], [1, 'Cerrada']])}</label>
-      <label class="op"><span>Quién puede remineralizar</span>${sel('reminTodos', [[1, 'Cualquiera'], [0, 'Solo quien creó el mundo']])}</label>
-      <label class="op"><span>Regalos de dinero</span>${sel('regalos', [[1, 'Sí'], [0, 'No']])}</label>
-      <label class="op"><span>Pleitos entre maquinitas (bajo tierra)</span>${sel('pleitos', [[1, 'Sí'], [0, 'No']])}</label>
-      <label class="op"><span>Dejar que nos vean jugar (observadores)</span><select data-a="regla" data-k="mirar" ${soyCreador ? '' : 'disabled'}><option value="1" ${cfg.mirar !== 0 ? 'selected' : ''}>Sí</option><option value="0" ${cfg.mirar === 0 ? 'selected' : ''}>No</option></select></label>
-      ${cfg.mirar !== 0 && miVer ? `<div class="fila"><div class="t"><b>Liga para mirar</b><small>Quien la abra te ve jugar en vivo. No puede entrar a jugar ni conocer la liga de este mundo.${mirones ? ' Ahora mismo: 👁 ' + mirones + ' mirando.' : ''}</small></div><button class="s" data-a="ligaVer">Copiar liga para mirar</button></div>` : ''}
-      <h4>Jugadores</h4><div class="fila"><div class="t"><b>Público y solicitudes</b><small>Quién mira, quién pide jugar${soyCreador ? ', y sacar a quien haga mala práctica' : ''}.</small></div><button data-a="menu" data-v="pub"><kbd>J</kbd>Abrir</button></div>` +
-      ([...otros.values()].length ? `<label class="op"><span>Cantidad para regalar (en la superficie)</span><input id="cuanto" type="number" min="1" value="${Math.min(1000, Math.floor(S.d))}" style="width:9em"></label>` +
-        [...otros.values()].map((o) => `<div class="fila"><div class="t"><b>${esc(o.n)}</b><small>${o.on ? 'Conectado' : 'Desconectado'} · récord ${num(o.rec)} m · ganado ${fmt(o.tot || 0)}</small></div>${o.on && cfg.regalos && yo.y < 0 ? `<button class="s" data-a="regalar" data-v="${o.i}">Regalar</button>` : ''}</div>`).join('') : '<p class="nota">Estás solo en este mundo. Copia la liga y mándala.</p>') +
-      `<h4>Mi maquinita</h4><div class="maq"><canvas id="miMaq" width="160" height="160"></canvas><div>
-        <b>${esc(miNombre)}</b> · ${RANGOS[S.rango][1]}
-        <small>${fmt(S.d)} · récord ${num(S.rec)} m · ${S.log.length} logros · ${num(S.st.viajes)} viajes · ⏱ ${tiempoLargo(S.seg)} jugando</small>
-        <small>Combustible ${S.fuel.toFixed(1)} / ${tanque()} L · casco ${Math.ceil(S.vida)} / ${vidaMax()} · bodega ${nCarga()} / ${bodega()}</small>
-        <small>${PZ.map((z, i) => z.n + ': <b style="display:inline">' + z.niv[S.eq[i]][0] + '</b>').join(' · ')}</small>
-        <small>Objetos: ${OBJ.map((o, i) => S.obj[i] ? CORTO[i] + ' ×' + S.obj[i] : '').filter(Boolean).join(' · ') || 'ninguno'}</small></div></div>
-      <label class="op"><span>Nombre de tu maquinita</span><input data-a="nombreMaq" maxlength="14" value="${esc(miNombre)}" autocomplete="off"></label>
-      <div class="maqs" id="modelos">${MODELOS.map((m, i) => `<button class="${i === miModelo ? 'on' : ''}" data-a="modeloMaq" data-v="${i}" title="Cambiar a este modelo"><canvas width="112" height="112"></canvas></button>`).join('')}</div>
-      <div class="fila"><div class="ic">🚜</div><div class="t"><b>Mi garaje${garaje.length > 1 ? ' · ' + garaje.length + ' maquinitas' : ''}</b><small>Cambiar de maquinita, crear otra o traer una de otro equipo. Cada una con lo suyo; todas entran a cualquier mundo.</small></div><button data-a="garaje">Abrir el garaje</button></div>
-      <p class="nota"><b>Tu maquinita es tuya.</b> Entra contigo a cualquier mundo con todo lo que trae, y no se pierde aunque un mundo se borre. Para seguir con ella en otra computadora o en el teléfono, entra allá con tu cuenta de Google, o abre su liga o su código QR. <b>No los compartas:</b> quien los abra maneja tu maquinita.</p>
-      <div class="fila"><div class="t"><small>Código: <code>${esc(miK)}</code></small></div><button class="s" data-a="menu" data-v="qrmaq">Ver su código QR</button><button data-a="ligaMaq">Copiar su liga</button></div>
-      <div class="fila"><div class="ic">🎨</div><div class="t"><b>Pintar mi maquinita</b><small>La Pinturería: colores, calcomanías, luces, estela, claxon, mascota… Se juega completo gratis; esto es solo para que se vea como tú.</small></div><button data-a="menu" data-v="pin">Abrir</button></div>
-      <div class="fila"><div class="t"><b>Guardar este mundo en un archivo</b><small>Semilla, reglas, todos los túneles y la colección. Desde «Mis mundos» puedes abrirlo cuando quieras como un mundo nuevo, idéntico.</small></div><button data-a="guardarArchivo">💾 Guardar archivo</button></div>
-      <div class="fila"><div class="ic">🌅</div><div class="t"><b>${(S.fl.edenF && S.fl.edenF[mundoId + '|' + remin]) || edenVivo ? 'Este mundo ya se terminó' : 'Volver a arrancar'}</b><small>Un mundo nuevo desde arriba: con tus mejoras o desde cero.</small></div><button data-a="reiniciar">🔄 Volver a arrancar</button></div>
-      <div class="fila"><div class="t"></div><button class="s" data-a="mundos">Mis mundos · crear o cargar otro</button><button class="mal" data-a="desechar">Desechar este mundo</button></div>`;
+    const o3 = [[0, 'Apagado'], [1, 'Normal'], [2, 'Fuerte']], MODO_N = { paseo: 'Paseo', clasico: 'Clásico', rudo: 'Rudo', medida: 'A la medida' };
+    const otrosM = mundos.filter((m) => m.id !== mundoId).sort((x, y) => (y.ult || 0) - (x.ult || 0)), vivos = [...otros.values()];
+    // 1) mis mundos: en cuál estoy, cambiarme a otro o crear uno nuevo
+    h += `<div class="fila"><div class="ic">📍</div><div class="t"><b>Estás en ${esc(cfg.nombre || 'este mundo')}</b><small>${soyCreador ? 'Lo creaste tú · ' : ''}se guarda solo: puedes salir y regresar cuando quieras</small></div><button data-a="nuevoMundo">＋ Crear mundo nuevo</button></div>` +
+      otrosM.slice(0, 4).map((m) => `<div class="fila"><div class="ic">🌍</div><div class="t"><b>${esc(m.nombre)}</b><small>${m.maq ? 'Tu maquinita: ' + esc(m.maq) + ' · ' : ''}${new Date(m.ult).toLocaleDateString('es-MX', { day: 'numeric', month: 'long' })}</small></div><button class="s" data-a="irMundo" data-v="${m.id}">Cambiar a este</button></div>`).join('') +
+      (otrosM.length > 4 ? `<div class="fila"><div class="t"><small>Tienes ${otrosM.length - 4} más.</small></div><button class="s" data-a="mundos">Ver todos mis mundos</button></div>` : otrosM.length ? '' : '<p class="nota">Este es tu único mundo. Si creas otro, este se queda guardado y regresas a él desde aquí.</p>') +
+      // 2) jugar acompañado
+      `<h4>Jugar acompañado</h4>
+      <div class="fila"><div class="t"><b>Invita a tu gente · ${pesos(tienda.referidoPremio)} por cada referido</b><small>${mundoId ? ligaInvitacion() : 'Tu mundo se está creando…'}${tienda.mio.saldo ? ' · saldo: ' + pesos(tienda.mio.saldo) : ''}</small></div><button data-a="menu" data-v="inv">Invitar</button><button class="s" data-a="invitar">Copiar la liga</button></div>
+      <div class="fila"><div class="t"><b>Público y solicitudes</b><small>Quién mira, quién pide jugar${soyCreador ? ', y sacar a quien haga mala práctica' : ''}.</small></div><button class="s" data-a="menu" data-v="pub"><kbd>J</kbd>Abrir</button></div>
+      ${cfg.mirar !== 0 && miVer ? `<div class="fila"><div class="t"><b>Liga para mirar</b><small>Quien la abra te ve jugar en vivo, sin poder entrar.${mirones ? ' Ahora mismo: 👁 ' + mirones + ' mirando.' : ''}</small></div><button class="s" data-a="ligaVer">Copiar</button></div>` : ''}` +
+      (vivos.length ? pliegue('gente', '⛏️', `${vivos.length === 1 ? 'Una maquinita más' : vivos.length + ' maquinitas más'} en este mundo`, `${vivos.filter((o) => o.on).length} conectada${vivos.filter((o) => o.on).length === 1 ? '' : 's'} ahora${cfg.regalos ? ' · aquí se les regala dinero' : ''}`,
+        `<label class="op"><span>Cantidad para regalar (en la superficie)</span><input id="cuanto" type="number" min="1" value="${Math.min(1000, Math.floor(S.d))}" style="width:9em"></label>` +
+        vivos.map((o) => `<div class="fila"><div class="t"><b>${esc(o.n)}</b><small>${o.on ? 'Conectado' : 'Desconectado'} · récord ${num(o.rec)} m · ganado ${fmt(o.tot || 0)}</small></div>${o.on && cfg.regalos && yo.y < 0 ? `<button class="s" data-a="regalar" data-v="${o.i}">Regalar</button>` : ''}</div>`).join('')) : '') +
+      // 3) los ajustes, plegados
+      '<h4>Ajustes de este mundo</h4>' +
+      pliegue('dif', '⚙️', 'Dificultad · ' + (MODO_N[cfg.modo] || 'Clásico'), soyCreador ? 'Combustible, caídas, lava, gas, qué se pierde y rescates' : 'Solo la cambia quien creó el mundo',
+        `<label class="op"><span>Modo</span><select data-a="modo" ${soyCreador ? '' : 'disabled'}>${[['paseo', 'Paseo · nada mata'], ['clasico', 'Clásico'], ['rudo', 'Rudo'], ['medida', 'A la medida']].map(([v, t]) => `<option value="${v}" ${cfg.modo === v ? 'selected' : ''} ${v === 'medida' ? 'disabled' : ''}>${t}</option>`).join('')}</select></label>
+        <label class="op"><span>Quedarse sin combustible</span>${sel('comb', [[0, 'Reserva (no explota)'], [1, 'Explota']])}</label>
+        <label class="op"><span>Caídas</span>${sel('caida', o3)}</label>
+        <label class="op"><span>Lava</span>${sel('lava', o3)}</label>
+        <label class="op"><span>Gas</span>${sel('gas', o3)}</label>
+        <label class="op"><span>Ver el gas</span>${sel('verGas', [[1, 'Sí, completo'], [2, 'Se insinúa con burbujas'], [0, 'No']])}</label>
+        <label class="op"><span>Qué se pierde al explotar</span>${sel('pierde', [[0, 'Nada'], [1, 'La carga'], [2, 'La carga y la reparación'], [3, 'Carga, reparación y 10 % del dinero']])}</label>
+        <label class="op"><span>Rescates gratis</span>${sel('rescates', [[0, 'Ninguno'], [3, 'Los 3 primeros'], [-1, 'Sin límite']])}</label>`) +
+      pliegue('reg', '📜', 'Nombre y reglas', `Puerta ${cfg.puerta ? 'cerrada' : 'abierta'} · regalos ${cfg.regalos ? 'sí' : 'no'} · pleitos ${cfg.pleitos ? 'sí' : 'no'} · que nos vean ${cfg.mirar !== 0 ? 'sí' : 'no'}`,
+        `<label class="op"><span>Nombre del mundo</span><input data-a="nombreMundo" maxlength="24" value="${esc(cfg.nombre)}" ${soyCreador ? '' : 'disabled'}></label>
+        <label class="op"><span>Cerrar la puerta (no entran maquinitas nuevas)</span>${sel('puerta', [[0, 'Abierta'], [1, 'Cerrada']])}</label>
+        <label class="op"><span>Quién puede remineralizar</span>${sel('reminTodos', [[1, 'Cualquiera'], [0, 'Solo quien creó el mundo']])}</label>
+        <label class="op"><span>Regalos de dinero</span>${sel('regalos', [[1, 'Sí'], [0, 'No']])}</label>
+        <label class="op"><span>Pleitos entre maquinitas (bajo tierra)</span>${sel('pleitos', [[1, 'Sí'], [0, 'No']])}</label>
+        <label class="op"><span>Dejar que nos vean jugar (observadores)</span><select data-a="regla" data-k="mirar" ${soyCreador ? '' : 'disabled'}><option value="1" ${cfg.mirar !== 0 ? 'selected' : ''}>Sí</option><option value="0" ${cfg.mirar === 0 ? 'selected' : ''}>No</option></select></label>`) +
+      pliegue('arch', '💾', 'Guardar, volver a arrancar o desechar', (S.fl.edenF && S.fl.edenF[mundoId + '|' + remin]) || edenVivo ? 'Este mundo ya se terminó' : 'El mundo en un archivo, empezar de arriba otra vez o borrarlo',
+        `<div class="fila"><div class="t"><b>Guardar este mundo en un archivo</b><small>Semilla, reglas, todos los túneles y la colección. Con «Crear mundo nuevo» lo abres cuando quieras como un mundo nuevo, idéntico.</small></div><button data-a="guardarArchivo">💾 Guardar archivo</button></div>
+        <div class="fila"><div class="ic">🌅</div><div class="t"><b>${(S.fl.edenF && S.fl.edenF[mundoId + '|' + remin]) || edenVivo ? 'Este mundo ya se terminó' : 'Volver a arrancar'}</b><small>Un mundo nuevo desde arriba: con tus mejoras o desde cero.</small></div><button data-a="reiniciar">🔄 Volver a arrancar</button></div>
+        <div class="fila"><div class="t"><b>Desechar este mundo</b><small>Lo quita de tu lista. Tu maquinita no se pierde.</small></div><button class="mal" data-a="desechar">Desechar</button></div>`) +
+      `<p class="nota">Tu maquinita, su nombre, su pintura y tu cuenta están en la pestaña <b>Mi maquinita</b>.</p>`;
   } else if (pestana === 10) {
     h += htmlTop();
   } else if (pestana === 11) {
@@ -5484,7 +5503,7 @@ function menuPrincipal() {
       <p><b>El fondo:</b> los últimos 240 m guardan algo detrás de la roca. Cada celda que se quita ahí deja ver un pedazo. Se descubre entre todos, y al final, de pie sobre el Corazón, se perfora hacia abajo.</p>
       <p><b>Diez kilómetros:</b> debajo de la Corteza siguen el Acuífero, las Cavernas, la Cristalera y la Zona de presión, con doce minerales nuevos y cuatro lugares por descubrir. Cada lugar que encuentres queda apuntado en <b>El Elevador</b> (el último edificio), que también te regresa al punto donde te recogió la grúa.</p>
       <p><b>Sin internet y como aplicación:</b> Mina se puede instalar (Menú → Opciones) y abre aunque no haya señal. Lo que caves y ganes sin internet se queda en tu equipo y se manda al mundo cuando la señal vuelve. En pantallas táctiles, arrastra el dedo para moverte y da un toque frente a un edificio para entrar.</p>
-      <p><b>Tu nombre y tus ligas:</b> la maquinita nace bautizada para que empieces a jugar sin llenar nada; el nombre y el modelo se cambian en Menú → Mundo. Hay dos ligas: la del mundo (invita a excavar) y la tuya (presume tu maquinita); cada una lleva su imagen al mandarla por WhatsApp.</p>
+      <p><b>Tu nombre y tus ligas:</b> la maquinita nace bautizada para que empieces a jugar sin llenar nada; el nombre y el modelo se cambian en Menú → Mi maquinita. Para cambiarte de mundo o crear otro: Menú → Mundo. Hay dos ligas: la del mundo (invita a excavar) y la tuya (presume tu maquinita); cada una lleva su imagen al mandarla por WhatsApp.</p>
       <p><b>Con puro teclado:</b> <b>C</b> abre el chat; escribes y <b>Enter</b> manda; <b>Enter</b> con la caja vacía, o <b>Esc</b>, lo cierra; <b>Tab</b> te regresa al juego dejándolo a la vista y las flechas ↑ ↓ recorren la conversación. En los edificios, <b>Enter</b> hace lo principal (cargar, vender, comprar la siguiente mejora, reparar), <b>← →</b> cambian de pestaña o de cantidad, <b>↑ ↓</b> recorren y en El Almacén la letra de cada objeto lo compra. <b>I</b> abre Invitar.</p>
       <p><b>Ver lo que ve otro (metiches):</b> toca el nombre de cualquier maquinita que esté jugando, arriba a la derecha, y tu cámara se va con ella: ves exactamente lo que ve, en vivo. Tu maquinita se queda quieta donde estaba. Cualquier tecla o toque te regresa. A quien miras le avisamos, y puede hacer lo mismo contigo.</p>
       <p><b>El chat:</b> pulsa <b>C</b> (o el botón 💬 Chat) y escribe. Se abre de izquierda a derecha con todo lo que se ha dicho en este mundo, que queda guardado. Con el chat cerrado, lo que alguien escriba sale abajo un momento. Enter con la caja vacía te regresa al juego con el chat a la vista; Esc lo cierra. Cada maquinita tiene su color, de los cien que hay, según el orden en que entró. El texto se puede seleccionar y copiar, y las ligas se abren con un clic.</p>
@@ -5796,7 +5815,7 @@ async function alEntrarGoogle(resp) {
     deCuenta(d, Date.now());
     if (!d.k || d.k === k || (d.maqs || []).includes(k)) {
       son.logro(); tarjeta('💾 Listo: todo queda guardado en tu cuenta', (d.email || '') + ' · tu maquinita y tus mundos, en cualquier equipo.', 'msj', 7000);
-      if (menu === 'menu') pintarMenu(); else if (menu === 'inicio' && location.search.includes('mundos')) pantallaMundos();
+      if (menu === 'menu') pintarMenu(); else if (menu === 'inicio' && location.search.includes('mundos') && !enCrear) pantallaMundos();
       return;
     }
     const aqui = d.aqui;      // la cuenta ya tenía su maquinita y este equipo traía otra
@@ -5841,7 +5860,7 @@ async function salirCuenta() {
   if (window.LoginCT) return LoginCT.salir();      // sale también de la casa, para que no vuelva a entrar sola
   location.href = '/';
 }
-// La tarjeta de la cuenta: en Menú → Mundo y en «Mis mundos».
+// La tarjeta de la cuenta: en Menú → Mi maquinita y en «Mis mundos».
 function htmlCuenta() {
   if (cuenta) return `<div class="fila cuentaG"><div class="ic">${cuenta.foto ? `<img src="${esc(cuenta.foto)}" alt="" referrerpolicy="no-referrer">` : '✅'}</div><div class="t"><b>Guardado en tu cuenta</b><small>${esc(cuenta.email || '')} · tu maquinita y tus mundos quedan a salvo y se recuperan en cualquier equipo. Toca tu foto para ir a los demás juegos y proyectos, o salir.</small></div><div data-login-ct></div></div>`;
   return `<div class="fila cuentaG"><div class="ic">💾</div><div class="t"><b>Guarda tu maquinita y tus mundos</b><small>Con tu correo de Google: los recuperas en cualquier equipo y retomas donde te quedaste. Jugar sigue sin pedir nada.</small></div><div class="gBoton" id="gBoton"></div></div>`;
@@ -5871,7 +5890,7 @@ async function abrirCopia(id) {
   iniciarMundo({ mapa: blob ? tr : null, blob, sinMineral: c.sinMineral, seed: c.seed, remin: c.remin | 0, cfg: c.cfg, i: c.i | 0, creador: c.creador ? 1 : 0, dug: c.dug, col: Array.isArray(c.col) ? c.col : [], est: e.e, jug: [{ i: c.i | 0, n: c.n, m: c.m | 0 }], cuenta: 0 }, true);
   return true;
 }
-// Nadie llena nada para empezar: la maquinita nace con nombre de mina y modelo al azar. Se cambian en Menú → Mundo.
+// Nadie llena nada para empezar: la maquinita nace con nombre de mina y modelo al azar. Se cambian en Menú → Mi maquinita.
 const NOMBRES = ['La Chispa', 'El Topo', 'La Güera', 'Don Pepita', 'La Barretera', 'El Tepetate', 'La Valenciana', 'El Gambusino', 'La Veta', 'El Malacate', 'La Bonanza', 'El Socavón', 'La Pepita', 'El Barretero', 'La Rayadora', 'El Tiro', 'La Carbonera', 'El Jale'];
 function nombreNuevo() { const r = crypto.getRandomValues(new Uint8Array(2)); return { n: NOMBRES[r[0] % NOMBRES.length], m: r[1] % MODELOS.length }; }
 // El inicio para quien llega por primera vez: el mundo nace aquí mismo y ya se puede jugar. En cuanto mueve algo,
@@ -5900,7 +5919,9 @@ function pantallaFinal(t, x) {
   inicio(`<header><h2>${t}</h2></header><div class="cuerpo"><p>${x}</p><p><button id="bIr">Ir a mis mundos</button></p></div>`);
   $('#bIr').onclick = () => (location.href = '/?mundos');
 }
+let enCrear = false;      // en la pantalla de crear mundo: que no la tape la lista cuando llega la cuenta
 function pantallaMundos() {
+  enCrear = false;
   const nota = leer('mina_nota', ''); if (nota) { try { localStorage.removeItem('mina_nota'); } catch {} }
   inicio(`<header><h2>⛏️ Mina · Mis mundos</h2></header><div class="cuerpo">` + (nota ? `<p class="nota" style="color:var(--ac)"><b>${esc(nota)}</b></p>` : '') + htmlCuenta() +
     (maqLocal && maqLocal.n ? `<div class="fila"><div class="ic">🚜</div><div class="t"><b>Tu maquinita: ${esc(maqLocal.n)}</b><small>Entra contigo al mundo que elijas, con todo lo que trae.${garaje.length > 1 ? ' Tienes ' + garaje.length + ' en el garaje.' : ''}</small></div><button class="s" id="bGaraje">🚜 Mi garaje</button></div>` : '') +
@@ -5915,10 +5936,11 @@ function pantallaMundos() {
 }
 // Crear un mundo: de cero, o a partir de un archivo que alguien guardó. Siempre nace un mundo nuevo con su propia liga; nada se reemplaza.
 function pantallaCrear() {
+  enCrear = true;
   inicio(`<header><h2>⛏️ Crear mundo nuevo</h2>${mundos.length ? '<button class="s" id="bVolver">Volver</button>' : ''}</header><div class="cuerpo">
     <div class="fila"><div class="ic">🌱</div><div class="t"><b>De cero</b><small>Semilla nueva, tierra sin tocar. Nadie ha cavado aquí.</small></div><button id="bCero">Crear</button></div>
     <div class="fila"><div class="ic">📂</div><div class="t"><b>Cargar un archivo de mundo</b><small>El archivo que tú u otra persona guardó desde Menú → Mundo → Guardar archivo. Nace un mundo nuevo, con su propia liga, idéntico al guardado: sus túneles, sus reglas y su colección.</small></div><button id="bAbrir">Elegir archivo</button><input id="fArchivo" type="file" accept=".json,application/json" hidden></div>
-    <p class="nota">Cargar un archivo nunca reemplaza un mundo que ya existe: siempre crea otro. Tu maquinita no va en el archivo: es tuya y entra contigo al mundo que abras. Para pasarla a otro equipo, usa su liga o su código QR (Menú → Mundo → Mi maquinita).</p></div>`);
+    <p class="nota">Cargar un archivo nunca reemplaza un mundo que ya existe: siempre crea otro. Tu maquinita no va en el archivo: es tuya y entra contigo al mundo que abras. Para pasarla a otro equipo, usa su liga o su código QR (Menú → Mi maquinita).</p></div>`);
   if ($('#bVolver')) $('#bVolver').onclick = pantallaMundos;
   $('#bCero').onclick = () => crearMundo();
   $('#bAbrir').onclick = () => $('#fArchivo').click();
@@ -5977,7 +5999,7 @@ setInterval(() => {                       // lo poco que corre aunque el juego e
   if (peleas.size) { for (const [i, p] of peleas) if (tiempo - p.h > 6) peleas.delete(i); pintarPleito(); if (soloVer) pintarVer(); }
   if (miradoPor.size && latido % 2 === 0) mandarMiPanel(); if (sigo >= 0) pintarSigo();
   pendientesTienda(); if (latido % 5 === 0) invitarPintureria(); if (latido % 7 === 0) diaDeCumple(); if (latido % 11 === 0) invitarGente();
-  if (!cuenta && S && listo && !soloVer && S.seg > 600 && !leer('mina_invitoG', 0)) { escribir('mina_invitoG', 1); tarjeta('💾 ¿Guardamos tu maquinita?', 'Con tu correo de Google la recuperas en cualquier equipo, con todos tus mundos. Cuando quieras: Menú → Mundo.', 'msj', 9000); }
+  if (!cuenta && S && listo && !soloVer && S.seg > 600 && !leer('mina_invitoG', 0)) { escribir('mina_invitoG', 1); tarjeta('💾 ¿Guardamos tu maquinita?', 'Con tu correo de Google la recuperas en cualquier equipo, con todos tus mundos. Cuando quieras: Menú → Mi maquinita.', 'msj', 9000); }
   if (latido % 4 === 0) ocio(guardarCopia);
   if (!document.hidden && listo && Date.now() - tablaM.pedido > (topAbierta() ? 4000 : 60000) && (topAbierta() || (!soloVer && conectado && (!tablaM.t || S.tot >= tablaM.corte)))) pedirTop();
   if (latido % 9 === 0 && !document.hidden) subirFotos(!!menu);
@@ -6010,7 +6032,7 @@ aplicarOp(); sonidoUI();
   }
   else if (r) entrar(r[1].toUpperCase());
   else if (location.pathname.length > 1) pantallaFinal('Esta liga está incompleta', 'La liga de un mundo termina en 8 letras y números. Pídela otra vez o entra a tus mundos.');
-  else if (location.search.includes('mundos')) pantallaMundos();
+  else if (location.search.includes('mundos')) (/[?&]crear\b/.test(location.search) ? pantallaCrear : pantallaMundos)();
   else if (mundos.length) { deCasa = true; history.replaceState(null, '', '/' + mundos[0].id); entrar(mundos[0].id); }      // el inicio es jugar: abre el último mundo
   else mundoAlInstante();
 }
