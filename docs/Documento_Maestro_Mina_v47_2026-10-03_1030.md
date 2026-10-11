@@ -1606,6 +1606,19 @@ A Ricardo le gustaron las imágenes de gemas y pidió dos cosas: otras seis, y q
 - **Ligas:** Galería y Gameplay se enlazan entre sí en la barra; además están en la guía de estilos (menú, atajos, franja y pie) y en el juego (Menú → Arte y Ayuda).
 - **Qué falta:** el GIF pesa 10 MB porque la cámara se mueve y cambia toda la imagen en cada cuadro; el video (MP4) pesaría veinte veces menos y es lo que piden TikTok y Reels. El piloto casi siempre baja derecho: se le pueden enseñar más jugadas (volar, usar dinamita, entrar a un edificio).
 
+### 9.78 Tablero interno en /gtm: palomitas firmadas (11-oct-2026)
+
+**Qué pidió Ricardo:** que en las tareas del plan de salida al mercado, al marcar una como hecha, quede quién la marcó (su correo) y la hora, «para que se vuelva adictivo»; y que solo correos de `@ingenieriadigital.mx` o `@superleads.mx` puedan palomear, y que ellos mismos puedan mover las palomitas porque es algo administrativo. También, revisar el orden de las tareas ahora que hay metas de usuarios e ingreso.
+
+**Cómo quedó:**
+- **La puerta** ([mina.capitaltorreon.com/gtm](https://mina.capitaltorreon.com/gtm), `publico/gtm.html`): no trae nada adentro. Pone el botón del login de la casa y, con el pase, pide la página a `GET /api/gtm/pagina`. Sin pase: 401. Con un correo de otro dominio: 403 y «ese correo no es del equipo».
+- **El contenido no está en el repositorio** (que es público). El documento y las fichas de personas se suben a un cajón privado de R2 (`mina-interno`, llaves `gtm/pagina.html` y `gtm/candidatos.json`). El servidor los entrega solo a correos de los dos dominios; a quien no administra (`ADMINES` en `src/gtm.js`) le quita, en el servidor, todo lo que va entre `<!--RESERVADO-->` y `<!--/RESERVADO-->`, y las fichas de personas no le llegan nunca.
+- **La libreta** (objeto `Gtm`, SQLite): `marcas` (estado, correo, nombre y hora de cada tarea), `bitacora` (cada movimiento, no se borra), `puntos` (lo real y la meta de cada punto de control, con quién lo anotó) y el seguimiento de las fichas. El correo sale del pase verificado con la llave pública del login (`verificarPase(pase, host)`), no de lo que diga el navegador.
+- **En la página:** cada tarea hecha enseña «✓ Hecha por correo · día y hora» (hora de Torreón); al palomear hay confeti, dos notas y un aviso con cuántas llevas hoy; arriba, un marcador con las hechas, la racha del equipo (días seguidos con al menos una palomita), cuántas hoy y esta semana, cuántas firmó cada quien y las últimas. Cada 25 segundos se asoma al servidor y avisa si alguien más palomeó.
+- **El orden:** las 86 tareas se reacomodaron en el orden en que hay que hacerlas y se renumeraron; ese número ya es fijo (con él se guardan las palomitas).
+
+**Probado:** en local con tres identidades de prueba (administra, equipo, correo de fuera) y en producción con una sesión real de la casa (solo lectura). **Decisiones mías:** quién administra son las dos cuentas de Ricardo; cualquiera de los dos dominios puede ver el plan y poner o quitar palomitas; lo reservado (candidatos y el trato del CEO) solo lo ve quien administra.
+
 ### 9.77 Menú: cambiar de mundo desde adentro y la pestaña «Mi maquinita» (7-oct-2026)
 
 **Qué pidió Ricardo:** estando ya en un mundo, poder cambiarse a otro o crear uno nuevo; y que la pestaña «Mundo» no tuviera tantas cosas («simplificar, no quitar: limpia lo que hay y mueve lo que no tenga que ir ahí»).

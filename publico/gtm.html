@@ -1,0 +1,59 @@
+<!doctype html>
+<!-- Mina · tablero interno · Ricardo López Reyero (RLR). Esta página es solo la puerta: no trae nada adentro. -->
+<html lang="es" data-k="eye" data-rev="181218">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Mina · interno</title>
+<meta name="author" content="Ricardo López Reyero"><meta name="build" content="eye"><meta name="rev" content="181218">
+<link rel="icon" type="image/png" sizes="32x32" href="/iconos/icono-32.png">
+<style>
+/* RLR · la puerta del tablero interno */
+body{margin:0;min-height:100vh;display:grid;place-items:center;background:#1b120e;color:#f6ebdf;font:17px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{width:min(92vw,440px);text-align:center;padding:24px 0}
+img{width:min(230px,60vw);height:auto;filter:drop-shadow(0 8px 10px #0006)}
+h1{font-size:1.5em;margin:.7em 0 .2em}
+p{margin:.5em 0;color:#d4bfaa}
+p b{color:#fff}
+.caja{background:#2a1c16;border:1px solid #5a3d2c;border-radius:16px;padding:18px;margin-top:16px}
+button{font:inherit;font-weight:800;cursor:pointer;border:1px solid #5a3d2c;background:#120b08;color:#f6ebdf;border-radius:10px;padding:.5em .9em;margin-top:8px}
+#estado{font-weight:700;color:#ffd23f;min-height:1.6em}
+</style>
+</head>
+<body>
+<main>
+  <img src="/guia-estilos/kit/03-logotipo/mina-palabra.png" alt="MINA" width="230" height="70">
+  <h1>Tablero interno</h1>
+  <p>Solo para el equipo. Entra con tu correo de <b>@superleads.mx</b> o <b>@ingenieriadigital.mx</b>.</p>
+  <div class="caja">
+    <div data-login-ct="ancho" data-texto="Entrar con Google"></div>
+    <p id="estado" role="status" aria-live="polite"></p>
+    <button id="otra" hidden>Entrar con otra cuenta</button>
+  </div>
+</main>
+<script src="https://login.capitaltorreon.com/login.js"></script>
+<script>
+/* RLR · Ricardo López Reyero — la puerta: con el pase del login de la casa pide la página; el servidor decide si se la da. */
+'use strict';
+{      // todo va dentro de un bloque: la página que llega se escribe sobre esta misma ventana y trae sus propios nombres
+const _RLR = 'Ricardo López Reyero', _k = 'EYE', _rev = 181218;
+const di = (t) => { document.getElementById('estado').textContent = t; }, otra = document.getElementById('otra');
+otra.onclick = () => window.LoginCT && LoginCT.entrar(true);
+async function entra() {
+  const pase = window.LoginCT ? LoginCT.pase() : ''; if (!pase) return di('');
+  di('Abriendo…');
+  try {
+    const r = await fetch('/api/gtm/pagina', { headers: { Authorization: 'Bearer ' + pase } });
+    if (r.status === 403) { const j = await r.json().catch(() => ({})); otra.hidden = false; return di(j.error === 'ajeno' ? `${j.correo} no es un correo del equipo.` : 'No tienes acceso.'); }
+    if (r.status === 401) { otra.hidden = false; return di('Tu sesión venció. Vuelve a entrar.'); }
+    if (!r.ok) return di('Todavía no hay nada que enseñar aquí.');
+    const html = await r.text(); document.open(); document.write(html); document.close();
+  } catch (e) { di('No se pudo abrir. Revisa tu conexión.'); }
+}
+if (window.LoginCT) LoginCT.al(entra);
+entra();
+}
+</script>
+</body>
+</html>

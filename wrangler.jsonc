@@ -12,9 +12,9 @@
     "run_worker_first": true
   },
   "durable_objects": {
-    "bindings": [{ "name": "MUNDO", "class_name": "Mundo" }, { "name": "MAQUINA", "class_name": "Maquina" }, { "name": "TABLA", "class_name": "Tabla" }, { "name": "CUENTA", "class_name": "Cuenta" }]
+    "bindings": [{ "name": "MUNDO", "class_name": "Mundo" }, { "name": "MAQUINA", "class_name": "Maquina" }, { "name": "TABLA", "class_name": "Tabla" }, { "name": "CUENTA", "class_name": "Cuenta" }, { "name": "GTM", "class_name": "Gtm" }]
   },
-  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Mundo"] }, { "tag": "v2", "new_sqlite_classes": ["Maquina"] }, { "tag": "v3", "new_sqlite_classes": ["Tabla"] }, { "tag": "v4", "new_sqlite_classes": ["Cuenta"] }],
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Mundo"] }, { "tag": "v2", "new_sqlite_classes": ["Maquina"] }, { "tag": "v3", "new_sqlite_classes": ["Tabla"] }, { "tag": "v4", "new_sqlite_classes": ["Cuenta"] }, { "tag": "v5", "new_sqlite_classes": ["Gtm"] }],
   // El botón de Google: el identificador de la app en Google Cloud (sus orígenes autorizados deben incluir https://mina.capitaltorreon.com).
   // La única llave de pago: STRIPE_SECRET_KEY vive UNA vez en la bóveda de la cuenta (Secrets Store «superleads») y aquí solo se liga.
   "secrets_store_secrets": [
@@ -25,7 +25,9 @@
   // A las 3:33 pm, hora de Torreón (21:33 UTC; Coahuila no cambia de horario): el correo de cumpleaños a quien cumple hoy.
   "triggers": { "crons": ["33 21 * * *"] },
   // Las capturas de pantalla de la gente: una por archivo, en R2, por cuenta y por mundo (cap/<cuenta>/<mundo>/<id>.jpg)
-  "r2_buckets": [{ "binding": "CAPTURAS", "bucket_name": "mina-capturas" }],
+  "r2_buckets": [{ "binding": "CAPTURAS", "bucket_name": "mina-capturas" },
+    // El cajón privado: los documentos internos (el plan de salida al mercado y las fichas de personas). No están en el repositorio.
+    { "binding": "INTERNO", "bucket_name": "mina-interno" }],
   "vars": { "GOOGLE_CLIENT_ID": "977641517971-23ouv33lu4s8ejrm6m4mgvuqcvpa9ucf.apps.googleusercontent.com" },
   "routes": [{ "pattern": "mina.capitaltorreon.com", "custom_domain": true }],
   "workers_dev": false,

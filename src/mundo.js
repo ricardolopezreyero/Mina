@@ -7,6 +7,8 @@
 // Un mundo solo se borra si quien lo creó pide borrarlo.
 // ─────────────────────────────────────────────────────────────────────────────
 import { DurableObject } from "cloudflare:workers";
+import { gtmApi } from "./gtm.js";                  // el tablero interno de salida al mercado (/gtm): solo correos de la casa
+export { Gtm } from "./gtm.js";
 import { verificarPase } from "./verificar.js";      // el pase del Login de CapitalTorreon (login.capitaltorreon.com)
 import { NIVELES, MECENAS_MIN, FONDO_PRECIO, TOPE_MES, precioDe, filtrarPinta, motorConfort, OFERTA_DIAS, EXPERIMENTOS, momento, precioFinal, cumpleOk, cumpleCerca, horaTorreon, GRATITUD_MIN, GRATITUD_HORA, REFERIDO_PREMIO, GRATIS, CALCAS, calcaHoy, PIEZAS, pieza } from "./tienda.js";      // La Pinturería: precios y pintura
 // Un secreto de la bóveda (Secrets Store) llega como objeto con .get(); en local, como texto de .dev.vars. Sin él: "".
@@ -1464,6 +1466,8 @@ export default {
     if (u.pathname.startsWith("/api/cuenta/")) return cuentaApi(u, request, env);
     // La Pinturería: catálogo, pagar y confirmar
     if (u.pathname === "/api/tienda" || u.pathname.startsWith("/api/tienda/")) return tiendaApi(u, request, env);
+    // El tablero interno (/gtm): la página y sus palomitas, solo para correos de la casa
+    if (u.pathname === "/api/gtm" || u.pathname.startsWith("/api/gtm/")) return gtmApi(u, request, env);
     // Las capturas de pantalla: subir, listar, borrar; y la imagen misma
     if (u.pathname === "/api/capturas" || u.pathname.startsWith("/api/capturas/")) return capturasApi(u, request, env);
     const cap = u.pathname.match(/^\/capturas\/([0-9A-Za-z]{1,40})\/([2-9A-HJ-NP-Z]{8})\/([0-9a-f]{16})\.jpg$/);
