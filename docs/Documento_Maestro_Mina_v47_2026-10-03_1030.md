@@ -1606,6 +1606,18 @@ A Ricardo le gustaron las imágenes de gemas y pidió dos cosas: otras seis, y q
 - **Ligas:** Galería y Gameplay se enlazan entre sí en la barra; además están en la guía de estilos (menú, atajos, franja y pie) y en el juego (Menú → Arte y Ayuda).
 - **Qué falta:** el GIF pesa 10 MB porque la cámara se mueve y cambia toda la imagen en cada cuadro; el video (MP4) pesaría veinte veces menos y es lo que piden TikTok y Reels. El piloto casi siempre baja derecho: se le pueden enseñar más jugadas (volar, usar dinamita, entrar a un edificio).
 
+### 9.79 /gtm: la pestaña Proyecciones, a 18 años (11-oct-2026)
+
+**Qué pidió Ricardo:** traer a Mina las proyecciones que quedaron bien en Cupido Algorítmico: los siguientes 18 años de ingresos contra gastos, para que quien se entreviste para dirigir vea el tamaño de la ambición (abrir países uno tras otro y sumar juegos a la saga).
+
+**Cómo quedó:** quinta pestaña del tablero interno ([mina.capitaltorreon.com/gtm#proyecciones](https://mina.capitaltorreon.com/gtm#proyecciones)), visible para todo el equipo de los dos dominios. Trae un resumen, tres escenarios (prudente, el plan, ambicioso), cuatro cifras, la gráfica de lo que entra contra lo que se gasta, la tabla año por año de 2026 a 2044 con qué se abre cada año, la tabla de gastos y los supuestos a la vista. Desde «El CEO» hay un botón que lleva ahí.
+
+**Cómo se hace la cuenta:** hasta el último punto de control usa las metas de Tareas tal como estén (si alguien mueve una con el lápiz, se vuelve a calcular); después, un techo de usuarios al que se llega creciendo cada año menos que el anterior, sin dejar de crecer. Cada mes se gasta lo mayor entre un piso por año y una parte del ingreso por renglón. Mes por mes, entregado por año, en pesos de hoy.
+
+**Dónde vive:** como todo el contenido de `/gtm`, fuera de este repositorio (es público): el modelo, su dibujo, sus estilos y sus 12 pruebas están en la carpeta privada del plan y `construir.py` los mete a la página que se sube al cajón `mina-interno`. En este repositorio no cambió código: la puerta (`publico/gtm.html`) y la API (`src/gtm.js`) son las mismas.
+
+**Decisiones mías, avisadas a Ricardo:** los pisos de gasto, las partes del ingreso, el techo de cada escenario, la ruta de países después de 2028 y los años en que llegarían los juegos nuevos de la saga son propuesta, no dato.
+
 ### 9.78 Tablero interno en /gtm: palomitas firmadas (11-oct-2026)
 
 **Qué pidió Ricardo:** que en las tareas del plan de salida al mercado, al marcar una como hecha, quede quién la marcó (su correo) y la hora, «para que se vuelva adictivo»; y que solo correos de `@ingenieriadigital.mx` o `@superleads.mx` puedan palomear, y que ellos mismos puedan mover las palomitas porque es algo administrativo. También, revisar el orden de las tareas ahora que hay metas de usuarios e ingreso.
