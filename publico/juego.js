@@ -4261,7 +4261,7 @@ function htmlTienda() {
   const L = tienda.niveles, mio = nivelMio();
   let h = cab('🎨 La Pinturería') + '<div class="cuerpo tienda">';
   h += '<div class="promesa"><b>Mina se juega completo gratis, y pintar tu maquinita de tus colores también.</b> Nada de aquí hace falta para bajar, ganar ni terminar. Lo demás es solo para que se vea como tú. Pruébate lo que quieras: probar no cuesta.</div>';
-  if (enApp) h += '<p class="nota">En la app, los colores gratis y lo que pagues con tu saldo funcionan igual. Las compras con tarjeta llegan muy pronto.</p>';
+  if (enApp) h += window.getDigitalGoodsService ? '<p class="nota">En la app cobra Google Play, a precio de lista: se sube un nivel a la vez y el apoyo va en montos fijos. Tu saldo de referidos sigue valiendo.</p>' : '<p class="nota">En la app, los colores gratis y lo que pagues con tu saldo funcionan igual. Las compras con tarjeta llegan muy pronto.</p>';
   if (tienda.error) h += `<p class="nota">${tienda.error}</p>`;
   if (!tienda.cargada) return h + '<p class="nota">Abriendo la tienda…</p></div>';
   if (tienda.mio.saldo > 0) h += `<div class="promesa" style="border-color:#ffd23f88">💛 <b>Tienes ${pesos(tienda.mio.saldo)} de saldo</b> por tus referidos. Paga niveles con él, para ti o de regalo.${!cuenta ? ' Entra con tu cuenta para usarlo.' : ''} <a href="#" data-a="menu" data-v="inv">Ver mis referidos</a>.</div>`;
@@ -4365,7 +4365,7 @@ function irAlLogin(extra) { if (!grupoEdad() || menor13()) return pedirPermiso('
 async function pagar(o) {
   if (!grupoEdad() || menor13()) return pedirPermiso('compra', () => pagar(o));
   const todoSaldo = o.saldo && ((o.tipo === 'nivel' && (tienda.mio.saldo || 0) >= precioVista(o.nivel)) || (o.tipo === 'pieza' && (tienda.mio.saldo || 0) >= precioPieza(o.pieza)));
-  if (enApp && !todoSaldo) { tarjeta('La Pinturería', 'En la app, las compras con tarjeta llegan muy pronto. Mientras, pruébate todo y usa tu saldo: funciona igual.', 'msj', 9000); return; }      // regla de pagos de Google Play
+  if (enApp && !todoSaldo) { if (window.getDigitalGoodsService) return pagarPlay(o); tarjeta('La Pinturería', 'En la app, las compras con tarjeta llegan muy pronto. Mientras, pruébate todo y usa tu saldo: funciona igual.', 'msj', 9000); return; }      // regla de pagos de Google Play: adentro de la app cobra Google
   if (o.tipo === 'nivel' && !todoSaldo && !$('#tMayor')?.checked) { aviso('Marca primero que eres mayor de edad o tienes permiso de quien paga.'); return; }
   if (!cuenta) return irAlLogin('?tienda=' + tienda.nivelVista);
   if (o.tipo !== 'nivel' && !todoSaldo && !confirm(`Vas a ${o.motivo === 'gratitud' ? 'dar las gracias con' : 'pagar'} ${pesos(o.tipo === 'mecenas' ? o.monto : o.tipo === 'pieza' ? precioPieza(o.pieza) : o.cantidad * tienda.fondoPrecio)} con tarjeta, en la página de Stripe. ¿Eres mayor de edad o tienes permiso de quien paga?`)) return;
@@ -4379,6 +4379,44 @@ async function pagar(o) {
     tarjeta('La Pinturería', msj, 'msj', 9000);
     if (d.error === 'cuenta') { cuenta = null; try { localStorage.removeItem('mina_cuenta'); } catch {} pintarMenu(); }
   } catch { tarjeta('La Pinturería', 'Se fue la conexión. Inténtalo otra vez.', 'msj', 6000); }
+}
+// ── Dentro de la app de Android, cobra Google Play (Digital Goods API + Payment Request). Google cobra precios fijos, así que
+//    ahí se sube un nivel a la vez (el siguiente al que se tiene) y el apoyo va en montos fijos. Al pagar, Google da un token;
+//    el servidor lo verifica con Google y entrega; luego se «consume» para que se pueda volver a comprar (por ejemplo, de regalo).
+const PLAY_MECENAS = [99, 199, 499, 999];
+function skuPlay(o) {
+  if (o.tipo === 'nivel') { const base = o.paraI >= 0 ? Math.max(GRATIS, (otros.get(o.paraI) || {}).nv | 0) : nivelMio(); return { sku: 'nivel_' + (base + 1), nivel: base + 1, cambia: o.nivel !== base + 1 }; }
+  if (o.tipo === 'pieza') return { sku: 'pieza_' + o.pieza.replace(':', '_') };
+  if (o.tipo === 'mecenas') { const m = PLAY_MECENAS.find((x) => x >= (o.monto | 0)) || PLAY_MECENAS[PLAY_MECENAS.length - 1]; return { sku: 'mecenas_' + m, monto: m, cambia: m !== (o.monto | 0) }; }
+  return null;
+}
+async function pagarPlay(o) {
+  if (!cuenta) return irAlLogin('?tienda=' + tienda.nivelVista);
+  if (!tienda.cargada) { try { await cargarTienda(); } catch {} }
+  const q = skuPlay(o); if (!q) return;
+  if (q.cambia && o.tipo === 'nivel' && !confirm(`En la app se sube un nivel a la vez: ahora toca el nivel ${q.nivel}${tienda.niveles ? ' «' + tienda.niveles[q.nivel - 1].nombre + '»' : ''}. ¿Seguimos?`)) return;
+  if (q.cambia && o.tipo === 'mecenas' && !confirm(`En la app el apoyo va en montos fijos: el más cercano es ${pesos(q.monto)}. ¿Seguimos?`)) return;
+  if (listo && !soloVer) { enviarEst(); guardarCopia(); }
+  let token = '', pr = null;
+  try {
+    const dgs = await getDigitalGoodsService('https://play.google.com/billing');
+    const det = await dgs.getDetails([q.sku]); if (!det.length) { tarjeta('La Pinturería', 'Ese producto todavía no está en la tienda de Google. Inténtalo más tarde.', 'msj', 8000); return; }
+    pr = new PaymentRequest([{ supportedMethods: 'https://play.google.com/billing', data: { sku: q.sku } }], { total: { label: det[0].title, amount: det[0].price } });
+    const resp = await pr.show(); token = resp.details && resp.details.purchaseToken || '';
+    const r = await fetch('/api/tienda/play', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ses: cuenta.ses, k: miK, sku: q.sku, token, mundo: mundoId, ...(o.paraI >= 0 ? { paraI: o.paraI } : {}), ...(o.motivo ? { motivo: o.motivo } : {}) }) }), d = await r.json();
+    if (!d.ok) { await resp.complete('fail'); tarjeta('La Pinturería', d.error === 'pronto' ? 'Las compras en la app se abren muy pronto; no se cobró nada.' : d.error === 'cuenta' ? 'Tu sesión venció: vuelve a entrar con Google.' : 'No pude confirmar la compra. Si Google te cobró, escríbenos a contacto@ingenieriadigital.mx con tu recibo y lo arreglamos.', 'msj', 12000); return; }
+    try { await dgs.consume(token); } catch {}
+    await resp.complete('success');
+    tienda.mio = d.mio; miMe = d.mio.mecenas > 0 ? 1 : 0; son.logro();
+    if (d.tipo === 'nivel' && !d.regalo) { tienda.nivelVista = d.nivel; tienda.prueba = null; tarjeta('🎨 ¡Listo! El nivel ' + d.nivel + ' es tuyo', 'Gracias. Deja tu maquinita como tú quieras.', 'msj', 10000); }
+    else if (d.tipo === 'nivel') tarjeta('🎁 Regalo entregado', 'El nivel ' + d.nivel + ' ya es de esa maquinita.', 'msj', 10000);
+    else if (d.tipo === 'pieza') { const [tipo, i] = d.pieza.split(':'); usarPieza(tipo, +i); tarjeta('🔊 ¡Es tuya!', 'Ya está sonando. La cambias cuando quieras en La Pinturería.', 'msj', 10000); }
+    else tarjeta(d.motivo === 'gratitud' ? '🎂 Gracias a ti' : '✦ Gracias, mecenas', 'Con esto Mina sigue existiendo. Ya tienes tu ✦ junto al nombre.', 'msj', 10000);
+    if (menu === 'pin') pintarMenu();
+  } catch (e) {
+    if (e && e.name === 'AbortError') return;                  // cerró la hoja de pago de Google: no pasó nada
+    tarjeta('La Pinturería', 'No se pudo abrir el pago de Google. Inténtalo otra vez.', 'msj', 8000);
+  }
 }
 // Al volver de pagar: el mundo le pregunta a Stripe y, si se pagó, entrega. Una sola vez por sesión de pago.
 async function confirmarCompra(sid) {

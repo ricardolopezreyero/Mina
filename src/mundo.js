@@ -10,7 +10,8 @@ import { DurableObject } from "cloudflare:workers";
 import { gtmApi } from "./gtm.js";                  // el tablero interno de salida al mercado (/gtm): solo correos de la casa
 export { Gtm } from "./gtm.js";
 import { verificarPase } from "./verificar.js";      // el pase del Login de CapitalTorreon (login.capitaltorreon.com)
-import { filtrar } from "./filtro.js";                // tapa las palabras ofensivas del chat y de los nombres
+import { filtrar } from "./filtro.js";
+import { productoPlay, verificarCompra } from "./play.js";      // el cobro dentro de la app de Android (Google Play Billing)                // tapa las palabras ofensivas del chat y de los nombres
 import { moderacionApi, avisarModeracion } from "./moderacion.js";      // los reportes del chat y el panel /moderacion
 import { NIVELES, MECENAS_MIN, FONDO_PRECIO, TOPE_MES, precioDe, filtrarPinta, motorConfort, OFERTA_DIAS, EXPERIMENTOS, momento, precioFinal, cumpleOk, cumpleCerca, horaTorreon, GRATITUD_MIN, GRATITUD_HORA, REFERIDO_PREMIO, GRATIS, CALCAS, calcaHoy, PIEZAS, pieza } from "./tienda.js";      // La Pinturería: precios y pintura
 // Un secreto de la bóveda (Secrets Store) llega como objeto con .get(); en local, como texto de .dev.vars. Sin él: "".
@@ -293,6 +294,7 @@ export class Maquina extends DurableObject {
     if (cambio) await this.ctx.storage.put("m", m);
     return { nivel: o.nivel, desc: o.desc, hasta: o.h + OFERTA_DIAS * 86400000, n: o.n, de: EXPERIMENTOS, s: o.s, cumple: t.cumple || "", seg: (m.est || {}).seg || 0, gratitud: t.gratitud || 0 };
   }
+  async tieneCompra(sid) { const m = await this.ctx.storage.get("m"); return !!(m && m.tienda && m.tienda.compras.some((c) => c.sid === sid)); }
   // Entregar una compra: una sola vez por sesión de pago; el nivel solo sube.
   async entregar({ sid, tipo, nivel, monto, de, desc, motivo, saldo, pieza: pz }) {
     const m = await this.ctx.storage.get("m"); if (!m) return null;
@@ -565,6 +567,7 @@ async function cuentaApi(u, request, env) {
 // RLR · La Pinturería (ver docs/ADN_Monetizacion_Mina): se juega completo gratis; aquí solo se vende cómo se ve la maquinita.
 // Precios iguales para todos y en un solo lugar (src/tienda.js). Subir de nivel cuesta la diferencia. Tope de cuidado por
 // maquinita cada 30 días. Para comprar hay que entrar con la cuenta, y la maquinita debe ser la de esa cuenta.
+const yaEntregado = async (m, sid) => { try { return await m.tieneCompra(sid); } catch { return false; } };      // una compra de Play que ya se entregó (la app reintenta)
 async function tiendaApi(u, request, env) {
   if (request.method !== "POST") return json({ error: "no" }, 404);
   let d; try { d = await request.json(); } catch { return json({ error: "datos" }, 400); }
@@ -660,6 +663,39 @@ async function tiendaApi(u, request, env) {
     let r, sesion; try { r = await fetch("https://api.stripe.com/v1/checkout/sessions", { method: "POST", headers: { authorization: "Bearer " + stripe, "content-type": "application/x-www-form-urlencoded" }, body: f }); sesion = await r.json(); } catch { return json({ error: "stripe" }, 502); }
     if (!r.ok || !sesion.url) return json({ error: "stripe" }, 502);
     return json({ url: sesion.url, monto: cobra, saldo: usaSaldo });
+  }
+  // Dentro de la app de Android: Google ya cobró y entregó un token; se verifica con Google y se entrega (una vez por pedido).
+  // En la computadora de pruebas (MINA_PRUEBA) sirve un token «prueba:<orden>» sin preguntarle a Google.
+  if (u.pathname === "/api/tienda/play") {
+    const ses = String(d.ses || ""), punto = ses.lastIndexOf("."), sub = ses.slice(0, punto), tk = ses.slice(punto + 1);
+    if (punto < 1 || !/^[0-9A-Za-z]{1,40}$/.test(sub) || !/^[0-9a-f]{48}$/.test(tk)) return json({ error: "cuenta" }, 401);
+    const c = await env.CUENTA.get(env.CUENTA.idFromName("g:" + sub)).sesion(tk);
+    if (!c || !llaveOk(d.k) || !esMia(c, d.k)) return json({ error: "cuenta" }, 401);
+    const pr = productoPlay(String(d.sku || "")), token = String(d.token || "");
+    if (!pr || !/^[A-Za-z0-9._:-]{8,400}$/.test(token)) return json({ error: "datos" }, 400);
+    const local = env.MINA_PRUEBA === "1" && ["::1", "127.0.0.1"].includes(request.headers.get("CF-Connecting-IP")) && token.startsWith("prueba:");
+    const cuentaServicio = local ? "" : await secreto(env.PLAY_CUENTA_SERVICIO);
+    if (!local && !cuentaServicio) return json({ error: "pronto" }, 503);
+    let v;
+    if (local) v = { orden: token, pagada: true, consumida: false };
+    else { try { v = await verificarCompra(cuentaServicio, pr.id, token); } catch { return json({ error: "google" }, 502); } }
+    if (!v || !v.pagada) return json({ error: "nopagado" }, 402);
+    const sid = "play-" + (v.orden || token.slice(0, 60));
+    let para = d.k, nivel = 0, e = null;
+    if (pr.tipo === "nivel") {
+      if (Number.isInteger(d.paraI) && d.paraI >= 0 && /^[2-9A-HJ-NP-Z]{8}$/.test(String(d.mundo || ""))) { const k2 = await env.MUNDO.get(env.MUNDO.idFromName(d.mundo)).llaveDe(d.paraI); if (llaveOk(k2) && k2 !== d.k) para = k2; else return json({ error: "regalo" }, 400); }
+      const actual = Math.max(GRATIS, (await maq(para).tienda()).nivel);      // Google ya cobró el nivel que sea: se entrega, salvo que ya lo tuviera
+      nivel = pr.nivel; if (nivel <= actual && !(await yaEntregado(maq(para), sid))) return json({ error: "ya", actual }, 400);
+      e = await maq(para).entregar({ sid, tipo: "nivel", nivel, monto: pr.precio, de: sub + "|play" });
+    } else if (pr.tipo === "pieza") {
+      if (((await maq(d.k).tienda()).piezas || []).includes(pr.pieza) && !(await yaEntregado(maq(d.k), sid))) return json({ error: "ya" }, 400);
+      e = await maq(d.k).entregar({ sid, tipo: "pieza", pieza: pr.pieza, monto: pr.precio, de: sub + "|play" });
+    } else if (pr.tipo === "mecenas") {
+      let motivo = ""; if (d.motivo === "gratitud") { const o = await maq(d.k).oferta({ desc0: 0 }, false); if (o && cumpleCerca(o.cumple, horaTorreon()) !== 9) motivo = "gratitud"; }
+      e = await maq(d.k).entregar({ sid, tipo: "mecenas", monto: pr.monto, de: sub + "|play", motivo });
+    }
+    if (!e) return json({ error: "maquina" }, 404);
+    return json({ ok: 1, tipo: pr.tipo, nivel, pieza: pr.pieza || "", regalo: para !== d.k ? 1 : 0, monto: pr.precio, motivo: pr.tipo === "mecenas" && d.motivo === "gratitud" ? "gratitud" : "", mio: await maq(d.k).tienda(), nuevo: e.nuevo });
   }
   // Al volver de pagar: se le pregunta a Stripe si de verdad se pagó, y entonces se entrega (una sola vez por sesión).
   if (u.pathname === "/api/tienda/confirmar") {
