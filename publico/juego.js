@@ -1107,7 +1107,9 @@ function sacarTarjeta() {
   if (!colaTarjetas.length || visiblesTarjeta().length >= 2) return;
   const espera = 900 - (performance.now() - tarjetaT);
   if (espera > 0) { clearTimeout(tarjetaTimer); tarjetaTimer = setTimeout(sacarTarjeta, espera); return; }
-  const it = colaTarjetas.shift(); tarjetaT = performance.now(); $('#tarjeta').appendChild(it.d);
+  const it = colaTarjetas.shift(); tarjetaT = performance.now();
+  if (movil) { const iz = $('#izq'); if (iz) $('#tarjeta').style.top = Math.round(iz.getBoundingClientRect().bottom + 8) + 'px'; }      // en el celular, siempre debajo del tablero, aunque el letrero del lugar ocupe dos renglones
+  $('#tarjeta').appendChild(it.d);
   setTimeout(() => quitarTarjeta(it.d), colaTarjetas.length ? Math.min(it.ms, 3500) : it.ms);      // con fila, cada una se queda menos
   if (colaTarjetas.length) sacarTarjeta();
 }
