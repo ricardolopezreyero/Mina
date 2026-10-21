@@ -49,5 +49,5 @@ details{background:var(--caja);border:1px solid var(--borde);border-radius:12px;
 details summary{cursor:pointer;font-weight:800}
 details[open] summary{margin-bottom:.4em}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
-@media(max-width:560px){body{font-size:calc(16px*var(--f))}.barra nav a{padding:.3em .5em}}
+@media(max-width:560px){body{font-size:calc(16px*var(--f))}.barra nav{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}.barra nav::-webkit-scrollbar{display:none}.barra nav a{padding:.3em .5em}}
 @media print{.barra,.tam{display:none}body{background:#fff;color:#000}a{color:#000}header.top{background:none;border:0}header.top h1,header.top p{color:#000;-webkit-text-stroke:0;text-shadow:none}.corto,.nota,.ficha,details{background:#fff;color:#000;border-color:#999}}

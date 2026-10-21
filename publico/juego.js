@@ -8,6 +8,10 @@
 if (window.__noEsElJuego) throw new Error('Esta dirección es de la guía de estilos: se está recargando.');
 const _RLR = 'Ricardo López Reyero';
 const _k = 'EYE', _rev = 181218; // RLR · sello de autoría
+// La app de Android (Google Play) abre mina.capitaltorreon.com/?app=android dentro de Chrome. Ahí, por la regla de pagos de
+// Google Play, nada se cobra con tarjeta en la página de Stripe ni se manda a pagar fuera: los colores y lo que se paga con
+// saldo funcionan igual, y las compras con tarjeta esperan a Google Play Billing. Se recuerda solo en esa ventana de la app.
+const enApp = (() => { try { if (/[?&]app=android\b/.test(location.search) || document.referrer.startsWith('android-app://')) sessionStorage.setItem('mina_app', 'android'); return sessionStorage.getItem('mina_app') === 'android'; } catch { return false; } })();
 
 /* ── Constantes del mundo (deben coincidir con src/mundo.js) ── */
 const CINE = /[?&]foto=cine/.test(location.search);      // el juego filmándose solo para /gameplay y /ritmo: no se conecta, no guarda y no toca la cuenta de nadie
@@ -2359,7 +2363,7 @@ function recibir(d) {
     case 'fin': if (d.piedras) edenPiedras = d.piedras; if (!S || d.r !== remin) return; if (!(S.fl.edenF && S.fl.edenF[mundoId + '|' + remin]) && !ceremonia) finDelMundo(d.i, d); else if (sinMineral !== remin) vaciarMinerales(); return;
     case 'chat': if (d.id && typeof d.x === 'string') agregarChat(d.i === -1 ? { ...d, nota: d.x } : d); return;
     case 'chatMas': return chatViejos(d.l);
-    case 'chatNo': return d.sil !== undefined ? tarjeta('Tu chat está en pausa', 'Por un reporte, el equipo de Mina pausó tu chat' + (d.sil ? ' hasta el ' + new Date(d.sil).toLocaleDateString('es-MX', { day: 'numeric', month: 'long' }) : '') + '. Puedes seguir jugando. Si crees que es un error, escríbenos a contacto@ingenieriadigital.mx.', 'msj', 9000) : aviso('Vas muy rápido: espera un momento para escribir otra vez.');
+    case 'chatNo': if (d.reglas) { reglasOk = false; try { localStorage.removeItem('mina_reglas'); } catch {} return pedirPermiso('chat'); } return d.sil !== undefined ? tarjeta('Tu chat está en pausa', 'Por un reporte, el equipo de Mina pausó tu chat' + (d.sil ? ' hasta el ' + new Date(d.sil).toLocaleDateString('es-MX', { day: 'numeric', month: 'long' }) : '') + '. Puedes seguir jugando. Si crees que es un error, escríbenos a contacto@ingenieriadigital.mx.', 'msj', 9000) : aviso('Vas muy rápido: espera un momento para escribir otra vez.');
     case 'chatQuita': return quitarDelChat(d);
     case 'reporteOk': return reporteRecibido(d);
     case 'cuentaBorrada': if (borrando) return; detener(); try { for (const k of Object.keys(localStorage)) if (k.startsWith('mina_') && k !== 'mina_op') localStorage.removeItem(k); } catch {} return pantallaFinal('Tu cuenta se borró', 'Se borró desde otro equipo o desde mina.capitaltorreon.com/borrar-cuenta. Este equipo empieza de cero.');
@@ -3843,12 +3847,14 @@ const chatAlFondo = () => { const L = $('#chatLista'); L.scrollTop = L.scrollHei
 function pintarChatBoton() { poner($('#bChat'), '<kbd>C</kbd>💬<span> Chat</span>' + (chat.sinLeer ? `<i>${chat.sinLeer > 99 ? '99+' : chat.sinLeer}</i>` : '')); const v = $('#verChat'); if (v) poner(v, '<kbd>C</kbd>💬' + (chat.sinLeer ? `<i>${chat.sinLeer}</i>` : '')); }
 // Un mensaje (o una nota chica: quién entró, quién descubrió qué) se agrega al final.
 function agregarChat(m) {
+  if (menor13() || op.sinChat) return;                       // el chat es para mayores de 13 (y se puede apagar): ni se pinta ni suena
   const ant = chat.l[chat.l.length - 1], abajo = chatAbajo(), mio = !m.nota && !soloVer && m.i === miI;
   chat.l.push(m); $('#chatMsgs').appendChild(nodoChat(m, ant));
   if (!m.nota && m.i >= 0 && bloqueada(m.i)) return;      // bloqueada: ni aviso, ni sonido, ni cuenta de no leídos
   const vacio = $('#chatVacio'); if (vacio) vacio.remove();
   if (m.nota) { if (abajo) chatAlFondo(); return; }
   if (chat.abierto) { if (abajo || mio) chatAlFondo(); else { chat.nuevos++; const b = $('#chatNuevos'); b.textContent = '↓ ' + chat.nuevos + (chat.nuevos === 1 ? ' mensaje nuevo' : ' mensajes nuevos'); b.style.display = 'block'; } }
+  else if (!grupoEdad()) { if (!mio) { chat.sinLeer++; pintarChatBoton(); } }      // sin saber la edad, el chat no se asoma: solo se cuenta lo no leído
   else {
     // con el chat cerrado, el mensaje sale abajo un momento, como en las partidas de antes
     const v = $('#chatVivo'), d = document.createElement('div');
@@ -3860,7 +3866,7 @@ function agregarChat(m) {
 function notaChat(x) { if (listo) agregarChat({ nota: x, h: Date.now() }); }
 // Al entrar (o al reconectar) llega lo último que se dijo; lo que ya se tenía no se repite.
 function ponerChat(l) {
-  if (!Array.isArray(l)) return;
+  if (!Array.isArray(l) || menor13()) return;
   const ult = chat.l.reduce((a, m) => (m.id > a ? m.id : a), 0);
   if (!ult) {
     chat.l = []; const c = $('#chatMsgs'); c.innerHTML = l.length ? '' : `<p id="chatVacio" class="cn">Aquí todavía no ha escrito nadie. Di hola 👋</p>`;
@@ -3886,6 +3892,8 @@ function pintarChatQuien() {
 }
 function abrirChat(foco) {
   if (!listo) return;
+  if (op.sinChat) return tarjeta('💬 El chat está apagado en este equipo', 'Se enciende en Menú → Mi maquinita → Privacidad y datos.', 'msj', 6000);
+  if (menor13() || !grupoEdad() || (!soloVer && !reglasOk)) return pedirPermiso(soloVer ? 'leer' : 'chat', () => abrirChat(foco));      // la edad (y para escribir, las reglas) antes del chat
   chat.abierto = true; chat.sinLeer = 0; document.body.classList.add('chat'); $('#chatVivo').innerHTML = ''; pintarChatBoton(); pintarChatQuien(); chatAlFondo();
   if (foco && !soloVer) { for (const k in teclas) teclas[k] = false; $('#chatIn').focus(); }
 }
@@ -3899,7 +3907,8 @@ $('#chatForm').addEventListener('submit', (e) => {
   if (soloVer) return;
   if (!conectado) { el.placeholder = 'Sin señal: en cuanto vuelva podrás escribir'; return; }
   if (Date.now() - (chat.tEnv || 0) < 450) return;      // un respiro entre mensajes: el texto se queda en la caja
-  chat.tEnv = Date.now(); audio(); enviar({ t: 'chat', x }); el.value = '';
+  if (!reglasOk) return pedirPermiso('chat');
+  chat.tEnv = Date.now(); audio(); enviar({ t: 'chat', x, r: REGLAS_V }); el.value = '';
 });
 $('#chatIn').addEventListener('keydown', (e) => {
   if (e.key === 'Escape') cerrarChat();                                             // Esc cierra, aunque haya algo escrito (se queda para después)
@@ -3984,7 +3993,8 @@ $('#chatMsgs').addEventListener('click', (e) => {
 // Privacidad y datos (Menú → Mi maquinita): las ligas de siempre, a quién bloqueaste y borrar todo.
 function htmlPrivacidad(pliegue) {
   const liga = (u, t) => `<a href="${u}" target="_blank" rel="noopener">${t}</a>`;
-  return `<div class="fila"><div class="ic">🔒</div><div class="t"><b>Tus datos son tuyos</b><small>${liga('/privacidad', 'Aviso de privacidad')} · ${liga('/terminos', 'Términos y reglas de la comunidad')} · ${liga('/soporte', 'Ayuda y contacto')}</small></div></div>` +
+  return `<div class="fila"><div class="ic">💬</div><div class="t"><b>Chat ${op.sinChat ? 'apagado' : 'encendido'} en este equipo</b><small>${op.sinChat ? 'No se ve ni suena nada del chat. Se puede seguir jugando con todos.' : 'Apágalo si no quieres ver lo que escriben los demás (útil para mamás, papás y escuelas).'}</small></div><button class="s" data-a="sinChat">${op.sinChat ? 'Encender' : 'Apagar'}</button></div>` +
+    `<div class="fila"><div class="ic">🔒</div><div class="t"><b>Tus datos son tuyos</b><small>${liga('/privacidad', 'Aviso de privacidad')} · ${liga('/terminos', 'Términos y reglas de la comunidad')} · ${liga('/seguridad-infantil', 'Seguridad infantil')} · ${liga('/soporte', 'Ayuda y contacto')}</small></div></div>` +
     pliegue('bloq', '🚫', 'Personas bloqueadas', bloq.length ? bloq.length + (bloq.length === 1 ? ' bloqueada' : ' bloqueadas') + ' en este equipo' : 'Nadie. Para bloquear, toca un mensaje en el chat',
       bloq.length ? bloq.map((b) => `<div class="fila"><div class="ic">🚫</div><div class="t"><b>${esc(b.n || 'Maquinita')}</b><small>Desde ${new Date(b.t).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })}</small></div><button class="s" data-a="desbloq" data-v="${esc(b.h)}">Desbloquear</button></div>`).join('') : '<p class="nota">Cuando bloqueas a alguien dejas de ver sus mensajes en todos los mundos. Toca cualquier mensaje del chat para bloquear o reportar.</p>') +
     pliegue('borrar', '🗑️', cuenta ? 'Borrar mi cuenta' : 'Borrar mis datos', cuenta ? 'Tu cuenta y todo lo de Mina, para siempre' : 'Tus maquinitas y lo que guarda este equipo, para siempre',
@@ -3992,6 +4002,46 @@ function htmlPrivacidad(pliegue) {
       <p class="nota">Si nada más quieres dejar de usar este equipo, mejor ${cuenta ? '«Cerrar sesión»' : 'no hagas nada'}: no se borra nada. ¿Dudas? <a href="mailto:contacto@ingenieriadigital.mx">contacto@ingenieriadigital.mx</a></p>
       <label class="op"><span>Para confirmar escribe BORRAR</span><input id="borrarTx" maxlength="10" autocomplete="off" autocapitalize="characters" placeholder="BORRAR"></label>
       <div class="fila"><div class="t"></div><button class="mal" id="borrarB" data-a="borrarTodo">🗑️ Borrar para siempre</button></div>`);
+}
+// ── Antes de escribir: la edad (una vez) y las reglas de la comunidad. Lo piden las tiendas: quien crea contenido acepta
+// las reglas antes, y lo que es para mayores de 13 (chat, cuenta, compras) se pregunta con una pantalla de edad neutra
+// (sin sugerir la respuesta). En el equipo solo queda si es menor de 13, de 13 a 17 o mayor de 18; el año no se guarda.
+const REGLAS_V = 1;
+let edad = leer('mina_edad', null), reglasOk = (leer('mina_reglas', 0) | 0) >= REGLAS_V;
+const grupoEdad = () => (edad && edad.g) || '';
+const menor13 = () => grupoEdad() === 'menor13';
+function pedirPermiso(para, luego) {
+  if (menor13()) return avisoMenor(para);
+  const faltaEdad = !grupoEdad(), faltaReglas = (para === 'chat' || para === 'nombre') && !reglasOk;
+  if (!faltaEdad && !faltaReglas) return luego && luego();
+  cerrarReporte(); const r = document.createElement('div'); r.id = 'repCaja'; r.setAttribute('role', 'dialog'); r.setAttribute('aria-modal', 'true');
+  const y = new Date().getFullYear(), meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+  r.innerHTML = `<form><h3>${faltaReglas ? '💬 Antes de escribir' : 'Antes de seguir'}</h3>
+    ${faltaEdad ? `<p class="nota">¿Cuándo naciste? Se pregunta una sola vez, para cuidar a quienes juegan. En este equipo solo queda tu rango de edad, no la fecha.</p>
+      <div class="bt"><select name="mes" required aria-label="Mes"><option value="">Mes</option>${meses.map((m, i) => `<option value="${i + 1}">${m}</option>`).join('')}</select>
+      <select name="anio" required aria-label="Año"><option value="">Año</option>${Array.from({ length: 96 }, (_, i) => y - 4 - i).map((a) => `<option>${a}</option>`).join('')}</select></div>` : ''}
+    ${faltaReglas ? `<p class="nota"><b>Las reglas de Mina</b>, para que todos la pasen bien:</p><ul class="nota" style="margin:4px 0 8px;padding-left:1.2em">
+      <li>Trata bien a los demás: nada de insultos, acoso ni odio.</li><li>Nada sexual, ni amenazas.</li><li>No pidas ni compartas datos personales: teléfono, dirección, escuela, redes.</li><li>Nada de spam, estafas ni hacerse pasar por otra persona.</li><li>Si alguien te molesta: toca su mensaje → Bloquear o Reportar.</li></ul>
+      <p class="nota">Quien no las respeta puede perder el chat o quedar fuera de Mina. Todas, en los <a href="/terminos#reglas" target="_blank" rel="noopener">términos y reglas</a>.</p>` : ''}
+    <div class="bt"><button type="submit">${faltaReglas ? 'Acepto las reglas' : 'Seguir'}</button><button type="button" class="s" data-x="no">Ahora no</button></div></form>`;
+  document.body.appendChild(r);
+  r.querySelector('[data-x="no"]').onclick = cerrarReporte;
+  r.addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.stopPropagation(); cerrarReporte(); } });
+  r.querySelector('form').onsubmit = (e) => {
+    e.preventDefault(); const f = e.currentTarget;
+    if (faltaEdad) {
+      const a = +f.anio.value, m = +f.mes.value; if (!a || !m) return aviso('Elige tu mes y año.');
+      const hoy = new Date(), anios = hoy.getFullYear() - a - (hoy.getMonth() + 1 < m ? 1 : 0);      // sin día: se cuenta cumplido desde el mes
+      edad = { g: anios < 13 ? 'menor13' : anios < 18 ? '13a17' : '18', t: Date.now() }; escribir('mina_edad', edad);
+      if (menor13()) { cerrarReporte(); return avisoMenor(para); }
+    }
+    if (faltaReglas) { reglasOk = true; escribir('mina_reglas', REGLAS_V); }
+    cerrarReporte(); if (luego) luego();
+  };
+  setTimeout(() => r.querySelector('select, button[type=submit]')?.focus(), 30);
+}
+function avisoMenor(para) {
+  tarjeta('Mina es tuya para excavar', 'Puedes jugar todo, en todos los mundos. ' + (para === 'compra' ? 'Las compras' : para === 'cuenta' ? 'La cuenta' : 'El chat') + ' es para mayores de 13 años, así que aquí no aparece. Si un adulto de tu casa quiere ayudarte, puede escribirnos a contacto@ingenieriadigital.mx.', 'msj', 10000);
 }
 let borrando = false;
 async function borrarTodo() {
@@ -4211,6 +4261,7 @@ function htmlTienda() {
   const L = tienda.niveles, mio = nivelMio();
   let h = cab('🎨 La Pinturería') + '<div class="cuerpo tienda">';
   h += '<div class="promesa"><b>Mina se juega completo gratis, y pintar tu maquinita de tus colores también.</b> Nada de aquí hace falta para bajar, ganar ni terminar. Lo demás es solo para que se vea como tú. Pruébate lo que quieras: probar no cuesta.</div>';
+  if (enApp) h += '<p class="nota">En la app, los colores gratis y lo que pagues con tu saldo funcionan igual. Las compras con tarjeta llegan muy pronto.</p>';
   if (tienda.error) h += `<p class="nota">${tienda.error}</p>`;
   if (!tienda.cargada) return h + '<p class="nota">Abriendo la tienda…</p></div>';
   if (tienda.mio.saldo > 0) h += `<div class="promesa" style="border-color:#ffd23f88">💛 <b>Tienes ${pesos(tienda.mio.saldo)} de saldo</b> por tus referidos. Paga niveles con él, para ti o de regalo.${!cuenta ? ' Entra con tu cuenta para usarlo.' : ''} <a href="#" data-a="menu" data-v="inv">Ver mis referidos</a>.</div>`;
@@ -4310,9 +4361,11 @@ async function ponerCumple(md) {
 }
 // Lo que cuesta un nivel para esta persona ahora mismo (lo mismo que enseña la carpeta).
 function precioVista(nv) { const L = tienda.niveles, mio = nivelMio(), precio = L[nv - 1].precio - (mio ? L[mio - 1].precio : 0), o = tienda.oferta, M = tienda.momento, propio = tienda.regaloA < 0, desc = o && o.desc > 0 && propio ? o.desc : 0, ajuste = M && propio ? M.ajuste : 0; return Math.min(precio, Math.max(1, precioBonito(precio * (1 - desc) * (1 - ajuste)))); }
-function irAlLogin(extra) { if (listo && !soloVer) { enviarEst(); guardarCopia(); } location.href = LOGIN_CT + '/?volver=' + encodeURIComponent(location.origin + '/' + mundoId + (extra || '')); }
+function irAlLogin(extra) { if (!grupoEdad() || menor13()) return pedirPermiso('cuenta', () => irAlLogin(extra)); if (listo && !soloVer) { enviarEst(); guardarCopia(); } location.href = LOGIN_CT + '/?volver=' + encodeURIComponent(location.origin + '/' + mundoId + (extra || '')); }
 async function pagar(o) {
+  if (!grupoEdad() || menor13()) return pedirPermiso('compra', () => pagar(o));
   const todoSaldo = o.saldo && ((o.tipo === 'nivel' && (tienda.mio.saldo || 0) >= precioVista(o.nivel)) || (o.tipo === 'pieza' && (tienda.mio.saldo || 0) >= precioPieza(o.pieza)));
+  if (enApp && !todoSaldo) { tarjeta('La Pinturería', 'En la app, las compras con tarjeta llegan muy pronto. Mientras, pruébate todo y usa tu saldo: funciona igual.', 'msj', 9000); return; }      // regla de pagos de Google Play
   if (o.tipo === 'nivel' && !todoSaldo && !$('#tMayor')?.checked) { aviso('Marca primero que eres mayor de edad o tienes permiso de quien paga.'); return; }
   if (!cuenta) return irAlLogin('?tienda=' + tienda.nivelVista);
   if (o.tipo !== 'nivel' && !todoSaldo && !confirm(`Vas a ${o.motivo === 'gratitud' ? 'dar las gracias con' : 'pagar'} ${pesos(o.tipo === 'mecenas' ? o.monto : o.tipo === 'pieza' ? precioPieza(o.pieza) : o.cantidad * tienda.fondoPrecio)} con tarjeta, en la página de Stripe. ¿Eres mayor de edad o tienes permiso de quien paga?`)) return;
@@ -5338,7 +5391,7 @@ const acciones = {
     if (navigator.clipboard?.writeText) navigator.clipboard.writeText(liga).then(hecho, aMano); else aMano();
     return 'no';
   },
-  nombreMaq(v, el) { const n = el.value.trim(); if (n.length >= 2 && n !== miNombre && conectado) enviar({ t: 'nombre', n, m: miModelo }); return 'no'; },
+  nombreMaq(v, el) { const n = el.value.trim(); if (n.length >= 2 && n !== miNombre && conectado) { if (!reglasOk || !grupoEdad()) { el.value = miNombre; pedirPermiso('nombre'); return 'no'; } enviar({ t: 'nombre', n, m: miModelo }); } return 'no'; },
   modeloMaq(v) { if (!conectado || +v === miModelo) return 'no'; enviar({ t: 'nombre', n: miNombre, m: +v }); return 'no'; },
   // Traer aquí una maquinita de otro equipo: se guarda la llave de la actual por si el código no existe.
   usarCodigo() {
@@ -5373,7 +5426,7 @@ const acciones = {
   },
   modo(v, el) { if (!conectado || !MODOS[el.value]) return; cfg = { ...cfg, ...MODOS[el.value], modo: el.value }; enviar({ t: 'cfg', cfg }); },
   regla(v, el) { if (!conectado) return; cfg = { ...cfg, [el.dataset.k]: el.type === 'checkbox' ? (el.checked ? 1 : 0) : +el.value }; if (!['puerta', 'reminTodos', 'regalos', 'pleitos', 'mirar'].includes(el.dataset.k)) cfg.modo = 'medida'; enviar({ t: 'cfg', cfg }); },
-  nombreMundo(v, el) { const n = el.value.trim(); if (n.length < 2 || !conectado) return 'no'; cfg = { ...cfg, nombre: n }; enviar({ t: 'cfg', cfg }); guardarMundo(); return 'no'; },
+  nombreMundo(v, el) { const n = el.value.trim(); if (n.length < 2 || !conectado) return 'no'; if (!reglasOk || !grupoEdad()) { el.value = cfg.nombre || ''; pedirPermiso('nombre'); return 'no'; } cfg = { ...cfg, nombre: n }; enviar({ t: 'cfg', cfg }); guardarMundo(); return 'no'; },
   regalar(v) {
     const el = $('#cuanto'), q = Math.floor(+el.value);
     if (!(q > 0) || q > S.d || !conectado) return 'no';
@@ -5419,6 +5472,7 @@ const acciones = {
   capBorrar(v, el) { if (!confirm('¿Borrar esta captura? No se puede recuperar.')) return 'no'; fetch('/api/capturas/borrar', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ses: cuenta.ses, id: v, mundo: el.dataset.m }) }).then(() => { capturas.lista = capturas.lista.filter((c) => c.id !== v); capturas.grande = null; if (menu === 'menu') pintarMenu(); }); return 'no'; },
   salirCuenta() { salirCuenta(); return 'no'; },
   desbloq(v) { desbloquear(v); },
+  sinChat() { op.sinChat = op.sinChat ? 0 : 1; escribir('mina_op', op); aplicarOp(); if (op.sinChat) { cerrarChat(); $('#chatVivo').innerHTML = ''; } else repintarChat(); },
   borrarTodo() { borrarTodo(); return 'no'; },
   reportarJ(v) { const i = +v; abrirReporte({ i }); $('#repCaja').dataset.i = i; return 'no'; },
   bloquearJ(v) { bloquear(+v); },
@@ -5626,6 +5680,7 @@ function menuPrincipal() {
   return h + '</div>';
 }
 function aplicarOp() {
+  document.body.classList.toggle('sinChat', !!op.sinChat);      // el chat apagado en este equipo (Privacidad y datos)
   medirMovil();
   document.documentElement.style.setProperty('--f', op.texto * (!movil && Math.min(innerWidth, innerHeight) < 520 ? 0.8 : 1));      // en una ventana chica de computadora el tablero va más chico; el celular tiene su propio tablero
   document.body.classList.toggle('contraste', !!op.contraste);
@@ -5893,7 +5948,7 @@ function deCuenta(d, enviado) {
 const LOGIN_CT = 'https://login.capitaltorreon.com';
 function botonGoogle(caja) {
   caja.innerHTML = '<button class="gEntrar"><svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.3l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.7 6c4.5-4.2 6.9-10.3 6.9-17.7z"/><path fill="#FBBC05" d="M10.5 28.6c-.5-1.5-.8-3-.8-4.6s.3-3.1.8-4.6l-7.9-6.1C.9 16.6 0 20.2 0 24s.9 7.4 2.6 10.7l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.3 0 11.7-2.1 15.6-5.7l-7.7-6c-2.1 1.4-4.8 2.3-7.9 2.3-6.3 0-11.6-4.1-13.5-9.9l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/></svg>Entrar con Google</button>';
-  caja.firstChild.onclick = () => { if (listo && !soloVer) { enviarEst(); guardarCopia(); } location.href = LOGIN_CT + '/?volver=' + encodeURIComponent(location.origin + location.pathname + (location.search.includes('mundos') ? '?mundos' : '')); };
+  caja.firstChild.onclick = () => { if (!grupoEdad() || menor13()) return pedirPermiso('cuenta', () => caja.firstChild.onclick()); if (listo && !soloVer) { enviarEst(); guardarCopia(); } location.href = LOGIN_CT + '/?volver=' + encodeURIComponent(location.origin + location.pathname + (location.search.includes('mundos') ? '?mundos' : '')); };
 }
 // Al volver del login: el pase viene después del # y nunca viaja al servidor en la dirección.
 const paseLogin = (location.hash.match(/sesion=([\w-]+\.[\w-]+\.[\w-]+)/) || [])[1] || '';
@@ -5963,14 +6018,14 @@ async function salirCuenta() {
   if (listo && !soloVer) { enviarEst(); guardarCopia(); }
   await subirCuenta();
   try { await fetch('/api/cuenta/salir', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ses: cuenta && cuenta.ses }) }); } catch {}
-  try { for (const k of Object.keys(localStorage)) if (k.startsWith('mina_') && k !== 'mina_op') localStorage.removeItem(k); } catch {}
+  try { for (const k of Object.keys(localStorage)) if (k.startsWith('mina_') && k !== 'mina_op' && k !== 'mina_bloq') localStorage.removeItem(k); } catch {}      // a quien bloqueaste sigue bloqueado
   if (window.LoginCT) return LoginCT.salir();      // sale también de la casa, para que no vuelva a entrar sola
   location.href = '/';
 }
 // La tarjeta de la cuenta: en Menú → Mi maquinita y en «Mis mundos».
 function htmlCuenta() {
   if (cuenta) return `<div class="fila cuentaG"><div class="ic">${cuenta.foto ? `<img src="${esc(cuenta.foto)}" alt="" referrerpolicy="no-referrer">` : '✅'}</div><div class="t"><b>Guardado en tu cuenta</b><small>${esc(cuenta.email || '')} · tu maquinita y tus mundos quedan a salvo y se recuperan en cualquier equipo. Toca tu foto para ir a los demás juegos y proyectos, o salir.</small></div><div data-login-ct></div></div>`;
-  return `<div class="fila cuentaG"><div class="ic">💾</div><div class="t"><b>Guarda tu maquinita y tus mundos</b><small>Con tu correo de Google: los recuperas en cualquier equipo y retomas donde te quedaste. Jugar sigue sin pedir nada.</small></div><div class="gBoton" id="gBoton"></div></div>`;
+  return `<div class="fila cuentaG"><div class="ic">💾</div><div class="t"><b>Guarda tu maquinita y tus mundos</b><small>Con tu correo de Google: los recuperas en cualquier equipo y retomas donde te quedaste. Jugar sigue sin pedir nada. Al entrar aceptas los <a href="/terminos" target="_blank" rel="noopener">términos</a> y el <a href="/privacidad" target="_blank" rel="noopener">aviso de privacidad</a>.</small></div><div class="gBoton" id="gBoton"></div></div>`;
 }
 // La copia de este equipo: el mundo (semilla, túneles, colección) y la maquinita. Con ella el juego abre al instante,
 // sin esperar al servidor, y se puede seguir jugando sin internet; al volver la señal, lo de aquí se manda al mundo.

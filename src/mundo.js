@@ -1293,6 +1293,7 @@ export class Mundo extends DurableObject {
         break;
       }
       case "chat": {
+        if ((d.r | 0) < 1) { manda(ws, { t: "chatNo", reglas: 1 }); return; }      // para escribir hay que haber aceptado las reglas de la comunidad
         const x = textoChat(d.x);
         if (!x) return;
         const ahora = Date.now(), r = this.chatT.get(i) || [];

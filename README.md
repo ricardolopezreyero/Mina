@@ -64,9 +64,9 @@ Este juego está hecho con todo el cariño con el que se puede hacer un juego. N
 | `docs/Documento_Maestro_Mina_v47_2026-10-03_1030.md` | Qué está construido, con qué números y qué falta |
 | `Prompt_Maestro_Mina_v4_2026-10-01_2336.md` | El diseño completo |
 | `sonidos-fuente/` | El pedido exacto de sonidos y música para ElevenLabs (aún sin generar) |
-| `publico/privacidad.html`, `terminos.html`, `soporte.html`, `borrar-cuenta.html` | Aviso de privacidad, términos y reglas de la comunidad, ayuda y borrar la cuenta desde la web |
+| `publico/privacidad.html`, `terminos.html`, `seguridad-infantil.html`, `soporte.html`, `borrar-cuenta.html` | Aviso de privacidad, términos y reglas de la comunidad, ayuda y borrar la cuenta desde la web |
 | `publico/moderacion.html`, `src/moderacion.js`, `src/filtro.js` | Moderación: panel de reportes (solo administradores), su API y el filtro de palabras del chat y los nombres |
-| `docs/Tiendas_App_Store_Play_Store_Mina_v1_2026-10-20_2251.md` | Qué piden Apple y Google, qué ya cumple Mina, qué contestar en cada formulario y qué falta |
+| `docs/Tiendas_App_Store_Play_Store_Mina_v2_2026-10-20_2304.md` | Qué piden Apple y Google, qué ya cumple Mina, qué contestar en cada formulario y qué falta |
 
 ## La guía de estilos
 
@@ -105,7 +105,7 @@ Para pruebas desde la consola del navegador existe `window.__mina` (estado, `ava
 
 ## Privacidad, reglas y tiendas
 
-Mina lo opera **Consultores en Ingeniería Digital S.C.** Las páginas que piden la ley y las tiendas de apps: [aviso de privacidad](https://mina.capitaltorreon.com/privacidad) · [términos y reglas de la comunidad](https://mina.capitaltorreon.com/terminos) · [ayuda](https://mina.capitaltorreon.com/soporte) · [borrar la cuenta](https://mina.capitaltorreon.com/borrar-cuenta). En el juego: tocar un mensaje del chat para **reportar** o **bloquear**, y Menú → Mi maquinita → **Privacidad y datos** para ver a quién bloqueaste o **borrar todo**. Los reportes se atienden en [/moderacion](https://mina.capitaltorreon.com/moderacion). El plan para publicar en Google Play y App Store está en `docs/Tiendas_App_Store_Play_Store_Mina_v1_2026-10-20_2251.md`.
+Mina lo opera **Consultores en Ingeniería Digital S.C.** Las páginas que piden la ley y las tiendas de apps: [aviso de privacidad](https://mina.capitaltorreon.com/privacidad) · [términos y reglas de la comunidad](https://mina.capitaltorreon.com/terminos) · [ayuda](https://mina.capitaltorreon.com/soporte) · [borrar la cuenta](https://mina.capitaltorreon.com/borrar-cuenta) · [seguridad infantil](https://mina.capitaltorreon.com/seguridad-infantil). Antes del chat, la cuenta o una compra, el juego pregunta la edad (pantalla neutra) y pide aceptar las reglas; el chat se puede apagar en cada equipo; la app de Android (`/?app=android`) no cobra con tarjeta hasta conectar Google Play Billing. En el juego: tocar un mensaje del chat para **reportar** o **bloquear**, y Menú → Mi maquinita → **Privacidad y datos** para ver a quién bloqueaste o **borrar todo**. Los reportes se atienden en [/moderacion](https://mina.capitaltorreon.com/moderacion). El plan para publicar en Google Play y App Store está en `docs/Tiendas_App_Store_Play_Store_Mina_v2_2026-10-20_2304.md`.
 
 ## Login
 
