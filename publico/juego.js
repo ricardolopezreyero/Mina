@@ -1081,24 +1081,35 @@ function sonidoUI() {
 function aviso(x) {
   const d = document.createElement('div'); d.textContent = x;
   const c = $('#avisos'); c.appendChild(d);
-  while (c.children.length > 6) c.firstChild.remove();
+  while (c.children.length > 3) c.firstChild.remove();
   setTimeout(() => d.remove(), 9000);
 }
-function tarjeta(t, x, clase = '', ms = 4500, urgente = false, boton = null) {
+// Las tarjetas: avisos con título y una línea. Nunca más de dos a la vista; las demás esperan su turno en orden de llegada y entran
+// una por una, con un respiro entre ellas, deslizándose. Una tarjeta repetida en menos de 20 s no vuelve a salir. Si se junta fila,
+// las que menos importan (peso < 1: logros, minerales ya vistos) se descartan; lo urgente (quedarse sin combustible, el gas) pasa
+// al frente y, si hace falta, le pide a la más vieja que se vaya. Se tocan para quitarlas.
+const colaTarjetas = [], tarjetaUlt = new Map(); let tarjetaT = -1e9, tarjetaTimer = 0;
+function tarjeta(t, x, clase = '', ms = 4500, urgente = false, boton = null, peso = 1) {
+  const ahora = performance.now(); if (!urgente && tarjetaUlt.get(t) > ahora - 20000) return; tarjetaUlt.set(t, ahora);
   const d = document.createElement('div'); if (clase) d.className = clase;
   const h = document.createElement('h3'); h.textContent = t; d.appendChild(h);
   if (x) { const p = document.createElement('p'); p.textContent = x; d.appendChild(p); }
-  if (boton) { const b = document.createElement('button'); b.className = 's'; b.textContent = boton.t; b.onclick = (e) => { e.stopPropagation(); audio(); d.remove(); boton.f(); }; d.appendChild(b); }
-  if (urgente) { const c = $('#tarjeta'); while (c.children.length >= 3) c.firstChild.remove(); colaTarjetas.unshift([d, ms]); } else colaTarjetas.push([d, ms]);
+  if (boton) { const b = document.createElement('button'); b.className = 's'; b.textContent = boton.t; b.onclick = (e) => { e.stopPropagation(); audio(); quitarTarjeta(d); boton.f(); }; d.appendChild(b); }
+  d.onclick = () => quitarTarjeta(d);
+  const it = { d, ms, urgente, peso };
+  if (urgente) { colaTarjetas.unshift(it); const vis = visiblesTarjeta(); if (vis.length >= 2) quitarTarjeta(vis[0]); } else colaTarjetas.push(it);
+  while (colaTarjetas.length > 5) { const i = colaTarjetas.findIndex((o) => !o.urgente && o.peso < 1); if (i < 0) break; colaTarjetas.splice(i, 1); }
   sacarTarjeta();
 }
-const colaTarjetas = [];
+const visiblesTarjeta = () => [...$('#tarjeta').querySelectorAll(':scope > div:not(.sale)')];
+function quitarTarjeta(d) { if (!d.isConnected || d.classList.contains('sale')) return; d.classList.add('sale'); setTimeout(() => { d.remove(); sacarTarjeta(); }, 280); }
 function sacarTarjeta() {
-  const c = $('#tarjeta');
-  while (c.children.length < 3 && colaTarjetas.length) {
-    const [d, ms] = colaTarjetas.shift(); c.appendChild(d);
-    setTimeout(() => { d.remove(); sacarTarjeta(); }, colaTarjetas.length > 2 ? Math.min(ms, 2500) : ms);
-  }
+  if (!colaTarjetas.length || visiblesTarjeta().length >= 2) return;
+  const espera = 900 - (performance.now() - tarjetaT);
+  if (espera > 0) { clearTimeout(tarjetaTimer); tarjetaTimer = setTimeout(sacarTarjeta, espera); return; }
+  const it = colaTarjetas.shift(); tarjetaT = performance.now(); $('#tarjeta').appendChild(it.d);
+  setTimeout(() => quitarTarjeta(it.d), colaTarjetas.length ? Math.min(it.ms, 3500) : it.ms);      // con fila, cada una se queda menos
+  if (colaTarjetas.length) sacarTarjeta();
 }
 function difundir(x) { enviar({ t: 'aviso', x }); }
 function chispas(x, y, col, n = 8, f = 4) {
@@ -1659,7 +1670,7 @@ function revisarLogros() {
     S.log.push(l.id); sucio = true;
     const nombre = l.sec ? l.sec.split(':')[0] : l.n;
     if (['r500', 'fondo', 'diezkm', 'anfitrion', 'padrino', 'pueblo'].includes(l.id)) tarjetaCompartir('🏅 Logro: ' + nombre, (l.sec ? l.sec.split(': ')[1] : l.d) + ' Presúmelo.', `🏅 «${nombre}» en Mina: ${l.d.replace(/\.$/, '')}.${S.rec ? ' Voy a ' + num(S.rec) + ' m bajo tierra.' : ''}\nEntra a mi mundo y alcánzame: gratis, sin registro.\n${ligaInvitacion()}`, 14000, true);
-    else tarjeta('🏅 Logro: ' + nombre, l.sec ? l.sec.split(': ')[1] : l.d);
+    else if (!/^[mh]\d+$/.test(l.id)) tarjeta('🏅 Logro: ' + nombre, l.sec ? l.sec.split(': ')[1] : l.d, '', 4000, false, null, 0.5);      // el primer mineral o hallazgo ya se celebró al descubrirlo
     son.logro(); difundir('ganó el logro «' + nombre + '»');
   }
 }
@@ -2072,7 +2083,7 @@ function llegar(p) {
       S.carga[i]++; S.st.rec[i]++; son.mineral(i); chispas(x, y, MIN[i].col, 12, 5);
       flota(x, p.ty - 0.15, '+ ' + MIN[i].n + ' · ' + fmt(MIN[i].v), MIN[i].col);
       recientes.set(p.idx, [t, Date.now()]);
-      if (S.st.rec[i] === 1) { son.descubre(); tarjeta('¡Descubriste ' + MIN[i].n + '!', (i === 3 ? 'No es pirita: es oro de verdad. ' : '') + 'Vale ' + fmt(MIN[i].v) + ' la pieza.'); difundir('descubrió ' + MIN[i].n); }
+      if (S.st.rec[i] === 1) { son.descubre(); tarjeta('✨ ' + MIN[i].n, (i === 3 ? 'Oro de verdad. ' : '') + 'Vale ' + fmt(MIN[i].v) + ' la pieza.', '', 3500, false, null, 0.5); difundir('descubrió ' + MIN[i].n); }
       const [vx, vy] = veta(Math.floor(p.ty / 75));
       if (Math.abs(p.tx - vx) <= 1 && Math.abs(p.ty - vy) <= 1 && !S.fl.veta) { S.fl.veta = 1; tarjeta('✨ ¡Veta madre!', 'Un racimo entero del mejor mineral de la zona.'); }
       if (nCarga() === bodega()) { tarjeta('Bodega llena', 'Sube a vender: lo que perfores ahora se pierde.'); son.alarma(); }
@@ -2511,7 +2522,7 @@ function iniciarMundo(d, local) {
   { const f = new Date(), hoy = f.getDate() + '/' + (f.getMonth() + 1); if (primera && hoy === '11/7') tarjeta('⛏️ ¡Feliz Día del Minero!', 'Hoy, 11 de julio, México celebra a su gente de mina. Buen turno.', 'msj', 10000); if (primera && hoy === '4/12') tarjeta('🕯️ Día de Santa Bárbara', 'Hoy, 4 de diciembre, las minas festejan a su patrona.', 'msj', 10000); }
   if (primera) { tInicioMundo = Date.now(); cita = d.cita || null; } if (d.rel) rel = d.rel;
   if (!local && vengoDe >= 0 && vengoDe !== miI && !bienvenidaDe && otros.get(vengoDe)) { bienvenidaDe = 1; const q = otros.get(vengoDe); setTimeout(() => tarjeta('🚜 ' + q.n + ' te invitó a este mundo', (q.on ? 'Está jugando ahora mismo' + (q.y !== undefined ? ', a ' + num(Math.max(0, Math.round(q.y))) + ' m' : '') : 'Ahora no está, pero el mundo sigue tal cual') + '. Cada quien baja con su maquinita; se ven en el mapa (M) y se hablan por el chat (C).' + (cuenta ? '' : ` Si abres tu cuenta (Google), a ${q.n} le dan ${pesos(tienda.referidoPremio)} de saldo para pintar su maquinita; a ti, tu maquinita guardada en cualquier equipo.`), 'msj', 18000, false, cuenta ? null : { t: '💾 Abrir mi cuenta', f: () => irAlLogin() }), 1200); }
-  if (primera && !d.est) tarjeta('⛏️ Tu maquinita se llama ' + miNombre, (tactil ? 'Pon el dedo donde sea y arrástralo: abajo perfora, a los lados camina, arriba vuela. Dos empujones seguidos hacia arriba o hacia abajo y sigue sola. Las caídas no te lastiman. Con dos dedos acercas la vista.' : 'Usa las flechas para moverte.') + ' Primero: carga combustible en la Gasolinera (' + (tactil ? 'un toque' : '↓') + ' para entrar). El nombre se cambia en Menú → Mi maquinita.', 'msj', 11000);
+  if (primera && !d.est) tarjeta('⛏️ Esta es ' + miNombre, (tactil ? 'Arrastra el dedo: abajo perfora, a los lados camina, arriba vuela.' : 'Muévete con las flechas: ↓ perfora, ↑ vuela.') + ' Llena el tanque en la Gasolinera y baja.', 'msj', 9000);
   if (primera) { const n = leer('mina_nota', ''); if (n) { try { localStorage.removeItem('mina_nota'); } catch {} aviso(n); } }
 }
 
@@ -3766,7 +3777,7 @@ function pasarAJugar(id) {
   mundoId = id; history.replaceState(null, '', '/' + id);
   miK = maqLocal.k; bautizo = maqLocal.n ? { n: maqLocal.n, m: maqLocal.m | 0 } : nombreNuevo();
   conectar();
-  setTimeout(() => { if (S) tarjeta('⛏️ ¡Ya estás jugando con ' + (maqLocal.n || 'tu maquinita') + '!', 'Apareces en la superficie. Primero carga combustible en la Gasolinera (↓ para entrar) y baja. El chat se abre con C.', 'msj', 12000, true); }, 1500);
+  setTimeout(() => { if (S) tarjeta('⛏️ Ya estás jugando con ' + (maqLocal.n || 'tu maquinita'), 'Llena el tanque en la Gasolinera (↓ para entrar) y baja.', 'msj', 8000); }, 1500);
 }
 // Mientras espera respuesta: una tarjeta clara abajo, con su maquinita, el tiempo que lleva y cómo cancelar.
 function pintarEspera() {
@@ -4517,7 +4528,7 @@ async function pedirTop() {
   try {
     const d = await (await fetch('/api/tabla', { cache: 'no-store' })).json(); if (!Array.isArray(d.top)) return;
     const lugar = miPid ? d.top.findIndex((e) => e.p === miPid) + 1 : 0, antes = leer('mina_lugar', 0);
-    if (!soloVer && lugar && (!antes || lugar < antes)) { son.rango(); tarjeta('🏆 Lugar ' + lugar + ' del mundo', (antes ? 'Subiste del ' + antes + ' al ' + lugar : 'Entraste al Top 33') + ' entre todas las maquinitas de Mina. Menú → Top 33.', 'msj', 12000, true); }
+    if (!soloVer && lugar && (!antes || lugar < antes) && lugar <= 10 && (d.top.length >= 20 || lugar <= 3)) { son.rango(); tarjeta('🏆 Lugar ' + lugar + ' del mundo', (antes ? 'Subiste del ' + antes + ' al ' + lugar : 'Entraste al Top 33') + '. Menú → Top 33.', 'msj', 8000); }
     if (!soloVer && miPid && lugar !== antes) escribir('mina_lugar', lugar);
     tablaM.l = d.top; tablaM.corte = d.corte || 0; tablaM.t = Date.now(); tablaM.lugar = lugar;
     if (topAbierta()) pintarMenu();
@@ -4709,7 +4720,7 @@ function cadaTanto() {
     let r = 0; for (let i = 0; i < RANGOS.length; i++) if (m >= RANGOS[i][0]) r = i;
     if (r > S.rango) {
       S.rango = r; const regalo = [0, 2, 1][r % 3]; S.obj[regalo]++;
-      tarjeta('⛏️ Nuevo rango: ' + RANGOS[r][1], 'Regalo: ' + OBJ[regalo].n + '.'); son.rango(); difundir('subió a ' + RANGOS[r][1]);
+      tarjeta('⛏️ ' + RANGOS[r][1], 'Nuevo rango. Regalo: ' + OBJ[regalo].n + '.', '', 3500); son.rango(); difundir('subió a ' + RANGOS[r][1]);
     }
   }
   const al = altura();

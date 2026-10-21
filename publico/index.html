@@ -280,7 +280,9 @@ body.libre.jugando #regla,body.libre.viendo #regla{display:block;visibility:visi
 #avisos div{background:#0008;border-radius:4px;padding:2px 7px;margin-top:3px;animation:entra .25s}
 @keyframes entra{from{opacity:0;transform:translateX(-12px)}}
 #tarjeta{margin-top:6px;text-align:left;font-size:.82em}
-#tarjeta div{background:#120b08e6;border-left:3px solid var(--ac);border-radius:6px;padding:4px 9px;margin-bottom:5px;animation:pop .25s}
+#tarjeta div{background:#120b08e6;border-left:3px solid var(--ac);border-radius:6px;padding:4px 9px;margin-bottom:5px;animation:pop .32s cubic-bezier(.2,.8,.3,1);cursor:pointer}
+#tarjeta div.sale{animation:sale .28s ease-in forwards;pointer-events:none}
+@keyframes sale{to{transform:translateX(18px);opacity:0;margin-bottom:0;max-height:0}}
 #tarjeta div.msj{border-left-color:var(--az)}
 #tarjeta h3{margin:0;color:var(--ac);font-size:1em;line-height:1.25}#tarjeta .msj h3{color:var(--az)}
 #tarjeta p{margin:1px 0 0;color:var(--su);line-height:1.25}
@@ -432,7 +434,9 @@ body.movil #panSon{width:min(270px,calc(100vw - 20px))}
 body.movil #tabla{width:auto;max-width:min(58vw,250px);font-size:.74em;margin-top:5px}
 body.movil #tabla:empty{display:none}
 body.movil #tarjeta{position:fixed;left:8px;right:8px;top:calc(108px + env(safe-area-inset-top));width:auto;margin:0;font-size:.88em;text-align:left}
-body.movil #tarjeta div{animation:popY .25s;border-radius:10px;padding:7px 11px}
+body.movil #tarjeta div{animation:popY .32s cubic-bezier(.2,.8,.3,1);border-radius:10px;padding:7px 11px}
+body.movil #tarjeta div.sale{animation:saleY .28s ease-in forwards}
+@keyframes saleY{to{transform:translateY(-10px);opacity:0;max-height:0;margin:0;padding-top:0;padding-bottom:0}}
 @keyframes popY{from{transform:translateY(-8px);opacity:0}}
 body.movil #avisos div{animation:entraY .25s;border-radius:8px}
 @keyframes entraY{from{opacity:0;transform:translateY(6px)}}
