@@ -6,6 +6,7 @@
 (() => {
   'use strict';
   const _RLR = 'Ricardo López Reyero', _k = 'EYE', _rev = 181218;
+  let tMonta = 0, calor = null, caliente = false;
   let T = null, renderer = null, scene = null, camera = null, raf = 0, grupo = null, clave = '', piezas = {}, estado = { taladro: 0, helices: 0 }, giro = 0, giroObj = 0, arrastre = null, tArrastre = 0, reloj = 0, ult = 0, cont = null, chispas = null, polvo = null, estelaP = null;
   const col = (c) => new T.Color(c);
   const mezcla = (c, k) => { const x = col(c); const o = k < 0 ? new T.Color(0) : new T.Color(1, 1, 1); return x.lerp(o, Math.abs(k)); };
@@ -128,15 +129,15 @@
   }
 
   // ── montar, actualizar, animar
-  function montar(contenedor) {
+  function preparar() {
     T = window.THREE; if (!T) return false;
-    cont = contenedor;
     if (!renderer) {
-      renderer = new T.WebGLRenderer({ antialias: true, alpha: true }); renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1)); renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFSoftShadowMap; renderer.toneMapping = T.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
+      const tel = matchMedia('(pointer: coarse)').matches || Math.min(innerWidth, innerHeight) < 600;      // en teléfono: menos píxeles y sombra más ligera, para que gire suave
+      renderer = new T.WebGLRenderer({ antialias: !tel, alpha: true, powerPreference: 'high-performance' }); renderer.setPixelRatio(Math.min(tel ? 1.5 : 2, window.devicePixelRatio || 1)); renderer.shadowMap.enabled = true; renderer.shadowMap.type = tel ? T.PCFShadowMap : T.PCFSoftShadowMap; renderer.toneMapping = T.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
       scene = new T.Scene();
       camera = new T.PerspectiveCamera(33, 1, 0.1, 50); camera.position.set(3.7, 2.3, 4.1); camera.lookAt(0, 1.22, 0);      // encuadre con aire arriba: el letrero del nombre sale completo
       scene.add(new T.HemisphereLight(0xdfefff, 0x6b4a33, 0.9));
-      const sol = new T.DirectionalLight(0xfff1d6, 1.8); sol.position.set(3, 6, 4); sol.castShadow = true; sol.shadow.mapSize.set(1024, 1024); sol.shadow.camera.near = 1; sol.shadow.camera.far = 20; for (const k of ['left', 'bottom']) sol.shadow.camera[k] = -4; for (const k of ['right', 'top']) sol.shadow.camera[k] = 4; sol.shadow.bias = -0.0005; scene.add(sol);
+      const sol = new T.DirectionalLight(0xfff1d6, 1.8); sol.position.set(3, 6, 4); sol.castShadow = true; sol.shadow.mapSize.set(tel ? 512 : 1024, tel ? 512 : 1024); sol.shadow.camera.near = 1; sol.shadow.camera.far = 20; for (const k of ['left', 'bottom']) sol.shadow.camera[k] = -4; for (const k of ['right', 'top']) sol.shadow.camera[k] = 4; sol.shadow.bias = -0.0005; scene.add(sol);
       const relleno = new T.PointLight(0xffd9a0, 0.6, 12); relleno.position.set(-4, 2, -2); scene.add(relleno);
       const tarima = new T.Mesh(new T.CylinderGeometry(2.1, 2.2, 0.18, 48), new T.MeshStandardMaterial({ color: col('#8a6448'), roughness: 0.8 })); tarima.position.y = -0.09; tarima.receiveShadow = true; scene.add(tarima);
       const aro = new T.Mesh(new T.TorusGeometry(2.1, 0.03, 8, 64), metal('#e2b24a', 0.3)); aro.rotation.x = Math.PI / 2; aro.position.y = 0.005; scene.add(aro);
@@ -147,15 +148,38 @@
       el.addEventListener('pointermove', (e) => { if (!arrastre) return; giroObj = arrastre.g + (e.clientX - arrastre.x) * 0.012; tArrastre = performance.now(); });
       const suelta = () => { arrastre = null; el.style.cursor = 'grab'; }; el.addEventListener('pointerup', suelta); el.addEventListener('pointercancel', suelta);
     }
-    const lienzo = cont.querySelector('canvas'); if (lienzo && lienzo !== renderer.domElement) lienzo.replaceWith(renderer.domElement); else if (!lienzo) cont.prepend(renderer.domElement);
-    medir(); if (!raf) { ult = performance.now(); raf = requestAnimationFrame(cuadro); }
     return true;
   }
+  function montar(contenedor) {
+    if (!preparar()) return false; cont = contenedor; calorFin();
+    const lienzo = cont.querySelector('canvas'); if (lienzo && lienzo !== renderer.domElement) lienzo.replaceWith(renderer.domElement); else if (!lienzo) cont.prepend(renderer.domElement);
+    medir(); tMonta = performance.now(); if (!raf) { ult = tMonta; raf = requestAnimationFrame(cuadro); }
+    return true;
+  }
+  // Precalentar: en un rato libre, antes de que se abra la tienda, se arma la maquinita y se compilan sus materiales de uno en
+  // uno (lo que más tarda la primera vez). Así, al abrir, la hoja sube de corrido y la maquinita ya está girando.
+  function calentar(P, modelo, nombre, MODELOS, TC) {
+    if (caliente || calor || !preparar()) return;
+    actualizar(P, modelo, nombre, MODELOS, TC); renderer.setSize(64, 64, false);
+    const obs = []; scene.traverse((o) => { if (o.material) obs.push(o); }); for (const o of obs) o.visible = false;
+    calor = { obs, i: 0 };
+    const ocio = window.requestIdleCallback ? (f) => requestIdleCallback(f, { timeout: 2000 }) : (f) => setTimeout(f, 60);
+    const paso = () => {
+      if (!calor) return;
+      const t0 = performance.now();
+      while (calor.i < calor.obs.length && performance.now() - t0 < 10) { calor.obs[calor.i++].visible = true; renderer.compile(scene, camera); }
+      if (calor.i < calor.obs.length) return ocio(paso);
+      renderer.render(scene, camera);      // un cuadro de verdad: compila también lo de las sombras
+      calor = null; caliente = true;
+    };
+    ocio(paso);
+  }
+  function calorFin() { if (!calor) return; for (const o of calor.obs) o.visible = true; calor = null; }
   function medir() { const w = Math.max(200, cont.clientWidth || 420), h = Math.round(w * 1.05); renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }
   function actualizar(P, modelo, nombre, MODELOS, TC) {
     if (!T || !scene) return;
     const k = JSON.stringify([P, modelo, nombre]); if (k === clave) return; clave = k;
-    if (grupo) { scene.remove(grupo); grupo.traverse((o) => { if (o.geometry) o.geometry.dispose(); if (o.material && o.material.map) o.material.map.dispose(); if (o.material) o.material.dispose(); }); }
+    calorFin(); if (grupo) { scene.remove(grupo); grupo.traverse((o) => { if (o.geometry) o.geometry.dispose(); if (o.material && o.material.map) o.material.map.dispose(); if (o.material) o.material.dispose(); }); }
     grupo = construir(P, modelo, nombre, MODELOS, TC); grupo.rotation.y = giroObj; scene.add(grupo);
   }
   function set(que, v) { estado[que] = v ? 1 : 0; }
@@ -189,5 +213,5 @@
   function estelaColor(t, r) { return ['ffffff', 'ffd23f', 'hsl', 'ffffff', 'ff5e9a', 'c8ebff', 'ff8a3a', 'ffb7d5'][t] === 'hsl' ? new T.Color(`hsl(${Math.floor((r * 90) % 360)},95%,62%)`).getHexString() : ['ffffff', 'ffd23f', 'ffffff', 'ffffff', 'ff5e9a', 'c8ebff', 'ff8a3a', 'ffb7d5'][t] || 'ffffff'; }
   function destruirLoop() { cancelAnimationFrame(raf); raf = 0; }
   function destruir() { destruirLoop(); cont = null; }
-  window.Escaparate = { montar, actualizar, set, destruir, estado, medir };
+  window.Escaparate = { montar, actualizar, calentar, caliente: () => caliente, set, destruir, estado, medir, _: () => ({ renderer, scene, grupo, cont, raf, camera, clave }) };      // _: para diagnosticar desde la consola
 })();

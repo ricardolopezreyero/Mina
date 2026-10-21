@@ -467,7 +467,7 @@ body.movil #palanca i{width:58px;height:58px;margin:-29px 0 0 -29px}
 /* los menús ocupan toda la pantalla */
 /* una hoja que sube desde abajo: corta si el contenido es corto, completa si es largo */
 body.movil #velo{padding:0;align-items:flex-end}
-body.movil .caja{width:100%;height:auto;max-height:calc(100% - env(safe-area-inset-top));border-radius:18px 18px 0 0;border:0;border-top:1px solid var(--borde);padding-bottom:max(8px,env(safe-area-inset-bottom));box-shadow:0 -10px 40px #000a}
+body.movil .caja{will-change:transform;width:100%;height:auto;max-height:calc(100% - env(safe-area-inset-top));border-radius:18px 18px 0 0;border:0;border-top:1px solid var(--borde);padding-bottom:max(8px,env(safe-area-inset-bottom));box-shadow:0 -10px 40px #000a}
 body.movil .caja header{padding:12px 14px 10px}
 body.movil .caja header::before{content:"";position:absolute;left:50%;top:6px;width:38px;height:4px;margin-left:-19px;border-radius:2px;background:#ffffff33}
 body.movil .caja header{position:relative}
@@ -527,6 +527,9 @@ body.movil #verTeclado{display:none!important}
 .tienda .vista{background:linear-gradient(#2b4f7a,#6f9bd0 42%,#f0a868 66%,#a9744f 67%,#5c3f2b);border:1px solid var(--borde);border-radius:12px;padding:8px;text-align:center}
 .tienda .vista canvas{position:static;width:100%;height:auto;display:block;border-radius:8px}
 .tienda .vista #esc3d canvas{position:static;width:100%;height:auto;display:block;border-radius:8px}
+.tienda .ligas{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0 4px}
+.tienda .ligas a{display:inline-block;border:1px solid var(--borde);background:#0005;border-radius:999px;padding:.3em .8em;text-decoration:none;color:var(--tx);font-weight:700;font-size:.9em}
+.tienda .ligas a:hover{border-color:var(--ac)}
 .tienda .chips.esc{justify-content:center;align-items:center;margin:8px 0 2px}.tienda .chips.esc button.on{border-color:var(--ac);background:#ffd23f22;color:var(--ac)}.tienda .chips.esc .nota{margin:0;width:100%;font-size:.8em}
 .tienda .vista small{display:block;color:#fff;text-shadow:0 1px 2px #000;margin-top:4px;font-weight:700}
 .tienda h4{margin:6px 0 4px}
