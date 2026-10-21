@@ -150,7 +150,7 @@ export function momento(ts, m, animo) {
   const t = horaTorreon(ts), tienda = (m && m.tienda) || {}, seg = ((m && m.est) || {}).seg || 0, fest = festivoDe(t), cumple = cumpleOk(tienda.cumple) && tienda.cumple === t.md;
   const partes = [];
   if (cumple) partes.push(["🎂 tu cumpleaños", 0.15]); else if (fest) partes.push([fest, 0.1]);
-  if (t.h >= 19) partes.push(["noche tranquila", 0.05]); else if (t.h >= 6 && t.h < 11) partes.push(["precio de mañana", 0.03]);
+  if (t.h >= 19) partes.push(["noche tranquila", 0.05]); else if (t.h < 6) partes.push(["madrugada", 0.05]); else if (t.h < 11) partes.push(["precio de mañana", 0.03]);
   if ((t.dia >= 12 && t.dia <= 14) || t.dia >= 27) partes.push(["antes de la quincena", 0.05]);
   if (t.dow === 0 && !fest && !cumple) partes.push(["domingo", 0.03]);
   const an = Math.max(0, Math.min(1, Number(animo) || 0)), animoN = an < 0.3 ? "tranquilo" : an < 0.7 ? "concentrado" : "a tope";
