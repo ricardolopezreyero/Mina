@@ -54,6 +54,10 @@ function huellaMapa(u) {
 }
 const comprimir = async (u) => new Uint8Array(await new Response(new Blob([u]).stream().pipeThrough(new CompressionStream("gzip"))).arrayBuffer());
 const MUNDOS_POR_DIA = 20;
+// Las llaves que firman la app de Android (mx.capitaltorreon.mina): huellas SHA-256 en mayúsculas, con dos puntos.
+const ASSETLINKS = [{ relation: ["delegate_permission/common.handle_all_urls"], target: { namespace: "android_app", package_name: "mx.capitaltorreon.mina", sha256_cert_fingerprints: [
+  "20:53:87:76:1C:35:6A:06:FC:E8:C6:2C:7A:0C:55:C1:F9:4F:20:DA:54:45:61:41:1B:33:1C:EB:44:E8:1C:B9",      // llave de subida (Mina_Android/mina-upload.keystore, 20-oct-2026)
+] } }];
 
 const CFG_BASE = {
   modo: "clasico", comb: 1, caida: 1, lava: 1, gas: 1, verGas: 2,
@@ -1562,6 +1566,9 @@ export default {
       if (u.pathname === "/gameplay" && request.method === "GET") return env.ASSETS.fetch(request);
       // Ritmo: gameplays con música (publico/ritmo.html), en /ritmo.
       if ((["/ritmo", "/ritmos", "/ritmo.html", "/musica", "/música", "/reels"].includes(ruta) && u.pathname !== "/ritmo")) return Response.redirect(u.origin + "/ritmo", 301); }
+    // La app de Android (Google Play) y esta página son del mismo dueño: Android lo comprueba aquí con las huellas de las llaves
+    // que firman la app. Primero la de subida (de esta computadora); al publicar se agrega la de firma de Google Play.
+    if (u.pathname === "/.well-known/assetlinks.json") return new Response(JSON.stringify(ASSETLINKS), { headers: { "content-type": "application/json", "cache-control": "public, max-age=3600" } });
     // Solo en pruebas locales: disparar el correo de cumpleaños a mano.
     if (u.pathname === "/api/tienda/cron" && env.MINA_PRUEBA === "1" && ["::1", "127.0.0.1"].includes(request.headers.get("CF-Connecting-IP"))) return json(await correosDeCumple(env));
 
