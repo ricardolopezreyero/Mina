@@ -2626,7 +2626,7 @@ function animarLupa(desde) {
 function medir() {
   if (CINE) return medirCine();
   DPR = Math.min(2.5, window.devicePixelRatio || 1);
-  RES = Math.max(0.75, DPR * NITIDEZ[rit.niv]);
+  RES = Math.max(0.6, DPR * NITIDEZ[rit.niv]);
   const w = Math.max(1, Math.round(innerWidth * RES)), h = Math.max(1, Math.round(innerHeight * RES));
   if (lienzo.width !== w) lienzo.width = w;
   if (lienzo.height !== h) lienzo.height = h;
@@ -3648,7 +3648,9 @@ function dibujar() {
 // se ve parejo en cualquier refresco.
 const DT = 1 / 120;
 const PAUSA = {};
-const NITIDEZ = [1, 0.75, 0.5];          // escalones de nitidez: se baja solo si la máquina no alcanza el refresco de su pantalla
+// La ley: el juego siempre corre a la velocidad de la pantalla; lo que cede es la nitidez. Arranca en la máxima y, si el equipo
+// no alcanza, baja un escalón en cosa de un segundo; cuando sobra, vuelve a subir despacio. Cinco escalones, para bajar lo justo.
+const NITIDEZ = [1, 0.85, 0.7, 0.55, 0.42];
 const RITMOS = [30, 48, 50, 60, 72, 75, 90, 100, 120, 144, 165, 240];
 const rit = { hz: 60, fps: 60, niv: NITIDEZ.length - 1, sonda: true, d: [], lento: 0, bien: 0, veto: 0, sube: 0, peor: 0, lentos: 0, n: 0, t0: 0, ult: null };
 const ant = { x: INICIO_X, y: INICIO_Y };
@@ -3667,8 +3669,8 @@ function medirRitmo(ms) {
   rit.fps = 1000 / medio;
   if (op.fps) return;                                // con tope elegido a mano no se ajusta nada
   const ahora = performance.now();
-  if (rit.fps < rit.hz * 0.82) { rit.bien = 0; if (++rit.lento >= 3 && rit.niv < NITIDEZ.length - 1) { rit.niv++; rit.lento = 0; rit.veto = ahora + 25000; medir(); } }
-  else { rit.lento = 0; if (++rit.bien >= 14 && rit.niv > 0 && ahora > rit.veto) { rit.niv--; rit.bien = 0; rit.veto = ahora + 60000; medir(); } }
+  if (rit.fps < rit.hz * 0.85) { rit.bien = 0; if (++rit.lento >= 2 && rit.niv < NITIDEZ.length - 1) { rit.niv++; rit.lento = 0; rit.veto = ahora + 12000; medir(); } }      // dos ventanas lentas seguidas (≈1 s): un escalón menos de nitidez
+  else { rit.lento = 0; if (++rit.bien >= 10 && rit.niv > 0 && ahora > rit.veto) { rit.niv--; rit.bien = 0; rit.veto = ahora + 20000; medir(); } }      // si sobra, se prueba un escalón más de nitidez cada 20 s
 }
 function ciclo(t, id) {
   if (!corriendo || id !== cicloId) return;
