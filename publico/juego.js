@@ -2519,6 +2519,9 @@ function iniciarMundo(d, local) {
 // Todo se dibuja en píxeles reales de la pantalla: T es cuántos píxeles mide una celda.
 const lienzo = $('#c'), g = lienzo.getContext('2d', { alpha: false });
 let DPR = 1, RES = 1, T = 40, cols = 32, filas = 20, camX = 0, camY = -12, reloj = 0, lupa = Math.max(0.6, Math.min(2.2, +op.lupa || 1));
+// El acercamiento que se ve mientras dura una pinza o la animación de la lupa: se escala el cuadro ya dibujado (barato) y el
+// tamaño real de celda se recalcula una sola vez, al final. Antes se reconstruían todas las celdas en cada cuadro.
+let zoomVis = 1;
 let panX = 0, panY = 0, vistaLibre = false;       // vista libre con la rueda o el trackpad
 // Metiches: un clic al nombre de otra maquinita y tu cámara se va con ella (ves exactamente lo que ve). Tu maquinita se queda
 // quieta donde estaba; cualquier tecla o toque te regresa. A quien miras le avisamos, y le decimos que puede hacer lo mismo.
@@ -2538,6 +2541,18 @@ const tiles = new Map(), casas = new Map();
 const BL = 4, BW = W / BL, bloques = new Map(), bloquesLibres = [];
 let cuadroN = 0, bloquesTope = 120;
 function ensuciar(x, y) { const b = bloques.get((y >> 2) * BW + (x >> 2)); if (b) b.sucio = true; }
+// Lo que viene se prepara antes de verse: la fila de bloques que sigue en la dirección del viaje se pinta de a dos por cuadro
+// (en vez de todos juntos cuando asoman), y las celdas de tierra de la zona siguiente se dibujan por adelantado, cuatro por
+// cuadro, para que cruzar de zona no cueste un cuadro largo. Todo con tope: nunca más de ~1 ms por cuadro.
+let calZona = -1, calN = 0;
+function prepintar(bx0, bx1, by0, by1) {
+  if (CINE || !S) return;
+  const abajo = yo.vy >= 0 || teclas.aba, by = abajo ? by1 + 1 : by0 - 1;
+  let presupuesto = 2;
+  if (by >= 0 && by * BL < H) for (let bx = bx0; bx <= bx1; bx++) { const k = by * BW + bx; if (bloques.has(k)) bloque(bx, by); else if (presupuesto-- > 0) bloque(bx, by); }
+  const z = zonaDe(prof() + (abajo ? 160 : -160));
+  if (z !== zonaDe(prof())) { if (calZona !== z) { calZona = z; calN = 0; } if (calN < 66) { for (let n = 0; n < 4 && calN < 66; n++, calN++) tile(calN < 64 ? 1 : 0, z, calN < 64 ? calN : calN - 64); } }
+}
 function bloque(bx, by) {
   const k = by * BW + bx; let b = bloques.get(k);
   if (!b) {
@@ -2604,8 +2619,9 @@ function mezcla(hex, k) {            // k < 0 oscurece, k > 0 aclara
 let lupaAnim = 0;
 function animarLupa(desde) {
   const t0 = performance.now(), id = ++lupaAnim, de = Math.max(0.3, Math.min(3, desde));
-  const paso = () => { if (id !== lupaAnim) return; const k = Math.min(1, (performance.now() - t0) / 260), e = 1 - Math.pow(1 - k, 3); lupa = de + (1 - de) * e; medir(); if (k < 1) requestAnimationFrame(paso); else lupa = 1; };
-  lupa = de; paso();
+  lupa = 1; medir();                                   // la geometría nueva, una sola vez; lo que se ve llega suave desde la vieja
+  const paso = () => { if (id !== lupaAnim) return; const k = Math.min(1, (performance.now() - t0) / 260), e = 1 - Math.pow(1 - k, 3); zoomVis = de + (1 - de) * e; if (k < 1) requestAnimationFrame(paso); else zoomVis = 1; };
+  zoomVis = de; paso();
 }
 function medir() {
   if (CINE) return medirCine();
@@ -2619,7 +2635,7 @@ function medir() {
   T = movil ? Math.max(Math.round(10 * RES), Math.round(Math.min(w, h) / [9, 12, 16][op.zoom] * lupa)) : Math.max(Math.round(12 * RES), Math.round(w / [26, 32, 40][op.zoom]));
   cols = w / T; filas = h / T;                    // lo que de verdad cabe, aunque la ventana sea angosta
   tiles.clear(); casas.clear(); sprites.clear(); bloques.clear(); bloquesLibres.length = 0;
-  bloquesTope = (Math.ceil(cols / BL) + 1) * (Math.ceil(filas / BL) + 1) + 6;        // lo que cabe en pantalla y unos pocos más
+  bloquesTope = (Math.ceil(cols / BL) + 2) * (Math.ceil(filas / BL) + 3) + 6;        // lo que cabe en pantalla, la franja que viene y unos pocos más
   if (listo && !corriendo) dibujar();
 }
 
@@ -3385,7 +3401,8 @@ function cielo(w, h, oy) {
 }
 function dibujar() {
   const w = lienzo.width, h = lienzo.height;
-  g.setTransform(1, 0, 0, 1, 0, 0);
+  if (zoomVis !== 1) { g.setTransform(1, 0, 0, 1, 0, 0); g.fillStyle = '#1b120e'; g.fillRect(0, 0, w, h); g.setTransform(zoomVis, 0, 0, zoomVis, w / 2 * (1 - zoomVis), h / 2 * (1 - zoomVis)); }
+  else g.setTransform(1, 0, 0, 1, 0, 0);
   let sx = 0, sy = 0;
   if (temblor > 0.3) { sx = (Math.random() - 0.5) * temblor * RES; sy = (Math.random() - 0.5) * temblor * RES; }
   const ox = Math.round(-camX * T + sx), oy = Math.round(-camY * T + sy);
@@ -3407,6 +3424,7 @@ function dibujar() {
       if (s > 0.9) { const k = (s - 0.9) * 10, cx = ox + x * T + T * (0.25 + ((x * 31 + y * 17) % 50) / 100), cy = oy + y * T + T * (0.25 + ((x * 13 + y * 29) % 50) / 100), l = T * 0.16 * k; g.fillStyle = '#fff'; g.fillRect(cx - l, cy - fino / 2, l * 2, fino); g.fillRect(cx - fino / 2, cy - l, fino, l * 2); }
     }
   }
+  prepintar(x0 >> 2, x1 >> 2, y0 >> 2, y1 >> 2);
   if (y1 >= EDEN0) vidaEden(ox, oy, y0, y1);
   if (yo.y > EDEN0 - 60) flechasEden(ox, oy);
   if (lluvia) lluviaDeMinerales(ox, oy);
@@ -3870,7 +3888,7 @@ function ponerChat(l) {
   const ult = chat.l.reduce((a, m) => (m.id > a ? m.id : a), 0);
   if (!ult) {
     chat.l = []; const c = $('#chatMsgs'); c.innerHTML = l.length ? '' : `<p id="chatVacio" class="cn">Aquí todavía no ha escrito nadie. Di hola 👋</p>`;
-    let ant = null; for (const m of l) { c.appendChild(nodoChat(m, ant)); chat.l.push(m); ant = m; }
+    let ant = null; const f = document.createDocumentFragment(); for (const m of l) { f.appendChild(nodoChat(m, ant)); chat.l.push(m); ant = m; } c.appendChild(f);
     chat.completo = l.length < 60; chatAlFondo();
   } else for (const m of l) if (m.id > ult) agregarChat(m);
   $('#chatIn').disabled = soloVer; $('#chatIn').placeholder = soloVer ? 'Estás mirando: entra a jugar para escribir' : 'Escribe y pulsa Enter…';
@@ -4673,8 +4691,10 @@ function grua() {
   yo.x = 41.5; yo.y = INICIO_Y; yo.vx = yo.vy = 0; yo.suelo = true; vistaLibre = false;
   tarjeta('🚁 Grúa · ' + fmt(c), 'Te dejó en la Gasolinera. Con El Elevador regresas al punto donde te recogió.'); difundir('pidió la grúa'); sucio = true; pintarHud(true);
 }
+let tresPre = false;
 function cadaTanto() {
   const m = prof();
+  if (!tresPre && !escCarga && listo && yo.suelo && yo.y < 0.5 && Math.abs(yo.x - 33) < 12 && Math.abs(yo.vx) < 0.2) { tresPre = true; ocio(() => cargarEscaparate()); }      // la tienda en 3D se prepara en un rato libre
   if (yo.y > EDEN0 - 60 && tiempo - edenT > 1) { edenT = tiempo; jardinDelFondo(); }
   if (m > S.rec) {
     S.rec = m; sucio = true;
@@ -5220,13 +5240,18 @@ function quienesEnMapa() {
   return l;
 }
 // Una ventana del mapa: filas y0 a y0 + filas, en el rectángulo (0, 0, cw, ch). Encima, cada maquinita con su color.
-function dibujarMapa(q, cw, ch, y0, filas, conIconos) {
+function dibujarMapa(q, cw, ch, y0, filas, conIconos, sinGente) {
   const img = armarMapa(), k = ch / filas;
   q.imageSmoothingEnabled = false;
   q.fillStyle = '#5f83bd'; if (y0 < 0) q.fillRect(0, 0, cw, Math.min(ch, -y0 * k));      // el cielo
   const a = Math.max(0, Math.floor(y0)), b = Math.min(H, Math.ceil(y0 + filas));
   if (b > a) q.drawImage(img, 0, a, W, b - a, 0, (a - y0) * k, cw, (b - a) * k);
   if (b < y0 + filas) { q.fillStyle = '#0b0807'; q.fillRect(0, (b - y0) * k, cw, ch); }
+  if (sinGente) return;
+  marcarGente(q, cw, ch, y0, filas, conIconos);
+}
+function marcarGente(q, cw, ch, y0, filas, conIconos) {
+  const k = ch / filas;
   if (conIconos && S) { q.font = `${Math.max(12, Math.round(cw / 26))}px system-ui,"Apple Color Emoji","Segoe UI Emoji"`; q.textAlign = 'center'; q.textBaseline = 'middle'; LUGARES.forEach((L, i) => { if (!S.lug[i]) return; const y = (L.y - y0) * k; if (y > -10 && y < ch + 10) q.fillText(L.ic, (L.x + 0.5) / W * cw, y); }); }
   for (const j of quienesEnMapa().sort((u, v) => (u.yo ? 1 : 0) - (v.yo ? 1 : 0))) {     // yo, encima de todos
     const x = (((j.p[0] % W) + W) % W) / W * cw, yy = (j.p[1] - y0) * k, y = Math.max(7, Math.min(ch - 7, yy)), r = j.yo ? 6 : 5;
@@ -5236,14 +5261,23 @@ function dibujarMapa(q, cw, ch, y0, filas, conIconos) {
   }
 }
 // El mapa del menú: el mundo completo de arriba abajo, con la profundidad y los lugares a la derecha (fuera del mapa).
+let mapaMenuBase = null, mapaMenuFirma = '';
 function pintarMapa(cv) {
   const A = 4, an = W * A, ex = 330, alto = H;
   if (cv.width !== an + ex) { cv.width = an + ex; cv.height = alto; }
-  const q = cv.getContext('2d'); q.clearRect(0, 0, cv.width, cv.height);
-  dibujarMapa(q, an, alto, 0, H, false);
-  q.font = '600 13px system-ui'; q.textBaseline = 'middle'; q.textAlign = 'left';
-  for (let m = 0; m <= 10000; m += 500) { const y = Math.min(alto - 8, Math.max(8, m / 2)); q.fillStyle = '#ffffff1f'; q.fillRect(0, m / 2, an, 1); q.fillStyle = '#c9b29c'; q.fillText(m.toLocaleString('es-MX') + ' m', an + 8, y); }
-  LUGARES.forEach((L, i) => { const y = Math.min(alto - 8, L.y); if (S.lug[i]) { q.fillStyle = '#ffd23f'; q.fillText(L.ic + ' ' + L.n, an + 78, y); q.fillStyle = '#ffd23f66'; q.fillRect(an - 6, y - 1, 6, 2); } else { q.fillStyle = '#ffffff44'; q.fillText('❔ sin descubrir', an + 78, y); } });
+  const q = cv.getContext('2d');
+  // el fondo (túneles, metros y lugares) se dibuja una vez por cambio; cada repintado solo pone a la gente encima
+  const img = armarMapa(), firma = mapaFirma + '|' + (S ? S.lug.join('') : '');
+  if (!mapaMenuBase || mapaMenuFirma !== firma || mapaMenuBase.width !== cv.width) {
+    mapaMenuFirma = firma; mapaMenuBase = mapaMenuBase || document.createElement('canvas'); mapaMenuBase.width = cv.width; mapaMenuBase.height = alto;
+    const b = mapaMenuBase.getContext('2d'); b.clearRect(0, 0, cv.width, alto);
+    dibujarMapa(b, an, alto, 0, H, false, true);
+    b.font = '600 13px system-ui'; b.textBaseline = 'middle'; b.textAlign = 'left';
+  for (let m = 0; m <= 10000; m += 500) { const y = Math.min(alto - 8, Math.max(8, m / 2)); b.fillStyle = '#ffffff1f'; b.fillRect(0, m / 2, an, 1); b.fillStyle = '#c9b29c'; b.fillText(m.toLocaleString('es-MX') + ' m', an + 8, y); }
+  LUGARES.forEach((L, i) => { const y = Math.min(alto - 8, L.y); if (S.lug[i]) { b.fillStyle = '#ffd23f'; b.fillText(L.ic + ' ' + L.n, an + 78, y); b.fillStyle = '#ffd23f66'; b.fillRect(an - 6, y - 1, 6, 2); } else { b.fillStyle = '#ffffff44'; b.fillText('❔ sin descubrir', an + 78, y); } });
+  }
+  q.clearRect(0, 0, cv.width, alto); q.drawImage(mapaMenuBase, 0, 0);
+  marcarGente(q, an, alto, 0, H, false);
 }
 
 // ── El mapa de un lado: se abre de izquierda a derecha como el chat (y encima de él, si está abierto). Arriba, quién está
@@ -5843,7 +5877,7 @@ lienzo.addEventListener('pointermove', (e) => {
   if (pinza && dedos.size >= 2) {
     const [p1, p2] = [...dedos.values()], d = Math.hypot(p1.x - p2.x, p1.y - p2.y), mx = (p1.x + p2.x) / 2, my = (p1.y + p2.y) / 2;
     const nl = Math.max(0.6, Math.min(2.2, pinza.lupa0 * d / pinza.d0));
-    if (movil && Math.abs(nl - lupa) > 0.012 && performance.now() - lupaT > 50) { lupa = nl; lupaT = performance.now(); medir(); }
+    if (movil) { pinza.nl = nl; zoomVis = nl / lupa; }     // mientras dura la pinza solo se escala el cuadro; al soltar se mide de verdad
     panX = Math.max(-W, Math.min(W, panX - (mx - pinza.mx) * RES / T)); panY = Math.max(-H, Math.min(H, panY - (my - pinza.my) * RES / T)); pinza.mx = mx; pinza.my = my; vistaLibre = true;
     return;
   }
@@ -5863,7 +5897,7 @@ lienzo.addEventListener('pointermove', (e) => {
 });
 const soltarDedo = (e) => {
   dedos.delete(e.pointerId);
-  if (pinza && dedos.size < 2) { pinza = null; op.lupa = +lupa.toFixed(2); escribir('mina_op', op); }
+  if (pinza && dedos.size < 2) { if (pinza.nl && Math.abs(pinza.nl - lupa) > 0.012) { lupa = pinza.nl; lupaAnim++; medir(); } zoomVis = 1; pinza = null; op.lupa = +lupa.toFixed(2); escribir('mina_op', op); }
   if (e.pointerId !== dedo.id) return;
   if (soloVer) { const corto = !dedo.mov && performance.now() - dedo.t < 320 && Math.hypot(e.clientX - dedo.x, e.clientY - dedo.y) < 12; dedo.id = -1; if (corto) elegirVisto(e.clientX, e.clientY); return; }
   soltarPalanca();

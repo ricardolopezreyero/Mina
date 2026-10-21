@@ -1606,6 +1606,20 @@ A Ricardo le gustaron las imágenes de gemas y pidió dos cosas: otras seis, y q
 - **Ligas:** Galería y Gameplay se enlazan entre sí en la barra; además están en la guía de estilos (menú, atajos, franja y pie) y en el juego (Menú → Arte y Ayuda).
 - **Qué falta:** el GIF pesa 10 MB porque la cámara se mueve y cambia toda la imagen en cada cuadro; el video (MP4) pesaría veinte veces menos y es lo que piden TikTok y Reels. El piloto casi siempre baja derecho: se le pueden enseñar más jugadas (volar, usar dinamita, entrar a un edificio).
 
+### 9.82 Revisión de rendimiento: fluidez a cualquier profundidad (20-oct-2026)
+
+**Qué pidió Ricardo:** revisar la app para que sea «sumamente rápida», con fluidez en cualquier cosa que se toque y a cualquier profundidad.
+
+**Cómo se midió:** (1) perfil de CPU sin ventana (Chrome headless, `scratchpad/perf/perfil3.mjs`) con el juego real cavando desde 0, 300, 2,500, 6,000 y 9,600 m, en computadora (DPR 2, toda la nitidez) y en teléfono (390×844, DPR 3, CPU 4× más lenta), con cada función envuelta en cronómetros y los cuadros lentos desglosados; (2) en el navegador real: cuadros por segundo y ms de JavaScript por cuadro al cavar, con 20 maquinitas conectadas mandando posiciones (`bots.mjs`), abrir cada pestaña del menú, el chat con 400 mensajes, el mapa lateral y la pinza de zoom. **Hallazgo principal:** el motor ya era barato (0.3–0.7 ms de JS por cuadro en computadora, 1–1.4 ms en el teléfono lento; 60 fps sin cuadros largos). Los picos de cientos de ms del modo sin ventana eran del dibujo por software, no del juego. Lo que sí trababa:
+
+1. **La pinza de zoom y el cambio de acercamiento** llamaban `medir()` en cada cuadro (vacía celdas, bloques y sprites y repinta todo en frío): 18 ms por cuadro en la Mac, ×4 en teléfono, durante toda la pinza. Ahora `zoomVis` escala el cuadro ya dibujado mientras dura el gesto o la animación, y la geometría real se mide **una sola vez** al soltar (`animarLupa`, `pointermove`/`soltarDedo`, inicio de `dibujar`). Medido: una sola medida por animación.
+2. **El mapa del menú** se redibujaba completo (384×5,000 px, metros y lugares) cada 300 ms mientras la pestaña estaba abierta (7–14 ms cada vez). Ahora el fondo se guarda en `mapaMenuBase` por firma y cada tic solo pone a la gente (`marcarGente`): 0.2 ms.
+3. **Lo que viene se prepara antes** (`prepintar`): la fila de bloques que sigue en la dirección del viaje se pinta de a dos por cuadro y las 64 celdas de tierra de la zona siguiente se calientan de a cuatro por cuadro al acercarse a 160 m del cambio de zona; `bloquesTope` creció una franja para que no se desechen. La caché queda acotada (72–81 bloques con tope 86; celdas ≤ 200).
+4. **El historial del chat** entra con un `DocumentFragment` (un solo acomodo de la página en vez de sesenta).
+5. **La tienda en 3D** (three.js, 650 KB) se carga en un rato libre cuando la maquinita está parada frente a La Pinturería, para que abrir la tienda no se sienta.
+
+**Después:** en el navegador real, cavando a 300, 1,900 y 6,000 m: 120 cuadros por segundo (pantalla de 120 Hz), 0.3–0.5 ms de JS por cuadro, pico 2.8–4.4 ms, cero cuadros de más de 33 ms. Los menús abren en 3–8 ms (el mapa, 0.2 ms al repintar). **Lo que no cambió porque ya estaba bien:** `pintarHud` solo toca el DOM cuando cambia el texto (`poner`), `guardarCopia` cuesta 0.4 ms, la tabla mundial y el viaje son baratos.
+
 ### 9.81 Cruce contra las políticas de Google Play (20-oct-2026)
 
 **Qué pidió Ricardo:** revisar las buenas prácticas y todas las políticas de Google Play, cruzarlas con lo que tiene Mina y construir lo que falte o esté «muy suave», para que la aprueben sin problemas después.
