@@ -10,6 +10,8 @@ import { DurableObject } from "cloudflare:workers";
 import { gtmApi } from "./gtm.js";                  // el tablero interno de salida al mercado (/gtm): solo correos de la casa
 export { Gtm } from "./gtm.js";
 import { verificarPase } from "./verificar.js";      // el pase del Login de CapitalTorreon (login.capitaltorreon.com)
+import { filtrar } from "./filtro.js";                // tapa las palabras ofensivas del chat y de los nombres
+import { moderacionApi, avisarModeracion } from "./moderacion.js";      // los reportes del chat y el panel /moderacion
 import { NIVELES, MECENAS_MIN, FONDO_PRECIO, TOPE_MES, precioDe, filtrarPinta, motorConfort, OFERTA_DIAS, EXPERIMENTOS, momento, precioFinal, cumpleOk, cumpleCerca, horaTorreon, GRATITUD_MIN, GRATITUD_HORA, REFERIDO_PREMIO, GRATIS, CALCAS, calcaHoy, PIEZAS, pieza } from "./tienda.js";      // La Pinturería: precios y pintura
 // Un secreto de la bóveda (Secrets Store) llega como objeto con .get(); en local, como texto de .dev.vars. Sin él: "".
 async function secreto(v) { if (!v) return ""; if (typeof v === "string") return v; try { return (await v.get()) || ""; } catch { return ""; } }
@@ -27,8 +29,12 @@ const CHAT_LARGO = 300, CHAT_GUARDA = 20000;
 // El texto del chat: una sola línea, sin caracteres de control ni marcas invisibles que voltean el texto; los emojis pasan enteros.
 function textoChat(s) {
   const t = String(s ?? "").replace(/[\u0000-\u001f\u007f\u200b-\u200f\u2028-\u202e\u2066-\u2069]/g, " ").replace(/\s+/g, " ").trim();
-  return Array.from(t).slice(0, CHAT_LARGO).join("");
+  return filtrar(Array.from(t).slice(0, CHAT_LARGO).join(""));
 }
+// Los nombres que ven los demás (maquinitas y mundos) pasan por el mismo filtro que el chat.
+const nombreLimpio = (s, n) => filtrar(limpio(s, n)).slice(0, n);
+// Por qué se reporta algo: lo eligen de una lista corta (y «otro»).
+const MOTIVOS = ["acoso", "sexual", "odio", "violencia", "datos", "spam", "nombre", "otro"];
 const DIA = 86400000;
 // El terreno completo de un mundo: 4 bytes de encabezado («MN», versión del formato, versión del generador), una celda por
 // byte (96 × 5,000) y la posición de los 99 objetos de la colección (4 bytes cada una).
@@ -106,7 +112,7 @@ function cfgLimpia(c, antes) {
     verGas: entero(c.verGas, 0, 2, antes.verGas),
     pierde: entero(c.pierde, 0, 3, antes.pierde),
     rescates: entero(c.rescates, -1, 3, antes.rescates),
-    nombre: limpio(c.nombre, 24) || antes.nombre,
+    nombre: nombreLimpio(c.nombre, 24) || antes.nombre,
     puerta: entero(c.puerta, 0, 1, antes.puerta),
     reminTodos: entero(c.reminTodos, 0, 1, antes.reminTodos),
     regalos: entero(c.regalos, 0, 1, antes.regalos),
@@ -171,6 +177,51 @@ export class Tabla extends DurableObject {
   async felicitado(k, y) { const c = (await this.ctx.storage.get("cumples")) || {}; if (c[k]) { c[k].y = y; await this.ctx.storage.put("cumples", c); } }
   async anotarCompra(desc) { const e = (await this.ctx.storage.get("eco")) || { n: 0, suma: 0 }; e.n++; e.suma += desc; await this.ctx.storage.put("eco", e); }
   async tomarRegalo() { const f = (await this.ctx.storage.get("fondo")) || 0; if (f <= 0) return 0; await this.ctx.storage.put("fondo", f - 1); return 1; }
+
+  // ── La moderación de toda Mina: los reportes del chat (y de nombres) y a quién se le pausó el chat.
+  // Un reporte por cosa reportada: si otras personas reportan lo mismo, se suman a ese. Se guardan los últimos 2,000.
+  async nuevoReporte(r) {
+    const l = (await this.ctx.storage.get("reportes")) || [], ahora = Date.now();
+    let e = l.find((x) => x.estado === "abierto" && x.mundo === r.mundo && x.ref === r.ref), nuevo = 0;
+    if (e) { if (!e.por.includes(r.por)) { e.por.push(r.por); e.motivos[r.motivo] = (e.motivos[r.motivo] || 0) + 1; } e.h = ahora; if (r.oculto) e.oculto = 1; }
+    else {
+      const n = ((await this.ctx.storage.get("reportesN")) || 0) + 1; await this.ctx.storage.put("reportesN", n); nuevo = 1;
+      e = { id: n, mundo: r.mundo, nm: r.nm || "", tipo: r.tipo, ref: r.ref, autor: r.autor, x: r.x, nota: r.nota || "", por: [r.por], motivos: { [r.motivo]: 1 }, h0: ahora, h: ahora, estado: "abierto", ...(r.oculto ? { oculto: 1 } : {}) };
+      l.unshift(e);
+    }
+    if (l.length > 2000) l.length = 2000;
+    await this.ctx.storage.put("reportes", l);
+    // correo a quien modera: uno por reporte nuevo, hasta 40 al día (lo demás se ve en /moderacion)
+    let correo = 0;
+    if (nuevo) { const dia = "rc:" + Math.floor(ahora / DIA), c = (await this.ctx.storage.get(dia)) || 0; if (c < 40) { correo = 1; await this.ctx.storage.put(dia, c + 1); } }
+    return { ...e, nuevo, correo };
+  }
+  async listaReportes() { return (await this.ctx.storage.get("reportes")) || []; }
+  async cerrarReporte(id, estado, por) {
+    const l = (await this.ctx.storage.get("reportes")) || [], e = l.find((x) => x.id === id); if (!e) return null;
+    e.estado = estado; e.cerro = por; e.hc = Date.now();
+    await this.ctx.storage.put("reportes", l); return e;
+  }
+  // Chat pausado: por huella de maquinita (la misma en todos los mundos). dias = 0 lo quita; 3650 o más = sin fecha de regreso.
+  async ponerSilencio(h, dias, por, n) {
+    const s = (await this.ctx.storage.get("silencio")) || {};
+    if (dias > 0) s[h] = { hasta: dias >= 3650 ? 0 : Date.now() + dias * DIA, por, n: n || "", desde: Date.now() }; else delete s[h];
+    await this.ctx.storage.put("silencio", s); return this.vigentes(s);
+  }
+  vigentes(s) { const ahora = Date.now(); return Object.fromEntries(Object.entries(s || {}).filter(([, v]) => !v.hasta || v.hasta > ahora)); }
+  async silenciados() { return this.vigentes(await this.ctx.storage.get("silencio")); }
+  // Alguien borró su cuenta (o los datos de su equipo): sale de la tabla, de los cumpleaños y de la lista de chats pausados.
+  // Los reportes se quedan (son el registro de lo que se moderó), pero sin el texto ni el nombre de esa persona.
+  async quitarDe(pids, ks) {
+    const top = await this.cargar(), P = new Set(pids), K = new Set(ks);
+    const quedan = top.filter((e) => !P.has(e.p)); if (quedan.length !== top.length) { this.top = quedan; await this.ctx.storage.put("top", quedan); }
+    const c = (await this.ctx.storage.get("cumples")) || {}; let cc = false; for (const k of K) if (c[k]) { delete c[k]; cc = true; } if (cc) await this.ctx.storage.put("cumples", c);
+    const s = (await this.ctx.storage.get("silencio")) || {}; let cs = false; for (const p of P) if (s[p]) { delete s[p]; cs = true; } if (cs) await this.ctx.storage.put("silencio", s);
+    const l = (await this.ctx.storage.get("reportes")) || []; let cr = false;
+    for (const e of l) { if (e.autor && P.has(e.autor.h)) { e.autor = { i: e.autor.i, h: "", n: "(cuenta borrada)" }; e.x = "(borrado a petición de su autor)"; cr = true; } const a = e.por.filter((p) => !P.has(p)); if (a.length !== e.por.length) { e.por = a; cr = true; } }
+    if (cr) await this.ctx.storage.put("reportes", l);
+    return 1;
+  }
 }
 
 // RLR · la maquinita
@@ -265,6 +316,12 @@ export class Maquina extends DurableObject {
     if (m.pinta.calca >= CALCAS.length && m.pinta.calca !== antes.calca && !calcaHoy(m.pinta.calca, horaTorreon().md)) { if (antes.calca !== undefined) m.pinta.calca = antes.calca; else delete m.pinta.calca; }
     await this.ctx.storage.put("m", m); return { p: this.pintaPublica(m), nv: t.nivel, me: t.mecenas > 0 ? 1 : 0 };
   }
+
+  // ── Borrar: dónde anda y quién la trajo (para limpiar allá también), y luego todo lo suyo, de una vez y para siempre.
+  async donde() { const m = await this.ctx.storage.get("m"); return m ? { mundo: m.mundo || "", padrino: m.padrino || "" } : null; }
+  async borrar() { const r = await this.donde(); await this.ctx.storage.deleteAll(); return r; }
+  // Quien llegó con la liga de esta maquinita borró su cuenta: sale de su lista de referidos (el saldo ganado se queda).
+  async olvidarReferido(de) { const m = await this.ctx.storage.get("m"); if (!m || !m.ref) return; const a = m.ref.lista.length; m.ref.lista = m.ref.lista.filter((x) => x.de !== de); if (m.ref.lista.length !== a) await this.ctx.storage.put("m", m); }
 
   // Lo que la cuenta enseña de ella: nombre, modelo, cuánto ha ganado, hasta dónde bajó y cuánto ha jugado.
   async resumen() {
@@ -378,6 +435,15 @@ export class Cuenta extends DurableObject {
   async agregarCaptura(t, cap) { const c = await this.sesion(t); if (!c) return null; c.capturas = (c.capturas || []).concat(cap).slice(-800); await this.ctx.storage.put("c", c); return { sub: c.sub, n: c.capturas.length }; }
   async capturas(t) { const c = await this.sesion(t); return c ? { sub: c.sub, capturas: c.capturas || [], mundos: c.mundos || [] } : null; }
   async quitarCaptura(t, id) { const c = await this.sesion(t); if (!c) return null; c.capturas = (c.capturas || []).filter((x) => x.id !== id); await this.ctx.storage.put("c", c); return { sub: c.sub }; }
+  // Borrar la cuenta: primero se dice qué hay que limpiar en otros lados (maquinitas, mundos, capturas) y al final se borra
+  // la cuenta entera. «verificado» = ya se comprobó con el login de la casa que es su dueño (desde la página /borrar-cuenta).
+  async paraBorrar(t, verificado) {
+    const c = await this.ctx.storage.get("c"); if (!c) return null;
+    if (!verificado && !(await this.sesion(t))) return null;
+    const keys = [...new Set([c.k, ...this.garajeDe(c).map((x) => x.k)].filter(llaveOk))];
+    return { sub: c.sub, email: c.email || "", keys, mundos: (c.mundos || []).map((x) => x.id) };
+  }
+  async borrarTodo() { await this.ctx.storage.deleteAll(); return 1; }
   async salir(t) {
     const c = await this.sesion(t);
     if (!c) return false;
@@ -407,6 +473,51 @@ async function verificarGoogle(cred, ids, env, request) {
   return { sub: p.sub, email: limpio(p.email, 120), nombre: limpio(p.name, 60), foto };
 }
 const ID_GOOGLE = "977641517971-23ouv33lu4s8ejrm6m4mgvuqcvpa9ucf.apps.googleusercontent.com";
+
+// RLR · borrar la cuenta (o los datos de un equipo que juega sin cuenta). Lo piden la ley y las dos tiendas de apps: se hace
+// desde el juego (Menú → Mi maquinita → Privacidad y datos) o desde mina.capitaltorreon.com/borrar-cuenta, al momento y para
+// siempre. Se va la cuenta, cada maquinita (con lo comprado en La Pinturería), las capturas, su renglón en la tabla mundial y
+// su cumpleaños. En los mundos donde jugó con más gente, su maquinita queda como «Maquinita retirada» y sus mensajes se
+// borran; los mundos donde solo jugó esa persona se borran enteros. Quien tiene la llave de una maquinita es su dueño (así se
+// juega en Mina), por eso un equipo sin cuenta puede borrar las maquinitas que guarda.
+async function borrarDatos(env, { sub, keys, mundos }) {
+  keys = [...new Set(keys.filter(llaveOk))].slice(0, 60);
+  const maq = (k) => env.MAQUINA.get(env.MAQUINA.idFromName(k)), pids = await Promise.all(keys.map(huella));
+  const donde = await Promise.all(keys.map((k) => maq(k).donde().catch(() => null))), ids = new Set(mundos.filter(idOk));
+  for (const r of donde) if (r && idOk(r.mundo)) ids.add(r.mundo);
+  let tocados = 0, borrados = 0; const lista = [...ids].slice(0, 600);
+  for (let a = 0; a < lista.length; a += 10) {
+    await Promise.all(lista.slice(a, a + 10).map(async (id) => { try { const r = await env.MUNDO.get(env.MUNDO.idFromName(id)).olvidar(keys); if (r && r.borrado) borrados++; else if (r && r.n) tocados++; } catch {} }));
+  }
+  const de = sub ? await sha(sub) : "";
+  await Promise.all(keys.map(async (k, x) => { try { const r = donde[x]; if (r && r.padrino && de && llaveOk(r.padrino)) await maq(r.padrino).olvidarReferido(de); await maq(k).borrar(); } catch {} }));
+  try { await env.TABLA.get(env.TABLA.idFromName("mundial")).quitarDe(pids, keys); } catch {}
+  let fotos = 0;
+  if (sub && /^[0-9A-Za-z]{1,40}$/.test(sub)) {
+    let cursor;
+    do { const l = await env.CAPTURAS.list({ prefix: `cap/${sub}/`, cursor }), ks = l.objects.map((o) => o.key); if (ks.length) { await env.CAPTURAS.delete(ks); fotos += ks.length; } cursor = l.truncated ? l.cursor : undefined; } while (cursor);
+  }
+  return { maquinitas: keys.length, mundosTocados: tocados, mundosBorrados: borrados, fotos };
+}
+async function borrarCuenta(d, ids, env, request) {
+  if (d.confirmo !== "BORRAR") return json({ error: "confirmo" }, 400);
+  const cuenta = (sub) => env.CUENTA.get(env.CUENTA.idFromName("g:" + sub));
+  const extra = (Array.isArray(d.k) ? d.k : []).filter(llaveOk).slice(0, 50), masMundos = (Array.isArray(d.mundos) ? d.mundos : []).filter(idOk).slice(0, 500);
+  let info = null;
+  if (d.pase) {                                       // desde la página: el login de la casa dice quién es
+    const cred = String(d.pase), host = new URL(request.url).hostname;      // el pase tiene que ser para Mina (aud), no para otro servicio de la casa
+    const g = cred.startsWith("prueba:") ? await verificarGoogle(cred, ids, env, request) : await verificarPase(cred, host).then((q) => (q && /^\d{1,40}$/.test(q.sub || "") ? { sub: q.sub } : null), () => null);
+    if (!g) return json({ error: "google" }, 401);
+    info = await cuenta(g.sub).paraBorrar(null, true);
+  } else if (d.ses) {                                 // desde el juego: la sesión de la cuenta en este equipo
+    const ses = String(d.ses), punto = ses.lastIndexOf("."), sub = ses.slice(0, punto), t = ses.slice(punto + 1);
+    if (punto < 1 || !/^[0-9A-Za-z]{1,40}$/.test(sub) || !/^[0-9a-f]{48}$/.test(t)) return json({ error: "sesion" }, 401);
+    info = await cuenta(sub).paraBorrar(t, false); if (!info) return json({ error: "sesion" }, 401);
+  } else if (!extra.length) return json({ error: "datos" }, 400);
+  const r = await borrarDatos(env, { sub: info ? info.sub : "", keys: [...(info ? info.keys : []), ...extra], mundos: [...(info ? info.mundos : []), ...masMundos] });
+  if (info) await cuenta(info.sub).borrarTodo();
+  return json({ ok: 1, cuenta: info ? 1 : 0, correo: info ? info.email : "", ...r });
+}
 async function cuentaApi(u, request, env) {
   const ids = String(env.GOOGLE_CLIENT_ID || ID_GOOGLE).split(",").map((x) => x.trim()).filter(Boolean);
   if (u.pathname === "/api/cuenta/cliente" && request.method === "GET") return json({ id: ids[0] });
@@ -414,6 +525,7 @@ async function cuentaApi(u, request, env) {
   let d;
   try { d = await request.json(); } catch { return json({ error: "datos" }, 400); }
   if (!d || typeof d !== "object") return json({ error: "datos" }, 400);
+  if (u.pathname === "/api/cuenta/borrar") return borrarCuenta(d, ids, env, request);      // con cuenta o sin ella: se borra todo
   const cuenta = (sub) => env.CUENTA.get(env.CUENTA.idFromName("g:" + sub));
   const resumen = async (k) => { if (!llaveOk(k)) return null; try { return await env.MAQUINA.get(env.MAQUINA.idFromName(k)).resumen(); } catch { return null; } };
   if (u.pathname === "/api/cuenta/google") {
@@ -617,6 +729,9 @@ export class Mundo extends DurableObject {
     this.paso = new Map();
     // El chat del mundo se guarda completo, mensaje por mensaje.
     ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS chat (id INTEGER PRIMARY KEY AUTOINCREMENT, h INTEGER, i INTEGER, n TEXT, m INTEGER, x TEXT)");
+    // Quién reportó qué (una vez por persona): con tres reportes distintos, un mensaje se oculta para todos sin esperar a nadie.
+    ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS reporte (ref TEXT, por TEXT, PRIMARY KEY (ref, por))");
+    this.sil = {}; this.silT = 0;   // los chats pausados de toda Mina (se vuelven a preguntar cada 5 minutos)
     ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair("p", "q"));
   }
 
@@ -712,7 +827,7 @@ export class Mundo extends DurableObject {
     const m = this.m, k = limpio(d.k, 64);
     if (k.length < 16) return;
     if (this.baneado(k, this.ipDe(ws))) { manda(ws, { t: "baneado" }); try { ws.close(4002, "baneado"); } catch {} return; }
-    a.n = limpio(d.n, 14) || a.n || ""; a.m = entero(d.m, 0, 7, a.m || 0);
+    a.n = nombreLimpio(d.n, 14) || a.n || ""; a.m = entero(d.m, 0, 7, a.m || 0);
     const yaEs = this.jug.some((j) => j && j.k === k) && !(m.rev || []).includes(k), dueno = this.creador();
     if (yaEs || dueno < 0 || (m.ok || []).includes(k)) { ws.serializeAttachment(a); manda(ws, { t: "aceptado", id: m.id }); return; }
     if (this.jug.filter(Boolean).length >= MAX_MAQUINITAS) { manda(ws, { t: "lleno" }); return; }
@@ -775,6 +890,83 @@ export class Mundo extends DurableObject {
     if (antes) manda(ws, { t: "chatMas", l: this.ctx.storage.sql.exec("SELECT id, h, i, n, m, x FROM chat WHERE id < ? ORDER BY id DESC LIMIT 50", antes).toArray().reverse() });
   }
 
+  // ── Reportes y moderación
+  async silenciado(pid) {
+    if (!pid) return false;
+    if (Date.now() - this.silT > 300000) { this.silT = Date.now(); try { this.sil = await this.tabla().silenciados(); } catch {} }
+    const s = this.sil[pid]; return !!s && (!s.hasta || s.hasta > Date.now());
+  }
+  async reportar(ws, i, d, porVer) {
+    const motivo = MOTIVOS.includes(d.motivo) ? d.motivo : "otro", nota = textoChat(d.nota).slice(0, 280), yo = i >= 0 ? this.jug[i] : null, por = yo ? yo.pid || "i" + i : porVer;
+    let tipo, ref, autorI, x;
+    if (d.id) {
+      const r = this.ctx.storage.sql.exec("SELECT id, i, x FROM chat WHERE id = ?", entero(d.id, 1, 1e12, 0)).toArray()[0];
+      if (!r || r.i < 0) { manda(ws, { t: "reporteOk", ya: 1 }); return; }
+      tipo = "mensaje"; ref = "c" + r.id; autorI = r.i; x = r.x;
+    } else {
+      autorI = entero(d.i, 0, MAX_MAQUINITAS - 1, -1); if (!this.jug[autorI]) return;
+      tipo = "maquinita"; ref = "j" + autorI; x = this.jug[autorI].n;
+    }
+    const autor = this.jug[autorI]; if (autorI === i || !autor || autor.fuera) return;
+    try { this.ctx.storage.sql.exec("INSERT INTO reporte (ref, por) VALUES (?, ?)", ref, por); }
+    catch { manda(ws, { t: "reporteOk", ya: 1 }); return; }      // ya lo había reportado
+    const n = this.ctx.storage.sql.exec("SELECT COUNT(*) AS n FROM reporte WHERE ref = ?", ref).one().n;
+    let oculto = 0;
+    if (tipo === "mensaje" && n >= 3) { this.ctx.storage.sql.exec("DELETE FROM chat WHERE id = ?", Number(ref.slice(1))); this.difundir({ t: "chatQuita", id: Number(ref.slice(1)) }); oculto = 1; }
+    manda(ws, { t: "reporteOk" });
+    const rep = { mundo: this.m.id || "", nm: this.m.cfg.nombre || "", tipo, ref, autor: { i: autorI, h: autor.pid || "", n: autor.n }, x, nota, por, motivo, oculto };
+    this.ctx.waitUntil(this.tabla().nuevoReporte(rep).then((e) => (e && e.correo ? avisarModeracion(this.env, e) : null)).catch(() => {}));
+  }
+  // Lo que decide quien modera (desde /moderacion): borrar un mensaje, cambiarle el nombre a una maquinita, o que se vuelva
+  // a preguntar la lista de chats pausados.
+  async moderar(o) {
+    const m = await this.cargar(); if (!m) return null;
+    if (o.accion === "borrarMsg") { const id = entero(o.id, 1, 1e12, 0); this.ctx.storage.sql.exec("DELETE FROM chat WHERE id = ?", id); this.difundir({ t: "chatQuita", id }); return { ok: 1 }; }
+    if (o.accion === "renombrar") {
+      const x = entero(o.i, 0, MAX_MAQUINITAS - 1, -1), j = this.jug[x]; if (!j || j.fuera) return null;
+      const n = "Maquinita " + (x + 1);
+      try { await this.maquina(j.k).renombrar(n, j.m || 0); } catch {}
+      j.n = n; this.sucio.jug.add(x); this.difundir({ t: "nom", i: x, n, m: j.m || 0 }); this.avisarTabla(x, true, true);
+      await this.programar(); return { ok: 1, n };
+    }
+    if (o.accion === "nombreMundo") { m.cfg.nombre = ""; this.sucio.meta = true; this.difundir({ t: "cfg", cfg: m.cfg }); await this.programar(); return { ok: 1 }; }
+    if (o.accion === "silencio") { this.silT = 0; return { ok: 1 }; }
+    return null;
+  }
+  // Alguien borró su cuenta o los datos de su equipo: aquí sale su maquinita. Si nadie más jugó en este mundo, el mundo se va
+  // con ella; si hubo más gente, queda su lugar como «Maquinita retirada» (los demás conservan todo) y se borran sus mensajes.
+  async olvidar(keys) {
+    const m = await this.cargar(); if (!m) return null;
+    const K = new Set(keys), idx = []; this.jug.forEach((j, x) => { if (j && K.has(j.k)) idx.push(x); });
+    let cambio = false;
+    for (const l of ["ok", "rev"]) if (Array.isArray(m[l])) { const a = m[l].filter((k) => !K.has(k)); if (a.length !== m[l].length) { m[l] = a; cambio = true; } }
+    if (Array.isArray(m.ban)) { const a = m.ban.filter((b) => !K.has(b.k)); if (a.length !== m.ban.length) { m.ban = a; cambio = true; } }
+    if (!idx.length) { if (cambio) await this.ctx.storage.put("meta", m); return { n: 0 }; }
+    if (!this.jug.some((j, x) => j && !j.fuera && !idx.includes(x))) {
+      this.difundir({ t: "borrado" });
+      for (const s of this.ctx.getWebSockets()) { try { s.close(4001, "borrado"); } catch {} }
+      if (m.ver) { try { await this.tabla().olvidar(m.ver); } catch {} }
+      this.ctx.storage.sql.exec("DELETE FROM chat"); this.ctx.storage.sql.exec("DELETE FROM reporte");
+      await this.ctx.storage.deleteAlarm(); await this.ctx.storage.deleteAll(); this.m = false;
+      return { borrado: 1 };
+    }
+    for (const x of idx) {
+      const j = this.jug[x], s = this.socketDe(x);
+      if (s) { manda(s, { t: "cuentaBorrada" }); s.serializeAttachment(null); try { s.close(4003, "cuenta borrada"); } catch {} }
+      this.ctx.storage.sql.exec("DELETE FROM chat WHERE i = ?", x);
+      this.ctx.storage.sql.exec("DELETE FROM chat WHERE i = -1 AND instr(x, ?) > 0", "👋 " + j.n + " llegó");      // la nota de cuando llegó lleva su nombre
+      this.jug[x] = { k: "", n: "Maquinita retirada", m: 0, est: null, rec: 0, tot: 0, alta: j.alta || 0, fuera: 1 };
+      for (const mp of [this.pos, this.xy, this.tablaT, this.chatT, this.maqT, this.fotoT]) mp.delete(x);
+      this.sucio.maq.delete(x); this.sucio.jug.delete(x);
+      await this.ctx.storage.delete("og:j:" + x);
+      await this.ctx.storage.put("j:" + x, this.jug[x]);
+      this.difundir({ t: "chatQuita", i: x }); this.difundir({ t: "nom", i: x, n: "Maquinita retirada", m: 0 }); this.difundir({ t: "sale", i: x });
+      if (this.creador() === x) { m.creador = -1; m.dueno = hex(crypto.getRandomValues(new Uint8Array(16))); }      // el mundo se queda sin quien lo creó: nadie hereda sus permisos
+    }
+    await this.ctx.storage.put("meta", m);
+    return { n: idx.length };
+  }
+
   // ── El terreno guardado
   mapaDe(m) { return m.mapaH && m.mapaR === m.remin ? { r: m.remin, h: m.mapaH } : null; }
   async mapa() {
@@ -824,7 +1016,7 @@ export class Mundo extends DurableObject {
 
   publico(i, on) {
     const j = this.jug[i];
-    return { i, n: j.n, m: j.m, rec: j.rec || 0, tot: j.tot || 0, on: on ? 1 : 0, p: j.p || {}, me: j.me || 0, ...(j.de >= 0 ? { de: j.de } : {}), alta: j.alta || 0 };
+    return { i, n: j.n, m: j.m, rec: j.rec || 0, tot: j.tot || 0, on: on ? 1 : 0, p: j.p || {}, me: j.me || 0, ...(j.de >= 0 ? { de: j.de } : {}), alta: j.alta || 0, h: j.pid || "", ...(j.fuera ? { fuera: 1 } : {}) };      // h: la huella con la que se bloquea a alguien en todos los mundos
   }
   // Para regalar: la llave de la maquinita número i (nunca sale al navegador; la usa la tienda del lado del servidor).
   async llaveDe(i) { await this.cargar(); const j = this.jug[i]; return j ? j.k : ""; }
@@ -932,11 +1124,12 @@ export class Mundo extends DurableObject {
     const m = await this.cargar();
     const att = ws.deserializeAttachment();
     if ((att && att.o) || this.ctx.getTags(ws).includes("mira")) {             // quien mira no puede hacer nada… salvo leer el chat hacia atrás
-      if (m && att && typeof msg === "string" && msg.length < 400) {
+      if (m && att && typeof msg === "string" && msg.length < 900) {
         let d; try { d = JSON.parse(msg); } catch { return; }
         if (!d) return;
         if (d.t === "chatAntes") this.chatMas(ws, d);
-        else if (d.t === "soy") { att.n = limpio(d.n, 14); att.m = entero(d.m, 0, 7, 0); ws.serializeAttachment(att); this.avisarDueno(); }
+        else if (d.t === "reporte") await this.reportar(ws, -1, d, "ver:" + (att.sid || "?"));      // quien mira también puede reportar lo que ve
+        else if (d.t === "soy") { att.n = nombreLimpio(d.n, 14); att.m = entero(d.m, 0, 7, 0); ws.serializeAttachment(att); this.avisarDueno(); }
         else if (d.t === "pido") await this.pedir(ws, att, d);
         else if (d.t === "nopido") { delete att.sol; ws.serializeAttachment(att); this.avisarDueno(); }
       }
@@ -1090,7 +1283,7 @@ export class Mundo extends DurableObject {
         break;
       }
       case "nombre": {           // rebautizar la maquinita o cambiarle el modelo
-        const n = limpio(d.n, 14), mo = entero(d.m, 0, 7, yo.m);
+        const n = nombreLimpio(d.n, 14), mo = entero(d.m, 0, 7, yo.m);
         if (n.length < 2 || (n === yo.n && mo === yo.m)) return;
         try { if (!(await this.maquina(yo.k).renombrar(n, mo))) return; } catch { return; }
         yo.n = n; yo.m = mo;
@@ -1105,6 +1298,7 @@ export class Mundo extends DurableObject {
         const ahora = Date.now(), r = this.chatT.get(i) || [];
         while (r.length && ahora - r[0] > 10000) r.shift();
         if (r.length >= 6 || (r.length && ahora - r[r.length - 1] < 400)) { manda(ws, { t: "chatNo" }); return; }      // seis mensajes cada diez segundos, como mucho
+        if (await this.silenciado(yo.pid)) { manda(ws, { t: "chatNo", sil: this.sil[yo.pid].hasta || 0 }); return; }      // su chat está en pausa por un reporte
         r.push(ahora); this.chatT.set(i, r);
         const id = this.ctx.storage.sql.exec("INSERT INTO chat (h, i, n, m, x) VALUES (?, ?, ?, ?, ?) RETURNING id", ahora, i, yo.n, yo.m, x).one().id;
         this.difundir({ t: "chat", id, h: ahora, i, n: yo.n, m: yo.m, x });
@@ -1113,6 +1307,9 @@ export class Mundo extends DurableObject {
       }
       case "chatAntes":
         this.chatMas(ws, d);
+        return;
+      case "reporte":            // alguien reporta un mensaje o a una maquinita (su nombre): queda para moderación y se le avisa a quien modera
+        await this.reportar(ws, i, d);
         return;
       case "pinta": {            // la pintura de la maquinita: la valida su propio objeto contra el nivel comprado
         let r = null; try { r = await this.maquina(yo.k).ponerPinta(d.p); } catch { return; }
@@ -1224,7 +1421,7 @@ export class Mundo extends DurableObject {
     if (!m.id) { m.id = this.idVisto || ""; this.sucio.meta = true; }
 
     // La maquinita vive en su propio objeto. Si este mundo la conocía de antes (versión anterior), se muda allá.
-    const viejo0 = i >= 0 ? this.jug[i] : null, n = limpio(d.n, 14);
+    const viejo0 = i >= 0 ? this.jug[i] : null, n = nombreLimpio(d.n, 14);
     const deI = entero(d.de, 0, MAX_MAQUINITAS - 1, -1), padrinoK = i < 0 && deI >= 0 && this.jug[deI] && this.jug[deI].k !== k ? this.jug[deI].k : "";
     let r = null;
     try {
@@ -1466,6 +1663,8 @@ export default {
     if (u.pathname.startsWith("/api/cuenta/")) return cuentaApi(u, request, env);
     // La Pinturería: catálogo, pagar y confirmar
     if (u.pathname === "/api/tienda" || u.pathname.startsWith("/api/tienda/")) return tiendaApi(u, request, env);
+    // La moderación (/moderacion): los reportes del chat y lo que se decide con ellos. Solo quien administra.
+    if (u.pathname === "/api/moderacion" || u.pathname.startsWith("/api/moderacion/")) return moderacionApi(u, request, env);
     // El tablero interno (/gtm): la página y sus palomitas, solo para correos de la casa
     if (u.pathname === "/api/gtm" || u.pathname.startsWith("/api/gtm/")) return gtmApi(u, request, env);
     // Las capturas de pantalla: subir, listar, borrar; y la imagen misma

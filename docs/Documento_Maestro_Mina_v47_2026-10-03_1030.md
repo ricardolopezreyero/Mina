@@ -1606,6 +1606,21 @@ A Ricardo le gustaron las imágenes de gemas y pidió dos cosas: otras seis, y q
 - **Ligas:** Galería y Gameplay se enlazan entre sí en la barra; además están en la guía de estilos (menú, atajos, franja y pie) y en el juego (Menú → Arte y Ayuda).
 - **Qué falta:** el GIF pesa 10 MB porque la cámara se mueve y cambia toda la imagen en cada cuadro; el video (MP4) pesaría veinte veces menos y es lo que piden TikTok y Reels. El piloto casi siempre baja derecho: se le pueden enseñar más jugadas (volar, usar dinamita, entrar a un edificio).
 
+### 9.80 Listo para las tiendas: privacidad, borrar cuenta, reportar y bloquear (20-oct-2026)
+
+**Qué pidió Ricardo:** acomodar lo que falta para cumplir con las reglas de App Store y Google Play: aviso de privacidad y términos, botón para borrar la cuenta dentro del juego, y reportar y bloquear en el chat, con la razón social **Consultores en Ingeniería Digital S.C.** (RFC CID180905UD2, Calle Pedro Camino 242-1, Col. Ampliación Los Ángeles, C.P. 27148, Torreón, Coah., 871 277 8426, contacto@ingenieriadigital.mx).
+
+**Cómo quedó:**
+- **Páginas públicas:** `/privacidad` (aviso integral, ley de 2025, ARCO en 20 días hábiles, proveedores, menores, autoridad), `/terminos` (edad 13+, reglas de la comunidad en `#reglas`, compras y reembolsos, PROFECO, tribunales de Torreón), `/soporte` (contacto y preguntas) y `/borrar-cuenta` (borrar desde la web con el login de la casa; el pase debe ser para Mina). Estilo común en `publico/legal.css`, A−/A+ en `publico/legal.js`. Ligas en Menú → Mi maquinita y en «Mis mundos».
+- **Borrar:** `POST /api/cuenta/borrar` con `confirmo: "BORRAR"` y sesión (`ses`), pase (`pase`) o, sin cuenta, las llaves del equipo (`k`). `borrarDatos` limpia mundos (`Mundo.olvidar`: si nadie más jugó, el mundo se borra; si hubo más gente, la maquinita queda «Maquinita retirada», sin llave ni huella, se borran sus mensajes y su imagen de liga, y si creó el mundo nadie hereda sus permisos), maquinitas (`Maquina.borrar`), la lista de referidos de su padrino, la tabla, cumpleaños, pausas y reportes (`Tabla.quitarDe` deja el registro sin nombre ni texto) y las capturas de R2; al final `Cuenta.borrarTodo`. En el juego: Menú → Mi maquinita → Privacidad y datos → Borrar (escribir BORRAR).
+- **Filtro:** `src/filtro.js` tapa con «•••» insultos fuertes, palabras sexuales y ofensas contra grupos, en chat, nombres de maquinitas y de mundos (con acentos, números que imitan letras y letras estiradas; sin tapar «Maricela», «vergüenza» ni «chingón»).
+- **Reportar:** tocar un mensaje → 🚩 Reportar (motivo + nota), o 🚩 en la lista J para reportar un nombre. También quien mira. Una vez por persona; con tres, el mensaje se oculta solo para todos (`chatQuita`). Llega a `Tabla.nuevoReporte` y a quien modera por correo (hasta 40 al día).
+- **Bloquear:** de este equipo (`mina_bloq`, sobrevive a cerrar sesión), por huella de maquinita (ahora `publico()` manda `h`), vale en todos los mundos: oculta sus mensajes, su nombre sale 🚫, ignora sus golpes, reacciones y claxon. Se quita en Privacidad y datos.
+- **Moderación:** `/moderacion` + `src/moderacion.js` (solo `ADMINES` de `src/gtm.js`): borrar mensaje, cambiar nombre («Maquinita N»), pausar chat 7 / 30 días / sin fecha (`Tabla.ponerSilencio`; el mundo lo revisa cada 5 min y al momento cuando se decide), descartar.
+- **Plan de tiendas:** `docs/Tiendas_App_Store_Play_Store_Mina_v1_2026-10-20_2251.md` (ligas, respuestas para «App Privacy» y «Data safety», lo que falta).
+
+**Probado:** 33 comprobaciones de punta a punta en local más capturas en R2, y en pantalla reportar, bloquear y borrar desde el juego. **Decisiones mías:** edad mínima 13 (la que recomendaba el plan), auto-ocultar con 3 reportes, bloquear por equipo (no viaja con la cuenta), los reportes se conservan como registro pero sin datos de quien borra su cuenta, y lo comprado se pierde sin reembolso al borrar (así lo dicen los términos).
+
 ### 9.79 /gtm: la pestaña Proyecciones, a 18 años (11-oct-2026)
 
 **Qué pidió Ricardo:** traer a Mina las proyecciones que quedaron bien en Cupido Algorítmico: los siguientes 18 años de ingresos contra gastos, para que quien se entreviste para dirigir vea el tamaño de la ambición (abrir países uno tras otro y sumar juegos a la saga).

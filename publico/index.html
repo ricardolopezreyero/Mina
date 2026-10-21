@@ -24,7 +24,7 @@
 <link rel="apple-touch-icon" href="/iconos/icono-180.png">
 <link rel="manifest" href="/manifest.webmanifest">
 <script>/* RLR · la guía de estilos no es el juego: si una copia vieja guardada en el equipo sirvió el juego en esa dirección, se suelta y se vuelve a pedir */
-if(/^\/(guia-estilos|guia-de-estilos|gu(i|%C3%AD|í)a(-de)?(-estilos)?|marca|kit|galer(i|%C3%AD|í)a|gameplay|ritmo|gtm)(\/|$)/i.test(location.pathname)){window.__noEsElJuego=1;if('serviceWorker'in navigator)navigator.serviceWorker.getRegistrations().then(function(r){return Promise.all(r.map(function(x){return x.unregister()}))}).then(function(){try{if(!sessionStorage.getItem('mina_guia_r')){sessionStorage.setItem('mina_guia_r','1');location.reload()}}catch(e){}})}
+if(/^\/(guia-estilos|guia-de-estilos|gu(i|%C3%AD|í)a(-de)?(-estilos)?|marca|kit|galer(i|%C3%AD|í)a|gameplay|ritmo|gtm|privacidad|terminos|t%C3%A9rminos|soporte|ayuda|borrar-cuenta|moderacion)(\/|$)/i.test(location.pathname)){window.__noEsElJuego=1;if('serviceWorker'in navigator)navigator.serviceWorker.getRegistrations().then(function(r){return Promise.all(r.map(function(x){return x.unregister()}))}).then(function(){try{if(!sessionStorage.getItem('mina_guia_r')){sessionStorage.setItem('mina_guia_r','1');location.reload()}}catch(e){}})}
 </script>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -135,6 +135,17 @@ body.chat #chat{transform:none;visibility:visible;transition:transform .22s ease
 .cm .bu b{display:block;color:var(--c);font-size:.8em;margin-bottom:1px}
 .cm .bu small{color:#fff8;font-size:.68em;margin:.45em 0 0 10px;float:right;-webkit-user-select:none;user-select:none}
 .cm .bu a{color:#9fd4ff;text-decoration:underline}
+.cm:not(.mio){cursor:pointer}
+.cmAcc{display:flex;gap:6px;flex-wrap:wrap;margin:2px 0 8px 40px}
+.cmAcc button{font-size:.8em;padding:.35em .7em;background:#2a1c16;border:1px solid var(--borde);color:var(--tx)}
+#repCaja{position:fixed;inset:0;z-index:80;display:grid;place-items:center;background:#0009;padding:16px}
+#repCaja form{width:min(440px,100%);max-height:92vh;overflow:auto;background:var(--caja);border:1px solid var(--borde);border-radius:16px;padding:16px 18px;box-shadow:0 18px 50px #000c;color:var(--tx)}
+#repCaja h3{margin:0 0 8px;font-size:1.1em}
+#repCaja .cita{background:#120b08;border-radius:10px;padding:8px 10px;margin:0 0 8px;overflow-wrap:anywhere}
+#repCaja .mot{display:grid;gap:4px;margin:8px 0}
+#repCaja .mot label{display:flex;gap:8px;align-items:center;padding:6px 8px;border-radius:8px;background:#120b08;cursor:pointer}
+#repCaja input[name=nota]{width:100%;font:inherit;background:#120b08;color:var(--tx);border:1px solid var(--borde);border-radius:8px;padding:.5em .6em;margin:4px 0 10px}
+#repCaja .bt{display:flex;gap:8px;flex-wrap:wrap}
 .cn{align-self:center;color:var(--su);font-size:.72em;padding:2px 10px;background:#0005;border-radius:99px;text-align:center;-webkit-user-select:none;user-select:none}
 .cn.dia{margin:6px 0 2px;font-weight:700}
 #chatNuevos{position:absolute;left:50%;bottom:128px;transform:translateX(-50%);display:none;font-size:.8em;box-shadow:0 2px 10px #000a}

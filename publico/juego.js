@@ -2336,9 +2336,9 @@ function recibir(d) {
     case 'pinta': { if (d.i === miI) { miPinta = d.p || {}; miMe = d.me | 0; ponerMotor(miPinta.motor | 0); } else { const o = otros.get(d.i); if (o) { o.p = d.p || {}; o.me = d.me | 0; } } edenE = null; if (menu === 'pin') pintarMenu(); return; }
     case 'ui': return recibirUI(d);
     case 'yoDe': { const o = otros.get(d.i); if (o) { o.ficha = d; if (d.i === sigo) pintarSigo(); } return; }
-    case 'rx': { const o = d.a === miI ? null : otros.get(d.a), x = o ? o.x : yo.x, y = o ? o.y : yo.y; if (x === undefined) return; flota(x, y - 1.6, d.e + ' ' + nombreDe(d.de), '#fff'); if (d.a === miI) { son.chat(); aviso(nombreDe(d.de) + ' te manda ' + d.e); } chispas(x, y - 1.2, '#ffd23f', 6, 4); return; }
+    case 'rx': { if (d.de >= 0 && bloqueada(d.de)) return; const o = d.a === miI ? null : otros.get(d.a), x = o ? o.x : yo.x, y = o ? o.y : yo.y; if (x === undefined) return; flota(x, y - 1.6, d.e + ' ' + nombreDe(d.de), '#fff'); if (d.a === miI) { son.chat(); aviso(nombreDe(d.de) + ' te manda ' + d.e); } chispas(x, y - 1.2, '#ffd23f', 6, 4); return; }
     case 'mira': { if (d.a === miI) { miradoPor.add(d.i); mandarMiPanel(); ultPos = ''; enviarPos(); espejoUltimo = ''; transmitirUI('html'); son.chat(); tarjeta('👀 ' + nombreDe(d.i) + ' está viendo lo que tú ves', 'Tú también puedes: toca su nombre arriba a la derecha y ves lo que ve. Así es Mina: tú mandas tu maquinita, pero nos vemos todos.', 'msj', 9000); } else if (d.a === -1 && d.fue === miI) { miradoPor.delete(d.i); aviso(nombreDe(d.i) + ' dejó de verte'); } return; }
-    case 'bocina': { const o = otros.get(d.i); if (!o || !o.on || o.x === undefined) return; const dist = Math.hypot(o.x - yo.x, o.y - yo.y); if (dist < 40) claxon(d.b | 0, Math.max(0.15, 1 - dist / 40), 'otros'); return; }
+    case 'bocina': { const o = otros.get(d.i); if (!o || !o.on || bloqueada(d.i) || o.x === undefined) return; const dist = Math.hypot(o.x - yo.x, o.y - yo.y); if (dist < 40) claxon(d.b | 0, Math.max(0.15, 1 - dist / 40), 'otros'); return; }
     case 'nom': {              // alguien rebautizó su maquinita o le cambió el modelo
       if (d.i === miI) {
         const viejo = miNombre; miNombre = d.n; miModelo = d.m; guardarMundo(); dugCambios++;
@@ -2359,7 +2359,10 @@ function recibir(d) {
     case 'fin': if (d.piedras) edenPiedras = d.piedras; if (!S || d.r !== remin) return; if (!(S.fl.edenF && S.fl.edenF[mundoId + '|' + remin]) && !ceremonia) finDelMundo(d.i, d); else if (sinMineral !== remin) vaciarMinerales(); return;
     case 'chat': if (d.id && typeof d.x === 'string') agregarChat(d.i === -1 ? { ...d, nota: d.x } : d); return;
     case 'chatMas': return chatViejos(d.l);
-    case 'chatNo': return aviso('Vas muy rápido: espera un momento para escribir otra vez.');
+    case 'chatNo': return d.sil !== undefined ? tarjeta('Tu chat está en pausa', 'Por un reporte, el equipo de Mina pausó tu chat' + (d.sil ? ' hasta el ' + new Date(d.sil).toLocaleDateString('es-MX', { day: 'numeric', month: 'long' }) : '') + '. Puedes seguir jugando. Si crees que es un error, escríbenos a contacto@ingenieriadigital.mx.', 'msj', 9000) : aviso('Vas muy rápido: espera un momento para escribir otra vez.');
+    case 'chatQuita': return quitarDelChat(d);
+    case 'reporteOk': return reporteRecibido(d);
+    case 'cuentaBorrada': if (borrando) return; detener(); try { for (const k of Object.keys(localStorage)) if (k.startsWith('mina_') && k !== 'mina_op') localStorage.removeItem(k); } catch {} return pantallaFinal('Tu cuenta se borró', 'Se borró desde otro equipo o desde mina.capitaltorreon.com/borrar-cuenta. Este equipo empieza de cero.');
     case 'mapa': mapaOk = d.r; if (d.r === remin && d.h !== mapaHash) cambiarMapa(d); return;
     case 'nomira': detener(); return pantallaFinal('Este mundo no admite observadores', 'Quien lo creó prefirió jugar sin público.');
     case 'obs': mirones = d.n | 0; ultPos = ''; if (soloVer) pintarVer(); else { enviarPos(); pintarTabla(); } return;      // que quien llega a mirar me vea aunque esté quieto
@@ -2395,7 +2398,7 @@ function recibir(d) {
     case 'col': if (d.k >= 0 && d.k < NCOL) { hallados[d.k] = 1; dugCambios++; mapa.fill(255); bloques.clear(); pintarHud(true); if (menu === 'menu') pintarMenu(); } return;
     case 'golpe': {            // otra maquinita me alcanzó con su taladro: pega según su taladro y la clase de golpe; lo que aguanto es mi casco
       if (!S) return;
-      if (!d.v && relCon(d.i) !== 'batalla') return;
+      if (!d.v && (relCon(d.i) !== 'batalla' || bloqueada(d.i))) return;      // a quien bloqueaste no le llegan sus golpes
       if (d.v) {               // …o me avisa que le gané
         S.st.pleitos = (S.st.pleitos || 0) + 1; sucio = true; son.rango(); temblar(6);
         for (const c of ['#ffd23f', '#6ec3ff', '#ff6b5a', '#6fdc7a']) chispas(yo.x, yo.y - 0.3, c, 14, 9);
@@ -3547,7 +3550,7 @@ function dibujar() {
   // las demás maquinitas y la mía
   for (const o of otros.values()) {
     if (!o.on || o.x === undefined || (ceremonia && ceremonia.ids.has(o.i))) continue;
-    dibMaq(g, ox + o.x * T, oy + o.y * T, T, o.m, o.fl & 1 ? 1 : -1, o.fl & 2 ? 1 : o.fl & 96 ? 2 : 0, o.fl & 4 ? (o.fl & 16 ? 2 : o.fl & 1 ? 1 : -1) : 0, op.nombres ? (o.me ? '✦ ' : '') + o.n : '', o.fl & 8 ? 'en pausa' : '', o.x, o.p || null);
+    dibMaq(g, ox + o.x * T, oy + o.y * T, T, o.m, o.fl & 1 ? 1 : -1, o.fl & 2 ? 1 : o.fl & 96 ? 2 : 0, o.fl & 4 ? (o.fl & 16 ? 2 : o.fl & 1 ? 1 : -1) : 0, op.nombres ? (bloqueada(o.i) ? '🚫' : (o.me ? '✦ ' : '') + o.n) : '', o.fl & 8 ? 'en pausa' : '', o.x, o.p || null);
     if (enPleito(o.i)) barraVida(ox + o.x * T, oy + o.y * T, o.vida ?? null, o.mx || 1, colorTx(o.i));
     estela(o.p, o.x, o.y, (o.fl & 2) || (o.fl & 96));
   }
@@ -3825,6 +3828,8 @@ function nodoChat(m, ant) {
   const f = document.createDocumentFragment(), d = document.createElement('div');
   if (m.i === -1 && !m.nota) m = { ...m, nota: m.x };      // nota del mundo guardada en el chat (quién llegó)
   if (m.nota) { d.className = 'cn'; d.textContent = m.nota; f.appendChild(d); return f; }
+  if (m.i >= 0 && bloqueada(m.i)) return f;                // a quien bloqueaste no se le ve nada
+  d.dataset.i = m.i; if (m.id) d.dataset.id = m.id;        // para reportar o bloquear con un toque
   const otroDia = !ant || !ant.h || new Date(ant.h).toDateString() !== new Date(m.h).toDateString();
   if (otroDia) { const s = document.createElement('div'); s.className = 'cn dia'; s.textContent = diaChat(m.h); f.appendChild(s); }
   const mio = !soloVer && m.i === miI, junto = !otroDia && ant && !ant.nota && ant.i === m.i && m.h - ant.h < 120000;
@@ -3840,6 +3845,7 @@ function pintarChatBoton() { poner($('#bChat'), '<kbd>C</kbd>💬<span> Chat</sp
 function agregarChat(m) {
   const ant = chat.l[chat.l.length - 1], abajo = chatAbajo(), mio = !m.nota && !soloVer && m.i === miI;
   chat.l.push(m); $('#chatMsgs').appendChild(nodoChat(m, ant));
+  if (!m.nota && m.i >= 0 && bloqueada(m.i)) return;      // bloqueada: ni aviso, ni sonido, ni cuenta de no leídos
   const vacio = $('#chatVacio'); if (vacio) vacio.remove();
   if (m.nota) { if (abajo) chatAlFondo(); return; }
   if (chat.abierto) { if (abajo || mio) chatAlFondo(); else { chat.nuevos++; const b = $('#chatNuevos'); b.textContent = '↓ ' + chat.nuevos + (chat.nuevos === 1 ? ' mensaje nuevo' : ' mensajes nuevos'); b.style.display = 'block'; } }
@@ -3910,6 +3916,103 @@ $('#chatLista').addEventListener('scroll', (e) => {
   if (L.scrollTop < 60 && !chat.completo && !chat.pidiendo && ws && ws.readyState === 1) { const p = chat.l.find((m) => m.id); if (p) { chat.pidiendo = true; ws.send(JSON.stringify({ t: 'chatAntes', id: p.id })); } }
 });
 
+/* ════════ Reportar y bloquear ════════ RLR */
+// Lo que piden las tiendas de apps (y el sentido común) en un chat entre personas. Bloquear es de este equipo y vale en todos
+// los mundos (va por la huella de la maquinita, no por su número en un mundo): no ves sus mensajes, su nombre sale como 🚫 y
+// sus golpes, reacciones y claxon no te llegan. Reportar manda el mensaje (o el nombre) a moderación, que lo revisa una persona;
+// con tres reportes de personas distintas el mensaje se oculta solo, para todos. Un toque en un mensaje enseña las dos cosas.
+const MOTIVOS = [['acoso', 'Acoso o insultos'], ['sexual', 'Contenido sexual'], ['odio', 'Odio o discriminación'], ['violencia', 'Amenazas o violencia'], ['datos', 'Pide o publica datos personales'], ['spam', 'Spam o estafa'], ['nombre', 'Nombre ofensivo'], ['otro', 'Otra cosa']];
+let bloq = leer('mina_bloq', []); if (!Array.isArray(bloq)) bloq = [];
+const huellaDe = (i) => (i === miI && !soloVer ? '' : (otros.get(i) || {}).h || '');
+function bloqueada(i) { const h = huellaDe(i); return !!h && bloq.some((b) => b.h === h); }
+function bloquear(i) {
+  const o = otros.get(i); if (!o || !o.h) return aviso('No se pudo bloquear todavía: inténtalo en un momento.');
+  if (!bloq.some((b) => b.h === o.h)) bloq = bloq.concat({ h: o.h, n: o.n, t: Date.now() }).slice(-500);
+  escribir('mina_bloq', bloq); cerrarReporte(); repintarChat(); pintarChatQuien();
+  tarjeta('🚫 Bloqueaste a ' + o.n, 'Ya no verás sus mensajes, y su nombre sale como 🚫 en todos los mundos. Sus golpes, reacciones y claxon no te llegan. Lo quitas en Menú → Mi maquinita → Privacidad y datos.', 'msj', 8000);
+}
+function desbloquear(h) { bloq = bloq.filter((b) => b.h !== h); escribir('mina_bloq', bloq); repintarChat(); pintarChatQuien(); }
+// el chat completo otra vez (al bloquear, desbloquear o cuando moderación quita un mensaje)
+function repintarChat() {
+  const c = $('#chatMsgs'); if (!c) return; c.innerHTML = ''; let ant = null;
+  for (const m of chat.l) { const f = nodoChat(m, ant); if (f.childNodes.length) { c.appendChild(f); ant = m; } }
+  if (!c.childNodes.length) c.innerHTML = `<p id="chatVacio" class="cn">Aquí todavía no ha escrito nadie. Di hola 👋</p>`;
+}
+function quitarDelChat(d) {      // moderación quitó un mensaje (o todos los de una maquinita que se retiró)
+  const antes = chat.l.length; chat.l = chat.l.filter((m) => m.nota || (d.id ? m.id !== d.id : m.i !== d.i));
+  if (chat.l.length !== antes) repintarChat();
+}
+// La cajita para reportar: qué pasó (de una lista corta) y, si quieres, una nota. Sirve para un mensaje o para una maquinita.
+function abrirReporte(o) {
+  cerrarReporte(); const quien = nombreDe(o.i), r = document.createElement('div'); r.id = 'repCaja'; r.setAttribute('role', 'dialog'); r.setAttribute('aria-modal', 'true');
+  r.innerHTML = `<form><h3>🚩 Reportar ${o.id ? 'un mensaje de' : 'a'} ${esc(quien)}</h3>
+    ${o.x ? `<p class="cita">${esc(o.x)}</p>` : ''}<p class="nota">Lo revisa una persona del equipo de Mina. Quien escribió no sabe quién lo reportó.</p>
+    <div class="mot">${MOTIVOS.map(([k, t], n) => `<label><input type="radio" name="mot" value="${k}"${n === (o.id ? 0 : 6) ? ' checked' : ''}> ${t}</label>`).join('')}</div>
+    <input name="nota" maxlength="280" placeholder="Algo más que debamos saber (opcional)" autocomplete="off">
+    <div class="bt"><button class="mal" type="submit">Enviar reporte</button><button type="button" class="s" data-x="bloq">🚫 Bloquear a ${esc(quien)}</button><button type="button" class="s" data-x="no">Cancelar</button></div></form>`;
+  document.body.appendChild(r);
+  r.querySelector('form').onsubmit = (e) => {
+    e.preventDefault(); const f = e.currentTarget;
+    if (!ws || ws.readyState !== 1) return aviso('Sin señal: en cuanto vuelva puedes reportar.');
+    ws.send(JSON.stringify({ t: 'reporte', ...(o.id ? { id: o.id } : { i: o.i }), motivo: f.mot.value, nota: f.nota.value.trim() }));
+    f.querySelector('button[type=submit]').disabled = true;
+  };
+  r.querySelector('[data-x="bloq"]').onclick = () => bloquear(o.i);
+  r.querySelector('[data-x="no"]').onclick = cerrarReporte;
+  r.addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.stopPropagation(); cerrarReporte(); } });
+  setTimeout(() => r.querySelector('input:checked')?.focus(), 30);
+}
+function cerrarReporte() { const r = $('#repCaja'); if (r) r.remove(); }
+function reporteRecibido(d) {
+  const r = $('#repCaja'); if (!r) return aviso(d.ya ? 'Ya lo habías reportado.' : 'Gracias: tu reporte llegó.');
+  r.querySelector('form').innerHTML = `<h3>${d.ya ? 'Ya lo habías reportado' : '🚩 Gracias, tu reporte llegó'}</h3><p class="nota">Una persona lo revisa. Si alguien insulta, acosa o pide datos personales, también puedes bloquearlo: dejas de ver lo que escribe.</p><div class="bt"><button type="button" class="s" data-x="bloq2">🚫 Bloquear también</button><button type="button" data-x="ok">Listo</button></div>`;
+  const i = +r.dataset.i; r.querySelector('[data-x="ok"]').onclick = cerrarReporte; r.querySelector('[data-x="bloq2"]').onclick = () => bloquear(i);
+}
+// Un toque en un mensaje de alguien más: debajo salen «Reportar» y «Bloquear».
+$('#chatMsgs').addEventListener('click', (e) => {
+  if (e.target.closest('a')) return;
+  const el = e.target.closest('.cm'); if (!el || el.dataset.i === undefined) return;
+  const i = +el.dataset.i; if (i < 0 || (i === miI && !soloVer)) return;
+  const abierto = el.nextElementSibling && el.nextElementSibling.classList.contains('cmAcc'); $('#chatMsgs').querySelectorAll('.cmAcc').forEach((x) => x.remove());
+  if (abierto) return;
+  const a = document.createElement('div'); a.className = 'cmAcc'; const id = +el.dataset.id || 0, m = chat.l.find((x) => x.id === id);
+  a.innerHTML = `<button type="button" data-x="rep">🚩 Reportar</button><button type="button" data-x="bloq">🚫 Bloquear a ${esc(nombreDe(i))}</button>`;
+  a.querySelector('[data-x="rep"]').onclick = () => { abrirReporte({ i, id, x: m ? m.x : '' }); $('#repCaja').dataset.i = i; a.remove(); };
+  a.querySelector('[data-x="bloq"]').onclick = () => { a.remove(); bloquear(i); };
+  el.after(a);
+});
+// Privacidad y datos (Menú → Mi maquinita): las ligas de siempre, a quién bloqueaste y borrar todo.
+function htmlPrivacidad(pliegue) {
+  const liga = (u, t) => `<a href="${u}" target="_blank" rel="noopener">${t}</a>`;
+  return `<div class="fila"><div class="ic">🔒</div><div class="t"><b>Tus datos son tuyos</b><small>${liga('/privacidad', 'Aviso de privacidad')} · ${liga('/terminos', 'Términos y reglas de la comunidad')} · ${liga('/soporte', 'Ayuda y contacto')}</small></div></div>` +
+    pliegue('bloq', '🚫', 'Personas bloqueadas', bloq.length ? bloq.length + (bloq.length === 1 ? ' bloqueada' : ' bloqueadas') + ' en este equipo' : 'Nadie. Para bloquear, toca un mensaje en el chat',
+      bloq.length ? bloq.map((b) => `<div class="fila"><div class="ic">🚫</div><div class="t"><b>${esc(b.n || 'Maquinita')}</b><small>Desde ${new Date(b.t).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })}</small></div><button class="s" data-a="desbloq" data-v="${esc(b.h)}">Desbloquear</button></div>`).join('') : '<p class="nota">Cuando bloqueas a alguien dejas de ver sus mensajes en todos los mundos. Toca cualquier mensaje del chat para bloquear o reportar.</p>') +
+    pliegue('borrar', '🗑️', cuenta ? 'Borrar mi cuenta' : 'Borrar mis datos', cuenta ? 'Tu cuenta y todo lo de Mina, para siempre' : 'Tus maquinitas y lo que guarda este equipo, para siempre',
+      `<p class="nota">Se borra <b>al momento y para siempre</b>: ${cuenta ? 'tu cuenta, ' : ''}${garaje.length > 1 ? 'tus ' + garaje.length + ' maquinitas' : 'tu maquinita'} (con lo que compraste en La Pinturería, que no se reembolsa), ${cuenta ? 'tus capturas, ' : ''}tu lugar en la tabla mundial y tus mensajes del chat. Los mundos donde solo jugaste tú se borran; en los que jugaste con más gente, ellos conservan lo suyo y tu maquinita queda como «Maquinita retirada».</p>
+      <p class="nota">Si nada más quieres dejar de usar este equipo, mejor ${cuenta ? '«Cerrar sesión»' : 'no hagas nada'}: no se borra nada. ¿Dudas? <a href="mailto:contacto@ingenieriadigital.mx">contacto@ingenieriadigital.mx</a></p>
+      <label class="op"><span>Para confirmar escribe BORRAR</span><input id="borrarTx" maxlength="10" autocomplete="off" autocapitalize="characters" placeholder="BORRAR"></label>
+      <div class="fila"><div class="t"></div><button class="mal" id="borrarB" data-a="borrarTodo">🗑️ Borrar para siempre</button></div>`);
+}
+let borrando = false;
+async function borrarTodo() {
+  if (($('#borrarTx')?.value || '').trim().toUpperCase() !== 'BORRAR') { aviso('Escribe BORRAR para confirmar.'); $('#borrarTx')?.focus(); return; }
+  const b = $('#borrarB'); if (b) { b.disabled = true; b.textContent = 'Borrando…'; }
+  borrando = true;
+  try {
+    const keys = [...new Set([miK, maqLocal && maqLocal.k, ...garaje.map((g) => g.k)].filter((k) => k && /^[0-9a-zA-Z]{16,64}$/.test(k)))];
+    const r = await fetch('/api/cuenta/borrar', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ confirmo: 'BORRAR', ...(cuenta ? { ses: cuenta.ses } : {}), k: keys, mundos: mundos.map((m) => m.id) }) }), x = await r.json().catch(() => ({}));
+    if (!r.ok || !x.ok) throw x;
+    try { if (ws) ws.close(); } catch {}
+    try { for (const k of Object.keys(localStorage)) if (k.startsWith('mina_') && k !== 'mina_op') localStorage.removeItem(k); } catch {}
+    escribir('mina_nota', 'Listo: ' + (x.cuenta ? 'tu cuenta y ' : '') + 'tus datos de Mina se borraron para siempre.');
+    if (cuenta && window.LoginCT) return LoginCT.salir();
+    location.href = '/?mundos';
+  } catch (e) {
+    borrando = false; if (b) { b.disabled = false; b.textContent = '🗑️ Borrar para siempre'; }
+    tarjeta('No se pudo borrar', e && e.error === 'sesion' ? 'Tu sesión venció: entra otra vez con tu cuenta y vuelve a intentarlo.' : 'Se fue la conexión. Inténtalo otra vez en un momento.', 'msj', 8000);
+  }
+}
+
 /* ════════ El público y las solicitudes ════════ RLR */
 // A quien creó el mundo le llegan: quién está mirando (solo se le avisa) y quién pide entrar a jugar (eso sí lo decide).
 let publico = { mira: [], nm: 0, sol: [], ban: [], rev: [] }, verPermisos = false;
@@ -3931,7 +4034,7 @@ function htmlPublico() {
   let h = soyCreador ? '<p class="nota">Mirar es libre: cualquiera con la liga para mirar entra sin pedir nada, y aquí solo se te avisa. Para <b>jugar</b> hay que pedirlo, y tú decides. Quien entra con la liga del mundo que tú mandas ya viene invitado. Quien ya jugó aquí conserva su permiso para siempre, hasta que tú se lo quites. «Quitar permiso» lo deja mirar y volver a pedirlo; «Sacar» lo saca al instante y no lo deja volver, ni a jugar ni a mirar.</p>'
     : '<p class="nota">Solo quien creó el mundo acepta solicitudes y saca jugadores.</p>';
   h += `<h4>🙋 Quieren jugar (${publico.sol.length})</h4>` + (publico.sol.length ? publico.sol.map((x, k) => fila('🙋', esc(x.n || 'Alguien'), 'Pidió entrar ' + hace(x.h), soyCreador ? `<button data-a="acepto" data-v="${x.sid}">${k === 0 ? '<kbd>Enter</kbd>' : ''}Aceptar</button><button class="s" data-a="rechazo" data-v="${x.sid}">Rechazar</button>` : '')).join('') : '<p class="nota">Nadie por ahora. Cuando alguien que está mirando pida jugar, te llega un aviso.</p>');
-  h += `<h4>⛏️ Jugando ahora (${jugando.length + 1})</h4>` + fila('⭐', esc(miNombre) + ' (tú)', 'Quien creó el mundo', '') + jugando.map((o) => fila('⛏️', `<span style="color:${colorTx(o.i)}">${esc(o.n)}</span>`, o.y !== undefined ? donde(o.y) : 'conectada', `<button class="s" data-a="regalar" data-v="${o.i}" title="Regalarle un nivel de La Pinturería">🎁</button>` + (relCon(o.i) === 'comercio' ? `<button class="s" data-a="relDar" data-v="${o.i}" title="Darle dinero u objetos">🤝 Dar</button><button class="s" data-a="relCambiar" data-v="${o.i}:batalla" title="Cambiar a batalla">⚔️</button>` : relCon(o.i) === 'batalla' ? `<button class="s" data-a="relCambiar" data-v="${o.i}:comercio" title="Cambiar a comercio">🤝</button><span class="nota" style="margin:0">⚔️ batalla</span>` : `<button class="s" data-a="relCambiar" data-v="${o.i}:comercio">🤝</button><button class="s" data-a="relCambiar" data-v="${o.i}:batalla">⚔️</button>`) + (soyCreador ? `<button class="s" data-a="quitarP" data-v="${o.i}">Quitar permiso</button><button class="s mal" data-a="sacarJ" data-v="${o.i}">Sacar</button>` : ''))).join('');
+  h += `<h4>⛏️ Jugando ahora (${jugando.length + 1})</h4>` + fila('⭐', esc(miNombre) + ' (tú)', 'Quien creó el mundo', '') + jugando.map((o) => fila('⛏️', `<span style="color:${colorTx(o.i)}">${esc(o.n)}</span>`, o.y !== undefined ? donde(o.y) : 'conectada', `<button class="s" data-a="regalar" data-v="${o.i}" title="Regalarle un nivel de La Pinturería">🎁</button><button class="s" data-a="reportarJ" data-v="${o.i}" title="Reportar su nombre o lo que hace">🚩</button><button class="s" data-a="bloquearJ" data-v="${o.i}" title="${bloqueada(o.i) ? 'Ya la bloqueaste' : 'Bloquear: dejas de ver lo que escribe'}">🚫</button>` + (relCon(o.i) === 'comercio' ? `<button class="s" data-a="relDar" data-v="${o.i}" title="Darle dinero u objetos">🤝 Dar</button><button class="s" data-a="relCambiar" data-v="${o.i}:batalla" title="Cambiar a batalla">⚔️</button>` : relCon(o.i) === 'batalla' ? `<button class="s" data-a="relCambiar" data-v="${o.i}:comercio" title="Cambiar a comercio">🤝</button><span class="nota" style="margin:0">⚔️ batalla</span>` : `<button class="s" data-a="relCambiar" data-v="${o.i}:comercio">🤝</button><button class="s" data-a="relCambiar" data-v="${o.i}:batalla">⚔️</button>`) + (soyCreador ? `<button class="s" data-a="quitarP" data-v="${o.i}">Quitar permiso</button><button class="s mal" data-a="sacarJ" data-v="${o.i}">Sacar</button>` : ''))).join('');
   h += `<h4>👁 Mirando (${publico.nm || mirones})</h4>` + (publico.mira.length ? publico.mira.map((x) => fila('👁', esc(x.n || 'Alguien'), x.n ? 'Tiene maquinita' : 'Sin maquinita', soyCreador ? `<button class="s mal" data-a="sacarM" data-v="${x.sid}">Sacar</button>` : '')).join('') : `<p class="nota">${mirones ? mirones + ' mirando.' : 'Nadie está mirando ahora.'}</p>`);
   // Quién trajo a quién: el árbol de invitaciones de este mundo (lo que hace que un mundo crezca).
   const todos = [{ i: miI, n: miNombre, de: miDe }, ...[...otros.values()]], conDe = todos.filter((o) => o.de >= 0), trajo = (i) => conDe.filter((o) => o.de === i).length;
@@ -5315,6 +5418,10 @@ const acciones = {
   capEntrar() { irAlLogin(''); return 'no'; },
   capBorrar(v, el) { if (!confirm('¿Borrar esta captura? No se puede recuperar.')) return 'no'; fetch('/api/capturas/borrar', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ses: cuenta.ses, id: v, mundo: el.dataset.m }) }).then(() => { capturas.lista = capturas.lista.filter((c) => c.id !== v); capturas.grande = null; if (menu === 'menu') pintarMenu(); }); return 'no'; },
   salirCuenta() { salirCuenta(); return 'no'; },
+  desbloq(v) { desbloquear(v); },
+  borrarTodo() { borrarTodo(); return 'no'; },
+  reportarJ(v) { const i = +v; abrirReporte({ i }); $('#repCaja').dataset.i = i; return 'no'; },
+  bloquearJ(v) { bloquear(+v); },
   relElegir(v) { elegirRel(relCon_i, v); cerrar(); tarjeta(v === 'comercio' ? '🤝 Comercio' : '⚔️ Batalla', v === 'comercio' ? 'Al juntarse se abre el intercambio.' : 'Al juntarse bajo tierra, a darle.', 'msj', 5000); return 'no'; },
   relCambiar(v) { const [i, modo] = v.split(':'); elegirRel(+i, modo); return; },
   relDar(v) { comercioCon = +v; menu = 'comercio'; },
@@ -5406,7 +5513,7 @@ function menuPrincipal() {
       pliegue('otro', '📱', 'Llevarla a otro equipo', 'Su liga y su código QR, para seguir en el teléfono o en otra computadora',
         `<p class="nota"><b>Tu maquinita es tuya.</b> Entra contigo a cualquier mundo con todo lo que trae, y no se pierde aunque un mundo se borre. Para seguir con ella en otro equipo, entra allá con tu cuenta de Google, o abre su liga o su código QR. <b>No los compartas:</b> quien los abra maneja tu maquinita.</p>
         <div class="fila"><div class="t"><small>Código: <code>${esc(miK)}</code></small></div><button class="s" data-a="menu" data-v="qrmaq">Ver su código QR</button><button data-a="ligaMaq">Copiar su liga</button></div>`) +
-      '<h4>Mi cuenta</h4>' + htmlCuenta();
+      '<h4>Mi cuenta</h4>' + htmlCuenta() + '<h4>Privacidad y datos</h4>' + htmlPrivacidad(pliegue);
   } else if (pestana === 4) {
     h += `<p class="nota">${S.log.length} de ${LOGROS.length} logros · Rango: <b>${RANGOS[S.rango][1]}</b></p><div class="rej">` +
       LOGROS.map((l) => { const ok = S.log.includes(l.id); return `<div class="${ok ? '' : 'no'}"><b>${ok ? '🏅 ' : ''}${ok && l.sec ? l.sec.split(':')[0] : l.n}</b><small>${ok && l.sec ? l.sec.split(': ')[1] : l.d}</small></div>`; }).join('') + '</div>';
@@ -5927,7 +6034,7 @@ function pantallaMundos() {
     (maqLocal && maqLocal.n ? `<div class="fila"><div class="ic">🚜</div><div class="t"><b>Tu maquinita: ${esc(maqLocal.n)}</b><small>Entra contigo al mundo que elijas, con todo lo que trae.${garaje.length > 1 ? ' Tienes ' + garaje.length + ' en el garaje.' : ''}</small></div><button class="s" id="bGaraje">🚜 Mi garaje</button></div>` : '') +
     mundos.map((m) => `<div class="fila"><div class="t"><b>${esc(m.nombre)}</b><small>${m.maq ? 'Tu maquinita: ' + esc(m.maq) + ' · ' : ''}${new Date(m.ult).toLocaleDateString('es-MX', { day: 'numeric', month: 'long' })} · ${m.id}</small></div>
       <button data-ir="${m.id}">Continuar</button><button class="s" data-des="${m.id}">Desechar</button></div>`).join('') +
-    `<p style="margin-top:14px"><button id="bNuevo">＋ Crear mundo nuevo</button></p><p class="nota">Cada mundo nace con una semilla distinta y se guarda solo, completo y para siempre: con su liga se vuelve a entrar cuando sea, tal como se dejó. Para jugar acompañado, entra y copia su liga.</p></div>`);
+    `<p style="margin-top:14px"><button id="bNuevo">＋ Crear mundo nuevo</button></p><p class="nota">Cada mundo nace con una semilla distinta y se guarda solo, completo y para siempre: con su liga se vuelve a entrar cuando sea, tal como se dejó. Para jugar acompañado, entra y copia su liga.</p><p class="nota" style="font-size:.85em"><a href="/privacidad" target="_blank" rel="noopener">Aviso de privacidad</a> · <a href="/terminos" target="_blank" rel="noopener">Términos y reglas</a> · <a href="/soporte" target="_blank" rel="noopener">Ayuda</a> · <a href="/borrar-cuenta" target="_blank" rel="noopener">Borrar cuenta</a></p></div>`);
   $('#bNuevo').onclick = pantallaCrear; if ($('#bGaraje')) $('#bGaraje').onclick = () => pantallaGaraje('mundos');
   $('#caja').querySelectorAll('[data-ir]').forEach((b) => (b.onclick = () => (location.href = '/' + b.dataset.ir)));
   $('#caja').querySelectorAll('[data-des]').forEach((b) => (b.onclick = () => { const m = mundos.find((x) => x.id === b.dataset.des); desechar(m.id, m.creador, m.k || (maqLocal && maqLocal.k)); }));

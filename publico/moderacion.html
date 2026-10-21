@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mina · Moderación</title>
+<meta name="author" content="Ricardo López Reyero"><meta name="build" content="eye"><meta name="rev" content="181218">
+<meta name="theme-color" content="#1b120e">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/png" href="/iconos/icono-32.png">
+<link rel="stylesheet" href="/legal.css">
+<script src="/legal.js"></script>
+<style>
+.rep{background:var(--caja);border:1px solid var(--borde);border-radius:14px;padding:12px 14px;margin:10px 0;scroll-margin-top:70px}
+.rep.abierto{border-left:5px solid var(--ac)}.rep.cerrado{opacity:.72}
+.rep .cab{display:flex;gap:6px 12px;flex-wrap:wrap;align-items:center;font-size:.9em;color:var(--su)}
+.rep .cab b{color:var(--tx)}
+.rep .x{background:var(--hondo);border-radius:10px;padding:8px 10px;margin:8px 0;overflow-wrap:anywhere;font-size:1.02em}
+.rep .acc{display:flex;gap:6px;flex-wrap:wrap}
+.rep .acc button{font-size:.86em;padding:.4em .7em}
+.chip{display:inline-block;border:1px solid var(--borde);border-radius:999px;padding:.05em .6em;font-weight:800;font-size:.85em;background:var(--hondo)}
+.chip.ac{border-color:var(--ac);color:var(--ac)}
+.filtros{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}
+.filtros button[aria-pressed=true]{background:var(--ac);color:var(--tinta);border-color:var(--ac)}
+</style>
+</head>
+<body>
+<!-- RLR · Ricardo López Reyero · moderación de Mina: los reportes del chat y lo que se decide con ellos (solo quien administra) -->
+<header class="top"><div class="envuelve">
+  <a class="marca" href="/"><img src="/iconos/icono-64.png" alt="">Mina</a>
+  <h1>Moderación</h1>
+  <p>Los reportes del chat y de nombres. Solo para quien administra.</p>
+</div></header>
+<div class="barra"><div class="envuelve">
+  <nav aria-label="Vista"><a href="/moderacion">Reportes</a><a href="/terminos#reglas">Reglas</a></nav>
+  <div data-login-ct></div>
+  <div class="tam"><button type="button" data-tam="-" aria-label="Letra más chica">A−</button><button type="button" data-tam="+" aria-label="Letra más grande">A+</button></div>
+</div></div>
+<main class="envuelve">
+  <div id="puerta" class="ficha"><p>Entra con tu cuenta del equipo.</p><div data-login-ct="ancho" data-texto="Entrar con Google"></div><p id="estado" role="status" aria-live="polite"></p></div>
+  <div id="panel" hidden>
+    <p class="nota" id="resumen"></p>
+    <div class="filtros" role="group" aria-label="Filtro"><button data-f="abierto" aria-pressed="true">Por atender</button><button data-f="cerrado" aria-pressed="false">Atendidos</button><button data-f="todos" aria-pressed="false">Todos</button></div>
+    <div id="lista"></div>
+    <h2>Chats en pausa</h2>
+    <div id="pausas"></div>
+    <h2>Cómo decidir</h2>
+    <ul>
+      <li><b>Borrar el mensaje</b> cuando rompe las reglas una vez. <b>Pausar 7 días</b> si además insulta o acosa; <b>30 días</b> si reincide; <b>sin fecha</b> para contenido sexual con menores, amenazas graves o odio (y, si puede ser delito, reportarlo a la autoridad).</li>
+      <li><b>Cambiar el nombre</b> cuando el reporte es por un nombre ofensivo: la maquinita queda como «Maquinita N».</li>
+      <li><b>Descartar</b> cuando no rompe ninguna regla. Las tiendas de apps piden atender cada reporte pronto: idealmente el mismo día.</li>
+    </ul>
+  </div>
+</main>
+<script src="https://login.capitaltorreon.com/login.js"></script>
+<script>
+/* RLR · Ricardo López Reyero — el panel: lista los reportes y manda las decisiones; el servidor revisa que quien decide administre. */
+'use strict';
+{
+const _RLR = 'Ricardo López Reyero', _k = 'EYE', _rev = 181218;
+const $ = (s) => document.querySelector(s), esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const hora = (h) => new Date(h).toLocaleString('es-MX', { timeZone: 'America/Monterrey', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
+let datos = null, filtro = 'abierto';
+const pase = () => (window.LoginCT ? LoginCT.pase() : '');
+async function api(ruta, cuerpo) {
+  const r = await fetch('/api/moderacion/' + ruta, { method: cuerpo ? 'POST' : 'GET', headers: Object.assign({ Authorization: 'Bearer ' + pase() }, cuerpo ? { 'content-type': 'application/json' } : {}), body: cuerpo ? JSON.stringify(cuerpo) : undefined });
+  const j = await r.json().catch(() => ({})); if (!r.ok) throw Object.assign(new Error(j.error || 'error'), { status: r.status, j }); return j;
+}
+async function carga() {
+  if (!pase()) { $('#puerta').hidden = false; $('#panel').hidden = true; return; }
+  try { datos = await api('lista'); $('#puerta').hidden = true; $('#panel').hidden = false; pinta(); if (location.hash) setTimeout(() => document.querySelector(location.hash)?.scrollIntoView(), 50); }
+  catch (e) { $('#puerta').hidden = false; $('#panel').hidden = true; $('#estado').textContent = e.status === 403 ? (e.j.correo || 'Ese correo') + ' no administra Mina.' : e.status === 401 ? 'Tu sesión venció: vuelve a entrar.' : 'No se pudo cargar.'; }
+}
+function pinta() {
+  const R = datos.reportes, M = datos.motivos || {}, abiertos = R.filter((r) => r.estado === 'abierto').length;
+  $('#resumen').innerHTML = `<b>${abiertos}</b> por atender · ${R.length} en total · entraste como ${esc(datos.yo.correo)}`;
+  const l = R.filter((r) => filtro === 'todos' || (filtro === 'abierto' ? r.estado === 'abierto' : r.estado !== 'abierto'));
+  $('#lista').innerHTML = l.length ? l.map((r) => {
+    const mot = Object.entries(r.motivos || {}).map(([k, n]) => `<span class="chip ac">${esc(M[k] || k)}${n > 1 ? ' ×' + n : ''}</span>`).join(' ');
+    const ab = r.estado === 'abierto', a = r.autor || {};
+    return `<article class="rep ${ab ? 'abierto' : 'cerrado'}" id="r${r.id}">
+      <div class="cab"><b>#${r.id}</b><span>${r.tipo === 'mensaje' ? '💬 Mensaje' : '🏷️ Nombre'} de <b>${esc(a.n)}</b></span><span>en ${esc(r.nm || 'mundo ' + r.mundo)}</span><span>${hora(r.h0)}</span><span>${r.por.length ? r.por.length + (r.por.length === 1 ? ' persona' : ' personas') : 'quien reportó ya borró su cuenta'}</span>${r.oculto ? '<span class="chip">ya se ocultó solo</span>' : ''}</div>
+      <div class="x">${esc(r.x)}</div>${r.nota ? `<p><small>Nota: ${esc(r.nota)}</small></p>` : ''}<p>${mot}</p>
+      ${ab ? `<div class="acc">${r.tipo === 'mensaje' ? `<button data-a="borrar" data-id="${r.id}">🗑️ Borrar mensaje</button>` : ''}<button data-a="renombrar" data-id="${r.id}">🏷️ Cambiar el nombre</button><button data-a="pausa7" data-id="${r.id}">⏸ Pausar chat 7 días</button><button data-a="pausa30" data-id="${r.id}">⏸ 30 días</button><button class="mal" data-a="pausa" data-id="${r.id}">⛔ Sin fecha</button><button data-a="descartar" data-id="${r.id}">✓ Descartar</button></div>`
+        : `<p><small>${esc(r.estado)} · ${esc(r.cerro || '')}${r.hc ? ' · ' + hora(r.hc) : ''}</small></p>`}
+    </article>`;
+  }).join('') : '<p class="nota">Nada por aquí.</p>';
+  const P = Object.entries(datos.silencio || {});
+  $('#pausas').innerHTML = P.length ? P.map(([h, s]) => `<div class="ficha"><p><b>${esc(s.n || h)}</b> · ${s.hasta ? 'hasta ' + hora(s.hasta) : 'sin fecha'} · lo decidió ${esc(s.por)}</p><button data-a="quitarSilencio" data-h="${esc(h)}">Quitar la pausa</button></div>`).join('') : '<p class="nota">Nadie tiene el chat en pausa.</p>';
+}
+document.addEventListener('click', async (e) => {
+  const f = e.target.closest('[data-f]'); if (f) { filtro = f.dataset.f; document.querySelectorAll('[data-f]').forEach((b) => b.setAttribute('aria-pressed', String(b === f))); return pinta(); }
+  const b = e.target.closest('button[data-a]'); if (!b) return;
+  const accion = b.dataset.a, cuerpo = accion === 'quitarSilencio' ? { accion, h: b.dataset.h } : { accion, id: +b.dataset.id, borrar: accion.startsWith('pausa') ? 1 : 0 };
+  if (accion === 'pausa' && !confirm('¿Pausar su chat sin fecha de regreso? Se puede quitar después.')) return;
+  b.disabled = true;
+  try { await api('accion', cuerpo); await carga(); } catch (x) { b.disabled = false; alert('No se pudo: ' + x.message); }
+});
+if (window.LoginCT) LoginCT.al(carga);
+carga();
+setInterval(() => { if (!document.hidden && pase()) carga(); }, 60000);
+}
+</script>
+</body>
+</html>

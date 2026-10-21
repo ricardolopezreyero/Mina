@@ -64,6 +64,9 @@ Este juego está hecho con todo el cariño con el que se puede hacer un juego. N
 | `docs/Documento_Maestro_Mina_v47_2026-10-03_1030.md` | Qué está construido, con qué números y qué falta |
 | `Prompt_Maestro_Mina_v4_2026-10-01_2336.md` | El diseño completo |
 | `sonidos-fuente/` | El pedido exacto de sonidos y música para ElevenLabs (aún sin generar) |
+| `publico/privacidad.html`, `terminos.html`, `soporte.html`, `borrar-cuenta.html` | Aviso de privacidad, términos y reglas de la comunidad, ayuda y borrar la cuenta desde la web |
+| `publico/moderacion.html`, `src/moderacion.js`, `src/filtro.js` | Moderación: panel de reportes (solo administradores), su API y el filtro de palabras del chat y los nombres |
+| `docs/Tiendas_App_Store_Play_Store_Mina_v1_2026-10-20_2251.md` | Qué piden Apple y Google, qué ya cumple Mina, qué contestar en cada formulario y qué falta |
 
 ## La guía de estilos
 
@@ -99,6 +102,10 @@ Para probar la cuenta sin Google en tu computadora, crea un archivo `.dev.vars` 
 Para pruebas desde la consola del navegador existe `window.__mina` (estado, `avanza(segundos)`, `usar(objeto)`, `abrir(menú)`).
 
 <!-- RLR · Ricardo López Reyero -->
+
+## Privacidad, reglas y tiendas
+
+Mina lo opera **Consultores en Ingeniería Digital S.C.** Las páginas que piden la ley y las tiendas de apps: [aviso de privacidad](https://mina.capitaltorreon.com/privacidad) · [términos y reglas de la comunidad](https://mina.capitaltorreon.com/terminos) · [ayuda](https://mina.capitaltorreon.com/soporte) · [borrar la cuenta](https://mina.capitaltorreon.com/borrar-cuenta). En el juego: tocar un mensaje del chat para **reportar** o **bloquear**, y Menú → Mi maquinita → **Privacidad y datos** para ver a quién bloqueaste o **borrar todo**. Los reportes se atienden en [/moderacion](https://mina.capitaltorreon.com/moderacion). El plan para publicar en Google Play y App Store está en `docs/Tiendas_App_Store_Play_Store_Mina_v1_2026-10-20_2251.md`.
 
 ## Login
 

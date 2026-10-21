@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mina · Borrar mi cuenta</title>
+<meta name="description" content="Borra tu cuenta de Mina y todos sus datos, al momento y para siempre, desde cualquier navegador.">
+<meta name="author" content="Ricardo López Reyero"><meta name="build" content="eye"><meta name="rev" content="181218">
+<meta name="theme-color" content="#1b120e">
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/png" href="/iconos/icono-32.png">
+<link rel="stylesheet" href="/legal.css">
+<script src="/legal.js"></script>
+</head>
+<body>
+<!-- RLR · Ricardo López Reyero · borrar la cuenta de Mina desde la web (lo pide Google Play: una página fuera de la app) -->
+<header class="top"><div class="envuelve">
+  <a class="marca" href="/"><img src="/iconos/icono-64.png" alt="">Mina</a>
+  <h1>Borrar mi cuenta</h1>
+  <p>Tu cuenta de Mina y todos sus datos, al momento y para siempre.</p>
+</div></header>
+<div class="barra"><div class="envuelve">
+  <nav aria-label="Páginas"><a href="/privacidad">Privacidad</a><a href="/terminos">Términos y reglas</a><a href="/soporte">Ayuda</a><a href="/borrar-cuenta">Borrar cuenta</a><a href="/">Jugar</a></nav>
+  <div class="tam"><button type="button" data-tam="-" aria-label="Letra más chica">A−</button><button type="button" data-tam="+" aria-label="Letra más grande">A+</button></div>
+</div></div>
+<main class="envuelve">
+
+<h2 id="que">Qué se borra</h2>
+<ul>
+  <li>Tu <b>cuenta</b>: tu correo, tu nombre, tu foto y tus sesiones en todos tus equipos.</li>
+  <li>Tus <b>maquinitas</b>, con todo lo que traen y lo que compraste en La Pinturería (no se reembolsa).</li>
+  <li>Tus <b>capturas de pantalla</b>, tu lugar en la <b>tabla mundial</b> y tu <b>cumpleaños</b>.</li>
+  <li>Tus <b>mensajes del chat</b>.</li>
+  <li>Los <b>mundos donde solo jugaste tú</b>. En los que jugaste con más gente, ellos conservan lo suyo y tu maquinita queda como «Maquinita retirada», sin tu nombre.</li>
+</ul>
+<p class="nota">Las copias de seguridad técnicas de nuestros proveedores pueden tardar hasta 30 días en desaparecer. El registro del pago de tus compras lo conserva Stripe el tiempo que exige la ley fiscal. Detalles en el <a href="/privacidad">aviso de privacidad</a>.</p>
+
+<h2 id="borrar">Borrarla ahora</h2>
+<div class="ficha" id="caja">
+  <p>Entra con la misma cuenta de Google que usas en Mina:</p>
+  <div data-login-ct="ancho" data-texto="Entrar con Google para borrar"></div>
+  <div id="paso2" hidden>
+    <p id="quien"></p>
+    <label for="tx"><b>Para confirmar, escribe BORRAR:</b></label><br>
+    <input type="text" id="tx" maxlength="10" autocomplete="off" autocapitalize="characters" placeholder="BORRAR"><br><br>
+    <button class="mal" id="bBorrar" disabled>🗑️ Borrar mi cuenta para siempre</button>
+  </div>
+  <p id="estado" role="status" aria-live="polite"></p>
+</div>
+
+<h2 id="sin-cuenta">Si juegas sin cuenta</h2>
+<p>Tu maquinita vive en tu equipo. Bórrala desde el juego: <b>Menú → Mi maquinita → Privacidad y datos → Borrar mis datos</b>. Si ya no tienes ese equipo y conservas el código de tu maquinita, mándanoslo a <a href="mailto:contacto@ingenieriadigital.mx">contacto@ingenieriadigital.mx</a> y la borramos.</p>
+
+<h2 id="correo">También por correo</h2>
+<p>Escribe a <a href="mailto:contacto@ingenieriadigital.mx?subject=Borrar%20mi%20cuenta%20de%20Mina">contacto@ingenieriadigital.mx</a> desde el correo de tu cuenta, con el asunto «Borrar mi cuenta de Mina». Lo hacemos en un máximo de 20 días hábiles y te confirmamos.</p>
+
+<div class="pie">
+  <p>Mina · operado por Consultores en Ingeniería Digital S.C. · RFC CID180905UD2 · Calle Pedro Camino 242-1, Col. Ampliación Los Ángeles, C.P. 27148, Torreón, Coah. · <a href="tel:+528712778426">871 277 8426</a> · <a href="mailto:contacto@ingenieriadigital.mx">contacto@ingenieriadigital.mx</a></p>
+</div>
+</main>
+<script src="https://login.capitaltorreon.com/login.js"></script>
+<script>
+/* RLR · Ricardo López Reyero — con el pase del login de la casa, el servidor sabe de quién es la cuenta y la borra. */
+'use strict';
+{
+const _RLR = 'Ricardo López Reyero', _k = 'EYE', _rev = 181218;
+const $ = (s) => document.querySelector(s), di = (t) => { $('#estado').textContent = t; };
+function pinta() {
+  const q = window.LoginCT ? LoginCT.quien() : null;
+  $('#paso2').hidden = !q;
+  if (q) $('#quien').innerHTML = 'Vas a borrar la cuenta de Mina de <b></b>.', $('#quien b').textContent = q.email || q.name || '';
+}
+$('#tx').addEventListener('input', () => { $('#bBorrar').disabled = $('#tx').value.trim().toUpperCase() !== 'BORRAR'; });
+$('#bBorrar').addEventListener('click', async () => {
+  const pase = window.LoginCT ? LoginCT.pase() : ''; if (!pase) return di('Tu sesión venció: vuelve a entrar.');
+  $('#bBorrar').disabled = true; di('Borrando…');
+  try {
+    const r = await fetch('/api/cuenta/borrar', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ confirmo: 'BORRAR', pase }) }), x = await r.json().catch(() => ({}));
+    if (r.status === 401) { $('#bBorrar').disabled = false; return di('Tu sesión venció: vuelve a entrar.'); }
+    if (!r.ok || !x.ok) throw 0;
+    try { for (const k of Object.keys(localStorage)) if (k.startsWith('mina_') && k !== 'mina_legal_f') localStorage.removeItem(k); } catch {}
+    $('#caja').innerHTML = x.cuenta
+      ? `<p><b>Listo: tu cuenta de Mina se borró para siempre.</b></p><p>Se borraron ${x.maquinitas === 1 ? 'tu maquinita' : x.maquinitas + ' maquinitas'}${x.fotos ? ', ' + x.fotos + (x.fotos === 1 ? ' captura' : ' capturas') : ''} y tus datos en ${x.mundosTocados + x.mundosBorrados} ${x.mundosTocados + x.mundosBorrados === 1 ? 'mundo' : 'mundos'}. Si vuelves a jugar, empiezas de cero.</p>`
+      : `<p><b>No encontramos una cuenta de Mina con ese correo.</b></p><p>Si juegas sin cuenta, borra desde el juego: Menú → Mi maquinita → Privacidad y datos.</p>`;
+  } catch { $('#bBorrar').disabled = false; di('No se pudo borrar. Revisa tu conexión e inténtalo otra vez.'); }
+});
+if (window.LoginCT) LoginCT.al(pinta);
+pinta();
+}
+</script>
+</body>
+</html>

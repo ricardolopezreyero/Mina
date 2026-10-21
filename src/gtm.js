@@ -70,7 +70,7 @@ export class Gtm extends DurableObject {
 }
 
 // Quién toca la puerta. Devuelve { correo, nombre, admin } o un motivo: "nadie" (sin pase o vencido) o "ajeno" (correo de otro dominio).
-async function quienEs(request, env, u) {
+export async function quienEs(request, env, u) {
   const cred = (request.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "").trim();
   let q = null;
   // en la computadora de pruebas (solo ahí) sirve un pase de mentiras: «prueba:<quien>:<correo>»
